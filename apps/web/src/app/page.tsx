@@ -1,65 +1,119 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { DollarSign, TrendingUp, BarChart3, AlertTriangle, Zap } from 'lucide-react';
+import { MetricCard } from '@/components/dashboard/metric-card';
+import { AlertFeed } from '@/components/dashboard/alert-feed';
+import { PriceTicker } from '@/components/dashboard/price-ticker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { Alert } from '@sentinel/shared';
+
+const sampleTickerData = [
+  { ticker: 'AAPL', price: 178.72, change: 1.24 },
+  { ticker: 'MSFT', price: 378.91, change: 0.82 },
+  { ticker: 'GOOGL', price: 141.80, change: -0.56 },
+  { ticker: 'AMZN', price: 178.25, change: 1.89 },
+  { ticker: 'NVDA', price: 495.22, change: 3.12 },
+  { ticker: 'TSLA', price: 248.48, change: -2.15 },
+  { ticker: 'META', price: 355.64, change: 0.45 },
+  { ticker: 'SPY', price: 456.38, change: 0.62 },
+];
+
+const sampleAlerts: Alert[] = [
+  {
+    id: '1',
+    account_id: null,
+    instrument_id: null,
+    severity: 'info',
+    status: 'active',
+    title: 'System Online',
+    message: 'Sentinel trading engine connected and operational.',
+    metadata: null,
+    triggered_at: new Date().toISOString(),
+    acknowledged_at: null,
+    resolved_at: null,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    account_id: null,
+    instrument_id: 'nvda',
+    severity: 'warning',
+    status: 'active',
+    title: 'High Volatility Detected',
+    message: 'NVDA showing unusual volume and price movement.',
+    metadata: null,
+    triggered_at: new Date(Date.now() - 300000).toISOString(),
+    acknowledged_at: null,
+    resolved_at: null,
+    created_at: new Date(Date.now() - 300000).toISOString(),
+  },
+  {
+    id: '3',
+    account_id: null,
+    instrument_id: null,
+    severity: 'critical',
+    status: 'active',
+    title: 'Risk Limit Approaching',
+    message: 'Portfolio drawdown nearing configured threshold.',
+    metadata: null,
+    triggered_at: new Date(Date.now() - 600000).toISOString(),
+    acknowledged_at: null,
+    resolved_at: null,
+    created_at: new Date(Date.now() - 600000).toISOString(),
+  },
+];
+
+export default function DashboardPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-4 p-4">
+      {/* Row 1: Metric Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label="Total Equity"
+          value="$100,000"
+          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <MetricCard
+          label="Daily P&L"
+          value="$0.00"
+          change={0}
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+        />
+        <MetricCard
+          label="Sharpe Ratio"
+          value="--"
+          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+        />
+        <MetricCard
+          label="Max Drawdown"
+          value="0%"
+          icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+        />
+      </div>
+
+      {/* Row 2: Price Ticker */}
+      <PriceTicker items={sampleTickerData} />
+
+      {/* Row 3: Two columns */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Active Signals */}
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Active Signals
+            </CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              No active signals. Strategies will generate signals during market hours.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Alert Feed */}
+        <AlertFeed alerts={sampleAlerts} />
+      </div>
     </div>
   );
 }
