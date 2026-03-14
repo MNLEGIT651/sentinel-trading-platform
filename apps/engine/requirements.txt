@@ -1,0 +1,11 @@
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2
+pydantic-settings>=2
+supabase>=2
+httpx>=0.28
+numpy>=2
+pandas>=2
+scipy>=1.14
+apscheduler>=3.10
+python-dotenv>=1

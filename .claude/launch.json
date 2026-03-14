@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Web Dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@sentinel/web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Quant Engine",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "src.api.main:app", "--reload", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "Agents (stub)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@sentinel/agents", "dev"],
+      "port": 3001
+    }
+  ]
+}
