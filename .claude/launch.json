@@ -3,20 +3,20 @@
   "configurations": [
     {
       "name": "Web Dashboard",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@sentinel/web", "dev"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "pnpm", "--filter", "@sentinel/web", "dev"],
       "port": 3000
     },
     {
       "name": "Quant Engine",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "uvicorn", "src.api.main:app", "--reload", "--port", "8000"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd", "apps\\engine", "&&", "uv", "run", "python", "-m", "uvicorn", "src.api.main:app", "--reload", "--port", "8000"],
       "port": 8000
     },
     {
       "name": "Agents (stub)",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@sentinel/agents", "dev"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "pnpm", "--filter", "@sentinel/agents", "dev"],
       "port": 3001
     }
   ]

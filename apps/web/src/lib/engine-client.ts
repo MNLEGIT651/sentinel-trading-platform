@@ -1,4 +1,18 @@
-import type { IngestResult } from '@sentinel/shared';
+import type { IngestResult, Strategy } from '@sentinel/shared';
+
+export interface StrategyFamily {
+  family: string;
+  strategies: Strategy[];
+}
+
+export interface RiskLimits {
+  max_position_size: number;
+  max_portfolio_risk: number;
+  max_drawdown_pct: number;
+  max_correlation: number;
+  max_sector_exposure: number;
+  daily_loss_limit: number;
+}
 
 export class EngineClient {
   readonly baseUrl: string;
@@ -35,6 +49,22 @@ export class EngineClient {
 
   async getHealth(): Promise<{ status: string }> {
     const res = await fetch(this.url('/health'), {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error(`Engine error: ${res.status}`);
+    return res.json();
+  }
+
+  async getStrategies(): Promise<StrategyFamily[]> {
+    const res = await fetch(this.url('/strategies/'), {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error(`Engine error: ${res.status}`);
+    return res.json();
+  }
+
+  async getRiskLimits(): Promise<RiskLimits> {
+    const res = await fetch(this.url('/risk/limits'), {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error(`Engine error: ${res.status}`);

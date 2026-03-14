@@ -1,0 +1,64 @@
+import { describe, it, expect } from 'vitest';
+import { Orchestrator } from '../src/orchestrator.js';
+
+describe('Orchestrator', () => {
+  it('should initialize with all 5 agents', () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    const agents = orchestrator.getAgentInfo();
+    expect(agents).toHaveLength(5);
+  });
+
+  it('should have all roles represented', () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    const roles = orchestrator.getAgentInfo().map((a) => a.role);
+    expect(roles).toContain('market_sentinel');
+    expect(roles).toContain('strategy_analyst');
+    expect(roles).toContain('risk_monitor');
+    expect(roles).toContain('research');
+    expect(roles).toContain('execution_monitor');
+  });
+
+  it('should start with all agents idle', () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    const state = orchestrator.currentState;
+    for (const status of Object.values(state.agents)) {
+      expect(status).toBe('idle');
+    }
+  });
+
+  it('should track cycle count', () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    expect(orchestrator.currentState.cycleCount).toBe(0);
+  });
+
+  it('should support halt and resume', () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    expect(orchestrator.currentState.halted).toBe(false);
+
+    orchestrator.halt('Test halt');
+    expect(orchestrator.currentState.halted).toBe(true);
+
+    orchestrator.resume();
+    expect(orchestrator.currentState.halted).toBe(false);
+  });
+
+  it('should provide agent info with correct fields', () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    const agents = orchestrator.getAgentInfo();
+
+    for (const agent of agents) {
+      expect(agent.role).toBeTruthy();
+      expect(agent.name).toBeTruthy();
+      expect(agent.description).toBeTruthy();
+      expect(agent.status).toBe('idle');
+      expect(agent.enabled).toBe(true);
+    }
+  });
+
+  it('should skip cycle when halted', async () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    orchestrator.halt('Testing');
+    const results = await orchestrator.runCycle();
+    expect(results).toHaveLength(0);
+  });
+});
