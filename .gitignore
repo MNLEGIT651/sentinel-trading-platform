@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+
+# Build outputs
+dist/
+
+# Turborepo
+.turbo/
+
+# Environment variables
+.env
+.env.local
+
+# Python
+*.pyc
+__pycache__/
+.venv/
+.pytest_cache/
+.coverage
+
+# Vercel
+.vercel/
