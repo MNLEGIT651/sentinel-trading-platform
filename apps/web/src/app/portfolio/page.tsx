@@ -29,14 +29,14 @@ interface Position {
 }
 
 const positions: Position[] = [
-  { ticker: 'AAPL', name: 'Apple Inc.', shares: 150, avgEntry: 165.40, currentPrice: 178.72, sector: 'Technology' },
-  { ticker: 'MSFT', name: 'Microsoft Corp.', shares: 80, avgEntry: 350.20, currentPrice: 378.91, sector: 'Technology' },
-  { ticker: 'NVDA', name: 'NVIDIA Corp.', shares: 60, avgEntry: 420.00, currentPrice: 495.22, sector: 'Technology' },
-  { ticker: 'JPM', name: 'JPMorgan Chase', shares: 120, avgEntry: 160.50, currentPrice: 172.96, sector: 'Financials' },
-  { ticker: 'V', name: 'Visa Inc.', shares: 90, avgEntry: 245.80, currentPrice: 261.53, sector: 'Financials' },
-  { ticker: 'AMZN', name: 'Amazon.com Inc.', shares: 100, avgEntry: 160.00, currentPrice: 178.25, sector: 'Consumer' },
-  { ticker: 'META', name: 'Meta Platforms', shares: 45, avgEntry: 320.00, currentPrice: 355.64, sector: 'Technology' },
-  { ticker: 'SPY', name: 'SPDR S&P 500', shares: 200, avgEntry: 440.00, currentPrice: 456.38, sector: 'Index' },
+  { ticker: 'AAPL', name: 'Apple Inc.', shares: 50, avgEntry: 165.40, currentPrice: 178.72, sector: 'Technology' },
+  { ticker: 'MSFT', name: 'Microsoft Corp.', shares: 20, avgEntry: 350.20, currentPrice: 378.91, sector: 'Technology' },
+  { ticker: 'NVDA', name: 'NVIDIA Corp.', shares: 15, avgEntry: 420.00, currentPrice: 495.22, sector: 'Technology' },
+  { ticker: 'JPM', name: 'JPMorgan Chase', shares: 40, avgEntry: 160.50, currentPrice: 172.96, sector: 'Financials' },
+  { ticker: 'V', name: 'Visa Inc.', shares: 25, avgEntry: 245.80, currentPrice: 261.53, sector: 'Financials' },
+  { ticker: 'AMZN', name: 'Amazon.com Inc.', shares: 40, avgEntry: 160.00, currentPrice: 178.25, sector: 'Consumer' },
+  { ticker: 'META', name: 'Meta Platforms', shares: 15, avgEntry: 320.00, currentPrice: 355.64, sector: 'Technology' },
+  { ticker: 'SPY', name: 'SPDR S&P 500', shares: 80, avgEntry: 440.00, currentPrice: 456.38, sector: 'Index' },
 ];
 
 const sectorColors: Record<string, string> = {
