@@ -4,7 +4,9 @@ from collections.abc import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.routes.data import router as data_router
 from src.api.routes.health import router as health_router
+from src.api.routes.portfolio import router as portfolio_router
 
 
 @asynccontextmanager
@@ -30,3 +32,5 @@ app.add_middleware(
 )
 
 app.include_router(health_router)
+app.include_router(data_router, prefix="/api/v1")
+app.include_router(portfolio_router, prefix="/api/v1")
