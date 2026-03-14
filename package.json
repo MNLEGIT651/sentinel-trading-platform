@@ -10,5 +10,12 @@
   },
   "devDependencies": {
     "turbo": "^2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
