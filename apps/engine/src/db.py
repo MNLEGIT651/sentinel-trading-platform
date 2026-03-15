@@ -6,11 +6,14 @@ don't build cleanly on Python 3.14. This gives us the same table()
 API for CRUD operations.
 """
 
+import logging
 from functools import lru_cache
 
 from postgrest import SyncPostgrestClient
 
 from src.config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseDB:
@@ -37,12 +40,13 @@ class SupabaseDB:
 
 
 @lru_cache
-def get_db() -> SupabaseDB:
-    """Create and cache the database client."""
+def get_db() -> SupabaseDB | None:
+    """Create and cache the database client. Returns None if not configured."""
     settings = Settings()
     if not settings.supabase_url or not settings.supabase_service_role_key:
-        raise RuntimeError(
-            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set. "
-            "Copy .env.example to .env and fill in your Supabase credentials."
+        logger.warning(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY not set — "
+            "database features disabled. Set them in .env to enable."
         )
+        return None
     return SupabaseDB(settings.supabase_url, settings.supabase_service_role_key)

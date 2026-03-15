@@ -10,6 +10,7 @@ from src.api.routes.portfolio import router as portfolio_router
 from src.api.routes.backtest import router as backtest_router
 from src.api.routes.risk import router as risk_router
 from src.api.routes.strategies import router as strategies_router
+from src.config import Settings
 
 
 @asynccontextmanager
@@ -26,9 +27,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_settings = Settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

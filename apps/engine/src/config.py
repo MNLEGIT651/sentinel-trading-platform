@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     alpaca_secret_key: str = ""
     alpaca_base_url: str = "https://paper-api.alpaca.markets"
 
+    # CORS
+    cors_origins: str = "http://localhost:3000"
+
     # Scheduling intervals (minutes)
     data_ingestion_interval_minutes: int = 1440
     signal_generation_interval_minutes: int = 15

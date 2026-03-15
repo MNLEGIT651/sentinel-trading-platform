@@ -1,13 +1,19 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import { DollarSign, TrendingUp, BarChart3, AlertTriangle, Zap } from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
 import { PriceTicker } from '@/components/dashboard/price-ticker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Alert } from '@sentinel/shared';
+import type { MarketQuote, BrokerAccount } from '@/lib/engine-client';
 
-const sampleTickerData = [
+const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
+
+const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
+
+const fallbackTickerData = [
   { ticker: 'AAPL', price: 178.72, change: 1.24 },
   { ticker: 'MSFT', price: 378.91, change: 0.82 },
   { ticker: 'GOOGL', price: 141.80, change: -0.56 },
@@ -64,35 +70,102 @@ const sampleAlerts: Alert[] = [
 ];
 
 export default function DashboardPage() {
+  const [tickerData, setTickerData] = useState(fallbackTickerData);
+  const [isLive, setIsLive] = useState(false);
+  const [account, setAccount] = useState<BrokerAccount | null>(null);
+
+  const fetchPrices = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${ENGINE_URL}/api/v1/data/quotes?tickers=${TICKER_SYMBOLS.join(',')}`,
+        { signal: AbortSignal.timeout(6000) },
+      );
+      if (!res.ok) throw new Error(`${res.status}`);
+      const quotes: MarketQuote[] = await res.json();
+
+      setTickerData(
+        TICKER_SYMBOLS.map((sym) => {
+          const q = quotes.find((q) => q.ticker === sym);
+          return {
+            ticker: sym,
+            price: q?.close ?? 0,
+            change: q?.change_pct ?? 0,
+          };
+        }).filter((t) => t.price > 0),
+      );
+      setIsLive(true);
+    } catch {
+      // Keep fallback data
+    }
+  }, []);
+
+  const fetchAccount = useCallback(async () => {
+    try {
+      const res = await fetch(`${ENGINE_URL}/api/v1/portfolio/account`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setAccount(await res.json());
+    } catch {
+      // Keep default values
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPrices();
+    fetchAccount();
+  }, [fetchPrices, fetchAccount]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchPrices();
+      fetchAccount();
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchPrices, fetchAccount]);
+
+  const equity = account?.equity ?? 100_000;
+  const pnl = equity - (account?.initial_capital ?? 100_000);
+  const pnlPct = account?.initial_capital ? (pnl / account.initial_capital) * 100 : 0;
+
   return (
     <div className="space-y-4 p-4">
       {/* Row 1: Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
         <MetricCard
           label="Total Equity"
-          value="$100,000"
+          value={`$${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           label="Daily P&L"
-          value="$0.00"
-          change={0}
+          value={`${pnl >= 0 ? '+' : ''}$${pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          change={pnlPct}
           icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          label="Sharpe Ratio"
-          value="--"
+          label="Cash Available"
+          value={`$${(account?.cash ?? 100_000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          label="Max Drawdown"
-          value="0%"
+          label="Positions Value"
+          value={`$${(account?.positions_value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
 
       {/* Row 2: Price Ticker */}
-      <PriceTicker items={sampleTickerData} />
+      <div className="relative">
+        <PriceTicker items={tickerData} />
+        {isLive && (
+          <span className="absolute -top-1.5 right-2 inline-flex items-center gap-1 rounded-full bg-profit/15 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-profit uppercase">
+            <span className="h-1 w-1 rounded-full bg-profit animate-pulse" />
+            Live
+          </span>
+        )}
+      </div>
 
       {/* Row 3: Two columns */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

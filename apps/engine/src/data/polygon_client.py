@@ -1,9 +1,13 @@
-"""Polygon.io REST API client for fetching OHLCV bars."""
+"""Polygon.io REST API client with rate-limit retry."""
 
+import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -28,6 +32,10 @@ TIMEFRAME_MAP: dict[str, tuple[str, str]] = {
     "1w": ("1", "week"),
 }
 
+# Free-tier: 5 req/min.  We retry up to 3 times with progressive backoff.
+_MAX_RETRIES = 3
+_INITIAL_BACKOFF = 12.0  # seconds
+
 
 class PolygonClient:
     """Async client for the Polygon.io Aggregates API."""
@@ -43,6 +51,8 @@ class PolygonClient:
             params={"apiKey": api_key},
             timeout=30.0,
         )
+
+    # ── helpers ──────────────────────────────────────────────
 
     def _map_timeframe(self, timeframe: str) -> tuple[str, str]:
         if timeframe not in TIMEFRAME_MAP:
@@ -77,6 +87,54 @@ class PolygonClient:
             )
         return bars
 
+    async def _request_with_retry(
+        self,
+        method: str,
+        url: str,
+        **kwargs,
+    ) -> httpx.Response:
+        """Execute an HTTP request with automatic 429 retry + backoff."""
+        last_exc: Exception | None = None
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                response = await self._http.request(method, url, **kwargs)
+                if response.status_code == 429:
+                    wait = _INITIAL_BACKOFF * (2**attempt)
+                    logger.warning(
+                        "Polygon 429 rate-limited on %s (attempt %d/%d), "
+                        "retrying in %.1fs",
+                        url,
+                        attempt + 1,
+                        _MAX_RETRIES + 1,
+                        wait,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                response.raise_for_status()
+                return response
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 429:
+                    last_exc = exc
+                    wait = _INITIAL_BACKOFF * (2**attempt)
+                    logger.warning(
+                        "Polygon 429 on %s (attempt %d/%d), retrying in %.1fs",
+                        url,
+                        attempt + 1,
+                        _MAX_RETRIES + 1,
+                        wait,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                raise
+
+        raise last_exc or httpx.HTTPStatusError(
+            "Rate limited after retries",
+            request=httpx.Request("GET", url),
+            response=httpx.Response(429),
+        )
+
+    # ── public API ───────────────────────────────────────────
+
     async def get_bars(
         self,
         ticker: str,
@@ -91,14 +149,16 @@ class PolygonClient:
         if end is None:
             end = date.today()
         url = self._build_bars_url(ticker, timeframe, start, end)
-        response = await self._http.get(url, params={"limit": limit, "adjusted": "true"})
-        response.raise_for_status()
+        response = await self._request_with_retry(
+            "GET", url, params={"limit": limit, "adjusted": "true"}
+        )
         return self._parse_bars(response.json())
 
     async def get_latest_price(self, ticker: str) -> PolygonBar | None:
         """Fetch the previous day's bar for a ticker."""
-        response = await self._http.get(f"/v2/aggs/ticker/{ticker}/prev")
-        response.raise_for_status()
+        response = await self._request_with_retry(
+            "GET", f"/v2/aggs/ticker/{ticker}/prev"
+        )
         bars = self._parse_bars(response.json())
         return bars[0] if bars else None
 
