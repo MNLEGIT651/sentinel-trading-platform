@@ -1,87 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Settings,
-  Key,
-  Server,
-  Shield,
-  Bell,
-  Palette,
-  Save,
-  Check,
-  AlertTriangle,
-  Globe,
-  Database,
-  Bot,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react';
+import { Settings, Key, Shield, Bell, Palette, Save, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-
-// ── Types ─────────────────────────────────────────────────────────────
-
-type ServiceStatus = 'connected' | 'disconnected' | 'not_configured' | 'checking';
-
-interface ServiceStatuses {
-  engine: ServiceStatus;
-  polygon: ServiceStatus;
-  supabase: ServiceStatus;
-  anthropic: ServiceStatus;
-  alpaca: ServiceStatus;
-}
+import {
+  ConnectionStatusPanel,
+  type ServiceStatuses,
+} from '@/components/settings/connection-status';
+import { BrokerSettings } from '@/components/settings/broker-settings';
+import { RiskSettings } from '@/components/settings/risk-settings';
+import { ScheduleSettings } from '@/components/settings/schedule-settings';
 
 const STORAGE_KEY = 'sentinel:settings';
-
-// ── Input field helper ────────────────────────────────────────────────
-
-function SettingsField({
-  label,
-  description,
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-  masked = false,
-}: {
-  label: string;
-  description?: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  placeholder?: string;
-  masked?: boolean;
-}) {
-  const [showValue, setShowValue] = useState(!masked);
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-foreground">{label}</label>
-        {masked && (
-          <button
-            onClick={() => setShowValue((v) => !v)}
-            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {showValue ? 'Hide' : 'Show'}
-          </button>
-        )}
-      </div>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      <input
-        type={masked && !showValue ? 'password' : type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-      />
-    </div>
-  );
-}
 
 function ToggleField({
   label,
@@ -117,59 +50,6 @@ function ToggleField({
     </div>
   );
 }
-
-// ── Status indicator ──────────────────────────────────────────────────
-
-function ConnectionStatus({
-  label,
-  icon: Icon,
-  status,
-}: {
-  label: string;
-  icon: React.ElementType;
-  status: ServiceStatus;
-}) {
-  const config: Record<ServiceStatus, { color: string; badge: string; text: string }> = {
-    connected: {
-      color: 'text-profit',
-      badge: 'bg-profit/15 text-profit border-profit/30',
-      text: 'Connected',
-    },
-    disconnected: {
-      color: 'text-loss',
-      badge: 'bg-loss/15 text-loss border-loss/30',
-      text: 'Disconnected',
-    },
-    not_configured: {
-      color: 'text-amber-400',
-      badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-      text: 'Not Configured',
-    },
-    checking: {
-      color: 'text-muted-foreground',
-      badge: 'bg-muted/30 text-muted-foreground border-border',
-      text: 'Checking…',
-    },
-  };
-
-  const c = config[status];
-
-  return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
-      <div className="flex items-center gap-2.5">
-        {status === 'checking' ? (
-          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-        ) : (
-          <Icon className={cn('h-4 w-4', c.color)} />
-        )}
-        <span className="text-sm text-foreground">{label}</span>
-      </div>
-      <Badge className={cn('border text-[10px]', c.badge)}>{c.text}</Badge>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -326,47 +206,11 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      {/* Connection Status */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Service Status
-            </CardTitle>
-            <button
-              onClick={checkConnections}
-              disabled={checkingConnections}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={cn('h-3 w-3', checkingConnections && 'animate-spin')} />
-              {checkingConnections ? 'Checking...' : 'Test'}
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ConnectionStatus
-            icon={Server}
-            label="Quant Engine (FastAPI)"
-            status={serviceStatus.engine}
-          />
-          <ConnectionStatus
-            icon={Globe}
-            label="Polygon.io Market Data"
-            status={serviceStatus.polygon}
-          />
-          <ConnectionStatus
-            icon={Database}
-            label="Supabase Database"
-            status={serviceStatus.supabase}
-          />
-          <ConnectionStatus
-            icon={Bot}
-            label="Claude AI (Anthropic)"
-            status={serviceStatus.anthropic}
-          />
-          <ConnectionStatus icon={Shield} label="Alpaca Broker" status={serviceStatus.alpaca} />
-        </CardContent>
-      </Card>
+      <ConnectionStatusPanel
+        serviceStatus={serviceStatus}
+        checkingConnections={checkingConnections}
+        onCheckConnections={checkConnections}
+      />
 
       <Tabs defaultValue="api-keys" className="space-y-3">
         <TabsList className="bg-muted/50">
@@ -388,223 +232,55 @@ export default function SettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ── API Keys ─────────────────────────────────────────────── */}
         <TabsContent value="api-keys">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-emerald-400" />
-                  <CardTitle className="text-sm font-medium text-foreground">Market Data</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SettingsField
-                  label="Polygon.io API Key"
-                  description="Required for real-time and historical market data."
-                  value={polygonKey}
-                  onChange={setPolygonKey}
-                  placeholder="Enter your Polygon.io API key"
-                  masked
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-sm font-medium text-foreground">
-                    Broker (Alpaca)
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SettingsField
-                  label="Alpaca API Key"
-                  description="Paper or live trading API key."
-                  value={alpacaKey}
-                  onChange={setAlpacaKey}
-                  placeholder="Enter Alpaca API key"
-                  masked
-                />
-                <SettingsField
-                  label="Alpaca Secret Key"
-                  value={alpacaSecret}
-                  onChange={setAlpacaSecret}
-                  placeholder="Enter Alpaca secret key"
-                  masked
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-violet-400" />
-                  <CardTitle className="text-sm font-medium text-foreground">
-                    AI (Anthropic)
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SettingsField
-                  label="Anthropic API Key"
-                  description="Required for AI agent functionality (Claude)."
-                  value={anthropicKey}
-                  onChange={setAnthropicKey}
-                  placeholder="sk-ant-..."
-                  masked
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-sky-400" />
-                  <CardTitle className="text-sm font-medium text-foreground">
-                    Database (Supabase)
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SettingsField
-                  label="Supabase URL"
-                  description="Your Supabase project URL."
-                  value={supabaseUrl}
-                  onChange={setSupabaseUrl}
-                  placeholder="https://your-project.supabase.co"
-                />
-                <SettingsField
-                  label="Supabase Service Role Key"
-                  value={supabaseKey}
-                  onChange={setSupabaseKey}
-                  placeholder="Enter service role key"
-                  masked
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <BrokerSettings
+            polygonKey={polygonKey}
+            onPolygonKey={setPolygonKey}
+            alpacaKey={alpacaKey}
+            onAlpacaKey={setAlpacaKey}
+            alpacaSecret={alpacaSecret}
+            onAlpacaSecret={setAlpacaSecret}
+            anthropicKey={anthropicKey}
+            onAnthropicKey={setAnthropicKey}
+            supabaseUrl={supabaseUrl}
+            onSupabaseUrl={setSupabaseUrl}
+            supabaseKey={supabaseKey}
+            onSupabaseKey={setSupabaseKey}
+          />
         </TabsContent>
 
-        {/* ── Risk Parameters ──────────────────────────────────────── */}
         <TabsContent value="risk">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-foreground">
-                  Position Limits
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SettingsField
-                  label="Max Position Size (%)"
-                  description="Maximum percentage of portfolio for a single position."
-                  value={maxPosition}
-                  onChange={setMaxPosition}
-                  type="number"
-                />
-                <SettingsField
-                  label="Max Sector Exposure (%)"
-                  description="Maximum allocation to any one sector."
-                  value={maxSector}
-                  onChange={setMaxSector}
-                  type="number"
-                />
-                <SettingsField
-                  label="Max Open Positions"
-                  description="Maximum number of concurrent positions."
-                  value={maxPositions}
-                  onChange={setMaxPositions}
-                  type="number"
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-400" />
-                  <CardTitle className="text-sm font-medium text-foreground">
-                    Circuit Breakers
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SettingsField
-                  label="Daily Loss Limit (%)"
-                  description="Halt trading when daily loss exceeds this threshold."
-                  value={dailyLossLimit}
-                  onChange={setDailyLossLimit}
-                  type="number"
-                />
-                <SettingsField
-                  label="Soft Drawdown Halt (%)"
-                  description="Reduce position sizes when drawdown hits this level."
-                  value={softDrawdown}
-                  onChange={setSoftDrawdown}
-                  type="number"
-                />
-                <SettingsField
-                  label="Hard Drawdown Halt (%)"
-                  description="Liquidate all positions at this drawdown level."
-                  value={hardDrawdown}
-                  onChange={setHardDrawdown}
-                  type="number"
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <RiskSettings
+            maxPosition={maxPosition}
+            onMaxPosition={setMaxPosition}
+            maxSector={maxSector}
+            onMaxSector={setMaxSector}
+            dailyLossLimit={dailyLossLimit}
+            onDailyLossLimit={setDailyLossLimit}
+            softDrawdown={softDrawdown}
+            onSoftDrawdown={setSoftDrawdown}
+            hardDrawdown={hardDrawdown}
+            onHardDrawdown={setHardDrawdown}
+            maxPositions={maxPositions}
+            onMaxPositions={setMaxPositions}
+          />
         </TabsContent>
 
-        {/* ── Notifications ─────────────────────────────────────────── */}
         <TabsContent value="notifications">
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-foreground">
-                Alert Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1 divide-y divide-border/50">
-              <ToggleField
-                label="Critical Alerts"
-                description="Risk limit breaches, circuit breaker activations, system failures."
-                checked={alertCritical}
-                onChange={setAlertCritical}
-              />
-              <ToggleField
-                label="Warning Alerts"
-                description="Approaching limits, unusual market conditions, high volatility."
-                checked={alertWarning}
-                onChange={setAlertWarning}
-              />
-              <ToggleField
-                label="Info Alerts"
-                description="Strategy signals, agent scan completions, routine updates."
-                checked={alertInfo}
-                onChange={setAlertInfo}
-              />
-              <ToggleField
-                label="Sound Notifications"
-                description="Play audio alerts for critical events."
-                checked={alertSound}
-                onChange={setAlertSound}
-              />
-              <ToggleField
-                label="Agent Notifications"
-                description="Notifications when AI agents complete their analysis cycles."
-                checked={agentNotifications}
-                onChange={setAgentNotifications}
-              />
-              <ToggleField
-                label="Trade Notifications"
-                description="Alert on order submissions, fills, and cancellations."
-                checked={tradeNotifications}
-                onChange={setTradeNotifications}
-              />
-            </CardContent>
-          </Card>
+          <ScheduleSettings
+            alertCritical={alertCritical}
+            onAlertCritical={setAlertCritical}
+            alertWarning={alertWarning}
+            onAlertWarning={setAlertWarning}
+            alertInfo={alertInfo}
+            onAlertInfo={setAlertInfo}
+            alertSound={alertSound}
+            onAlertSound={setAlertSound}
+            agentNotifications={agentNotifications}
+            onAgentNotifications={setAgentNotifications}
+            tradeNotifications={tradeNotifications}
+            onTradeNotifications={setTradeNotifications}
+          />
         </TabsContent>
 
         {/* ── Trading ──────────────────────────────────────────────── */}
