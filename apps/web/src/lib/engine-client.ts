@@ -82,7 +82,7 @@ export interface OrderRecord {
 export interface SignalResult {
   ticker: string;
   direction: string; // 'long' | 'short' | 'flat'
-  strength: number;  // 0.0 to 1.0
+  strength: number; // 0.0 to 1.0
   strategy_name: string;
   reason: string;
   metadata: Record<string, unknown>;
@@ -116,10 +116,7 @@ export class EngineClient {
     return `${this.baseUrl}/api/v1${path}`;
   }
 
-  async ingestData(
-    tickers: string[],
-    timeframe = '1d',
-  ): Promise<IngestResult> {
+  async ingestData(tickers: string[], timeframe = '1d'): Promise<IngestResult> {
     const res = await fetch(this.url('/data/ingest'), {
       method: 'POST',
       headers: this.getHeaders(),
@@ -172,11 +169,7 @@ export class EngineClient {
     return res.json();
   }
 
-  async getBars(
-    ticker: string,
-    timeframe = '1d',
-    days = 90,
-  ): Promise<OHLCV[]> {
+  async getBars(ticker: string, timeframe = '1d', days = 90): Promise<OHLCV[]> {
     const res = await fetch(
       this.url(`/data/bars/${ticker.toUpperCase()}?timeframe=${timeframe}&days=${days}`),
       { headers: this.getHeaders() },

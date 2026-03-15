@@ -48,8 +48,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   // Strategy Tools
   {
     name: 'run_strategy_scan',
-    description:
-      'Run trading strategies against current market data and return generated signals.',
+    description: 'Run trading strategies against current market data and return generated signals.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -70,7 +69,8 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'get_strategy_info',
-    description: 'Get details about available trading strategies including parameters and families.',
+    description:
+      'Get details about available trading strategies including parameters and families.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -188,11 +188,7 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
 
 // Map agent roles to their available tools
 export const AGENT_TOOLS: Record<string, string[]> = {
-  market_sentinel: [
-    'get_market_data',
-    'get_market_sentiment',
-    'create_alert',
-  ],
+  market_sentinel: ['get_market_data', 'get_market_sentiment', 'create_alert'],
   strategy_analyst: [
     'run_strategy_scan',
     'get_strategy_info',
@@ -206,12 +202,7 @@ export const AGENT_TOOLS: Record<string, string[]> = {
     'calculate_position_size',
     'create_alert',
   ],
-  research: [
-    'analyze_ticker',
-    'get_market_data',
-    'get_market_sentiment',
-    'create_alert',
-  ],
+  research: ['analyze_ticker', 'get_market_data', 'get_market_sentiment', 'create_alert'],
   execution_monitor: [
     'submit_order',
     'get_open_orders',

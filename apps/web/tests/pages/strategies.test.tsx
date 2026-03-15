@@ -28,10 +28,13 @@ const mockEngineResponse = {
 
 describe('StrategiesPage — live data', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockEngineResponse,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockEngineResponse,
+      }),
+    );
   });
 
   it('renders page header', () => {
@@ -41,16 +44,12 @@ describe('StrategiesPage — live data', () => {
 
   it('shows live strategy names after fetch', async () => {
     render(<StrategiesPage />);
-    await waitFor(() =>
-      expect(screen.getByText('Sma Crossover')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('Sma Crossover')).toBeInTheDocument());
   });
 
   it('shows family groups from live data', async () => {
     render(<StrategiesPage />);
-    await waitFor(() =>
-      expect(screen.getByText('Trend Following')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('Trend Following')).toBeInTheDocument());
   });
 });
 
@@ -61,8 +60,6 @@ describe('StrategiesPage — engine offline fallback', () => {
 
   it('falls back to hardcoded data when engine is offline', async () => {
     render(<StrategiesPage />);
-    await waitFor(() =>
-      expect(screen.getByText('SMA Crossover')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('SMA Crossover')).toBeInTheDocument());
   });
 });

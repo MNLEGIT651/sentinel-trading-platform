@@ -37,8 +37,8 @@ export default function RootLayout({
                 <span className="brand-copy">Markets OS</span>
               </Link>
               <p className="brand-note">
-                Advanced research operating system built from the blueprint,
-                not from the dashboard fantasy.
+                Advanced research operating system built from the blueprint, not from the dashboard
+                fantasy.
               </p>
             </div>
 
@@ -48,8 +48,8 @@ export default function RootLayout({
               <span className="eyebrow">Build standard</span>
               <h3>High-trust by default</h3>
               <p>
-                Research integrity, cost realism, and deployment governance are product
-                features, not hidden documentation.
+                Research integrity, cost realism, and deployment governance are product features,
+                not hidden documentation.
               </p>
             </div>
           </aside>
@@ -59,8 +59,8 @@ export default function RootLayout({
               <div className="topbar-copy">
                 <span className="eyebrow">Public markets / research-first system</span>
                 <p>
-                  Separate implementation in the `Codex` folder with its own runtime,
-                  routes, and product thesis.
+                  Separate implementation in the `Codex` folder with its own runtime, routes, and
+                  product thesis.
                 </p>
               </div>
               <MarketPulse />

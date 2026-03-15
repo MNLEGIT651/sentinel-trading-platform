@@ -99,11 +99,10 @@ export function PriceChart({ data, className }: PriceChartProps) {
   }, []);
 
   useEffect(() => {
-    if (!candleSeriesRef.current || !volumeSeriesRef.current || data.length === 0)
-      return;
+    if (!candleSeriesRef.current || !volumeSeriesRef.current || data.length === 0) return;
 
     const candleData = data.map((d) => ({
-      time: (Math.floor(new Date(d.timestamp).getTime() / 1000)) as number,
+      time: Math.floor(new Date(d.timestamp).getTime() / 1000) as number,
       open: d.open,
       high: d.high,
       low: d.low,
@@ -111,12 +110,9 @@ export function PriceChart({ data, className }: PriceChartProps) {
     }));
 
     const volumeData = data.map((d) => ({
-      time: (Math.floor(new Date(d.timestamp).getTime() / 1000)) as number,
+      time: Math.floor(new Date(d.timestamp).getTime() / 1000) as number,
       value: d.volume,
-      color:
-        d.close >= d.open
-          ? 'rgba(34, 197, 94, 0.3)'
-          : 'rgba(239, 68, 68, 0.3)',
+      color: d.close >= d.open ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
     }));
 
     candleSeriesRef.current.setData(candleData as never);

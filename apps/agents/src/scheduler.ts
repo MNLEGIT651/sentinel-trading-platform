@@ -25,13 +25,13 @@ export function isMarketOpen(): boolean {
   }).formatToParts(now);
 
   const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
-  const hour    = parseInt(parts.find((p) => p.type === 'hour')?.value   ?? '0', 10);
-  const minute  = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
 
-  const isWeekday    = !['Sat', 'Sun'].includes(weekday);
-  const timeMinutes  = hour * 60 + minute;
-  const marketOpen   = 9 * 60 + 30;  // 09:30 ET
-  const marketClose  = 16 * 60;       // 16:00 ET (exclusive)
+  const isWeekday = !['Sat', 'Sun'].includes(weekday);
+  const timeMinutes = hour * 60 + minute;
+  const marketOpen = 9 * 60 + 30; // 09:30 ET
+  const marketClose = 16 * 60; // 16:00 ET (exclusive)
 
   return isWeekday && timeMinutes >= marketOpen && timeMinutes < marketClose;
 }
@@ -42,7 +42,7 @@ export function isMarketOpen(): boolean {
  */
 export function getNextCycleAt(): string | null {
   if (!isMarketOpen()) return null;
-  const now    = new Date();
+  const now = new Date();
   const slotMs = 15 * 60 * 1000;
   const nextMs = Math.ceil(now.getTime() / slotMs) * slotMs;
   return new Date(nextMs).toISOString();
@@ -59,7 +59,7 @@ export function startScheduler(
   runner: CycleRunner,
   options?: {
     isRunning?: () => boolean;
-    isHalted?:  () => boolean;
+    isHalted?: () => boolean;
   },
 ): cron.ScheduledTask {
   // Tick every 15 minutes, all hours — we gate on isMarketOpen() internally

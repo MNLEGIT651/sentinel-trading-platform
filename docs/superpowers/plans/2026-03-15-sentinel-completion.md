@@ -13,9 +13,10 @@
 ## Chunk 1: Connector Verification — Real Health Checks
 
 **Files:**
+
 - Modify: `apps/web/src/app/api/settings/status/route.ts`
 - Modify: `apps/web/src/app/settings/page.tsx`
-- Create: `apps/web/tests/pages/settings.test.tsx` *(replace existing stub tests)*
+- Create: `apps/web/tests/pages/settings.test.tsx` _(replace existing stub tests)_
 
 ### Task 1.1 — Extend `/api/settings/status` to perform live connectivity probes
 
@@ -77,20 +78,21 @@ export async function GET(): Promise<NextResponse<StatusResponse>> {
   // ── Supabase ─────────────────────────────────────────────────────────
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabase: ServiceStatus = !supabaseUrl || !supabaseKey
-    ? 'not_configured'
-    : await probe(async () => {
-        // Hit the Supabase REST health endpoint
-        const r = await fetch(`${supabaseUrl}/rest/v1/`, {
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-          },
-          signal,
-          cache: 'no-store',
+  const supabase: ServiceStatus =
+    !supabaseUrl || !supabaseKey
+      ? 'not_configured'
+      : await probe(async () => {
+          // Hit the Supabase REST health endpoint
+          const r = await fetch(`${supabaseUrl}/rest/v1/`, {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
         });
-        if (!r.ok) throw new Error(`${r.status}`);
-      });
 
   // ── Anthropic ────────────────────────────────────────────────────────
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -113,19 +115,20 @@ export async function GET(): Promise<NextResponse<StatusResponse>> {
   const alpacaKey = process.env.ALPACA_API_KEY;
   const alpacaSecret = process.env.ALPACA_SECRET_KEY;
   const alpacaBase = process.env.ALPACA_BASE_URL ?? 'https://paper-api.alpaca.markets/v2';
-  const alpaca: ServiceStatus = !alpacaKey || !alpacaSecret
-    ? 'not_configured'
-    : await probe(async () => {
-        const r = await fetch(`${alpacaBase}/account`, {
-          headers: {
-            'APCA-API-KEY-ID': alpacaKey,
-            'APCA-API-SECRET-KEY': alpacaSecret,
-          },
-          signal,
-          cache: 'no-store',
+  const alpaca: ServiceStatus =
+    !alpacaKey || !alpacaSecret
+      ? 'not_configured'
+      : await probe(async () => {
+          const r = await fetch(`${alpacaBase}/account`, {
+            headers: {
+              'APCA-API-KEY-ID': alpacaKey,
+              'APCA-API-SECRET-KEY': alpacaSecret,
+            },
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
         });
-        if (!r.ok) throw new Error(`${r.status}`);
-      });
 
   return NextResponse.json({ engine, polygon, supabase, anthropic, alpaca });
 }
@@ -142,20 +145,19 @@ export async function GET(): Promise<NextResponse<StatusResponse>> {
 - [ ] **Edit** `apps/web/src/app/settings/page.tsx` — add a refresh button next to "Service Status" header and a loading state:
 
 Locate the `CardHeader` for Service Status (~line 207) and replace:
+
 ```tsx
 <CardHeader className="pb-2">
-  <CardTitle className="text-sm font-medium text-muted-foreground">
-    Service Status
-  </CardTitle>
+  <CardTitle className="text-sm font-medium text-muted-foreground">Service Status</CardTitle>
 </CardHeader>
 ```
+
 with:
+
 ```tsx
 <CardHeader className="pb-2">
   <div className="flex items-center justify-between">
-    <CardTitle className="text-sm font-medium text-muted-foreground">
-      Service Status
-    </CardTitle>
+    <CardTitle className="text-sm font-medium text-muted-foreground">Service Status</CardTitle>
     <button
       onClick={checkConnections}
       disabled={checkingConnections}
@@ -171,6 +173,7 @@ with:
 - [ ] **Add** `RefreshCw` to the import list at the top of `settings/page.tsx` (it's already in `portfolio/page.tsx` — same import syntax).
 
 - [ ] **Add** two new state variables after the existing `const [saved, setSaved] = useState(false);`:
+
 ```tsx
 const [checkingConnections, setCheckingConnections] = useState(false);
 ```
@@ -184,7 +187,7 @@ const checkConnections = useCallback(async () => {
   setCheckingConnections(true);
   try {
     const r = await fetch('/api/settings/status');
-    const data = await r.json() as ServiceStatuses;
+    const data = (await r.json()) as ServiceStatuses;
     setServiceStatus(data);
   } catch {
     setServiceStatus({
@@ -231,24 +234,31 @@ const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
     getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { store[k] = v; },
-    clear: () => { store = {}; },
+    setItem: (k: string, v: string) => {
+      store[k] = v;
+    },
+    clear: () => {
+      store = {};
+    },
   };
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 beforeEach(() => {
   localStorageMock.clear();
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      engine: 'connected',
-      polygon: 'connected',
-      supabase: 'connected',
-      anthropic: 'connected',
-      alpaca: 'connected',
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        engine: 'connected',
+        polygon: 'connected',
+        supabase: 'connected',
+        anthropic: 'connected',
+        alpaca: 'connected',
+      }),
     }),
-  }));
+  );
 });
 
 describe('SettingsPage', () => {
@@ -315,9 +325,11 @@ describe('SettingsPage', () => {
 ```
 
 - [ ] **Run** web tests to confirm they pass:
+
   ```
   cd apps/web && pnpm test
   ```
+
   Expected: All tests pass.
 
 - [ ] **Commit:**
@@ -333,6 +345,7 @@ describe('SettingsPage', () => {
 ## Chunk 2: Quick Agent Fixes — `lastCycleAt` + Order-Fill Polling
 
 **Files:**
+
 - Modify: `apps/agents/src/orchestrator.ts`
 - Modify: `apps/agents/src/server.ts`
 - Modify: `apps/agents/tests/orchestrator.test.ts`
@@ -348,6 +361,7 @@ In the `OrchestratorState` type (imported from `./types.js`), check if `lastCycl
 - [ ] **Edit** `apps/agents/src/types.ts` — add `lastCycleAt` to `OrchestratorState`:
 
 Find the `OrchestratorState` interface and add:
+
 ```typescript
 lastCycleAt: string | null;
 ```
@@ -355,11 +369,13 @@ lastCycleAt: string | null;
 - [ ] **Edit** `apps/agents/src/orchestrator.ts` — initialise and set it:
 
 In the constructor `this.state = { ... }` block, add:
+
 ```typescript
 lastCycleAt: null,
 ```
 
 At the **end** of `runCycle()`, just before `return results;`, add:
+
 ```typescript
 this.state.lastCycleAt = new Date().toISOString();
 ```
@@ -367,10 +383,13 @@ this.state.lastCycleAt = new Date().toISOString();
 - [ ] **Edit** `apps/agents/src/server.ts` — replace the TODO line:
 
 Find:
+
 ```typescript
 lastCycleAt: null, // TODO: track in Orchestrator state
 ```
+
 Replace with:
+
 ```typescript
 lastCycleAt: state.lastCycleAt,
 ```
@@ -378,6 +397,7 @@ lastCycleAt: state.lastCycleAt,
 - [ ] **Edit** `apps/agents/tests/orchestrator.test.ts` — add a test for `lastCycleAt`:
 
 After the existing cycle count test, add:
+
 ```typescript
 it('records lastCycleAt after runCycle completes', async () => {
   const before = Date.now();
@@ -389,9 +409,11 @@ it('records lastCycleAt after runCycle completes', async () => {
 ```
 
 - [ ] **Run** agents tests:
+
   ```
   cd apps/agents && pnpm test
   ```
+
   Expected: All tests pass.
 
 - [ ] **Commit:**
@@ -421,18 +443,19 @@ if (orderId) {
   let polls = 0;
   const poll = async () => {
     try {
-      const ordersRes = await fetch(
-        `${ENGINE_URL}/api/v1/portfolio/orders?status=open`,
-        { signal: AbortSignal.timeout(5000) },
-      );
+      const ordersRes = await fetch(`${ENGINE_URL}/api/v1/portfolio/orders?status=open`, {
+        signal: AbortSignal.timeout(5000),
+      });
       if (!ordersRes.ok) return;
-      const orders = await ordersRes.json() as Array<{ order_id: string; status: string }>;
+      const orders = (await ordersRes.json()) as Array<{ order_id: string; status: string }>;
       const isStillOpen = orders.some((o) => o.order_id === orderId);
       if (!isStillOpen || polls >= MAX_POLLS) {
         await fetchPortfolio();
         return;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     polls++;
     setTimeout(poll, POLL_INTERVAL);
   };
@@ -443,9 +466,11 @@ if (orderId) {
 ```
 
 - [ ] **Run** web tests:
+
   ```
   cd apps/web && pnpm test
   ```
+
   Expected: All tests pass (no portfolio test directly tests the polling, but existing tests must not break).
 
 - [ ] **Commit:**
@@ -459,14 +484,16 @@ if (orderId) {
 ## Chunk 3: Page Wires — Strategies + Dashboard Alerts/Signals
 
 **Files:**
+
 - Modify: `apps/web/src/app/strategies/page.tsx`
 - Modify: `apps/web/src/app/page.tsx`
-- Modify: `apps/web/tests/pages/strategies.test.tsx` *(create if missing)*
-- Modify: `apps/engine/src/api/routes/strategies.py` *(no change needed)*
+- Modify: `apps/web/tests/pages/strategies.test.tsx` _(create if missing)_
+- Modify: `apps/engine/src/api/routes/strategies.py` _(no change needed)_
 
 ### Task 3.1 — Wire Strategies page to live `GET /api/v1/strategies/`
 
 The engine returns `StrategyListResponse`:
+
 ```json
 {
   "strategies": [
@@ -483,12 +510,15 @@ The page expects data grouped by family. We map the flat list server-side.
 - [ ] **Edit** `apps/web/src/app/strategies/page.tsx`
 
 Add to the top (after `'use client';`):
+
 ```typescript
 import { useState, useEffect } from 'react';
 ```
-*(Replace the existing `import { useState } from 'react';`)*
+
+_(Replace the existing `import { useState } from 'react';`)_
 
 Add a type for the engine response:
+
 ```typescript
 interface EngineStrategyInfo {
   name: string;
@@ -505,6 +535,7 @@ interface EngineStrategyListResponse {
 ```
 
 Add to the top of `StrategiesPage()`, before the `expandedFamilies` state:
+
 ```typescript
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
 const [liveData, setLiveData] = useState<typeof strategyFamilies | null>(null);
@@ -512,10 +543,10 @@ const [loadingStrategies, setLoadingStrategies] = useState(true);
 
 useEffect(() => {
   fetch(`${ENGINE_URL}/api/v1/strategies/`, { signal: AbortSignal.timeout(5000) })
-    .then((r) => r.ok ? r.json() as Promise<EngineStrategyListResponse> : Promise.reject())
+    .then((r) => (r.ok ? (r.json() as Promise<EngineStrategyListResponse>) : Promise.reject()))
     .then((data) => {
       // Group flat strategy list by family, mapping to the page's existing shape
-      const familyMap = new Map<string, typeof strategyFamilies[0]['strategies']>();
+      const familyMap = new Map<string, (typeof strategyFamilies)[0]['strategies']>();
       for (const s of data.strategies) {
         if (!familyMap.has(s.family)) familyMap.set(s.family, []);
         familyMap.get(s.family)!.push({
@@ -548,17 +579,22 @@ useEffect(() => {
 ```
 
 Replace the line:
+
 ```typescript
 const totalStrategies = strategyFamilies.reduce(
 ```
+
 …with:
+
 ```typescript
 const displayFamilies = liveData ?? strategyFamilies;
 const totalStrategies = displayFamilies.reduce(
 ```
+
 and every subsequent reference to `strategyFamilies` in the JSX → `displayFamilies`.
 
 Also update `expandedFamilies` initial value:
+
 ```typescript
 const [expandedFamilies, setExpandedFamilies] = useState<Record<string, boolean>>({});
 
@@ -570,24 +606,27 @@ useEffect(() => {
 ```
 
 Add a loading skeleton before the family list:
+
 ```tsx
-{loadingStrategies ? (
-  <div className="flex items-center justify-center py-12">
-    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-  </div>
-) : (
-  <div className="space-y-3">
-    {displayFamilies.map(/* existing map */)}
-  </div>
-)}
+{
+  loadingStrategies ? (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    </div>
+  ) : (
+    <div className="space-y-3">{displayFamilies.map(/* existing map */)}</div>
+  );
+}
 ```
 
 Add `Loader2` to the lucide-react import.
 
 - [ ] **Run** web tests:
+
   ```
   cd apps/web && pnpm test
   ```
+
   Expected: Pass (strategies page is not tested yet so no failures).
 
 - [ ] **Create** `apps/web/tests/pages/strategies.test.tsx`:
@@ -623,10 +662,13 @@ const mockEngineResponse = {
 
 describe('StrategiesPage — live data', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockEngineResponse,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockEngineResponse,
+      }),
+    );
   });
 
   it('renders page header', () => {
@@ -636,16 +678,12 @@ describe('StrategiesPage — live data', () => {
 
   it('shows live strategy names after fetch', async () => {
     render(<StrategiesPage />);
-    await waitFor(() =>
-      expect(screen.getByText(/Sma Crossover/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/Sma Crossover/i)).toBeInTheDocument());
   });
 
   it('shows family groups from live data', async () => {
     render(<StrategiesPage />);
-    await waitFor(() =>
-      expect(screen.getByText('Trend Following')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('Trend Following')).toBeInTheDocument());
   });
 });
 
@@ -657,17 +695,17 @@ describe('StrategiesPage — engine offline fallback', () => {
   it('falls back to hardcoded data when engine is offline', async () => {
     render(<StrategiesPage />);
     // hardcoded data has SMA Crossover in trend_following
-    await waitFor(() =>
-      expect(screen.getByText('SMA Crossover')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('SMA Crossover')).toBeInTheDocument());
   });
 });
 ```
 
 - [ ] **Run** web tests:
+
   ```
   cd apps/web && pnpm test
   ```
+
   Expected: All tests pass including new strategies tests.
 
 - [ ] **Commit:**
@@ -682,21 +720,30 @@ describe('StrategiesPage — engine offline fallback', () => {
 - [ ] **Edit** `apps/web/src/app/page.tsx`
 
 Add `AGENTS_URL` constant after `ENGINE_URL`:
+
 ```typescript
 const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
 ```
 
 Add `alerts` state and an import for `AgentAlert`:
+
 ```typescript
 import type { AgentAlert } from '@/lib/agents-client';
 
 const [alerts, setAlerts] = useState<Alert[]>(sampleAlerts);
-const [recentSignals, setRecentSignals] = useState<Array<{
-  ticker: string; side: string; reason: string; strength: number | null; ts: string;
-}>>([]);
+const [recentSignals, setRecentSignals] = useState<
+  Array<{
+    ticker: string;
+    side: string;
+    reason: string;
+    strength: number | null;
+    ts: string;
+  }>
+>([]);
 ```
 
 Add a new `fetchAlerts` callback and call it in the same `useEffect` as `fetchPrices`/`fetchAccount`:
+
 ```typescript
 const fetchAlerts = useCallback(async () => {
   try {
@@ -706,31 +753,36 @@ const fetchAlerts = useCallback(async () => {
     ]);
 
     if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {
-      const data = await alertsRes.value.json() as { alerts: AgentAlert[] };
+      const data = (await alertsRes.value.json()) as { alerts: AgentAlert[] };
       if (data.alerts.length > 0) {
-        setAlerts(data.alerts.map((a) => ({
-          id: a.id,
-          account_id: null,
-          instrument_id: a.ticker ?? null,
-          severity: a.severity,
-          status: 'active' as const,
-          title: a.title,
-          message: a.message,
-          metadata: null,
-          triggered_at: a.created_at,
-          acknowledged_at: null,
-          resolved_at: null,
-          created_at: a.created_at,
-        })));
+        setAlerts(
+          data.alerts.map((a) => ({
+            id: a.id,
+            account_id: null,
+            instrument_id: a.ticker ?? null,
+            severity: a.severity,
+            status: 'active' as const,
+            title: a.title,
+            message: a.message,
+            metadata: null,
+            triggered_at: a.created_at,
+            acknowledged_at: null,
+            resolved_at: null,
+            created_at: a.created_at,
+          })),
+        );
       }
     }
 
     if (recsRes.status === 'fulfilled' && recsRes.value.ok) {
-      const data = await recsRes.value.json() as {
+      const data = (await recsRes.value.json()) as {
         recommendations: Array<{
-          ticker: string; side: string; reason?: string;
-          signal_strength?: number | null; created_at: string;
-        }>
+          ticker: string;
+          side: string;
+          reason?: string;
+          signal_strength?: number | null;
+          created_at: string;
+        }>;
       };
       setRecentSignals(
         data.recommendations.slice(0, 5).map((r) => ({
@@ -751,6 +803,7 @@ const fetchAlerts = useCallback(async () => {
 Update the `useEffect` mounting block to also call `fetchAlerts()`.
 
 Replace the static "Active Signals" card content with a live render:
+
 ```tsx
 <CardContent>
   {recentSignals.length === 0 ? (
@@ -760,12 +813,17 @@ Replace the static "Active Signals" card content with a live render:
   ) : (
     <div className="space-y-2">
       {recentSignals.map((s, i) => (
-        <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+        <div
+          key={i}
+          className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0"
+        >
           <div className="flex items-center gap-2">
-            <span className={cn(
-              'text-[10px] font-bold px-1.5 py-0.5 rounded',
-              s.side === 'buy' ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss',
-            )}>
+            <span
+              className={cn(
+                'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                s.side === 'buy' ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss',
+              )}
+            >
               {s.side.toUpperCase()}
             </span>
             <span className="text-sm font-semibold text-foreground">{s.ticker}</span>
@@ -787,9 +845,11 @@ Replace the static "Active Signals" card content with a live render:
 Replace `<AlertFeed alerts={sampleAlerts} />` with `<AlertFeed alerts={alerts} />`.
 
 - [ ] **Run** web tests:
+
   ```
   cd apps/web && pnpm test
   ```
+
   Expected: All tests pass.
 
 - [ ] **Commit:**
@@ -803,10 +863,11 @@ Replace `<AlertFeed alerts={sampleAlerts} />` with `<AlertFeed alerts={alerts} /
 ## Chunk 4: Backtest Page — Wire to Engine API
 
 **Files:**
+
 - Modify: `apps/engine/src/api/routes/backtest.py`
 - Modify: `apps/web/src/app/backtest/page.tsx`
 - Modify: `apps/web/tests/pages/backtest.test.tsx`
-- Modify: `apps/engine/tests/unit/test_backtest.py` *(add API trade output test)*
+- Modify: `apps/engine/tests/unit/test_backtest.py` _(add API trade output test)_
 
 ### Task 4.1 — Add `trades` to the engine backtest response
 
@@ -815,6 +876,7 @@ The `BacktestEngine.run()` returns `result.trades` (list of `TradeRecord` datacl
 - [ ] **Edit** `apps/engine/src/api/routes/backtest.py`
 
 Add a `TradeOut` model after `BacktestSummary`:
+
 ```python
 class TradeOut(BaseModel):
     """Individual trade record."""
@@ -828,6 +890,7 @@ class TradeOut(BaseModel):
 ```
 
 Update `BacktestResponse` to include trades:
+
 ```python
 class BacktestResponse(BaseModel):
     """Full backtest result."""
@@ -839,6 +902,7 @@ class BacktestResponse(BaseModel):
 ```
 
 Update `run_backtest` to populate `trades`:
+
 ```python
 return BacktestResponse(
     summary=BacktestSummary(**summary),
@@ -861,14 +925,17 @@ return BacktestResponse(
 ```
 
 - [ ] **Run** engine tests to confirm nothing broke:
+
   ```
   cd apps/engine && .venv/Scripts/python -m pytest tests/unit/test_backtest.py -v
   ```
+
   Expected: All existing tests pass.
 
 - [ ] **Add** a test for the new `trades` field in `apps/engine/tests/unit/test_backtest.py`:
 
 In `TestBacktestAPI`, add:
+
 ```python
 def test_backtest_response_includes_trades(self, client: TestClient) -> None:
     """Backtest response should include a trades list."""
@@ -891,9 +958,11 @@ def test_backtest_response_includes_trades(self, client: TestClient) -> None:
 ```
 
 - [ ] **Run** engine tests again:
+
   ```
   cd apps/engine && .venv/Scripts/python -m pytest tests/unit/test_backtest.py -v
   ```
+
   Expected: All tests pass including new test.
 
 - [ ] **Commit (engine):**
@@ -912,17 +981,18 @@ The engine summary returns **strings** (formatted like `"12.50%"`, `"1.234"`). P
 **Step A — Add types for engine response:**
 
 After `BacktestResult` interface, add:
+
 ```typescript
 // Engine API response types (summary fields are pre-formatted strings)
 interface EngineBacktestSummary {
   strategy: string;
   ticker: string;
-  total_return: string;      // e.g. "12.50%"
+  total_return: string; // e.g. "12.50%"
   annualized_return: string;
-  max_drawdown: string;      // e.g. "-8.32%"
+  max_drawdown: string; // e.g. "-8.32%"
   sharpe_ratio: string;
   sortino_ratio: string;
-  win_rate: string;          // e.g. "55.0%"
+  win_rate: string; // e.g. "55.0%"
   profit_factor: string;
   total_trades: number;
   avg_holding_bars: string;
@@ -969,7 +1039,7 @@ const handleRun = useCallback(async () => {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as { detail?: string };
+      const err = (await res.json().catch(() => ({}))) as { detail?: string };
       throw new Error(err.detail ?? `Engine error ${res.status}`);
     }
 
@@ -1014,12 +1084,14 @@ const handleRun = useCallback(async () => {
 ```
 
 **Step C — Add new state variables** at the top of `BacktestPage()`:
+
 ```typescript
 const [error, setError] = useState<string | null>(null);
 const [dataSource, setDataSource] = useState<'engine' | 'synthetic' | null>(null);
 ```
 
 Update `BacktestResult` interface to include `drawdown_curve`:
+
 ```typescript
 interface BacktestResult {
   summary: BacktestSummary;
@@ -1032,20 +1104,22 @@ interface BacktestResult {
 **Step D — Add drawdown curve tab** in the results `Tabs`:
 
 Add a new `TabsTrigger`:
+
 ```tsx
 <TabsTrigger value="drawdown">Drawdown</TabsTrigger>
 ```
 
 Add a new `TabsContent` after the equity curve tab:
+
 ```tsx
 <TabsContent value="drawdown">
   <Card className="bg-card border-border">
     <CardHeader className="pb-2">
       <div className="flex items-center justify-between">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          Drawdown Curve
-        </CardTitle>
-        <span className={cn('text-xs font-mono', s.max_drawdown > -0.1 ? 'text-profit' : 'text-loss')}>
+        <CardTitle className="text-sm font-medium text-muted-foreground">Drawdown Curve</CardTitle>
+        <span
+          className={cn('text-xs font-mono', s.max_drawdown > -0.1 ? 'text-profit' : 'text-loss')}
+        >
           Max: {(s.max_drawdown * 100).toFixed(2)}%
         </span>
       </div>
@@ -1064,6 +1138,7 @@ Add a new `TabsContent` after the equity curve tab:
 ```
 
 **Step E — Add `DrawdownChart` component** (after `EquityCurveChart`):
+
 ```tsx
 function DrawdownChart({ curve, className }: { curve: number[]; className?: string }) {
   if (curve.length === 0) return null;
@@ -1071,9 +1146,9 @@ function DrawdownChart({ curve, className }: { curve: number[]; className?: stri
   const h = 200;
   const w = curve.length;
   // drawdown values are 0 to negative; flip for display
-  const points = curve.map((v, i) =>
-    `${(i / (w - 1)) * 100},${((v - 0) / (min - 0)) * (h - 20)}`
-  ).join(' ');
+  const points = curve
+    .map((v, i) => `${(i / (w - 1)) * 100},${((v - 0) / (min - 0)) * (h - 20)}`)
+    .join(' ');
 
   return (
     <div className={cn('w-full', className)}>
@@ -1099,23 +1174,29 @@ function DrawdownChart({ curve, className }: { curve: number[]; className?: stri
 ```
 
 **Step F — Add data source badge + error display** in the config panel area (after the Run button):
+
 ```tsx
-{dataSource && (
-  <span className={cn(
-    'text-[10px] font-medium px-2 py-0.5 rounded-full border',
-    dataSource === 'engine'
-      ? 'bg-profit/15 text-profit border-profit/30'
-      : 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  )}>
-    {dataSource === 'engine' ? 'Live Engine' : 'Synthetic Fallback'}
-  </span>
-)}
-{error && (
-  <span className="text-xs text-loss font-mono">{error}</span>
-)}
+{
+  dataSource && (
+    <span
+      className={cn(
+        'text-[10px] font-medium px-2 py-0.5 rounded-full border',
+        dataSource === 'engine'
+          ? 'bg-profit/15 text-profit border-profit/30'
+          : 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      )}
+    >
+      {dataSource === 'engine' ? 'Live Engine' : 'Synthetic Fallback'}
+    </span>
+  );
+}
+{
+  error && <span className="text-xs text-loss font-mono">{error}</span>;
+}
 ```
 
 **Step G — Update the header description:**
+
 ```tsx
 <p className="text-xs text-muted-foreground">
   Run strategy backtests on the Quant Engine with real strategy logic
@@ -1123,9 +1204,11 @@ function DrawdownChart({ curve, className }: { curve: number[]; className?: stri
 ```
 
 - [ ] **Run** TypeScript check:
+
   ```
   cd apps/web && pnpm exec tsc --noEmit 2>&1 | grep -v tests/
   ```
+
   Expected: No errors.
 
 - [ ] **Update** `apps/web/tests/pages/backtest.test.tsx` — mock `fetch` for engine mode and keep existing tests:
@@ -1158,16 +1241,27 @@ const mockEngineResult = {
   drawdown_curve: Array.from({ length: 100 }, (_, i) => -Math.abs(Math.sin(i * 0.1)) * 0.05),
   trade_count: 12,
   trades: [
-    { side: 'long', entry_bar: 25, exit_bar: 40, entry_price: 105.0, exit_price: 112.0, pnl: 700, return_pct: 6.67 },
+    {
+      side: 'long',
+      entry_bar: 25,
+      exit_bar: 40,
+      entry_price: 105.0,
+      exit_price: 112.0,
+      pnl: 700,
+      return_pct: 6.67,
+    },
   ],
 };
 
 describe('BacktestPage — engine online', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockEngineResult,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockEngineResult,
+      }),
+    );
   });
 
   it('renders the backtest header', () => {
@@ -1201,10 +1295,9 @@ describe('BacktestPage — engine online', () => {
   it('runs backtest via engine and shows results', async () => {
     render(<BacktestPage />);
     fireEvent.click(screen.getByText('Run Backtest'));
-    await waitFor(() =>
-      expect(screen.getByText('Total Return')).toBeInTheDocument(),
-      { timeout: 3000 },
-    );
+    await waitFor(() => expect(screen.getByText('Total Return')).toBeInTheDocument(), {
+      timeout: 3000,
+    });
     expect(screen.getByText('Sharpe Ratio')).toBeInTheDocument();
     expect(screen.getByText('Win Rate')).toBeInTheDocument();
     expect(screen.getByText('Max Drawdown')).toBeInTheDocument();
@@ -1225,20 +1318,22 @@ describe('BacktestPage — engine offline fallback', () => {
   it('falls back to synthetic and shows results', async () => {
     render(<BacktestPage />);
     fireEvent.click(screen.getByText('Run Backtest'));
-    await waitFor(() =>
-      expect(screen.getByText('Total Return')).toBeInTheDocument(),
-      { timeout: 3000 },
-    );
+    await waitFor(() => expect(screen.getByText('Total Return')).toBeInTheDocument(), {
+      timeout: 3000,
+    });
     await waitFor(() => expect(screen.getByText(/Synthetic Fallback/i)).toBeInTheDocument());
   });
 });
 
 describe('BacktestPage — UI interaction', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockEngineResult,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockEngineResult,
+      }),
+    );
   });
 
   it('allows switching trend options', () => {
@@ -1251,15 +1346,19 @@ describe('BacktestPage — UI interaction', () => {
 ```
 
 - [ ] **Run** web tests:
+
   ```
   cd apps/web && pnpm test
   ```
+
   Expected: All tests pass.
 
 - [ ] **Run** full build:
+
   ```
   cd apps/web && pnpm build
   ```
+
   Expected: Clean build.
 
 - [ ] **Commit:**
@@ -1399,9 +1498,11 @@ jobs:
 ```
 
 - [ ] **Verify** the workflow file is valid YAML:
+
   ```
   python -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"
   ```
+
   Expected: No error output.
 
 - [ ] **Commit:**
@@ -1564,9 +1665,11 @@ node_modules
 ```
 
 - [ ] **Verify** docker-compose config parses:
+
   ```
   docker compose config --quiet
   ```
+
   Expected: No errors (or skip if Docker not running in CI).
 
 - [ ] **Commit:**
@@ -1583,19 +1686,23 @@ node_modules
 ### Task 6.0 — Full test suite
 
 - [ ] **Run all tests from repo root:**
+
   ```
   pnpm test
   ```
+
   Expected: All 3 suites pass (web Vitest, agents Vitest, engine pytest).
 
 - [ ] **Run full Next.js build:**
+
   ```
   cd apps/web && pnpm build
   ```
+
   Expected: Clean build, all 13 routes including `/api/settings/status`.
 
 - [ ] **Update memory:**
-  Edit `C:\Users\steve\.claude\projects\C--Users-steve-Projects-personal-Stock-Trading-App\memory\project_status.md` to reflect:
+      Edit `C:\Users\steve\.claude\projects\C--Users-steve-Projects-personal-Stock-Trading-App\memory\project_status.md` to reflect:
   - All HIGH/MEDIUM items completed
   - CI/CD and Docker added
   - Connector verification live

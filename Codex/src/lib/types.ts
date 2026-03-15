@@ -1,9 +1,4 @@
-export type StrategyFamily =
-  | 'trend'
-  | 'value-momentum'
-  | 'mean-reversion'
-  | 'pairs'
-  | 'allocation';
+export type StrategyFamily = 'trend' | 'value-momentum' | 'mean-reversion' | 'pairs' | 'allocation';
 
 export type ResearchStatus = 'paper-ready' | 'researching' | 'blocked';
 

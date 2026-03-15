@@ -20,7 +20,7 @@ import { createApp, isRunning } from './server.js';
 import { startScheduler } from './scheduler.js';
 
 // Re-export public API for consumers that import this package
-export { Agent }        from './agent.js';
+export { Agent } from './agent.js';
 export { Orchestrator } from './orchestrator.js';
 export { ToolExecutor } from './tool-executor.js';
 export { EngineClient } from './engine-client.js';
@@ -28,7 +28,7 @@ export * from './types.js';
 
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const port   = parseInt(process.env.AGENTS_PORT ?? '3001', 10);
+  const port = parseInt(process.env.AGENTS_PORT ?? '3001', 10);
 
   console.log('╔═══════════════════════════════════════════════════╗');
   console.log('║        SENTINEL AGENT ORCHESTRATOR v1.0.0        ║');
@@ -48,7 +48,7 @@ async function main() {
   const orchestrator = new Orchestrator({ apiKey });
 
   // ── HTTP server ────────────────────────────────────────────────
-  const app    = createApp(orchestrator);
+  const app = createApp(orchestrator);
   const server = app.listen(port, () => {
     console.log(`\n[Server] Agents server running → http://localhost:${port}`);
     console.log(`[Server] Endpoints: GET /health /status /recommendations /alerts`);
@@ -57,13 +57,10 @@ async function main() {
   });
 
   // ── Scheduler ──────────────────────────────────────────────────
-  const schedulerTask = startScheduler(
-    () => orchestrator.runCycle(),
-    {
-      isRunning,
-      isHalted: () => orchestrator.currentState.halted,
-    },
-  );
+  const schedulerTask = startScheduler(() => orchestrator.runCycle(), {
+    isRunning,
+    isHalted: () => orchestrator.currentState.halted,
+  });
 
   // ── Graceful shutdown ──────────────────────────────────────────
   const shutdown = (signal: string) => {
@@ -81,7 +78,7 @@ async function main() {
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT',  () => shutdown('SIGINT'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 main().catch((err) => {

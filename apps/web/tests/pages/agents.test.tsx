@@ -60,7 +60,11 @@ describe('AgentsPage', () => {
     vi.mocked(agentsClient.runCycle).mockResolvedValue(undefined);
     vi.mocked(agentsClient.halt).mockResolvedValue(undefined);
     vi.mocked(agentsClient.resume).mockResolvedValue(undefined);
-    vi.mocked(agentsClient.approveRecommendation).mockResolvedValue({ orderId: 'alpaca-1', status: 'filled', fill_price: 880 });
+    vi.mocked(agentsClient.approveRecommendation).mockResolvedValue({
+      orderId: 'alpaca-1',
+      status: 'filled',
+      fill_price: 880,
+    });
     vi.mocked(agentsClient.rejectRecommendation).mockResolvedValue({ status: 'rejected' });
   });
 

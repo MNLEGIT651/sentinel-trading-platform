@@ -36,19 +36,38 @@ interface Position {
 }
 
 const TICKER_NAMES: Record<string, string> = {
-  AAPL: 'Apple Inc.', MSFT: 'Microsoft Corp.', GOOGL: 'Alphabet Inc.',
-  AMZN: 'Amazon.com Inc.', NVDA: 'NVIDIA Corp.', TSLA: 'Tesla Inc.',
-  META: 'Meta Platforms', JPM: 'JPMorgan Chase', V: 'Visa Inc.',
-  SPY: 'SPDR S&P 500', QQQ: 'Invesco QQQ', AMD: 'AMD Inc.',
-  NFLX: 'Netflix Inc.', DIS: 'Walt Disney', BA: 'Boeing Co.',
+  AAPL: 'Apple Inc.',
+  MSFT: 'Microsoft Corp.',
+  GOOGL: 'Alphabet Inc.',
+  AMZN: 'Amazon.com Inc.',
+  NVDA: 'NVIDIA Corp.',
+  TSLA: 'Tesla Inc.',
+  META: 'Meta Platforms',
+  JPM: 'JPMorgan Chase',
+  V: 'Visa Inc.',
+  SPY: 'SPDR S&P 500',
+  QQQ: 'Invesco QQQ',
+  AMD: 'AMD Inc.',
+  NFLX: 'Netflix Inc.',
+  DIS: 'Walt Disney',
+  BA: 'Boeing Co.',
 };
 
 const SECTOR_MAP: Record<string, string> = {
-  AAPL: 'Technology', MSFT: 'Technology', GOOGL: 'Technology',
-  NVDA: 'Technology', META: 'Technology', AMD: 'Technology', NFLX: 'Technology',
-  AMZN: 'Consumer', TSLA: 'Consumer', DIS: 'Consumer',
-  JPM: 'Financials', V: 'Financials',
-  SPY: 'Index', QQQ: 'Index',
+  AAPL: 'Technology',
+  MSFT: 'Technology',
+  GOOGL: 'Technology',
+  NVDA: 'Technology',
+  META: 'Technology',
+  AMD: 'Technology',
+  NFLX: 'Technology',
+  AMZN: 'Consumer',
+  TSLA: 'Consumer',
+  DIS: 'Consumer',
+  JPM: 'Financials',
+  V: 'Financials',
+  SPY: 'Index',
+  QQQ: 'Index',
   BA: 'Industrials',
 };
 
@@ -90,7 +109,11 @@ function marketValue(p: Position) {
 
 // ── Simple SVG donut chart ──────────────────────────────────────────
 
-function AllocationDonut({ allocations }: { allocations: { label: string; pct: number; color: string }[] }) {
+function AllocationDonut({
+  allocations,
+}: {
+  allocations: { label: string; pct: number; color: string }[];
+}) {
   const radius = 60;
   const stroke = 18;
   const circumference = 2 * Math.PI * radius;
@@ -119,7 +142,13 @@ function AllocationDonut({ allocations }: { allocations: { label: string; pct: n
             />
           );
         })}
-        <text x="80" y="76" textAnchor="middle" className="fill-foreground text-lg font-bold" fontSize="18">
+        <text
+          x="80"
+          y="76"
+          textAnchor="middle"
+          className="fill-foreground text-lg font-bold"
+          fontSize="18"
+        >
           {allocations.length}
         </text>
         <text x="80" y="94" textAnchor="middle" className="fill-muted-foreground" fontSize="11">
@@ -131,7 +160,9 @@ function AllocationDonut({ allocations }: { allocations: { label: string; pct: n
           <div key={a.label} className="flex items-center gap-2">
             <div className={cn('h-2.5 w-2.5 rounded-full', a.color)} />
             <span className="text-xs text-muted-foreground w-24">{a.label}</span>
-            <span className="text-xs font-mono font-medium text-foreground">{a.pct.toFixed(1)}%</span>
+            <span className="text-xs font-mono font-medium text-foreground">
+              {a.pct.toFixed(1)}%
+            </span>
           </div>
         ))}
       </div>
@@ -152,7 +183,10 @@ function RiskGauge({ level, label }: { level: number; label: string }) {
         <span className="text-xs font-mono text-foreground">{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-        <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn('h-full rounded-full transition-all', color)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );
@@ -275,19 +309,20 @@ export default function PortfolioPage() {
         let polls = 0;
         const poll = async () => {
           try {
-            const ordersRes = await fetch(
-              `${ENGINE_URL}/api/v1/portfolio/orders?status=open`,
-              { signal: AbortSignal.timeout(5000) },
-            );
+            const ordersRes = await fetch(`${ENGINE_URL}/api/v1/portfolio/orders?status=open`, {
+              signal: AbortSignal.timeout(5000),
+            });
             if (ordersRes.ok) {
-              const orders = await ordersRes.json() as Array<{ order_id: string }>;
+              const orders = (await ordersRes.json()) as Array<{ order_id: string }>;
               const isStillOpen = orders.some((o) => o.order_id === orderId);
               if (!isStillOpen || polls >= MAX_POLLS) {
                 await fetchPortfolio();
                 return;
               }
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           polls++;
           setTimeout(poll, POLL_INTERVAL);
         };
@@ -307,7 +342,10 @@ export default function PortfolioPage() {
   const totalCost = positions.reduce((s, p) => s + p.avgEntry * p.shares, 0);
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
   const cashBalance = account?.cash ?? 100_000;
-  const portfolioTotal = (account?.equity ?? cashBalance) > 0 ? (account?.equity ?? cashBalance + totalValue) : cashBalance + totalValue;
+  const portfolioTotal =
+    (account?.equity ?? cashBalance) > 0
+      ? (account?.equity ?? cashBalance + totalValue)
+      : cashBalance + totalValue;
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -354,9 +392,7 @@ export default function PortfolioPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <span className="text-sm text-muted-foreground animate-pulse">
-          Connecting to engine...
-        </span>
+        <span className="text-sm text-muted-foreground animate-pulse">Connecting to engine...</span>
       </div>
     );
   }
@@ -396,7 +432,11 @@ export default function PortfolioPage() {
               <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             <p className="mt-1 text-xl font-bold text-foreground">
-              ${portfolioTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              $
+              {portfolioTotal.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           </CardContent>
         </Card>
@@ -410,12 +450,19 @@ export default function PortfolioPage() {
                 <TrendingDown className="h-3.5 w-3.5 text-loss" />
               )}
             </div>
-            <p className={cn('mt-1 text-xl font-bold', totalPnl >= 0 ? 'text-profit' : 'text-loss')}>
-              {totalPnl >= 0 ? '+' : ''}${totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p
+              className={cn('mt-1 text-xl font-bold', totalPnl >= 0 ? 'text-profit' : 'text-loss')}
+            >
+              {totalPnl >= 0 ? '+' : ''}$
+              {totalPnl.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
             {totalCost > 0 && (
               <p className={cn('text-xs', totalPnl >= 0 ? 'text-profit' : 'text-loss')}>
-                {totalPnlPct >= 0 ? '+' : ''}{totalPnlPct.toFixed(2)}%
+                {totalPnlPct >= 0 ? '+' : ''}
+                {totalPnlPct.toFixed(2)}%
               </p>
             )}
           </CardContent>
@@ -427,7 +474,11 @@ export default function PortfolioPage() {
               <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             <p className="mt-1 text-xl font-bold text-foreground">
-              ${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              $
+              {cashBalance.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           </CardContent>
         </Card>
@@ -439,7 +490,8 @@ export default function PortfolioPage() {
             </div>
             <p className="mt-1 text-xl font-bold text-foreground">{positions.length}</p>
             <p className="text-xs text-muted-foreground">
-              {portfolioTotal > 0 ? ((totalValue / portfolioTotal) * 100).toFixed(1) : '0.0'}% invested
+              {portfolioTotal > 0 ? ((totalValue / portfolioTotal) * 100).toFixed(1) : '0.0'}%
+              invested
             </p>
           </CardContent>
         </Card>
@@ -500,10 +552,12 @@ export default function PortfolioPage() {
               {submitting ? 'Sending...' : 'Submit'}
             </button>
             {orderStatus && (
-              <span className={cn(
-                'text-xs font-mono',
-                orderStatus.startsWith('Filled') ? 'text-profit' : 'text-loss',
-              )}>
+              <span
+                className={cn(
+                  'text-xs font-mono',
+                  orderStatus.startsWith('Filled') ? 'text-profit' : 'text-loss',
+                )}
+              >
                 {orderStatus}
               </span>
             )}
@@ -535,12 +589,14 @@ export default function PortfolioPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        {([
-                          ['ticker', 'Ticker'],
-                          ['marketValue', 'Market Value'],
-                          ['pnl', 'P&L'],
-                          ['pnlPct', 'P&L %'],
-                        ] as [SortField, string][]).map(([field, label]) => (
+                        {(
+                          [
+                            ['ticker', 'Ticker'],
+                            ['marketValue', 'Market Value'],
+                            ['pnl', 'P&L'],
+                            ['pnlPct', 'P&L %'],
+                          ] as [SortField, string][]
+                        ).map(([field, label]) => (
                           <th key={field} className="px-4 py-2.5 text-left">
                             <button
                               onClick={() => toggleSort(field)}
@@ -581,18 +637,33 @@ export default function PortfolioPage() {
                           <tr key={p.ticker} className="transition-colors hover:bg-accent/30">
                             <td className="px-4 py-3">
                               <div>
-                                <span className="text-sm font-semibold text-foreground">{p.ticker}</span>
+                                <span className="text-sm font-semibold text-foreground">
+                                  {p.ticker}
+                                </span>
                                 <p className="text-[11px] text-muted-foreground">{p.name}</p>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <span className="text-sm font-mono text-foreground">
-                                ${marketValue(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                $
+                                {marketValue(p).toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <span className={cn('text-sm font-mono', pl >= 0 ? 'text-profit' : 'text-loss')}>
-                                {pl >= 0 ? '+' : ''}${pl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              <span
+                                className={cn(
+                                  'text-sm font-mono',
+                                  pl >= 0 ? 'text-profit' : 'text-loss',
+                                )}
+                              >
+                                {pl >= 0 ? '+' : ''}$
+                                {pl.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
                               </span>
                             </td>
                             <td className="px-4 py-3">
@@ -604,20 +675,33 @@ export default function PortfolioPage() {
                                     : 'bg-loss/15 text-loss border-loss/30',
                                 )}
                               >
-                                {plPct >= 0 ? '+' : ''}{plPct.toFixed(2)}%
+                                {plPct >= 0 ? '+' : ''}
+                                {plPct.toFixed(2)}%
                               </Badge>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-sm font-mono text-muted-foreground">{p.shares}</span>
+                              <span className="text-sm font-mono text-muted-foreground">
+                                {p.shares}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-sm font-mono text-muted-foreground">${p.avgEntry.toFixed(2)}</span>
+                              <span className="text-sm font-mono text-muted-foreground">
+                                ${p.avgEntry.toFixed(2)}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-sm font-mono text-foreground">${p.currentPrice.toFixed(2)}</span>
+                              <span className="text-sm font-mono text-foreground">
+                                ${p.currentPrice.toFixed(2)}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <Badge className={cn('border text-[10px]', sectorBadges[p.sector] ?? 'bg-muted text-muted-foreground border-border')}>
+                              <Badge
+                                className={cn(
+                                  'border text-[10px]',
+                                  sectorBadges[p.sector] ??
+                                    'bg-muted text-muted-foreground border-border',
+                                )}
+                              >
                                 {p.sector}
                               </Badge>
                             </td>
@@ -669,10 +753,15 @@ export default function PortfolioPage() {
                         <div key={p.ticker} className="space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-foreground">{p.ticker}</span>
-                            <span className="text-xs font-mono text-muted-foreground">{pct.toFixed(1)}%</span>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {pct.toFixed(1)}%
+                            </span>
                           </div>
                           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                            <div
+                              className="h-full rounded-full bg-primary transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
                           </div>
                         </div>
                       );
@@ -705,13 +794,15 @@ export default function PortfolioPage() {
                   label="Drawdown Exposure"
                 />
                 <RiskGauge
-                  level={positions.length > 0
-                    ? (Math.max(...positions.map(marketValue)) / totalValue) * 100
-                    : 0}
+                  level={
+                    positions.length > 0
+                      ? (Math.max(...positions.map(marketValue)) / totalValue) * 100
+                      : 0
+                  }
                   label="Concentration (Largest Position)"
                 />
                 <RiskGauge
-                  level={allocations.length > 0 ? allocations[0]?.pct ?? 0 : 0}
+                  level={allocations.length > 0 ? (allocations[0]?.pct ?? 0) : 0}
                   label="Sector Tilt (Largest Sector)"
                 />
               </CardContent>
@@ -743,7 +834,9 @@ export default function PortfolioPage() {
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-center justify-between px-3 py-2">
                         <span className="text-xs text-muted-foreground">{label}</span>
-                        <span className="text-xs font-mono font-medium text-foreground">{value}</span>
+                        <span className="text-xs font-mono font-medium text-foreground">
+                          {value}
+                        </span>
                       </div>
                     ))}
                   </div>

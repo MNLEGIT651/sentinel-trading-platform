@@ -11,24 +11,31 @@ const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
     getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { store[k] = v; },
-    clear: () => { store = {}; },
+    setItem: (k: string, v: string) => {
+      store[k] = v;
+    },
+    clear: () => {
+      store = {};
+    },
   };
 })();
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 beforeEach(() => {
   localStorageMock.clear();
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      engine: 'connected',
-      polygon: 'connected',
-      supabase: 'connected',
-      anthropic: 'connected',
-      alpaca: 'connected',
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        engine: 'connected',
+        polygon: 'connected',
+        supabase: 'connected',
+        anthropic: 'connected',
+        alpaca: 'connected',
+      }),
     }),
-  }));
+  );
 });
 
 describe('SettingsPage', () => {

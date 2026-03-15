@@ -49,19 +49,20 @@ export async function GET(): Promise<NextResponse<StatusResponse>> {
   // ── Supabase ─────────────────────────────────────────────────────────
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabase: ServiceStatus = !supabaseUrl || !supabaseKey
-    ? 'not_configured'
-    : await probe(async () => {
-        const r = await fetch(`${supabaseUrl}/rest/v1/`, {
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-          },
-          signal,
-          cache: 'no-store',
+  const supabase: ServiceStatus =
+    !supabaseUrl || !supabaseKey
+      ? 'not_configured'
+      : await probe(async () => {
+          const r = await fetch(`${supabaseUrl}/rest/v1/`, {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
         });
-        if (!r.ok) throw new Error(`${r.status}`);
-      });
 
   // ── Anthropic ────────────────────────────────────────────────────────
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -83,19 +84,20 @@ export async function GET(): Promise<NextResponse<StatusResponse>> {
   const alpacaKey = process.env.ALPACA_API_KEY;
   const alpacaSecret = process.env.ALPACA_SECRET_KEY;
   const alpacaBase = process.env.ALPACA_BASE_URL ?? 'https://paper-api.alpaca.markets/v2';
-  const alpaca: ServiceStatus = !alpacaKey || !alpacaSecret
-    ? 'not_configured'
-    : await probe(async () => {
-        const r = await fetch(`${alpacaBase}/account`, {
-          headers: {
-            'APCA-API-KEY-ID': alpacaKey,
-            'APCA-API-SECRET-KEY': alpacaSecret,
-          },
-          signal,
-          cache: 'no-store',
+  const alpaca: ServiceStatus =
+    !alpacaKey || !alpacaSecret
+      ? 'not_configured'
+      : await probe(async () => {
+          const r = await fetch(`${alpacaBase}/account`, {
+            headers: {
+              'APCA-API-KEY-ID': alpacaKey,
+              'APCA-API-SECRET-KEY': alpacaSecret,
+            },
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
         });
-        if (!r.ok) throw new Error(`${r.status}`);
-      });
 
   return NextResponse.json({ engine, polygon, supabase, anthropic, alpaca });
 }

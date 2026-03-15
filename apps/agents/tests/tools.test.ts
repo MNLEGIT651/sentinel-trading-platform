@@ -28,7 +28,13 @@ describe('Tool Definitions', () => {
 
 describe('Agent Tool Mapping', () => {
   it('should define tools for all 5 agent roles', () => {
-    const roles = ['market_sentinel', 'strategy_analyst', 'risk_monitor', 'research', 'execution_monitor'];
+    const roles = [
+      'market_sentinel',
+      'strategy_analyst',
+      'risk_monitor',
+      'research',
+      'execution_monitor',
+    ];
     for (const role of roles) {
       expect(AGENT_TOOLS[role]).toBeDefined();
       expect(AGENT_TOOLS[role].length).toBeGreaterThan(0);

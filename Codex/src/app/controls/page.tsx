@@ -22,7 +22,9 @@ export default function ControlsPage() {
       <section className="section-block reveal">
         <div className="section-header">
           <h2>Gate ledger</h2>
-          <p>Each gate names an owner because good control systems are operational, not abstract.</p>
+          <p>
+            Each gate names an owner because good control systems are operational, not abstract.
+          </p>
         </div>
 
         <div className="ledger-grid">
@@ -43,8 +45,8 @@ export default function ControlsPage() {
         <div className="section-header">
           <h2>Deployment path</h2>
           <p>
-            This is the sequence the app is built to enforce. It reflects the blueprint,
-            not a broker demo.
+            This is the sequence the app is built to enforce. It reflects the blueprint, not a
+            broker demo.
           </p>
         </div>
 

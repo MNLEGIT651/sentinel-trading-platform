@@ -272,12 +272,8 @@ function StrategyCard({ strategy, familyKey }: StrategyCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-sm font-semibold text-foreground">
-              {strategy.name}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {strategy.description}
-            </p>
+            <CardTitle className="text-sm font-semibold text-foreground">{strategy.name}</CardTitle>
+            <p className="text-xs text-muted-foreground leading-relaxed">{strategy.description}</p>
           </div>
           <Badge
             className={cn(
@@ -300,13 +296,8 @@ function StrategyCard({ strategy, familyKey }: StrategyCardProps) {
           </div>
           <div className="divide-y divide-border/50">
             {paramEntries.map(([key, value]) => (
-              <div
-                key={key}
-                className="flex items-center justify-between px-3 py-1.5"
-              >
-                <span className="text-xs text-muted-foreground font-mono">
-                  {key}
-                </span>
+              <div key={key} className="flex items-center justify-between px-3 py-1.5">
+                <span className="text-xs text-muted-foreground font-mono">{key}</span>
                 <span
                   className={cn(
                     'text-xs font-mono font-medium',
@@ -320,9 +311,7 @@ function StrategyCard({ strategy, familyKey }: StrategyCardProps) {
           </div>
         </div>
         <div className="mt-2 flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground">
-            v{strategy.version}
-          </span>
+          <span className="text-[10px] text-muted-foreground">v{strategy.version}</span>
         </div>
       </CardContent>
     </Card>
@@ -387,10 +376,7 @@ export default function StrategiesPage() {
     setExpandedFamilies((prev) => ({ ...prev, [family]: !prev[family] }));
   };
 
-  const totalStrategies = displayFamilies.reduce(
-    (sum, f) => sum + f.strategies.length,
-    0,
-  );
+  const totalStrategies = displayFamilies.reduce((sum, f) => sum + f.strategies.length, 0);
   const activeStrategies = displayFamilies.reduce(
     (sum, f) => sum + f.strategies.filter((s) => s.is_active).length,
     0,
@@ -405,8 +391,8 @@ export default function StrategiesPage() {
           <div>
             <h1 className="text-lg font-bold text-foreground">Strategies</h1>
             <p className="text-xs text-muted-foreground">
-              {activeStrategies} active of {totalStrategies} total strategies
-              across {displayFamilies.length} families
+              {activeStrategies} active of {totalStrategies} total strategies across{' '}
+              {displayFamilies.length} families
             </p>
           </div>
         </div>
@@ -423,9 +409,7 @@ export default function StrategiesPage() {
             const config = familyConfig[family.family];
             const isExpanded = expandedFamilies[family.family];
             const Icon = config?.icon ?? Brain;
-            const activeCount = family.strategies.filter(
-              (s) => s.is_active,
-            ).length;
+            const activeCount = family.strategies.filter((s) => s.is_active).length;
 
             return (
               <div key={family.family} className="space-y-2">
@@ -435,10 +419,7 @@ export default function StrategiesPage() {
                   className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/50"
                 >
                   <Icon
-                    className={cn(
-                      'h-4 w-4 shrink-0',
-                      config?.color ?? 'text-muted-foreground',
-                    )}
+                    className={cn('h-4 w-4 shrink-0', config?.color ?? 'text-muted-foreground')}
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -448,17 +429,14 @@ export default function StrategiesPage() {
                       <Badge
                         className={cn(
                           'border text-[10px]',
-                          config?.badgeClass ??
-                            'bg-muted text-muted-foreground border-border',
+                          config?.badgeClass ?? 'bg-muted text-muted-foreground border-border',
                         )}
                       >
                         {family.strategies.length} strateg
                         {family.strategies.length === 1 ? 'y' : 'ies'}
                       </Badge>
                       {activeCount > 0 && (
-                        <span className="text-[10px] text-profit">
-                          {activeCount} active
-                        </span>
+                        <span className="text-[10px] text-profit">{activeCount} active</span>
                       )}
                     </div>
                   </div>

@@ -26,9 +26,9 @@ export default function OverviewPage() {
           <span className="eyebrow">Operating thesis</span>
           <h2>Build the evidence ledger before the broker button.</h2>
           <p>
-            Claude&apos;s repo proves there is enough ambition in the system. This version
-            adds the missing product discipline: as-of data, holdout awareness, cost
-            realism, readiness scoring, and explicit launch gates.
+            Claude&apos;s repo proves there is enough ambition in the system. This version adds the
+            missing product discipline: as-of data, holdout awareness, cost realism, readiness
+            scoring, and explicit launch gates.
           </p>
           <div className="action-row">
             <Link href="/lab" className="button-primary">
@@ -74,8 +74,8 @@ export default function OverviewPage() {
         <div className="section-header">
           <h2>What the original repo already proves</h2>
           <p>
-            The goal is not to dismiss the Sentinel work. The goal is to absorb the
-            good parts and then be stricter about product truth.
+            The goal is not to dismiss the Sentinel work. The goal is to absorb the good parts and
+            then be stricter about product truth.
           </p>
         </div>
 
@@ -94,8 +94,8 @@ export default function OverviewPage() {
         <div className="section-header">
           <h2>Highest-readiness sleeves</h2>
           <p>
-            The app keeps the strongest candidates visible while still forcing the
-            user to read why a sleeve can fail.
+            The app keeps the strongest candidates visible while still forcing the user to read why
+            a sleeve can fail.
           </p>
         </div>
 
@@ -120,7 +120,9 @@ export default function OverviewPage() {
       <section className="section-block reveal">
         <div className="section-header">
           <h2>Control pressure</h2>
-          <p>The fastest way to degrade the app is to hide blocked controls. Codex does the opposite.</p>
+          <p>
+            The fastest way to degrade the app is to hide blocked controls. Codex does the opposite.
+          </p>
         </div>
 
         <div className="control-strip">

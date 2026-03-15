@@ -71,9 +71,7 @@ function SettingsField({
           </button>
         )}
       </div>
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
       <input
         type={masked && !showValue ? 'password' : type}
         value={value}
@@ -100,9 +98,7 @@ function ToggleField({
     <div className="flex items-start justify-between py-2">
       <div className="space-y-0.5">
         <span className="text-sm font-medium text-foreground">{label}</span>
-        {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
       <button
         onClick={() => onChange(!checked)}
@@ -220,7 +216,7 @@ export default function SettingsPage() {
     setCheckingConnections(true);
     try {
       const r = await fetch('/api/settings/status');
-      const data = await r.json() as ServiceStatuses;
+      const data = (await r.json()) as ServiceStatuses;
       setServiceStatus(data);
     } catch {
       setServiceStatus({
@@ -262,7 +258,8 @@ export default function SettingsPage() {
         if (typeof s.tradeNotifications === 'boolean') setTradeNotifications(s.tradeNotifications);
         if (typeof s.paperMode === 'boolean') setPaperMode(s.paperMode);
         if (typeof s.autoTrading === 'boolean') setAutoTrading(s.autoTrading);
-        if (typeof s.requireConfirmation === 'boolean') setRequireConfirmation(s.requireConfirmation);
+        if (typeof s.requireConfirmation === 'boolean')
+          setRequireConfirmation(s.requireConfirmation);
       }
     } catch {
       // Ignore corrupt storage
@@ -347,10 +344,26 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <ConnectionStatus icon={Server} label="Quant Engine (FastAPI)" status={serviceStatus.engine} />
-          <ConnectionStatus icon={Globe} label="Polygon.io Market Data" status={serviceStatus.polygon} />
-          <ConnectionStatus icon={Database} label="Supabase Database" status={serviceStatus.supabase} />
-          <ConnectionStatus icon={Bot} label="Claude AI (Anthropic)" status={serviceStatus.anthropic} />
+          <ConnectionStatus
+            icon={Server}
+            label="Quant Engine (FastAPI)"
+            status={serviceStatus.engine}
+          />
+          <ConnectionStatus
+            icon={Globe}
+            label="Polygon.io Market Data"
+            status={serviceStatus.polygon}
+          />
+          <ConnectionStatus
+            icon={Database}
+            label="Supabase Database"
+            status={serviceStatus.supabase}
+          />
+          <ConnectionStatus
+            icon={Bot}
+            label="Claude AI (Anthropic)"
+            status={serviceStatus.anthropic}
+          />
           <ConnectionStatus icon={Shield} label="Alpaca Broker" status={serviceStatus.alpaca} />
         </CardContent>
       </Card>
@@ -382,9 +395,7 @@ export default function SettingsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-emerald-400" />
-                  <CardTitle className="text-sm font-medium text-foreground">
-                    Market Data
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium text-foreground">Market Data</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -601,9 +612,7 @@ export default function SettingsPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-foreground">
-                  Trading Mode
-                </CardTitle>
+                <CardTitle className="text-sm font-medium text-foreground">Trading Mode</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 divide-y divide-border/50">
                 <ToggleField
@@ -629,9 +638,7 @@ export default function SettingsPage() {
 
             <Card className="bg-card border-border">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-foreground">
-                  Environment
-                </CardTitle>
+                <CardTitle className="text-sm font-medium text-foreground">Environment</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border border-border/50 overflow-hidden">

@@ -3,8 +3,7 @@
  * Used by the Next.js web app to interact with the agent orchestrator.
  */
 
-const AGENTS_URL =
-  process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
+const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
 
 // ── Response types ─────────────────────────────────────────────────
 
@@ -79,7 +78,7 @@ async function agentsFetch<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText })) as { error?: string };
+    const body = (await res.json().catch(() => ({ error: res.statusText }))) as { error?: string };
     throw new AgentsApiError(
       `Agents API ${res.status}: ${body.error ?? res.statusText}`,
       res.status,

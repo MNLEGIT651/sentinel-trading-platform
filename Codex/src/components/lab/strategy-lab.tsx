@@ -22,13 +22,7 @@ const statusLabels: Array<{ id: ResearchStatus | 'all'; label: string }> = [
 function matches(profile: StrategyProfile, query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
-  return [
-    profile.name,
-    profile.family,
-    profile.evidence,
-    profile.failureMode,
-    profile.controls,
-  ]
+  return [profile.name, profile.family, profile.evidence, profile.failureMode, profile.controls]
     .join(' ')
     .toLowerCase()
     .includes(normalized);
@@ -53,8 +47,7 @@ export function StrategyLab({ profiles }: { profiles: StrategyProfile[] }) {
     return familyOk && statusOk && matches(profile, deferredQuery);
   });
 
-  const selected =
-    filtered.find((profile) => profile.id === selectedId) ?? filtered[0] ?? null;
+  const selected = filtered.find((profile) => profile.id === selectedId) ?? filtered[0] ?? null;
 
   useEffect(() => {
     if (!selected && filtered[0]) {
@@ -121,7 +114,9 @@ export function StrategyLab({ profiles }: { profiles: StrategyProfile[] }) {
         <div className="control-panel control-panel-muted">
           <div className="field-label">Current slice</div>
           <p>{filtered.length} sleeves match the active filters.</p>
-          <p>The selected record is always the strongest surviving candidate in the current slice.</p>
+          <p>
+            The selected record is always the strongest surviving candidate in the current slice.
+          </p>
         </div>
       </aside>
 
@@ -131,7 +126,9 @@ export function StrategyLab({ profiles }: { profiles: StrategyProfile[] }) {
             <button
               key={profile.id}
               type="button"
-              className={selected?.id === profile.id ? 'catalog-card catalog-card-active' : 'catalog-card'}
+              className={
+                selected?.id === profile.id ? 'catalog-card catalog-card-active' : 'catalog-card'
+              }
               onClick={() => {
                 startTransition(() => setSelectedId(profile.id));
               }}

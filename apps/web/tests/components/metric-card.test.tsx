@@ -24,21 +24,13 @@ describe('MetricCard', () => {
   });
 
   it('does not render change when not provided', () => {
-    const { container } = render(
-      <MetricCard label="Sharpe" value="--" />,
-    );
+    const { container } = render(<MetricCard label="Sharpe" value="--" />);
     expect(container.querySelector('.text-profit')).toBeNull();
     expect(container.querySelector('.text-loss')).toBeNull();
   });
 
   it('renders icon when provided', () => {
-    render(
-      <MetricCard
-        label="Test"
-        value="123"
-        icon={<span data-testid="icon">Icon</span>}
-      />,
-    );
+    render(<MetricCard label="Test" value="123" icon={<span data-testid="icon">Icon</span>} />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 });

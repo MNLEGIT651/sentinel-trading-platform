@@ -17,17 +17,10 @@ export function PriceTicker({ items }: PriceTickerProps) {
     <div className="flex items-center gap-6 overflow-x-auto rounded-lg border border-border bg-card px-4 py-2 scrollbar-none">
       {items.map((item) => (
         <div key={item.ticker} className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-semibold text-foreground">
-            {item.ticker}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            ${item.price.toFixed(2)}
-          </span>
+          <span className="text-xs font-semibold text-foreground">{item.ticker}</span>
+          <span className="text-xs text-muted-foreground">${item.price.toFixed(2)}</span>
           <span
-            className={cn(
-              'text-xs font-medium',
-              item.change >= 0 ? 'text-profit' : 'text-loss',
-            )}
+            className={cn('text-xs font-medium', item.change >= 0 ? 'text-profit' : 'text-loss')}
           >
             {item.change >= 0 ? '+' : ''}
             {item.change.toFixed(2)}%

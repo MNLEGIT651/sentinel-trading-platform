@@ -12,12 +12,7 @@
 import { Agent } from './agent.js';
 import { ToolExecutor } from './tool-executor.js';
 import { EngineClient } from './engine-client.js';
-import type {
-  AgentConfig,
-  AgentResult,
-  AgentRole,
-  OrchestratorState,
-} from './types.js';
+import type { AgentConfig, AgentResult, AgentRole, OrchestratorState } from './types.js';
 
 const DEFAULT_CONFIGS: AgentConfig[] = [
   {
@@ -68,11 +63,7 @@ export class Orchestrator {
   private executor: ToolExecutor;
   private cycleInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(options?: {
-    apiKey?: string;
-    engineUrl?: string;
-    configs?: AgentConfig[];
-  }) {
+  constructor(options?: { apiKey?: string; engineUrl?: string; configs?: AgentConfig[] }) {
     const engine = new EngineClient(options?.engineUrl);
     this.executor = new ToolExecutor(engine);
 
@@ -89,12 +80,14 @@ export class Orchestrator {
 
     // Initialize state
     this.state = {
-      agents: Object.fromEntries(
-        configs.map((c) => [c.role, 'idle'] as const),
-      ) as Record<AgentRole, 'idle'>,
-      lastRun: Object.fromEntries(
-        configs.map((c) => [c.role, null] as const),
-      ) as Record<AgentRole, null>,
+      agents: Object.fromEntries(configs.map((c) => [c.role, 'idle'] as const)) as Record<
+        AgentRole,
+        'idle'
+      >,
+      lastRun: Object.fromEntries(configs.map((c) => [c.role, null] as const)) as Record<
+        AgentRole,
+        null
+      >,
       cycleCount: 0,
       halted: false,
       lastCycleAt: null,
@@ -151,7 +144,9 @@ export class Orchestrator {
     }
 
     console.log(`\n[Orchestrator] Cycle #${this.state.cycleCount} complete`);
-    console.log(`  Results: ${results.filter((r) => r.success).length}/${results.length} successful`);
+    console.log(
+      `  Results: ${results.filter((r) => r.success).length}/${results.length} successful`,
+    );
     this.state.lastCycleAt = new Date().toISOString();
     return results;
   }

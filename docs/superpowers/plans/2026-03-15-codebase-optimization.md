@@ -20,9 +20,11 @@ pytest, Playwright, pnpm workspaces, Turborepo, Husky, Commitlint, Prettier, Ruf
 ## File Map
 
 ### Files to Delete
+
 - `apps/compass/` — entire directory
 
 ### Files to Create
+
 - `.prettierrc`
 - `.editorconfig`
 - `.nvmrc`
@@ -578,33 +580,50 @@ describe('useAsyncAction', () => {
 
   it('sets loading true while fn is running', async () => {
     let resolve!: (v: string) => void;
-    const fn = () => new Promise<string>((r) => { resolve = r; });
+    const fn = () =>
+      new Promise<string>((r) => {
+        resolve = r;
+      });
     const { result } = renderHook(() => useAsyncAction(fn));
-    act(() => { result.current.execute(); });
+    act(() => {
+      result.current.execute();
+    });
     expect(result.current.loading).toBe(true);
-    await act(async () => { resolve('done'); });
+    await act(async () => {
+      resolve('done');
+    });
     expect(result.current.loading).toBe(false);
   });
 
   it('stores data on success', async () => {
     const { result } = renderHook(() => useAsyncAction(async () => 42));
-    await act(async () => { await result.current.execute(); });
+    await act(async () => {
+      await result.current.execute();
+    });
     expect(result.current.data).toBe(42);
     expect(result.current.error).toBeNull();
   });
 
   it('stores error on failure', async () => {
-    const fn = async () => { throw new Error('boom'); };
+    const fn = async () => {
+      throw new Error('boom');
+    };
     const { result } = renderHook(() => useAsyncAction(fn));
-    await act(async () => { await result.current.execute(); });
+    await act(async () => {
+      await result.current.execute();
+    });
     expect(result.current.error).toBe('boom');
     expect(result.current.data).toBeNull();
   });
 
   it('reset clears all state', async () => {
     const { result } = renderHook(() => useAsyncAction(async () => 'x'));
-    await act(async () => { await result.current.execute(); });
-    act(() => { result.current.reset(); });
+    await act(async () => {
+      await result.current.execute();
+    });
+    act(() => {
+      result.current.reset();
+    });
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
     expect(result.current.loading).toBe(false);
@@ -699,6 +718,7 @@ Understand the full shape before extracting.
 - [ ] **Step 2: Identify extraction boundaries**
 
 Scan for clearly self-contained render blocks. Typical candidates:
+
 - The metrics row at the top (`SnapshotMetrics`)
 - The positions data table (`PositionsTable`)
 - The allocation donut/bar chart section (`AllocationChart`)
@@ -711,6 +731,7 @@ Move the metrics-row JSX and its local types/constants into this file.
 The component receives data as props (no fetch inside — the page fetches, passes down).
 
 Props interface example:
+
 ```typescript
 interface SnapshotMetricsProps {
   account: BrokerAccount | null;
@@ -739,6 +760,7 @@ Receives `orders` array as props.
 - [ ] **Step 7: Update `portfolio/page.tsx`**
 
 The page now:
+
 1. Holds all `useState` and `useEffect` (data fetching)
 2. Renders `<SnapshotMetrics>`, `<PositionsTable>`, `<AllocationChart>`, `<OrderHistory>`
 3. Target: under 200 lines
@@ -1067,6 +1089,7 @@ Expected: errors will appear. Fix them all before committing.
 Common patterns to fix:
 
 For `noUncheckedIndexedAccess` — array/object index access returns `T | undefined`:
+
 ```typescript
 // Before (error):
 const first = items[0].name;
@@ -1075,6 +1098,7 @@ const first = items[0]?.name ?? '';
 ```
 
 For `exactOptionalPropertyTypes` — optional props cannot be `undefined` when not present:
+
 ```typescript
 // Before (error):
 const props: { name?: string } = { name: undefined };
@@ -1134,11 +1158,13 @@ refactors this page — use the grep output to find them, not hardcoded line num
 - [ ] **Step 2: Replace each with `toast.error`**
 
 At the top of the file, ensure this import exists:
+
 ```typescript
 import { toast } from 'sonner';
 ```
 
 Replace each:
+
 ```typescript
 // Before:
 console.error('Failed to load status:', err);
@@ -1428,8 +1454,8 @@ export function createClient() {
   if (!url || !key) {
     throw new Error(
       'Missing Supabase environment variables. ' +
-      'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'See .env.example for guidance.',
+        'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
+        'See .env.example for guidance.',
     );
   }
 
@@ -2051,9 +2077,7 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:3000',
@@ -2140,10 +2164,9 @@ test('backtest form submits and results appear', async ({ page }) => {
   await runButton.click();
 
   // Wait for results or loading state to resolve (max 15s for backtest)
-  await page.waitForFunction(
-    () => !document.querySelector('[aria-busy="true"]'),
-    { timeout: 15000 },
-  );
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), {
+    timeout: 15000,
+  });
 
   // Page should not show an error state
   const errorMsg = page.getByText(/failed|error/i);
@@ -2192,10 +2215,12 @@ test('settings page loads and save button is present', async ({ page }) => {
 
   // Page renders without JavaScript errors
   const errors: string[] = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
   await page.reload();
   await page.waitForLoadState('networkidle');
-  expect(errors.filter(e => !e.includes('Supabase'))).toHaveLength(0);
+  expect(errors.filter((e) => !e.includes('Supabase'))).toHaveLength(0);
 });
 ```
 
@@ -2507,7 +2532,7 @@ git commit -m "chore: add env pass-through and coverage outputs to turbo.json"
 
 - [ ] **Step 1: Create `apps/web/README.md`**
 
-```markdown
+````markdown
 # Sentinel Web
 
 Next.js 16 dashboard for the Sentinel Trading Platform.
@@ -2520,18 +2545,20 @@ pnpm test         # Run Vitest unit tests
 pnpm test:e2e     # Run Playwright E2E tests
 pnpm build        # Production build
 ```
+````
 
 ## Required Environment Variables
 
-| Variable | Description |
-| -------- | ----------- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
-| `NEXT_PUBLIC_ENGINE_URL` | URL of the FastAPI engine (default: http://localhost:8000) |
+| Variable                        | Description                                                |
+| ------------------------------- | ---------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                                       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key (server-side only)               |
+| `NEXT_PUBLIC_ENGINE_URL`        | URL of the FastAPI engine (default: http://localhost:8000) |
 
 Copy `.env.example` at the repo root and fill in values.
-```
+
+````
 
 - [ ] **Step 2: Create `apps/engine/README.md`**
 
@@ -2545,7 +2572,7 @@ backtesting, and order execution.
 
 ```bash
 .venv/Scripts/python -m uvicorn src.api.main:app --reload --port 8000
-```
+````
 
 API docs available at http://localhost:8000/docs once running.
 
@@ -2559,14 +2586,15 @@ API docs available at http://localhost:8000/docs once running.
 
 ## Required Environment Variables
 
-| Variable | Description |
-| -------- | ----------- |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
-| `POLYGON_API_KEY` | Polygon.io market data API key |
-| `ALPACA_API_KEY` | Alpaca brokerage API key |
-| `ALPACA_SECRET_KEY` | Alpaca brokerage secret key |
-```
+| Variable                    | Description                    |
+| --------------------------- | ------------------------------ |
+| `SUPABASE_URL`              | Supabase project URL           |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key      |
+| `POLYGON_API_KEY`           | Polygon.io market data API key |
+| `ALPACA_API_KEY`            | Alpaca brokerage API key       |
+| `ALPACA_SECRET_KEY`         | Alpaca brokerage secret key    |
+
+````
 
 - [ ] **Step 3: Create `apps/agents/README.md`**
 
@@ -2581,24 +2609,25 @@ and exposes a REST API for the web dashboard.
 ```bash
 pnpm dev    # Start with tsx watch at http://localhost:3001
 pnpm test   # Run Vitest unit tests
-```
+````
 
 ## Required Environment Variables
 
-| Variable | Description |
-| -------- | ----------- |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Claude models |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
-| `ENGINE_URL` | URL of the FastAPI engine |
-```
+| Variable                    | Description                         |
+| --------------------------- | ----------------------------------- |
+| `ANTHROPIC_API_KEY`         | Anthropic API key for Claude models |
+| `SUPABASE_URL`              | Supabase project URL                |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key           |
+| `ENGINE_URL`                | URL of the FastAPI engine           |
+
+````
 
 - [ ] **Step 4: Commit all READMEs**
 
 ```bash
 git add apps/web/README.md apps/engine/README.md apps/agents/README.md
 git commit -m "docs: add per-app README files"
-```
+````
 
 ---
 

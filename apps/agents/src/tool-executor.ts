@@ -3,7 +3,11 @@
  */
 
 import { EngineClient } from './engine-client.js';
-import { createRecommendation, createAlert as dbCreateAlert, type RecommendationCreate } from './recommendations-store.js';
+import {
+  createRecommendation,
+  createAlert as dbCreateAlert,
+  type RecommendationCreate,
+} from './recommendations-store.js';
 import type { MarketSentiment, RiskAssessment } from './types.js';
 
 export class ToolExecutor {
@@ -25,18 +29,30 @@ export class ToolExecutor {
 
   private async dispatch(toolName: string, input: Record<string, unknown>): Promise<unknown> {
     switch (toolName) {
-      case 'get_market_data':         return this.getMarketData(input);
-      case 'get_market_sentiment':    return this.getMarketSentiment();
-      case 'run_strategy_scan':       return this.runStrategyScan(input);
-      case 'get_strategy_info':       return this.getStrategyInfo(input);
-      case 'assess_portfolio_risk':   return this.assessPortfolioRisk();
-      case 'calculate_position_size': return this.calculatePositionSize(input);
-      case 'check_risk_limits':       return this.checkRiskLimits(input);
-      case 'submit_order':            return this.submitOrder(input);
-      case 'get_open_orders':         return this.getOpenOrders();
-      case 'analyze_ticker':          return this.analyzeTicker(input);
-      case 'create_alert':            return this.createAlert(input);
-      default: throw new Error(`Unknown tool: ${toolName}`);
+      case 'get_market_data':
+        return this.getMarketData(input);
+      case 'get_market_sentiment':
+        return this.getMarketSentiment();
+      case 'run_strategy_scan':
+        return this.runStrategyScan(input);
+      case 'get_strategy_info':
+        return this.getStrategyInfo(input);
+      case 'assess_portfolio_risk':
+        return this.assessPortfolioRisk();
+      case 'calculate_position_size':
+        return this.calculatePositionSize(input);
+      case 'check_risk_limits':
+        return this.checkRiskLimits(input);
+      case 'submit_order':
+        return this.submitOrder(input);
+      case 'get_open_orders':
+        return this.getOpenOrders();
+      case 'analyze_ticker':
+        return this.analyzeTicker(input);
+      case 'create_alert':
+        return this.createAlert(input);
+      default:
+        throw new Error(`Unknown tool: ${toolName}`);
     }
   }
 
@@ -55,15 +71,20 @@ export class ToolExecutor {
 
     const quotes = await this.engine.getQuotes(tickers);
     const prices = Object.fromEntries(
-      quotes.map(q => [q.ticker, { price: q.close, change_pct: q.change_pct, volume: q.volume }]),
+      quotes.map((q) => [q.ticker, { price: q.close, change_pct: q.change_pct, volume: q.volume }]),
     );
 
-    return { tickers, timeframe, prices, message: `Live prices for ${quotes.length}/${tickers.length} tickers` };
+    return {
+      tickers,
+      timeframe,
+      prices,
+      message: `Live prices for ${quotes.length}/${tickers.length} tickers`,
+    };
   }
 
   private async getMarketSentiment(): Promise<MarketSentiment> {
     const quotes = await this.engine.getQuotes(['SPY', 'QQQ', 'IWM']);
-    const spy = quotes.find(q => q.ticker === 'SPY');
+    const spy = quotes.find((q) => q.ticker === 'SPY');
     const spyChange = spy?.change_pct ?? 0;
 
     let overall: 'bullish' | 'bearish' | 'neutral';
@@ -71,8 +92,9 @@ export class ToolExecutor {
     else if (spyChange < -0.3) overall = 'bearish';
     else overall = 'neutral';
 
-    const drivers = quotes.map(q =>
-      `${q.ticker}: ${q.change_pct >= 0 ? '+' : ''}${q.change_pct.toFixed(2)}% ($${q.close.toFixed(2)})`
+    const drivers = quotes.map(
+      (q) =>
+        `${q.ticker}: ${q.change_pct >= 0 ? '+' : ''}${q.change_pct.toFixed(2)}% ($${q.close.toFixed(2)})`,
     );
 
     return {
@@ -95,9 +117,10 @@ export class ToolExecutor {
     const tickers = (input.tickers as string[] | undefined) ?? [];
     const strategies = (input.strategies as string[] | undefined) ?? [];
 
-    const scanTickers = tickers.length > 0
-      ? tickers
-      : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
+    const scanTickers =
+      tickers.length > 0
+        ? tickers
+        : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
 
     const result = await this.engine.scanStrategies({
       tickers: scanTickers,
@@ -105,9 +128,10 @@ export class ToolExecutor {
       min_strength: 0.3,
     });
 
-    const signals = strategies.length > 0
-      ? result.signals.filter(s => strategies.includes(s.strategy_name))
-      : result.signals;
+    const signals =
+      strategies.length > 0
+        ? result.signals.filter((s) => strategies.includes(s.strategy_name))
+        : result.signals;
 
     return {
       signals,
@@ -122,7 +146,7 @@ export class ToolExecutor {
     const strategies = await this.engine.getStrategies();
     const family = input.family as string | undefined;
     if (family) {
-      return { family, strategies: strategies.strategies.filter(s => s.family === family) };
+      return { family, strategies: strategies.strategies.filter((s) => s.family === family) };
     }
     return strategies;
   }
@@ -137,7 +161,7 @@ export class ToolExecutor {
 
     const positionsMap: Record<string, number> = {};
     for (const p of positions) {
-      positionsMap[p.instrument_id] = p.market_value ?? (p.quantity * (p.avg_price ?? 0));
+      positionsMap[p.instrument_id] = p.market_value ?? p.quantity * (p.avg_price ?? 0);
     }
 
     const result = await this.engine.assessRisk({
@@ -154,7 +178,7 @@ export class ToolExecutor {
       drawdown: result.drawdown,
       dailyPnl: result.daily_pnl,
       halted: result.halted,
-      alerts: result.alerts.map(a => ({
+      alerts: result.alerts.map((a) => ({
         severity: a.severity as 'info' | 'warning' | 'critical',
         rule: a.rule,
         message: a.message,
@@ -182,7 +206,7 @@ export class ToolExecutor {
 
     const positionsMap: Record<string, number> = {};
     for (const p of positions) {
-      positionsMap[p.instrument_id] = p.market_value ?? (p.quantity * (p.avg_price ?? 0));
+      positionsMap[p.instrument_id] = p.market_value ?? p.quantity * (p.avg_price ?? 0);
     }
 
     const result = await this.engine.preTradeCheck({
@@ -249,15 +273,17 @@ export class ToolExecutor {
     });
 
     const signals = result.signals;
-    const longSignals = signals.filter(s => s.direction === 'long');
-    const shortSignals = signals.filter(s => s.direction === 'short');
-    const avgStrength = signals.length > 0
-      ? signals.reduce((sum, s) => sum + s.strength, 0) / signals.length
-      : 0;
+    const longSignals = signals.filter((s) => s.direction === 'long');
+    const shortSignals = signals.filter((s) => s.direction === 'short');
+    const avgStrength =
+      signals.length > 0 ? signals.reduce((sum, s) => sum + s.strength, 0) / signals.length : 0;
 
-    const trendBias = longSignals.length > shortSignals.length ? 'bullish'
-      : shortSignals.length > longSignals.length ? 'bearish'
-      : 'neutral';
+    const trendBias =
+      longSignals.length > shortSignals.length
+        ? 'bullish'
+        : shortSignals.length > longSignals.length
+          ? 'bearish'
+          : 'neutral';
 
     return {
       ticker,

@@ -16,24 +16,16 @@ describe('EngineClient', () => {
   });
 
   it('builds correct endpoint URLs', () => {
-    expect(client.url('/data/ingest')).toBe(
-      'http://localhost:8000/api/v1/data/ingest',
-    );
-    expect(client.url('/health')).toBe(
-      'http://localhost:8000/api/v1/health',
-    );
+    expect(client.url('/data/ingest')).toBe('http://localhost:8000/api/v1/data/ingest');
+    expect(client.url('/health')).toBe('http://localhost:8000/api/v1/health');
   });
 
   it('builds correct strategies endpoint URL', () => {
-    expect(client.url('/strategies/')).toBe(
-      'http://localhost:8000/api/v1/strategies/',
-    );
+    expect(client.url('/strategies/')).toBe('http://localhost:8000/api/v1/strategies/');
   });
 
   it('builds correct risk limits endpoint URL', () => {
-    expect(client.url('/risk/limits')).toBe(
-      'http://localhost:8000/api/v1/risk/limits',
-    );
+    expect(client.url('/risk/limits')).toBe('http://localhost:8000/api/v1/risk/limits');
   });
 });
 
@@ -73,10 +65,9 @@ describe('EngineClient.getStrategies', () => {
 
     const result = await client.getStrategies();
 
-    expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8000/api/v1/strategies/',
-      { headers: client.getHeaders() },
-    );
+    expect(fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/strategies/', {
+      headers: client.getHeaders(),
+    });
     expect(result).toEqual(mockResponse);
     expect(result[0].family).toBe('trend_following');
     expect(result[0].strategies).toHaveLength(1);
@@ -123,10 +114,9 @@ describe('EngineClient.getRiskLimits', () => {
 
     const result = await client.getRiskLimits();
 
-    expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8000/api/v1/risk/limits',
-      { headers: client.getHeaders() },
-    );
+    expect(fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/risk/limits', {
+      headers: client.getHeaders(),
+    });
     expect(result).toEqual(mockResponse);
     expect(result.max_position_size).toBe(10000);
     expect(result.max_drawdown_pct).toBe(0.1);

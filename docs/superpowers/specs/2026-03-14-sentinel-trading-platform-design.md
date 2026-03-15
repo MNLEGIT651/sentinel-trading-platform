@@ -37,19 +37,19 @@ sentinel/
 
 ### 2.2 Technology Stack
 
-| Layer | Technology | Justification |
-|-------|-----------|---------------|
-| Frontend | Next.js 15 (App Router) + TypeScript 5.x | SSR, App Router for layouts, best DX |
-| UI Components | shadcn/ui + Tailwind CSS 4 | Accessible, composable, professional |
-| Charts | TradingView Lightweight Charts | Industry standard, performant, free |
-| Quant Engine | Python 3.14 + FastAPI + NumPy/Pandas | Quant finance lingua franca |
-| Database | Supabase (PostgreSQL 15 + Realtime) | Free tier, realtime subscriptions, edge functions |
-| AI Agents | Claude Agent SDK (TypeScript) | Native tool use, autonomous operation |
-| Market Data | Polygon.io (primary, Starter $29/mo for real-time) + Alpha Vantage (supplementary) | Best upgrade path; free tier = EOD only, Starter = 1-min bars |
-| Broker | Alpaca (paper + live) | Free paper trading, easy live upgrade |
-| Monorepo | pnpm workspaces + Turborepo | Fast, efficient, parallel builds |
-| Testing | Vitest (TS) + pytest (Python) + Playwright (E2E) | Fast, modern, comprehensive |
-| Deployment | Vercel (web) + Railway (engine) | Optimized for each runtime |
+| Layer         | Technology                                                                         | Justification                                                 |
+| ------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Frontend      | Next.js 15 (App Router) + TypeScript 5.x                                           | SSR, App Router for layouts, best DX                          |
+| UI Components | shadcn/ui + Tailwind CSS 4                                                         | Accessible, composable, professional                          |
+| Charts        | TradingView Lightweight Charts                                                     | Industry standard, performant, free                           |
+| Quant Engine  | Python 3.14 + FastAPI + NumPy/Pandas                                               | Quant finance lingua franca                                   |
+| Database      | Supabase (PostgreSQL 15 + Realtime)                                                | Free tier, realtime subscriptions, edge functions             |
+| AI Agents     | Claude Agent SDK (TypeScript)                                                      | Native tool use, autonomous operation                         |
+| Market Data   | Polygon.io (primary, Starter $29/mo for real-time) + Alpha Vantage (supplementary) | Best upgrade path; free tier = EOD only, Starter = 1-min bars |
+| Broker        | Alpaca (paper + live)                                                              | Free paper trading, easy live upgrade                         |
+| Monorepo      | pnpm workspaces + Turborepo                                                        | Fast, efficient, parallel builds                              |
+| Testing       | Vitest (TS) + pytest (Python) + Playwright (E2E)                                   | Fast, modern, comprehensive                                   |
+| Deployment    | Vercel (web) + Railway (engine)                                                    | Optimized for each runtime                                    |
 
 ### 2.3 Data Flow
 
@@ -396,6 +396,7 @@ Tables WITH user_id (user-scoped): `accounts`, `signals`, `orders`, `portfolio_p
 **Charts**: TradingView Lightweight Charts
 
 **Route Structure**:
+
 ```
 app/
 ├── layout.tsx          # Root layout: sidebar nav, dark theme, toast provider
@@ -417,6 +418,7 @@ app/
 ```
 
 **Key Components**:
+
 - `PriceChart` -- TradingView Lightweight Charts wrapper with technical overlays
 - `SignalCard` -- Signal display with direction indicator, strength bar, confidence
 - `RiskGauge` -- Circular gauge for Sharpe/Sortino/drawdown metrics
@@ -427,6 +429,7 @@ app/
 - `MarketHeatmap` -- Sector/asset heatmap by daily performance
 
 **Testing**:
+
 - Unit: Vitest for all utility functions, hooks, stores
 - Component: Vitest + Testing Library for component behavior
 - E2E: Playwright for critical user flows (view portfolio, run backtest, toggle strategy)
@@ -437,6 +440,7 @@ app/
 **Testing**: pytest + pytest-asyncio + hypothesis (property-based testing)
 
 **Module Structure**:
+
 ```
 engine/
 ├── src/
@@ -496,6 +500,7 @@ engine/
 ```
 
 **Strategy Interface** (from PDF framework):
+
 ```python
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -521,6 +526,7 @@ class Strategy(ABC):
 ```
 
 **Broker Interface**:
+
 ```python
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -564,60 +570,67 @@ class BrokerAdapter(ABC):
 
 **Agents**:
 
-| Agent | Schedule | Purpose | Tools |
-|-------|----------|---------|-------|
-| Market Sentinel | Every 15min (market hours) | Detect anomalies, volume spikes, volatility | read_market_data, check_volatility, write_alert |
-| Strategy Analyst | Hourly + on-demand | Analyze signal confluence, regime detection | read_signals, read_risk_metrics, analyze_regime, write_commentary |
-| Risk Monitor | Every 5min (market hours) | Watch drawdown, concentration, correlation | read_portfolio, read_risk_metrics, trigger_risk_alert, suggest_hedge |
-| Research Agent | On-demand | Deep-dive analysis on tickers/theses | fetch_fundamentals, analyze_technicals, search_news, write_report |
-| Execution Monitor | After order batches | Review fill quality vs cost model | read_orders, compare_fills, write_execution_report |
+| Agent             | Schedule                   | Purpose                                     | Tools                                                                |
+| ----------------- | -------------------------- | ------------------------------------------- | -------------------------------------------------------------------- |
+| Market Sentinel   | Every 15min (market hours) | Detect anomalies, volume spikes, volatility | read_market_data, check_volatility, write_alert                      |
+| Strategy Analyst  | Hourly + on-demand         | Analyze signal confluence, regime detection | read_signals, read_risk_metrics, analyze_regime, write_commentary    |
+| Risk Monitor      | Every 5min (market hours)  | Watch drawdown, concentration, correlation  | read_portfolio, read_risk_metrics, trigger_risk_alert, suggest_hedge |
+| Research Agent    | On-demand                  | Deep-dive analysis on tickers/theses        | fetch_fundamentals, analyze_technicals, search_news, write_report    |
+| Execution Monitor | After order batches        | Review fill quality vs cost model           | read_orders, compare_fills, write_execution_report                   |
 
 ## 4.4 Engine API Contract
 
 The Next.js frontend calls the engine via `ENGINE_URL`. All requests require `Authorization: Bearer <ENGINE_API_KEY>` header.
 
 ### Data Endpoints
-| Method | Path | Description | Request | Response |
-|--------|------|-------------|---------|----------|
-| POST | `/api/v1/data/ingest` | Trigger data ingestion | `{ tickers: string[], timeframe: string }` | `{ ingested: number, errors: string[] }` |
-| GET | `/api/v1/data/prices/{ticker}` | Get historical prices | Query: `?timeframe=1d&start=2025-01-01&end=2026-03-14` | `{ data: OHLCV[] }` |
-| GET | `/api/v1/data/latest` | Latest prices for watchlist | Query: `?tickers=AAPL,MSFT,GOOGL` | `{ prices: { [ticker]: OHLCV } }` |
+
+| Method | Path                           | Description                 | Request                                                | Response                                 |
+| ------ | ------------------------------ | --------------------------- | ------------------------------------------------------ | ---------------------------------------- |
+| POST   | `/api/v1/data/ingest`          | Trigger data ingestion      | `{ tickers: string[], timeframe: string }`             | `{ ingested: number, errors: string[] }` |
+| GET    | `/api/v1/data/prices/{ticker}` | Get historical prices       | Query: `?timeframe=1d&start=2025-01-01&end=2026-03-14` | `{ data: OHLCV[] }`                      |
+| GET    | `/api/v1/data/latest`          | Latest prices for watchlist | Query: `?tickers=AAPL,MSFT,GOOGL`                      | `{ prices: { [ticker]: OHLCV } }`        |
 
 ### Strategy Endpoints
-| Method | Path | Description | Request | Response |
-|--------|------|-------------|---------|----------|
-| GET | `/api/v1/strategies` | List all strategies | - | `{ strategies: Strategy[] }` |
-| POST | `/api/v1/strategies/{id}/signals` | Generate signals | `{ account_id: string }` | `{ signals: Signal[] }` |
-| PUT | `/api/v1/strategies/{id}` | Update strategy params | `{ parameters: object, is_active: boolean }` | `{ strategy: Strategy }` |
+
+| Method | Path                              | Description            | Request                                      | Response                     |
+| ------ | --------------------------------- | ---------------------- | -------------------------------------------- | ---------------------------- |
+| GET    | `/api/v1/strategies`              | List all strategies    | -                                            | `{ strategies: Strategy[] }` |
+| POST   | `/api/v1/strategies/{id}/signals` | Generate signals       | `{ account_id: string }`                     | `{ signals: Signal[] }`      |
+| PUT    | `/api/v1/strategies/{id}`         | Update strategy params | `{ parameters: object, is_active: boolean }` | `{ strategy: Strategy }`     |
 
 ### Portfolio Endpoints
-| Method | Path | Description | Request | Response |
-|--------|------|-------------|---------|----------|
-| GET | `/api/v1/portfolio/{account_id}` | Current portfolio state | - | `{ positions: Position[], cash: number, equity: number }` |
-| POST | `/api/v1/portfolio/{account_id}/rebalance` | Execute rebalance | `{ target_weights: { [ticker]: number } }` | `{ orders: Order[] }` |
+
+| Method | Path                                       | Description             | Request                                    | Response                                                  |
+| ------ | ------------------------------------------ | ----------------------- | ------------------------------------------ | --------------------------------------------------------- |
+| GET    | `/api/v1/portfolio/{account_id}`           | Current portfolio state | -                                          | `{ positions: Position[], cash: number, equity: number }` |
+| POST   | `/api/v1/portfolio/{account_id}/rebalance` | Execute rebalance       | `{ target_weights: { [ticker]: number } }` | `{ orders: Order[] }`                                     |
 
 ### Risk Endpoints
-| Method | Path | Description | Request | Response |
-|--------|------|-------------|---------|----------|
-| GET | `/api/v1/risk/{account_id}/metrics` | Current risk metrics | - | `{ metrics: RiskMetrics }` |
-| GET | `/api/v1/risk/{account_id}/snapshot` | Latest portfolio snapshot | - | `{ snapshot: PortfolioSnapshot }` |
+
+| Method | Path                                 | Description               | Request | Response                          |
+| ------ | ------------------------------------ | ------------------------- | ------- | --------------------------------- |
+| GET    | `/api/v1/risk/{account_id}/metrics`  | Current risk metrics      | -       | `{ metrics: RiskMetrics }`        |
+| GET    | `/api/v1/risk/{account_id}/snapshot` | Latest portfolio snapshot | -       | `{ snapshot: PortfolioSnapshot }` |
 
 ### Order Endpoints
-| Method | Path | Description | Request | Response |
-|--------|------|-------------|---------|----------|
-| POST | `/api/v1/orders` | Submit order | `{ account_id, ticker, side, type, quantity, limit_price?, stop_price? }` | `{ order: Order }` |
-| DELETE | `/api/v1/orders/{id}` | Cancel order | - | `{ success: boolean }` |
-| GET | `/api/v1/orders` | List orders | Query: `?account_id=...&status=filled&limit=50` | `{ orders: Order[] }` |
+
+| Method | Path                  | Description  | Request                                                                   | Response               |
+| ------ | --------------------- | ------------ | ------------------------------------------------------------------------- | ---------------------- |
+| POST   | `/api/v1/orders`      | Submit order | `{ account_id, ticker, side, type, quantity, limit_price?, stop_price? }` | `{ order: Order }`     |
+| DELETE | `/api/v1/orders/{id}` | Cancel order | -                                                                         | `{ success: boolean }` |
+| GET    | `/api/v1/orders`      | List orders  | Query: `?account_id=...&status=filled&limit=50`                           | `{ orders: Order[] }`  |
 
 ### Backtest Endpoints
-| Method | Path | Description | Request | Response |
-|--------|------|-------------|---------|----------|
-| POST | `/api/v1/backtest/run` | Run backtest | `{ strategy_id, parameters, start_date, end_date, initial_capital, cost_model }` | `{ result: BacktestResult }` |
-| GET | `/api/v1/backtest/results` | List past results | Query: `?strategy_id=...&limit=20` | `{ results: BacktestResult[] }` |
+
+| Method | Path                       | Description       | Request                                                                          | Response                        |
+| ------ | -------------------------- | ----------------- | -------------------------------------------------------------------------------- | ------------------------------- |
+| POST   | `/api/v1/backtest/run`     | Run backtest      | `{ strategy_id, parameters, start_date, end_date, initial_capital, cost_model }` | `{ result: BacktestResult }`    |
+| GET    | `/api/v1/backtest/results` | List past results | Query: `?strategy_id=...&limit=20`                                               | `{ results: BacktestResult[] }` |
 
 ### Scheduling
 
 The engine runs its own scheduler (APScheduler) for periodic tasks:
+
 - **Data ingestion**: Adaptive frequency based on API tier (free = every 24h at market close, Starter = every 1min during 9:30-16:00 ET)
 - **Signal generation**: Every 15 minutes during market hours
 - **Risk metrics update**: Every 5 minutes during market hours
@@ -625,15 +638,15 @@ The engine runs its own scheduler (APScheduler) for periodic tasks:
 
 ## 5. Risk Controls (Blueprint Layer B)
 
-| Control | Threshold | Action |
-|---------|-----------|--------|
-| Volatility targeting | 20-day exponential vol | Scale position sizes inversely |
-| Drawdown circuit breaker L1 | Portfolio DD > 10% | Reduce all positions by 50% |
-| Drawdown circuit breaker L2 | Portfolio DD > 15% | Flatten to cash |
-| Single position limit | > 5% of portfolio | Block new entries, flag for rebalance |
-| Sector concentration | > 20% of portfolio | Block new same-sector entries |
-| Strategy correlation | Pairwise corr > 0.7 | Alert, review diversification |
-| Daily loss limit | > 2% of equity | Halt all new entries for the day |
+| Control                     | Threshold              | Action                                |
+| --------------------------- | ---------------------- | ------------------------------------- |
+| Volatility targeting        | 20-day exponential vol | Scale position sizes inversely        |
+| Drawdown circuit breaker L1 | Portfolio DD > 10%     | Reduce all positions by 50%           |
+| Drawdown circuit breaker L2 | Portfolio DD > 15%     | Flatten to cash                       |
+| Single position limit       | > 5% of portfolio      | Block new entries, flag for rebalance |
+| Sector concentration        | > 20% of portfolio     | Block new same-sector entries         |
+| Strategy correlation        | Pairwise corr > 0.7    | Alert, review diversification         |
+| Daily loss limit            | > 2% of equity         | Halt all new entries for the day      |
 
 ## 6. Cost Model (Blueprint Layer C)
 
@@ -661,15 +674,15 @@ def estimate_costs(
 
 ### 7.1 Coverage Targets
 
-| Layer | Target | Tool |
-|-------|--------|------|
-| Engine unit tests | > 90% | pytest + coverage |
-| Engine integration | Key flows | pytest + test Supabase |
-| Strategy logic | 100% | pytest + hypothesis |
-| Risk calculations | 100% | pytest + known-value tests |
-| Web components | > 80% | Vitest + Testing Library |
-| Web E2E | Critical paths | Playwright |
-| Agent tools | > 80% | Vitest + mocked Claude |
+| Layer              | Target         | Tool                       |
+| ------------------ | -------------- | -------------------------- |
+| Engine unit tests  | > 90%          | pytest + coverage          |
+| Engine integration | Key flows      | pytest + test Supabase     |
+| Strategy logic     | 100%           | pytest + hypothesis        |
+| Risk calculations  | 100%           | pytest + known-value tests |
+| Web components     | > 80%          | Vitest + Testing Library   |
+| Web E2E            | Critical paths | Playwright                 |
+| Agent tools        | > 80%          | Vitest + mocked Claude     |
 
 ### 7.2 Testing Principles (from PDF)
 
@@ -682,6 +695,7 @@ def estimate_costs(
 ## 8. Build Phases
 
 ### Phase 1: Foundation
+
 - Monorepo scaffolding (pnpm, Turborepo, TypeScript config)
 - Supabase project + all migrations
 - Data ingestion pipeline (Polygon.io client + ingestion scheduler)
@@ -690,30 +704,35 @@ def estimate_costs(
 - CI pipeline with linting + testing
 
 ### Phase 2: Strategy Engine
+
 - All 5 strategy implementations with full test suites
 - Signal generation pipeline
 - Signal dashboard page
 - Composite signal combiner
 
 ### Phase 3: Risk & Portfolio
+
 - Risk metrics calculator
 - Portfolio construction (risk parity)
 - Volatility targeting + drawdown controls
 - Portfolio dashboard with gauges + charts
 
 ### Phase 4: AI Agents
+
 - Claude Agent SDK setup + tool definitions
 - All 5 agents with scheduling
 - Agent monitor dashboard
 - Alert system with real-time toasts
 
 ### Phase 5: Backtesting
+
 - Walk-forward backtest engine
 - Cost simulation
 - Backtest lab UI with equity curves + metrics
 - Performance reports
 
 ### Phase 6: Live Trading Ready
+
 - Alpaca broker adapter
 - Execution quality monitoring
 - Settings UI (API keys, broker toggle, risk limits)

@@ -55,9 +55,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             </span>
           </div>
         )}
-        {collapsed && (
-          <div className="h-2 w-2 rounded-full bg-primary animate-pulse mx-auto" />
-        )}
+        {collapsed && <div className="h-2 w-2 rounded-full bg-primary animate-pulse mx-auto" />}
         <button
           onClick={onToggle}
           className={cn(
@@ -77,10 +75,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 px-2 py-3">
         {navItems.map((item) => {
-          const isActive =
-            item.href === '/'
-              ? pathname === '/'
-              : pathname.startsWith(item.href);
+          const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
 
           return (
             <Link
@@ -112,9 +107,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-profit" />
-            <p className="font-mono text-[10px] text-muted-foreground tracking-wider">
-              v0.1.0
-            </p>
+            <p className="font-mono text-[10px] text-muted-foreground tracking-wider">v0.1.0</p>
           </div>
         )}
       </div>

@@ -12,20 +12,13 @@ export function MetricCard({ label, value, change, icon }: MetricCardProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {label}
-        </CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
         {change !== undefined && (
-          <p
-            className={cn(
-              'text-xs mt-1',
-              change >= 0 ? 'text-profit' : 'text-loss',
-            )}
-          >
+          <p className={cn('text-xs mt-1', change >= 0 ? 'text-profit' : 'text-loss')}>
             {change >= 0 ? '+' : ''}
             {change.toFixed(2)}%
           </p>

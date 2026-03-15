@@ -34,9 +34,7 @@ describe('BacktestPage', () => {
 
   it('shows empty state before running', () => {
     render(<BacktestPage />);
-    expect(
-      screen.getByText(/Configure a strategy and click/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Configure a strategy and click/)).toBeInTheDocument();
   });
 
   it('runs backtest and shows results', async () => {

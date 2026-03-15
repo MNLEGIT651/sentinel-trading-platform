@@ -23,7 +23,6 @@ import { cn } from '@/lib/utils';
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
 
-
 const strategyOptions = [
   { id: 'sma_crossover', label: 'SMA Crossover', family: 'Trend Following' },
   { id: 'ema_momentum_trend', label: 'EMA Momentum Trend', family: 'Trend Following' },
@@ -72,15 +71,15 @@ interface BacktestResult {
 interface EngineBacktestSummary {
   strategy: string;
   ticker: string;
-  total_return: string;      // e.g. "12.50%"
+  total_return: string; // e.g. "12.50%"
   annualized_return: string;
-  max_drawdown: string;      // e.g. "-8.32%"
+  max_drawdown: string; // e.g. "-8.32%"
   sharpe_ratio: string;
   sortino_ratio: string;
-  win_rate: string;          // e.g. "55.0%"
+  win_rate: string; // e.g. "55.0%"
   profit_factor: string;
   total_trades: number;
-  avg_holding_bars: string;  // e.g. "15.3"
+  avg_holding_bars: string; // e.g. "15.3"
 }
 
 interface EngineBacktestResponse {
@@ -117,7 +116,13 @@ function runSyntheticBacktest(
   const prices: number[] = [100];
   for (let i = 1; i < bars; i++) {
     const drift =
-      trend === 'up' ? 0.0005 : trend === 'down' ? -0.0005 : trend === 'volatile' ? 0 : (rand() - 0.5) * 0.0002;
+      trend === 'up'
+        ? 0.0005
+        : trend === 'down'
+          ? -0.0005
+          : trend === 'volatile'
+            ? 0
+            : (rand() - 0.5) * 0.0002;
     const vol = trend === 'volatile' ? 0.025 : 0.015;
     const ret = drift + (rand() - 0.5) * vol;
     prices.push(Math.max(prices[i - 1] * (1 + ret), 5));
@@ -143,7 +148,7 @@ function runSyntheticBacktest(
     const smaSlow = prices.slice(i - 20, i).reduce((a, b) => a + b, 0) / 20;
 
     if (shares === 0 && smaFast > smaSlow && rand() > 0.3) {
-      shares = Math.floor(cash * 0.95 / price);
+      shares = Math.floor((cash * 0.95) / price);
       if (shares > 0) {
         cash -= shares * price;
         entryBar = i;
@@ -186,7 +191,10 @@ function runSyntheticBacktest(
   const losses = trades.filter((t) => t.pnl <= 0);
   const winRate = trades.length > 0 ? wins.length / trades.length : 0;
   const avgPnl = trades.length > 0 ? trades.reduce((s, t) => s + t.pnl, 0) / trades.length : 0;
-  const avgHolding = trades.length > 0 ? trades.reduce((s, t) => s + (t.exit_bar - t.entry_bar), 0) / trades.length : 0;
+  const avgHolding =
+    trades.length > 0
+      ? trades.reduce((s, t) => s + (t.exit_bar - t.entry_bar), 0) / trades.length
+      : 0;
   const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
   const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
   const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 999 : 0;
@@ -197,9 +205,13 @@ function runSyntheticBacktest(
     returns.push((equity[i] - equity[i - 1]) / equity[i - 1]);
   }
   const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-  const stdReturn = Math.sqrt(returns.reduce((a, b) => a + (b - avgReturn) ** 2, 0) / returns.length);
+  const stdReturn = Math.sqrt(
+    returns.reduce((a, b) => a + (b - avgReturn) ** 2, 0) / returns.length,
+  );
   const downReturns = returns.filter((r) => r < 0);
-  const downDev = Math.sqrt(downReturns.reduce((a, b) => a + b ** 2, 0) / Math.max(downReturns.length, 1));
+  const downDev = Math.sqrt(
+    downReturns.reduce((a, b) => a + b ** 2, 0) / Math.max(downReturns.length, 1),
+  );
 
   // Max drawdown
   let peak = equity[0];
@@ -242,7 +254,9 @@ function EquityCurveChart({ curve, className }: { curve: number[]; className?: s
   const h = 200;
   const w = curve.length;
 
-  const points = curve.map((v, i) => `${(i / (w - 1)) * 100},${h - ((v - min) / range) * (h - 20)}`).join(' ');
+  const points = curve
+    .map((v, i) => `${(i / (w - 1)) * 100},${h - ((v - min) / range) * (h - 20)}`)
+    .join(' ');
 
   const isPositive = curve[curve.length - 1] >= curve[0];
 
@@ -255,10 +269,7 @@ function EquityCurveChart({ curve, className }: { curve: number[]; className?: s
             <stop offset="100%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity="0" />
           </linearGradient>
         </defs>
-        <polygon
-          points={`0,${h} ${points} 100,${h}`}
-          fill="url(#equityGrad)"
-        />
+        <polygon points={`0,${h} ${points} 100,${h}`} fill="url(#equityGrad)" />
         <polyline
           points={points}
           fill="none"
@@ -304,7 +315,7 @@ export default function BacktestPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { detail?: string };
+        const err = (await res.json().catch(() => ({}))) as { detail?: string };
         throw new Error(err.detail ?? `Engine error ${res.status}`);
       }
 
@@ -324,9 +335,10 @@ export default function BacktestPage() {
           sortino_ratio: parsePct(s.sortino_ratio),
           max_drawdown: parsePct(s.max_drawdown),
           profit_factor: parsePct(s.profit_factor),
-          avg_trade_pnl: data.trades.length > 0
-            ? data.trades.reduce((sum, t) => sum + t.pnl, 0) / data.trades.length
-            : 0,
+          avg_trade_pnl:
+            data.trades.length > 0
+              ? data.trades.reduce((sum, t) => sum + t.pnl, 0) / data.trades.length
+              : 0,
           avg_holding_bars: parseFloat(s.avg_holding_bars),
         },
         equity_curve: data.equity_curve,
@@ -468,7 +480,12 @@ export default function BacktestPage() {
                 label: 'Sharpe Ratio',
                 value: s.sharpe_ratio.toFixed(2),
                 icon: BarChart3,
-                color: s.sharpe_ratio >= 1 ? 'text-profit' : s.sharpe_ratio >= 0 ? 'text-amber-400' : 'text-loss',
+                color:
+                  s.sharpe_ratio >= 1
+                    ? 'text-profit'
+                    : s.sharpe_ratio >= 0
+                      ? 'text-amber-400'
+                      : 'text-loss',
               },
               {
                 label: 'Win Rate',
@@ -480,13 +497,23 @@ export default function BacktestPage() {
                 label: 'Max Drawdown',
                 value: `${(s.max_drawdown * 100).toFixed(2)}%`,
                 icon: Shield,
-                color: s.max_drawdown > -0.1 ? 'text-profit' : s.max_drawdown > -0.2 ? 'text-amber-400' : 'text-loss',
+                color:
+                  s.max_drawdown > -0.1
+                    ? 'text-profit'
+                    : s.max_drawdown > -0.2
+                      ? 'text-amber-400'
+                      : 'text-loss',
               },
               {
                 label: 'Profit Factor',
                 value: s.profit_factor >= 999 ? '∞' : s.profit_factor.toFixed(2),
                 icon: Award,
-                color: s.profit_factor >= 1.5 ? 'text-profit' : s.profit_factor >= 1 ? 'text-amber-400' : 'text-loss',
+                color:
+                  s.profit_factor >= 1.5
+                    ? 'text-profit'
+                    : s.profit_factor >= 1
+                      ? 'text-amber-400'
+                      : 'text-loss',
               },
               {
                 label: 'Avg Holding',
@@ -498,7 +525,9 @@ export default function BacktestPage() {
               <Card key={label} className="bg-card border-border">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      {label}
+                    </span>
                     <Icon className={cn('h-3.5 w-3.5', color)} />
                   </div>
                   <p className={cn('text-lg font-bold font-mono', color)}>{value}</p>
@@ -526,7 +555,11 @@ export default function BacktestPage() {
                       <span className="text-muted-foreground">
                         Start: ${s.initial_capital.toLocaleString()}
                       </span>
-                      <span className={s.final_equity >= s.initial_capital ? 'text-profit' : 'text-loss'}>
+                      <span
+                        className={
+                          s.final_equity >= s.initial_capital ? 'text-profit' : 'text-loss'
+                        }
+                      >
                         End: ${s.final_equity.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                       </span>
                     </div>
@@ -546,21 +579,30 @@ export default function BacktestPage() {
                     <table className="w-full">
                       <thead className="sticky top-0 bg-card">
                         <tr className="border-b border-border">
-                          {['#', 'Side', 'Entry Bar', 'Exit Bar', 'Entry Price', 'Exit Price', 'P&L', 'Return'].map(
-                            (h) => (
-                              <th key={h} className="px-4 py-2 text-left">
-                                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                                  {h}
-                                </span>
-                              </th>
-                            ),
-                          )}
+                          {[
+                            '#',
+                            'Side',
+                            'Entry Bar',
+                            'Exit Bar',
+                            'Entry Price',
+                            'Exit Price',
+                            'P&L',
+                            'Return',
+                          ].map((h) => (
+                            <th key={h} className="px-4 py-2 text-left">
+                              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                                {h}
+                              </span>
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/50">
                         {result.trades.map((t, i) => (
                           <tr key={i} className="transition-colors hover:bg-accent/30">
-                            <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{i + 1}</td>
+                            <td className="px-4 py-2 text-xs font-mono text-muted-foreground">
+                              {i + 1}
+                            </td>
                             <td className="px-4 py-2">
                               <Badge
                                 className={cn(
@@ -573,18 +615,37 @@ export default function BacktestPage() {
                                 {t.side.toUpperCase()}
                               </Badge>
                             </td>
-                            <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{t.entry_bar}</td>
-                            <td className="px-4 py-2 text-xs font-mono text-muted-foreground">{t.exit_bar}</td>
-                            <td className="px-4 py-2 text-xs font-mono text-foreground">${t.entry_price.toFixed(2)}</td>
-                            <td className="px-4 py-2 text-xs font-mono text-foreground">${t.exit_price.toFixed(2)}</td>
+                            <td className="px-4 py-2 text-xs font-mono text-muted-foreground">
+                              {t.entry_bar}
+                            </td>
+                            <td className="px-4 py-2 text-xs font-mono text-muted-foreground">
+                              {t.exit_bar}
+                            </td>
+                            <td className="px-4 py-2 text-xs font-mono text-foreground">
+                              ${t.entry_price.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-2 text-xs font-mono text-foreground">
+                              ${t.exit_price.toFixed(2)}
+                            </td>
                             <td className="px-4 py-2">
-                              <span className={cn('text-xs font-mono', t.pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                              <span
+                                className={cn(
+                                  'text-xs font-mono',
+                                  t.pnl >= 0 ? 'text-profit' : 'text-loss',
+                                )}
+                              >
                                 {t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}
                               </span>
                             </td>
                             <td className="px-4 py-2">
-                              <span className={cn('text-xs font-mono', t.return_pct >= 0 ? 'text-profit' : 'text-loss')}>
-                                {t.return_pct >= 0 ? '+' : ''}{t.return_pct.toFixed(2)}%
+                              <span
+                                className={cn(
+                                  'text-xs font-mono',
+                                  t.return_pct >= 0 ? 'text-profit' : 'text-loss',
+                                )}
+                              >
+                                {t.return_pct >= 0 ? '+' : ''}
+                                {t.return_pct.toFixed(2)}%
                               </span>
                             </td>
                           </tr>
@@ -603,27 +664,36 @@ export default function BacktestPage() {
                   <div className="rounded-md border border-border/50 overflow-hidden">
                     <div className="bg-muted/30 px-4 py-2">
                       <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-                        Full Backtest Report &mdash; {strategyOptions.find((o) => o.id === strategy)?.label}
+                        Full Backtest Report &mdash;{' '}
+                        {strategyOptions.find((o) => o.id === strategy)?.label}
                       </p>
                     </div>
                     <div className="divide-y divide-border/50">
                       {[
                         ['Strategy', s.strategy],
                         ['Initial Capital', `$${s.initial_capital.toLocaleString()}`],
-                        ['Final Equity', `$${s.final_equity.toLocaleString('en-US', { maximumFractionDigits: 2 })}`],
+                        [
+                          'Final Equity',
+                          `$${s.final_equity.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+                        ],
                         ['Total Return', `${(s.total_return * 100).toFixed(2)}%`],
                         ['Total Trades', String(s.total_trades)],
                         ['Win Rate', `${(s.win_rate * 100).toFixed(1)}%`],
                         ['Sharpe Ratio', s.sharpe_ratio.toFixed(3)],
                         ['Sortino Ratio', s.sortino_ratio.toFixed(3)],
                         ['Max Drawdown', `${(s.max_drawdown * 100).toFixed(2)}%`],
-                        ['Profit Factor', s.profit_factor >= 999 ? '∞' : s.profit_factor.toFixed(3)],
+                        [
+                          'Profit Factor',
+                          s.profit_factor >= 999 ? '∞' : s.profit_factor.toFixed(3),
+                        ],
                         ['Avg Trade P&L', `$${s.avg_trade_pnl.toFixed(2)}`],
                         ['Avg Holding Period', `${s.avg_holding_bars.toFixed(0)} bars`],
                       ].map(([label, value]) => (
                         <div key={label} className="flex items-center justify-between px-4 py-2">
                           <span className="text-xs text-muted-foreground">{label}</span>
-                          <span className="text-xs font-mono font-medium text-foreground">{value}</span>
+                          <span className="text-xs font-mono font-medium text-foreground">
+                            {value}
+                          </span>
                         </div>
                       ))}
                     </div>

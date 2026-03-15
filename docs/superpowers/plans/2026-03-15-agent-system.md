@@ -13,24 +13,26 @@
 ## File Map
 
 ### New files
-| File | Responsibility |
-|------|---------------|
-| `apps/agents/src/supabase-client.ts` | Singleton Supabase client (service role) |
-| `apps/agents/src/recommendations-store.ts` | CRUD for `agent_recommendations` + `agent_alerts` |
-| `apps/agents/src/scheduler.ts` | Market hours check + node-cron 15-min trigger |
-| `apps/agents/src/server.ts` | Express app — all 9 REST endpoints |
-| `apps/web/src/lib/agents-client.ts` | Typed HTTP client for agents server (port 3001) |
-| `supabase/migrations/00003_agent_tables.sql` | agent_recommendations + agent_alerts tables |
+
+| File                                         | Responsibility                                    |
+| -------------------------------------------- | ------------------------------------------------- |
+| `apps/agents/src/supabase-client.ts`         | Singleton Supabase client (service role)          |
+| `apps/agents/src/recommendations-store.ts`   | CRUD for `agent_recommendations` + `agent_alerts` |
+| `apps/agents/src/scheduler.ts`               | Market hours check + node-cron 15-min trigger     |
+| `apps/agents/src/server.ts`                  | Express app — all 9 REST endpoints                |
+| `apps/web/src/lib/agents-client.ts`          | Typed HTTP client for agents server (port 3001)   |
+| `supabase/migrations/00003_agent_tables.sql` | agent_recommendations + agent_alerts tables       |
 
 ### Modified files
-| File | Change |
-|------|--------|
+
+| File                               | Change                                                                                          |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `apps/agents/src/engine-client.ts` | Add getAccount(), getPositions(), submitOrder(), scanStrategies(), getQuotes(), preTradeCheck() |
-| `apps/agents/src/tool-executor.ts` | Wire all 11 tools to real services |
-| `apps/agents/src/index.ts` | Boot Express server + scheduler instead of single cycle run |
-| `apps/agents/package.json` | Add express, cors, node-cron, @supabase/supabase-js, dotenv |
-| `apps/web/src/app/agents/page.tsx` | Replace simulateAgentRun() with real agents-client calls |
-| `.env.example` | Add AGENTS_PORT, WEB_URL |
+| `apps/agents/src/tool-executor.ts` | Wire all 11 tools to real services                                                              |
+| `apps/agents/src/index.ts`         | Boot Express server + scheduler instead of single cycle run                                     |
+| `apps/agents/package.json`         | Add express, cors, node-cron, @supabase/supabase-js, dotenv                                     |
+| `apps/web/src/app/agents/page.tsx` | Replace simulateAgentRun() with real agents-client calls                                        |
+| `.env.example`                     | Add AGENTS_PORT, WEB_URL                                                                        |
 
 ---
 
@@ -39,6 +41,7 @@
 ### Task 1: Supabase migration — agent tables
 
 **Files:**
+
 - Create: `supabase/migrations/00003_agent_tables.sql`
 
 - [ ] **Step 1: Write migration**
@@ -99,6 +102,7 @@ Using Supabase MCP: call `list_tables` and confirm `agent_recommendations` and `
 ### Task 2: Install new dependencies in apps/agents
 
 **Files:**
+
 - Modify: `apps/agents/package.json`
 
 - [ ] **Step 1: Update package.json**
@@ -154,6 +158,7 @@ git commit -m "feat(agents): add agent tables migration and install server depen
 ### Task 3: Supabase client singleton
 
 **Files:**
+
 - Create: `apps/agents/src/supabase-client.ts`
 - Test: `apps/agents/tests/supabase-client.test.ts`
 
@@ -242,6 +247,7 @@ Expected: 3 PASS.
 ### Task 4: Recommendations store
 
 **Files:**
+
 - Create: `apps/agents/src/recommendations-store.ts`
 - Test: `apps/agents/tests/recommendations-store.test.ts`
 
@@ -257,8 +263,14 @@ vi.mock('../src/supabase-client.js', () => ({
   getSupabaseClient: () => ({ from: mockFrom }),
 }));
 
-const { createRecommendation, listRecommendations, atomicApprove, rejectRecommendation, createAlert, listAlerts } =
-  await import('../src/recommendations-store.js');
+const {
+  createRecommendation,
+  listRecommendations,
+  atomicApprove,
+  rejectRecommendation,
+  createAlert,
+  listAlerts,
+} = await import('../src/recommendations-store.js');
 
 describe('createRecommendation', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -296,10 +308,16 @@ describe('createRecommendation', () => {
         }),
       }),
     });
-    await expect(createRecommendation({
-      agent_role: 'execution_monitor', ticker: 'AAPL', side: 'buy',
-      quantity: 1, order_type: 'market', reason: 'test',
-    })).rejects.toThrow('DB error');
+    await expect(
+      createRecommendation({
+        agent_role: 'execution_monitor',
+        ticker: 'AAPL',
+        side: 'buy',
+        quantity: 1,
+        order_type: 'market',
+        reason: 'test',
+      }),
+    ).rejects.toThrow('DB error');
   });
 });
 
@@ -345,7 +363,15 @@ describe('createAlert', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('inserts alert and returns it', async () => {
-    const alert = { id: 'alt-1', severity: 'warning', title: 'Test', message: 'msg', ticker: null, acknowledged: false, created_at: '' };
+    const alert = {
+      id: 'alt-1',
+      severity: 'warning',
+      title: 'Test',
+      message: 'msg',
+      ticker: null,
+      acknowledged: false,
+      created_at: '',
+    };
     mockFrom.mockReturnValue({
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
@@ -435,11 +461,7 @@ export async function listRecommendations(status?: string): Promise<Recommendati
 
 export async function getRecommendation(id: string): Promise<Recommendation | null> {
   const db = getSupabaseClient();
-  const { data, error } = await db
-    .from('agent_recommendations')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await db.from('agent_recommendations').select('*').eq('id', id).single();
   if (error?.code === 'PGRST116') return null;
   if (error) throw new Error(error.message);
   return data as Recommendation;
@@ -502,11 +524,7 @@ export async function rejectRecommendation(id: string): Promise<Recommendation |
 
 export async function createAlert(alert: AlertCreate): Promise<AgentAlert> {
   const db = getSupabaseClient();
-  const { data, error } = await db
-    .from('agent_alerts')
-    .insert(alert)
-    .select()
-    .single();
+  const { data, error } = await db.from('agent_alerts').insert(alert).select().single();
   if (error) throw new Error(error.message);
   return data as AgentAlert;
 }
@@ -546,6 +564,7 @@ git commit -m "feat(agents): add Supabase client and recommendations store"
 ### Task 5: Extend EngineClient with missing methods
 
 **Files:**
+
 - Modify: `apps/agents/src/engine-client.ts`
 - Test: `apps/agents/tests/engine-client.test.ts`
 
@@ -578,36 +597,58 @@ describe('EngineClient new methods', () => {
   });
 
   it('getAccount fetches /api/v1/portfolio/account', async () => {
-    mockFetch.mockResolvedValue(mockResponse({ cash: 95000, equity: 100000, positions_value: 5000, initial_capital: 100000 }));
+    mockFetch.mockResolvedValue(
+      mockResponse({ cash: 95000, equity: 100000, positions_value: 5000, initial_capital: 100000 }),
+    );
     const acct = await client.getAccount();
     expect(acct.equity).toBe(100000);
     expect(mockFetch).toHaveBeenCalledWith(
       'http://engine:8000/api/v1/portfolio/account',
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer test-key' }) }),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer test-key' }),
+      }),
     );
   });
 
   it('getPositions fetches /api/v1/portfolio/positions', async () => {
-    mockFetch.mockResolvedValue(mockResponse([{ instrument_id: 'AAPL', quantity: 10, avg_price: 180 }]));
+    mockFetch.mockResolvedValue(
+      mockResponse([{ instrument_id: 'AAPL', quantity: 10, avg_price: 180 }]),
+    );
     const positions = await client.getPositions();
     expect(positions).toHaveLength(1);
     expect(positions[0].instrument_id).toBe('AAPL');
   });
 
   it('submitOrder posts to /api/v1/portfolio/orders', async () => {
-    mockFetch.mockResolvedValue(mockResponse({ order_id: 'ord-1', status: 'filled', fill_price: 180.5 }));
-    const result = await client.submitOrder({ symbol: 'AAPL', side: 'buy', order_type: 'market', quantity: 5 });
+    mockFetch.mockResolvedValue(
+      mockResponse({ order_id: 'ord-1', status: 'filled', fill_price: 180.5 }),
+    );
+    const result = await client.submitOrder({
+      symbol: 'AAPL',
+      side: 'buy',
+      order_type: 'market',
+      quantity: 5,
+    });
     expect(result.order_id).toBe('ord-1');
   });
 
   it('submitOrder throws on 422 risk block', async () => {
     mockFetch.mockResolvedValue(mockResponse({ detail: 'Risk check blocked order' }, 422));
-    await expect(client.submitOrder({ symbol: 'AAPL', side: 'buy', order_type: 'market', quantity: 5000 }))
-      .rejects.toThrow('422');
+    await expect(
+      client.submitOrder({ symbol: 'AAPL', side: 'buy', order_type: 'market', quantity: 5000 }),
+    ).rejects.toThrow('422');
   });
 
   it('scanStrategies posts to /api/v1/strategies/scan', async () => {
-    mockFetch.mockResolvedValue(mockResponse({ signals: [], total_signals: 0, tickers_scanned: 2, strategies_run: 8, errors: [] }));
+    mockFetch.mockResolvedValue(
+      mockResponse({
+        signals: [],
+        total_signals: 0,
+        tickers_scanned: 2,
+        strategies_run: 8,
+        errors: [],
+      }),
+    );
     const result = await client.scanStrategies(['AAPL', 'MSFT']);
     expect(result.tickers_scanned).toBe(2);
   });
@@ -620,8 +661,21 @@ describe('EngineClient new methods', () => {
   });
 
   it('preTradeCheck posts to /api/v1/risk/pre-trade-check', async () => {
-    mockFetch.mockResolvedValue(mockResponse({ allowed: true, action: 'allow', reason: 'ok', adjusted_shares: null }));
-    const result = await client.preTradeCheck({ ticker: 'AAPL', shares: 5, price: 180, side: 'buy', equity: 100000, cash: 95000, peak_equity: 100000, daily_starting_equity: 100000, positions: {}, position_sectors: {} });
+    mockFetch.mockResolvedValue(
+      mockResponse({ allowed: true, action: 'allow', reason: 'ok', adjusted_shares: null }),
+    );
+    const result = await client.preTradeCheck({
+      ticker: 'AAPL',
+      shares: 5,
+      price: 180,
+      side: 'buy',
+      equity: 100000,
+      cash: 95000,
+      peak_equity: 100000,
+      daily_starting_equity: 100000,
+      positions: {},
+      position_sectors: {},
+    });
     expect(result.allowed).toBe(true);
   });
 });
@@ -726,6 +780,7 @@ git commit -m "feat(agents): extend EngineClient with portfolio, strategy, risk 
 ### Task 6: Replace all mocked tools with real implementations
 
 **Files:**
+
 - Modify: `apps/agents/src/tool-executor.ts`
 - Test: `apps/agents/tests/tool-executor.test.ts`
 
@@ -768,7 +823,9 @@ describe('get_market_data', () => {
       { ticker: 'AAPL', close: 180, change_pct: 0.5 },
       { ticker: 'MSFT', close: 370, change_pct: -0.2 },
     ]);
-    const result = JSON.parse(await executor.execute('get_market_data', { tickers: ['AAPL', 'MSFT'] }));
+    const result = JSON.parse(
+      await executor.execute('get_market_data', { tickers: ['AAPL', 'MSFT'] }),
+    );
     expect(result.prices['AAPL'].price).toBe(180);
     expect(result.prices['MSFT'].price).toBe(370);
   });
@@ -801,8 +858,19 @@ describe('run_strategy_scan', () => {
 
   it('calls scanStrategies and returns signals', async () => {
     mockEngine.scanStrategies.mockResolvedValue({
-      signals: [{ ticker: 'NVDA', direction: 'long', strength: 0.82, strategy_name: 'rsi_momentum', reason: 'RSI oversold' }],
-      total_signals: 1, tickers_scanned: 1, strategies_run: 8, errors: [],
+      signals: [
+        {
+          ticker: 'NVDA',
+          direction: 'long',
+          strength: 0.82,
+          strategy_name: 'rsi_momentum',
+          reason: 'RSI oversold',
+        },
+      ],
+      total_signals: 1,
+      tickers_scanned: 1,
+      strategies_run: 8,
+      errors: [],
     });
     const result = JSON.parse(await executor.execute('run_strategy_scan', { tickers: ['NVDA'] }));
     expect(result.signals).toHaveLength(1);
@@ -814,9 +882,23 @@ describe('assess_portfolio_risk', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('fetches real account and positions before assessing risk', async () => {
-    mockEngine.getAccount.mockResolvedValue({ equity: 102000, cash: 97000, positions_value: 5000, initial_capital: 100000 });
-    mockEngine.getPositions.mockResolvedValue([{ instrument_id: 'AAPL', quantity: 10, market_value: 1800, avg_price: 180 }]);
-    mockEngine.assessRisk.mockResolvedValue({ equity: 102000, drawdown: 0, daily_pnl: 2000, halted: false, alerts: [], concentrations: {} });
+    mockEngine.getAccount.mockResolvedValue({
+      equity: 102000,
+      cash: 97000,
+      positions_value: 5000,
+      initial_capital: 100000,
+    });
+    mockEngine.getPositions.mockResolvedValue([
+      { instrument_id: 'AAPL', quantity: 10, market_value: 1800, avg_price: 180 },
+    ]);
+    mockEngine.assessRisk.mockResolvedValue({
+      equity: 102000,
+      drawdown: 0,
+      daily_pnl: 2000,
+      halted: false,
+      alerts: [],
+      concentrations: {},
+    });
 
     const result = JSON.parse(await executor.execute('assess_portfolio_risk', {}));
     expect(result.equity).toBe(102000);
@@ -830,21 +912,53 @@ describe('check_risk_limits', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns passed=false when pre-trade check blocks', async () => {
-    mockEngine.getAccount.mockResolvedValue({ equity: 100000, cash: 95000, initial_capital: 100000 });
+    mockEngine.getAccount.mockResolvedValue({
+      equity: 100000,
+      cash: 95000,
+      initial_capital: 100000,
+    });
     mockEngine.getPositions.mockResolvedValue([]);
-    mockEngine.preTradeCheck.mockResolvedValue({ allowed: false, action: 'block', reason: 'Exceeds position limit', adjusted_shares: null });
+    mockEngine.preTradeCheck.mockResolvedValue({
+      allowed: false,
+      action: 'block',
+      reason: 'Exceeds position limit',
+      adjusted_shares: null,
+    });
 
-    const result = JSON.parse(await executor.execute('check_risk_limits', { ticker: 'AAPL', shares: 10000, price: 180, side: 'buy' }));
+    const result = JSON.parse(
+      await executor.execute('check_risk_limits', {
+        ticker: 'AAPL',
+        shares: 10000,
+        price: 180,
+        side: 'buy',
+      }),
+    );
     expect(result.passed).toBe(false);
     expect(result.reason).toContain('position limit');
   });
 
   it('returns passed=true when trade is allowed', async () => {
-    mockEngine.getAccount.mockResolvedValue({ equity: 100000, cash: 95000, initial_capital: 100000 });
+    mockEngine.getAccount.mockResolvedValue({
+      equity: 100000,
+      cash: 95000,
+      initial_capital: 100000,
+    });
     mockEngine.getPositions.mockResolvedValue([]);
-    mockEngine.preTradeCheck.mockResolvedValue({ allowed: true, action: 'allow', reason: 'All checks passed', adjusted_shares: null });
+    mockEngine.preTradeCheck.mockResolvedValue({
+      allowed: true,
+      action: 'allow',
+      reason: 'All checks passed',
+      adjusted_shares: null,
+    });
 
-    const result = JSON.parse(await executor.execute('check_risk_limits', { ticker: 'AAPL', shares: 5, price: 180, side: 'buy' }));
+    const result = JSON.parse(
+      await executor.execute('check_risk_limits', {
+        ticker: 'AAPL',
+        shares: 5,
+        price: 180,
+        side: 'buy',
+      }),
+    );
     expect(result.passed).toBe(true);
   });
 });
@@ -854,9 +968,14 @@ describe('submit_order', () => {
 
   it('writes a pending recommendation to Supabase, does NOT call engine.submitOrder', async () => {
     const { createRecommendation } = await import('../src/recommendations-store.js');
-    const result = JSON.parse(await executor.execute('submit_order', {
-      ticker: 'AAPL', side: 'buy', quantity: 5, order_type: 'market',
-    }));
+    const result = JSON.parse(
+      await executor.execute('submit_order', {
+        ticker: 'AAPL',
+        side: 'buy',
+        quantity: 5,
+        order_type: 'market',
+      }),
+    );
     expect(result.status).toBe('pending');
     expect(result.recommendation_id).toBe('rec-1');
     expect(mockEngine.submitOrder).not.toHaveBeenCalled();
@@ -867,7 +986,13 @@ describe('submit_order', () => {
 describe('create_alert', () => {
   it('writes alert to Supabase', async () => {
     const { createAlert } = await import('../src/recommendations-store.js');
-    const result = JSON.parse(await executor.execute('create_alert', { severity: 'warning', title: 'Test', message: 'msg' }));
+    const result = JSON.parse(
+      await executor.execute('create_alert', {
+        severity: 'warning',
+        title: 'Test',
+        message: 'msg',
+      }),
+    );
     expect(result.id).toBe('alt-1');
     expect(createAlert).toHaveBeenCalled();
   });
@@ -892,7 +1017,11 @@ Replace `apps/agents/src/tool-executor.ts` entirely:
  */
 
 import { EngineClient } from './engine-client.js';
-import { createRecommendation, createAlert as dbCreateAlert, type RecommendationCreate } from './recommendations-store.js';
+import {
+  createRecommendation,
+  createAlert as dbCreateAlert,
+  type RecommendationCreate,
+} from './recommendations-store.js';
 import type { MarketSentiment, RiskAssessment } from './types.js';
 
 export class ToolExecutor {
@@ -914,18 +1043,30 @@ export class ToolExecutor {
 
   private async dispatch(toolName: string, input: Record<string, unknown>): Promise<unknown> {
     switch (toolName) {
-      case 'get_market_data':        return this.getMarketData(input);
-      case 'get_market_sentiment':   return this.getMarketSentiment();
-      case 'run_strategy_scan':      return this.runStrategyScan(input);
-      case 'get_strategy_info':      return this.getStrategyInfo(input);
-      case 'assess_portfolio_risk':  return this.assessPortfolioRisk();
-      case 'calculate_position_size': return this.calculatePositionSize(input);
-      case 'check_risk_limits':      return this.checkRiskLimits(input);
-      case 'submit_order':           return this.submitOrder(input);
-      case 'get_open_orders':        return this.getOpenOrders();
-      case 'analyze_ticker':         return this.analyzeTicker(input);
-      case 'create_alert':           return this.createAlert(input);
-      default: throw new Error(`Unknown tool: ${toolName}`);
+      case 'get_market_data':
+        return this.getMarketData(input);
+      case 'get_market_sentiment':
+        return this.getMarketSentiment();
+      case 'run_strategy_scan':
+        return this.runStrategyScan(input);
+      case 'get_strategy_info':
+        return this.getStrategyInfo(input);
+      case 'assess_portfolio_risk':
+        return this.assessPortfolioRisk();
+      case 'calculate_position_size':
+        return this.calculatePositionSize(input);
+      case 'check_risk_limits':
+        return this.checkRiskLimits(input);
+      case 'submit_order':
+        return this.submitOrder(input);
+      case 'get_open_orders':
+        return this.getOpenOrders();
+      case 'analyze_ticker':
+        return this.analyzeTicker(input);
+      case 'create_alert':
+        return this.createAlert(input);
+      default:
+        throw new Error(`Unknown tool: ${toolName}`);
     }
   }
 
@@ -944,15 +1085,20 @@ export class ToolExecutor {
 
     const quotes = await this.engine.getQuotes(tickers);
     const prices = Object.fromEntries(
-      quotes.map(q => [q.ticker, { price: q.close, change_pct: q.change_pct, volume: q.volume }]),
+      quotes.map((q) => [q.ticker, { price: q.close, change_pct: q.change_pct, volume: q.volume }]),
     );
 
-    return { tickers, timeframe, prices, message: `Live prices for ${quotes.length}/${tickers.length} tickers` };
+    return {
+      tickers,
+      timeframe,
+      prices,
+      message: `Live prices for ${quotes.length}/${tickers.length} tickers`,
+    };
   }
 
   private async getMarketSentiment(): Promise<MarketSentiment> {
     const quotes = await this.engine.getQuotes(['SPY', 'QQQ', 'IWM']);
-    const spy = quotes.find(q => q.ticker === 'SPY');
+    const spy = quotes.find((q) => q.ticker === 'SPY');
     const spyChange = spy?.change_pct ?? 0;
 
     let overall: 'bullish' | 'bearish' | 'neutral';
@@ -960,7 +1106,10 @@ export class ToolExecutor {
     else if (spyChange < -0.3) overall = 'bearish';
     else overall = 'neutral';
 
-    const drivers = quotes.map(q => `${q.ticker}: ${q.change_pct >= 0 ? '+' : ''}${q.change_pct.toFixed(2)}% ($${q.close.toFixed(2)})`);
+    const drivers = quotes.map(
+      (q) =>
+        `${q.ticker}: ${q.change_pct >= 0 ? '+' : ''}${q.change_pct.toFixed(2)}% ($${q.close.toFixed(2)})`,
+    );
 
     return {
       overall,
@@ -983,9 +1132,10 @@ export class ToolExecutor {
     const strategies = (input.strategies as string[] | undefined) ?? [];
 
     // Use default watchlist if none specified
-    const scanTickers = tickers.length > 0
-      ? tickers
-      : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
+    const scanTickers =
+      tickers.length > 0
+        ? tickers
+        : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
 
     const result = await this.engine.scanStrategies({
       tickers: scanTickers,
@@ -994,9 +1144,10 @@ export class ToolExecutor {
     });
 
     // Filter by requested strategies if specified
-    const signals = strategies.length > 0
-      ? result.signals.filter(s => strategies.includes(s.strategy_name))
-      : result.signals;
+    const signals =
+      strategies.length > 0
+        ? result.signals.filter((s) => strategies.includes(s.strategy_name))
+        : result.signals;
 
     return {
       signals,
@@ -1011,7 +1162,7 @@ export class ToolExecutor {
     const strategies = await this.engine.getStrategies();
     const family = input.family as string | undefined;
     if (family) {
-      return { family, strategies: strategies.strategies.filter(s => s.family === family) };
+      return { family, strategies: strategies.strategies.filter((s) => s.family === family) };
     }
     return strategies;
   }
@@ -1027,7 +1178,7 @@ export class ToolExecutor {
 
     const positionsMap: Record<string, number> = {};
     for (const p of positions) {
-      positionsMap[p.instrument_id] = p.market_value ?? (p.quantity * (p.avg_price ?? 0));
+      positionsMap[p.instrument_id] = p.market_value ?? p.quantity * (p.avg_price ?? 0);
     }
 
     const result = await this.engine.assessRisk({
@@ -1044,7 +1195,7 @@ export class ToolExecutor {
       drawdown: result.drawdown,
       dailyPnl: result.daily_pnl,
       halted: result.halted,
-      alerts: result.alerts.map(a => ({
+      alerts: result.alerts.map((a) => ({
         severity: a.severity as 'info' | 'warning' | 'critical',
         rule: a.rule,
         message: a.message,
@@ -1073,7 +1224,7 @@ export class ToolExecutor {
 
     const positionsMap: Record<string, number> = {};
     for (const p of positions) {
-      positionsMap[p.instrument_id] = p.market_value ?? (p.quantity * (p.avg_price ?? 0));
+      positionsMap[p.instrument_id] = p.market_value ?? p.quantity * (p.avg_price ?? 0);
     }
 
     const result = await this.engine.preTradeCheck({
@@ -1141,15 +1292,17 @@ export class ToolExecutor {
     });
 
     const signals = result.signals;
-    const longSignals = signals.filter(s => s.direction === 'long');
-    const shortSignals = signals.filter(s => s.direction === 'short');
-    const avgStrength = signals.length > 0
-      ? signals.reduce((sum, s) => sum + s.strength, 0) / signals.length
-      : 0;
+    const longSignals = signals.filter((s) => s.direction === 'long');
+    const shortSignals = signals.filter((s) => s.direction === 'short');
+    const avgStrength =
+      signals.length > 0 ? signals.reduce((sum, s) => sum + s.strength, 0) / signals.length : 0;
 
-    const trendBias = longSignals.length > shortSignals.length ? 'bullish'
-      : shortSignals.length > longSignals.length ? 'bearish'
-      : 'neutral';
+    const trendBias =
+      longSignals.length > shortSignals.length
+        ? 'bullish'
+        : shortSignals.length > longSignals.length
+          ? 'bearish'
+          : 'neutral';
 
     return {
       ticker,
@@ -1203,6 +1356,7 @@ git commit -m "feat(agents): wire all 11 tools to live engine API and Supabase"
 ### Task 7: Market hours scheduler
 
 **Files:**
+
 - Create: `apps/agents/src/scheduler.ts`
 - Test: `apps/agents/tests/scheduler.test.ts`
 
@@ -1298,9 +1452,9 @@ export function isMarketOpen(): boolean {
     weekday: 'short',
   }).formatToParts(now);
 
-  const weekday = parts.find(p => p.type === 'weekday')?.value ?? '';
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10);
-  const minute = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+  const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
 
   const isWeekday = !['Sat', 'Sun'].includes(weekday);
   const timeMinutes = hour * 60 + minute;
@@ -1373,6 +1527,7 @@ git commit -m "feat(agents): add market hours scheduler with DST-correct ET chec
 ### Task 8: Express HTTP server
 
 **Files:**
+
 - Create: `apps/agents/src/server.ts`
 - Test: `apps/agents/tests/server.test.ts`
 
@@ -1381,16 +1536,25 @@ git commit -m "feat(agents): add market hours scheduler with DST-correct ET chec
 ```typescript
 // apps/agents/tests/server.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import request from 'supertest';  // Add supertest to devDeps
+import request from 'supertest'; // Add supertest to devDeps
 
 // Mock orchestrator
 const mockOrchestrator = {
   currentState: {
     agents: {
-      market_sentinel: 'idle', strategy_analyst: 'idle',
-      risk_monitor: 'idle', research: 'idle', execution_monitor: 'idle',
+      market_sentinel: 'idle',
+      strategy_analyst: 'idle',
+      risk_monitor: 'idle',
+      research: 'idle',
+      execution_monitor: 'idle',
     },
-    lastRun: { market_sentinel: null, strategy_analyst: null, risk_monitor: null, research: null, execution_monitor: null },
+    lastRun: {
+      market_sentinel: null,
+      strategy_analyst: null,
+      risk_monitor: null,
+      research: null,
+      execution_monitor: null,
+    },
     cycleCount: 3,
     halted: false,
   },
@@ -1418,7 +1582,9 @@ vi.mock('../src/scheduler.js', () => ({
 // Mock engine client for approve flow
 vi.mock('../src/engine-client.js', () => ({
   EngineClient: vi.fn().mockImplementation(() => ({
-    submitOrder: vi.fn().mockResolvedValue({ order_id: 'alpaca-123', status: 'filled', fill_price: 180 }),
+    submitOrder: vi
+      .fn()
+      .mockResolvedValue({ order_id: 'alpaca-123', status: 'filled', fill_price: 180 }),
   })),
 }));
 
@@ -1448,7 +1614,15 @@ describe('POST /cycle', () => {
 
   it('returns 200 and starts cycle', async () => {
     // isRunning: false
-    Object.assign(mockOrchestrator.currentState, { agents: { market_sentinel: 'idle', strategy_analyst: 'idle', risk_monitor: 'idle', research: 'idle', execution_monitor: 'idle' } });
+    Object.assign(mockOrchestrator.currentState, {
+      agents: {
+        market_sentinel: 'idle',
+        strategy_analyst: 'idle',
+        risk_monitor: 'idle',
+        research: 'idle',
+        execution_monitor: 'idle',
+      },
+    });
     const res = await request(app).post('/cycle');
     expect(res.status).toBe(200);
     expect(res.body.started).toBe(true);
@@ -1497,6 +1671,7 @@ describe('GET /alerts', () => {
 ```
 
 Note: Install `supertest` before running:
+
 ```bash
 cd "apps/agents" && pnpm add -D supertest @types/supertest
 ```
@@ -1517,8 +1692,13 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import cors from 'cors';
 import { Orchestrator } from './orchestrator.js';
 import {
-  listRecommendations, atomicApprove, markFilled, markRiskBlocked,
-  rejectRecommendation, getRecommendation, listAlerts,
+  listRecommendations,
+  atomicApprove,
+  markFilled,
+  markRiskBlocked,
+  rejectRecommendation,
+  getRecommendation,
+  listAlerts,
 } from './recommendations-store.js';
 import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
@@ -1571,13 +1751,18 @@ export function createApp(orchestrator: Orchestrator): Express {
       return res.status(409).json({ error: 'halted', message: 'Trading is halted. Resume first.' });
     }
     if (_isRunning) {
-      return res.status(409).json({ error: 'cycle_in_progress', message: 'A cycle is already running.' });
+      return res
+        .status(409)
+        .json({ error: 'cycle_in_progress', message: 'A cycle is already running.' });
     }
 
     // Run async — don't await (returns immediately)
     _isRunning = true;
-    orchestrator.runCycle()
-      .then(() => { _isRunning = false; })
+    orchestrator
+      .runCycle()
+      .then(() => {
+        _isRunning = false;
+      })
       .catch((err) => {
         _isRunning = false;
         console.error('[Server] Cycle error:', err);
@@ -1608,67 +1793,83 @@ export function createApp(orchestrator: Orchestrator): Express {
     }
   });
 
-  app.post('/recommendations/:id/approve', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-
-      // Check recommendation exists
-      const rec = await getRecommendation(id);
-      if (!rec) {
-        return res.status(404).json({ error: 'not_found', message: `Recommendation ${id} not found` });
-      }
-
-      // Atomic claim — prevents double-submission
-      const claimed = await atomicApprove(id);
-      if (!claimed) {
-        return res.status(409).json({ error: 'not_pending', message: 'Recommendation is not in pending state' });
-      }
-
-      // Submit to engine (which submits to Alpaca)
-      const engine = new EngineClient();
+  app.post(
+    '/recommendations/:id/approve',
+    async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const result = await engine.submitOrder({
-          symbol: rec.ticker,
-          side: rec.side,
-          order_type: rec.order_type,
-          quantity: rec.quantity,
-          limit_price: rec.limit_price ?? undefined,
-          time_in_force: 'day',
-        });
-        await markFilled(id, result.order_id);
-        res.json({ orderId: result.order_id, status: result.status, fill_price: result.fill_price });
-      } catch (engineErr) {
-        const msg = engineErr instanceof Error ? engineErr.message : String(engineErr);
-        // If risk blocked, mark as blocked and return 422
-        if (msg.includes('422') || msg.includes('Risk check')) {
-          await markRiskBlocked(id, msg);
-          return res.status(422).json({ error: 'risk_blocked', detail: msg });
-        }
-        // Other engine error — revert to pending so user can retry
-        // (Don't revert atomically here; just log and return 502)
-        return res.status(502).json({ error: 'engine_error', detail: msg });
-      }
-    } catch (err) {
-      next(err);
-    }
-  });
+        const { id } = req.params;
 
-  app.post('/recommendations/:id/reject', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-      const rec = await getRecommendation(id);
-      if (!rec) {
-        return res.status(404).json({ error: 'not_found' });
+        // Check recommendation exists
+        const rec = await getRecommendation(id);
+        if (!rec) {
+          return res
+            .status(404)
+            .json({ error: 'not_found', message: `Recommendation ${id} not found` });
+        }
+
+        // Atomic claim — prevents double-submission
+        const claimed = await atomicApprove(id);
+        if (!claimed) {
+          return res
+            .status(409)
+            .json({ error: 'not_pending', message: 'Recommendation is not in pending state' });
+        }
+
+        // Submit to engine (which submits to Alpaca)
+        const engine = new EngineClient();
+        try {
+          const result = await engine.submitOrder({
+            symbol: rec.ticker,
+            side: rec.side,
+            order_type: rec.order_type,
+            quantity: rec.quantity,
+            limit_price: rec.limit_price ?? undefined,
+            time_in_force: 'day',
+          });
+          await markFilled(id, result.order_id);
+          res.json({
+            orderId: result.order_id,
+            status: result.status,
+            fill_price: result.fill_price,
+          });
+        } catch (engineErr) {
+          const msg = engineErr instanceof Error ? engineErr.message : String(engineErr);
+          // If risk blocked, mark as blocked and return 422
+          if (msg.includes('422') || msg.includes('Risk check')) {
+            await markRiskBlocked(id, msg);
+            return res.status(422).json({ error: 'risk_blocked', detail: msg });
+          }
+          // Other engine error — revert to pending so user can retry
+          // (Don't revert atomically here; just log and return 502)
+          return res.status(502).json({ error: 'engine_error', detail: msg });
+        }
+      } catch (err) {
+        next(err);
       }
-      const rejected = await rejectRecommendation(id);
-      if (!rejected) {
-        return res.status(409).json({ error: 'not_pending', message: 'Recommendation is not in pending state' });
+    },
+  );
+
+  app.post(
+    '/recommendations/:id/reject',
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { id } = req.params;
+        const rec = await getRecommendation(id);
+        if (!rec) {
+          return res.status(404).json({ error: 'not_found' });
+        }
+        const rejected = await rejectRecommendation(id);
+        if (!rejected) {
+          return res
+            .status(409)
+            .json({ error: 'not_pending', message: 'Recommendation is not in pending state' });
+        }
+        res.json({ status: 'rejected' });
+      } catch (err) {
+        next(err);
       }
-      res.json({ status: 'rejected' });
-    } catch (err) {
-      next(err);
-    }
-  });
+    },
+  );
 
   // ── Alerts ──────────────────────────────────────────────────────
 
@@ -1705,6 +1906,7 @@ Expected: All PASS.
 ### Task 9: Update index.ts — boot server + scheduler
 
 **Files:**
+
 - Modify: `apps/agents/src/index.ts`
 
 - [ ] **Step 1: Replace index.ts**
@@ -1750,10 +1952,10 @@ async function main() {
   });
 
   // Start market-hours scheduler
-  const schedulerTask = startScheduler(
-    () => orchestrator.runCycle(),
-    { isRunning, isHalted: () => orchestrator.currentState.halted },
-  );
+  const schedulerTask = startScheduler(() => orchestrator.runCycle(), {
+    isRunning,
+    isHalted: () => orchestrator.currentState.halted,
+  });
 
   // Graceful shutdown
   const shutdown = (signal: string) => {
@@ -1809,6 +2011,7 @@ git commit -m "feat(agents): add Express server with cycle control and recommend
 ### Task 10: Agents HTTP client
 
 **Files:**
+
 - Create: `apps/web/src/lib/agents-client.ts`
 - Test: `apps/web/tests/lib/agents-client.test.ts`
 
@@ -1868,7 +2071,10 @@ async function agentsFetch<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    const err = new Error(`Agents API ${res.status}: ${body.error ?? res.statusText}`) as Error & { status: number; body: unknown };
+    const err = new Error(`Agents API ${res.status}: ${body.error ?? res.statusText}`) as Error & {
+      status: number;
+      body: unknown;
+    };
     err.status = res.status;
     err.body = body;
     throw err;
@@ -1897,7 +2103,9 @@ export const agentsClient = {
     return agentsFetch(`/recommendations?status=${status}`);
   },
 
-  approveRecommendation(id: string): Promise<{ orderId: string; status: string; fill_price?: number }> {
+  approveRecommendation(
+    id: string,
+  ): Promise<{ orderId: string; status: string; fill_price?: number }> {
     return agentsFetch(`/recommendations/${id}/approve`, { method: 'POST' });
   },
 
@@ -1914,6 +2122,7 @@ export const agentsClient = {
 - [ ] **Step 2: Add env var to .env.example**
 
 In `.env.example`, add:
+
 ```
 AGENTS_PORT=3001
 WEB_URL=http://localhost:3000
@@ -1925,6 +2134,7 @@ NEXT_PUBLIC_AGENTS_URL=http://localhost:3001
 ### Task 11: Rewrite agents/page.tsx
 
 **Files:**
+
 - Modify: `apps/web/src/app/agents/page.tsx`
 - Test: `apps/web/tests/pages/agents.test.tsx`
 
@@ -1973,7 +2183,9 @@ vi.mock('@/lib/agents-client', () => ({
     getAlerts: vi.fn().mockResolvedValue({ alerts: [] }),
     runCycle: vi.fn().mockResolvedValue(undefined),
     halt: vi.fn().mockResolvedValue(undefined),
-    approveRecommendation: vi.fn().mockResolvedValue({ orderId: 'alpaca-1', status: 'filled', fill_price: 880 }),
+    approveRecommendation: vi
+      .fn()
+      .mockResolvedValue({ orderId: 'alpaca-1', status: 'filled', fill_price: 880 }),
     rejectRecommendation: vi.fn().mockResolvedValue({ status: 'rejected' }),
   },
 }));
@@ -2055,15 +2267,35 @@ Expected: Multiple FAIL — page still uses simulateAgentRun.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Bot, Play, Pause, RefreshCw, Circle, ShieldAlert, Eye, Brain,
-  BarChart3, Crosshair, AlertTriangle, Clock, Zap, Loader2,
-  CheckCircle2, XCircle, TrendingUp, TrendingDown,
+  Bot,
+  Play,
+  Pause,
+  RefreshCw,
+  Circle,
+  ShieldAlert,
+  Eye,
+  Brain,
+  BarChart3,
+  Crosshair,
+  AlertTriangle,
+  Clock,
+  Zap,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { agentsClient, type OrchestratorStatus, type TradeRecommendation, type AgentAlert } from '@/lib/agents-client';
+import {
+  agentsClient,
+  type OrchestratorStatus,
+  type TradeRecommendation,
+  type AgentAlert,
+} from '@/lib/agents-client';
 
 // ── Agent definitions ─────────────────────────────────────────────
 
@@ -2080,7 +2312,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'market_sentinel',
     name: 'Market Sentinel',
-    description: 'Monitors real-time market data, detects unusual activity, and generates alerts for significant price movements.',
+    description:
+      'Monitors real-time market data, detects unusual activity, and generates alerts for significant price movements.',
     icon: Eye,
     color: 'text-sky-400',
     badgeClass: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
@@ -2088,7 +2321,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'strategy_analyst',
     name: 'Strategy Analyst',
-    description: 'Runs strategy scans across the watchlist, analyzes technical patterns, and generates trading signals.',
+    description:
+      'Runs strategy scans across the watchlist, analyzes technical patterns, and generates trading signals.',
     icon: Brain,
     color: 'text-violet-400',
     badgeClass: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
@@ -2096,7 +2330,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'risk_monitor',
     name: 'Risk Monitor',
-    description: 'Assesses portfolio risk, checks position limits, calculates drawdown, and can trigger circuit breakers.',
+    description:
+      'Assesses portfolio risk, checks position limits, calculates drawdown, and can trigger circuit breakers.',
     icon: ShieldAlert,
     color: 'text-amber-400',
     badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
@@ -2104,7 +2339,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'research',
     name: 'Research Analyst',
-    description: 'Performs deep-dive analysis on individual tickers with technical indicators and trend assessment.',
+    description:
+      'Performs deep-dive analysis on individual tickers with technical indicators and trend assessment.',
     icon: BarChart3,
     color: 'text-emerald-400',
     badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -2112,7 +2348,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'execution_monitor',
     name: 'Execution Monitor',
-    description: 'Generates trade recommendations based on approved signals. Recommendations require human approval before execution.',
+    description:
+      'Generates trade recommendations based on approved signals. Recommendations require human approval before execution.',
     icon: Crosshair,
     color: 'text-rose-400',
     badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
@@ -2120,9 +2357,9 @@ const agentDefs: AgentDef[] = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  idle:     'text-muted-foreground',
-  running:  'text-sky-400',
-  error:    'text-destructive',
+  idle: 'text-muted-foreground',
+  running: 'text-sky-400',
+  error: 'text-destructive',
   cooldown: 'text-amber-400',
 };
 
@@ -2226,7 +2463,10 @@ export default function AgentsPage() {
               {status?.nextCycleAt && !isHalted && (
                 <span className="ml-2">
                   &middot; next cycle{' '}
-                  {new Date(status.nextCycleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(status.nextCycleAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </span>
               )}
             </p>
@@ -2256,11 +2496,20 @@ export default function AgentsPage() {
             size="sm"
           >
             {isRunning || cycleTriggering ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /><span className="ml-1.5">Running...</span></>
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-1.5">Running...</span>
+              </>
             ) : isHalted ? (
-              <><Play className="h-4 w-4" /><span className="ml-1.5">Resume</span></>
+              <>
+                <Play className="h-4 w-4" />
+                <span className="ml-1.5">Resume</span>
+              </>
             ) : (
-              <><RefreshCw className="h-4 w-4" /><span className="ml-1.5">Run Cycle</span></>
+              <>
+                <RefreshCw className="h-4 w-4" />
+                <span className="ml-1.5">Run Cycle</span>
+              </>
             )}
           </Button>
           <Button onClick={handleHalt} disabled={isHalted || isRunning} variant="outline" size="sm">
@@ -2279,7 +2528,10 @@ export default function AgentsPage() {
           const isAgentRunning = statusStr === 'running';
 
           return (
-            <Card key={agent.role} className="bg-card/50 border-border/50 transition-colors hover:border-border">
+            <Card
+              key={agent.role}
+              className="bg-card/50 border-border/50 transition-colors hover:border-border"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2.5">
@@ -2287,10 +2539,23 @@ export default function AgentsPage() {
                       <Icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-semibold text-foreground">{agent.name}</CardTitle>
+                      <CardTitle className="text-sm font-semibold text-foreground">
+                        {agent.name}
+                      </CardTitle>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <Circle className={cn('h-2 w-2 fill-current', STATUS_COLORS[statusStr] ?? 'text-muted-foreground', isAgentRunning && 'animate-pulse')} />
-                        <span className={cn('text-[10px] font-medium capitalize', STATUS_COLORS[statusStr] ?? 'text-muted-foreground')}>
+                        <Circle
+                          className={cn(
+                            'h-2 w-2 fill-current',
+                            STATUS_COLORS[statusStr] ?? 'text-muted-foreground',
+                            isAgentRunning && 'animate-pulse',
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            'text-[10px] font-medium capitalize',
+                            STATUS_COLORS[statusStr] ?? 'text-muted-foreground',
+                          )}
+                        >
                           {statusStr}
                         </span>
                       </div>
@@ -2314,7 +2579,10 @@ export default function AgentsPage() {
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3 w-3 text-muted-foreground" />
                       <span className="text-[10px] text-muted-foreground">
-                        {new Date(agentStatus.lastRun).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(agentStatus.lastRun).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                     </div>
                   )}
@@ -2340,27 +2608,41 @@ export default function AgentsPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {recommendations.map((rec) => (
-              <div key={rec.id} className="flex items-center justify-between rounded-md border border-border/50 bg-muted/30 px-3 py-2.5">
+              <div
+                key={rec.id}
+                className="flex items-center justify-between rounded-md border border-border/50 bg-muted/30 px-3 py-2.5"
+              >
                 <div className="flex items-center gap-3">
-                  {rec.side === 'buy'
-                    ? <TrendingUp className="h-4 w-4 text-profit shrink-0" />
-                    : <TrendingDown className="h-4 w-4 text-loss shrink-0" />}
+                  {rec.side === 'buy' ? (
+                    <TrendingUp className="h-4 w-4 text-profit shrink-0" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-loss shrink-0" />
+                  )}
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-foreground">{rec.ticker}</span>
-                      <Badge className={cn('border text-[9px]', rec.side === 'buy'
-                        ? 'bg-profit/10 text-profit border-profit/20'
-                        : 'bg-loss/10 text-loss border-loss/20')}>
+                      <Badge
+                        className={cn(
+                          'border text-[9px]',
+                          rec.side === 'buy'
+                            ? 'bg-profit/10 text-profit border-profit/20'
+                            : 'bg-loss/10 text-loss border-loss/20',
+                        )}
+                      >
                         {rec.side.toUpperCase()}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{rec.quantity} shares @ {rec.order_type}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {rec.quantity} shares @ {rec.order_type}
+                      </span>
                     </div>
                     {rec.reason && (
                       <p className="text-[11px] text-muted-foreground mt-0.5">{rec.reason}</p>
                     )}
                     {rec.strategy_name && (
-                      <span className="text-[10px] font-mono text-muted-foreground">{rec.strategy_name}
-                        {rec.signal_strength != null && ` · strength ${(rec.signal_strength * 100).toFixed(0)}%`}
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        {rec.strategy_name}
+                        {rec.signal_strength != null &&
+                          ` · strength ${(rec.signal_strength * 100).toFixed(0)}%`}
                       </span>
                     )}
                   </div>
@@ -2373,9 +2655,14 @@ export default function AgentsPage() {
                     onClick={() => handleApprove(rec.id)}
                     className="h-7 text-xs bg-profit hover:bg-profit/80"
                   >
-                    {approvingId === rec.id
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <><CheckCircle2 className="h-3 w-3 mr-1" />Approve</>}
+                    {approvingId === rec.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Approve
+                      </>
+                    )}
                   </Button>
                   <Button
                     size="sm"
@@ -2384,9 +2671,14 @@ export default function AgentsPage() {
                     onClick={() => handleReject(rec.id)}
                     className="h-7 text-xs"
                   >
-                    {rejectingId === rec.id
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <><XCircle className="h-3 w-3 mr-1" />Reject</>}
+                    {rejectingId === rec.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Reject
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -2403,28 +2695,49 @@ export default function AgentsPage() {
         <CardContent>
           {alerts.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              {isOffline ? 'Agents server offline — start with: pnpm dev (in apps/agents)' : 'No alerts. Run a cycle to see agent activity.'}
+              {isOffline
+                ? 'Agents server offline — start with: pnpm dev (in apps/agents)'
+                : 'No alerts. Run a cycle to see agent activity.'}
             </p>
           ) : (
             <div className="max-h-64 overflow-y-auto space-y-1">
               {alerts.map((alert) => {
-                const severityColor = alert.severity === 'critical' ? 'text-loss'
-                  : alert.severity === 'warning' ? 'text-amber-400'
-                  : 'text-muted-foreground';
+                const severityColor =
+                  alert.severity === 'critical'
+                    ? 'text-loss'
+                    : alert.severity === 'warning'
+                      ? 'text-amber-400'
+                      : 'text-muted-foreground';
                 return (
-                  <div key={alert.id} className="flex items-start gap-2 py-1.5 border-b border-border/30 last:border-0">
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-2 py-1.5 border-b border-border/30 last:border-0"
+                  >
                     <span className="text-[10px] font-mono text-muted-foreground w-16 shrink-0 pt-0.5">
-                      {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(alert.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
-                    <Badge className={cn('border text-[9px] shrink-0',
-                      alert.severity === 'critical' ? 'bg-loss/15 text-loss border-loss/30' :
-                      alert.severity === 'warning' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-                      'bg-muted text-muted-foreground border-border')}>
+                    <Badge
+                      className={cn(
+                        'border text-[9px] shrink-0',
+                        alert.severity === 'critical'
+                          ? 'bg-loss/15 text-loss border-loss/30'
+                          : alert.severity === 'warning'
+                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                            : 'bg-muted text-muted-foreground border-border',
+                      )}
+                    >
                       {alert.severity}
                     </Badge>
                     <div>
-                      <span className={cn('text-[11px] font-medium', severityColor)}>{alert.title}</span>
-                      <span className="text-[11px] text-muted-foreground ml-1">— {alert.message}</span>
+                      <span className={cn('text-[11px] font-medium', severityColor)}>
+                        {alert.title}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground ml-1">
+                        — {alert.message}
+                      </span>
                     </div>
                   </div>
                 );
@@ -2486,6 +2799,7 @@ pnpm dev
 ```
 
 Or from monorepo root with Turborepo:
+
 ```bash
 pnpm dev
 ```

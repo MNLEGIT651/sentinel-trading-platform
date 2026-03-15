@@ -1,9 +1,4 @@
-import type {
-  LaunchControl,
-  RepoArtifact,
-  SourceRecord,
-  StrategyProfile,
-} from '@/lib/types';
+import type { LaunchControl, RepoArtifact, SourceRecord, StrategyProfile } from '@/lib/types';
 
 export const strategyProfiles: StrategyProfile[] = [
   {
@@ -17,7 +12,8 @@ export const strategyProfiles: StrategyProfile[] = [
       'Time-series momentum remains one of the strongest cross-asset research anchors when it is diversified and volatility-managed.',
     thesis:
       'Use multi-horizon trend signals to capture persistence without pretending any single lookback is stable forever.',
-    dataNeeds: 'Survivorship-aware prices, broad universe coverage, volatility estimates, turnover history.',
+    dataNeeds:
+      'Survivorship-aware prices, broad universe coverage, volatility estimates, turnover history.',
     failureMode: 'Sideways chop, crowding, late-stage reversals after strong crisis trends.',
     controls: 'Blend 1/3/12 month views, target volatility, and cap concentration by sleeve.',
     capacity: 'High if implemented on liquid ETFs/futures proxies.',
@@ -34,7 +30,8 @@ export const strategyProfiles: StrategyProfile[] = [
       'Value and momentum diversify each other well because their drawdowns do not usually line up.',
     thesis:
       'Rank cheap assets with improving trend separately, then combine signals at the portfolio level instead of forcing one blended score too early.',
-    dataNeeds: 'As-of fundamentals, filing timestamps, sector groupings, prices, borrow assumptions for shorts.',
+    dataNeeds:
+      'As-of fundamentals, filing timestamps, sector groupings, prices, borrow assumptions for shorts.',
     failureMode: 'Value traps, momentum crashes, signal decay after publication or crowding.',
     controls: 'Separate signal and execution dates, sector-neutral checks, and holdout tracking.',
     capacity: 'Medium to high in liquid equity and ETF universes.',
@@ -49,8 +46,7 @@ export const strategyProfiles: StrategyProfile[] = [
     readiness: 28,
     evidence:
       'Short-horizon reversal signals can exist, but they are highly vulnerable to spread, impact, and crowded exits.',
-    thesis:
-      'Treat this as a cost-engine project first and a signal project second.',
+    thesis: 'Treat this as a cost-engine project first and a signal project second.',
     dataNeeds: 'High-quality timestamps, spread estimates, fee schedule, liquidity bucket tagging.',
     failureMode: 'Bid-ask bounce, apparent alpha destroyed by reactive stop logic and slippage.',
     controls: 'Hard turnover budgets, spread-aware fills, and stress tests on liquidity shocks.',
@@ -68,9 +64,11 @@ export const strategyProfiles: StrategyProfile[] = [
       'Relative-value trades can work when relationship stability is strong, but structural breaks dominate the tail risk.',
     thesis:
       'Model spread behavior and unwind logic explicitly instead of treating pair selection as static.',
-    dataNeeds: 'Clean pair histories, borrow assumptions, event flags, beta or residual estimation.',
+    dataNeeds:
+      'Clean pair histories, borrow assumptions, event flags, beta or residual estimation.',
     failureMode: 'Broken relationships, merger noise, crowding into the same unwind path.',
-    controls: 'Pair diversification, event blacklist, rolling stability checks, and shrinkage on sizing.',
+    controls:
+      'Pair diversification, event blacklist, rolling stability checks, and shrinkage on sizing.',
     capacity: 'Medium in large-cap or ETF pairs, low elsewhere.',
     sourceLabels: ['Blueprint PDF'],
   },
@@ -85,7 +83,8 @@ export const strategyProfiles: StrategyProfile[] = [
       'The blueprint is clear that diversified return sources only become durable when risk concentration is actively managed.',
     thesis:
       'Allocate to sleeves by risk contribution and readiness, not by whatever strategy had the best recent backtest.',
-    dataNeeds: 'Sleeve-level returns, drawdown paths, turnover, correlation matrix, cost snapshots.',
+    dataNeeds:
+      'Sleeve-level returns, drawdown paths, turnover, correlation matrix, cost snapshots.',
     failureMode: 'One hidden beta bet dominating the whole stack.',
     controls: 'Risk budgets, drawdown clamps, volatility targeting, and sleeve shutoff rules.',
     capacity: 'Portfolio-level control layer rather than a direct capacity constraint.',
@@ -166,8 +165,7 @@ export const launchControls: LaunchControl[] = [
     title: 'Live routing enablement',
     status: 'red',
     owner: 'Release management',
-    detail:
-      'No live routing until the research, cost, and review gates are all explicitly green.',
+    detail: 'No live routing until the research, cost, and review gates are all explicitly green.',
   },
 ];
 
@@ -182,73 +180,63 @@ export const sourceLedger: SourceRecord[] = [
   {
     label: 'Building a Robust, Evidence-Based Trading Strategy Blueprint for Public Markets',
     kind: 'blueprint',
-    note:
-      'Local PDF that drove the original repo and this app. Core message: robust process beats miracle strategy claims.',
+    note: 'Local PDF that drove the original repo and this app. Core message: robust process beats miracle strategy claims.',
     dateContext: 'Local attachment reviewed on 2026-03-14',
   },
   {
     label: 'Value and Momentum Everywhere',
     kind: 'paper',
     href: 'https://www.aqr.com/Insights/Research/Journal-Article/Value-and-Momentum-Everywhere',
-    note:
-      'Best source for the product choice to compare sleeves and combine differentiated return streams.',
+    note: 'Best source for the product choice to compare sleeves and combine differentiated return streams.',
   },
   {
     label: 'Time Series Momentum',
     kind: 'paper',
     href: 'https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1789463',
-    note:
-      'Anchor reference for the trend sleeve and for cross-asset diversification logic.',
+    note: 'Anchor reference for the trend sleeve and for cross-asset diversification logic.',
   },
   {
     label: 'Probability of Backtest Overfitting',
     kind: 'paper',
     href: 'https://www.davidhbailey.com/dhbpapers/probability.pdf',
-    note:
-      'Justifies putting holdout discipline and search-width visibility directly into the UI.',
+    note: 'Justifies putting holdout discipline and search-width visibility directly into the UI.',
   },
   {
     label: 'SEC EDGAR',
     kind: 'official',
     href: 'https://www.sec.gov/submit-filings/about-edgar',
-    note:
-      'Official filings source for timestamped fundamentals and disclosure-aware data lineage.',
+    note: 'Official filings source for timestamped fundamentals and disclosure-aware data lineage.',
   },
   {
     label: 'CFTC Commitments of Traders',
     kind: 'official',
     href: 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm',
-    note:
-      'Official positioning dataset better suited to slow state variables than precision timing.',
+    note: 'Official positioning dataset better suited to slow state variables than precision timing.',
   },
   {
     label: 'FINRA Rule 5310',
     kind: 'official',
     href: 'https://www.finra.org/rules-guidance/rulebooks/finra-rules/5310',
-    note:
-      'Defines why execution review becomes governance once the app gets near live routing.',
+    note: 'Defines why execution review becomes governance once the app gets near live routing.',
   },
   {
     label: 'Alpaca Paper Trading',
     kind: 'platform',
     href: 'https://docs.alpaca.markets/docs/paper-trading',
-    note:
-      'Shows staging infrastructure is available, but does not remove the need for research discipline.',
+    note: 'Shows staging infrastructure is available, but does not remove the need for research discipline.',
     dateContext: 'Confirmed against current docs on 2026-03-14',
   },
   {
     label: 'Alpaca Market Data',
     kind: 'platform',
     href: 'https://docs.alpaca.markets/docs/market-data-1',
-    note:
-      'Useful future integration path after the research operating system is solid.',
+    note: 'Useful future integration path after the research operating system is solid.',
     dateContext: 'Confirmed against current docs on 2026-03-14',
   },
   {
     label: 'Sentinel repo audit',
     kind: 'repo',
-    note:
-      'Local audit of Claude\'s current repo direction: strong scaffold, weak research controls, blank spreadsheet.',
+    note: "Local audit of Claude's current repo direction: strong scaffold, weak research controls, blank spreadsheet.",
   },
 ];
 

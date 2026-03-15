@@ -63,11 +63,7 @@ export async function listRecommendations(status?: string): Promise<Recommendati
 
 export async function getRecommendation(id: string): Promise<Recommendation | null> {
   const db = getSupabaseClient();
-  const { data, error } = await db
-    .from('agent_recommendations')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await db.from('agent_recommendations').select('*').eq('id', id).single();
   if (error?.code === 'PGRST116') return null;
   if (error) throw new Error(error.message);
   return data as Recommendation;
@@ -130,11 +126,7 @@ export async function rejectRecommendation(id: string): Promise<Recommendation |
 
 export async function createAlert(alert: AlertCreate): Promise<AgentAlert> {
   const db = getSupabaseClient();
-  const { data, error } = await db
-    .from('agent_alerts')
-    .insert(alert)
-    .select()
-    .single();
+  const { data, error } = await db.from('agent_alerts').insert(alert).select().single();
   if (error) throw new Error(error.message);
   return data as AgentAlert;
 }

@@ -2,15 +2,35 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Bot, Play, Pause, RefreshCw, Circle, ShieldAlert, Eye, Brain,
-  BarChart3, Crosshair, AlertTriangle, Clock, Zap, Loader2,
-  CheckCircle2, XCircle, TrendingUp, TrendingDown,
+  Bot,
+  Play,
+  Pause,
+  RefreshCw,
+  Circle,
+  ShieldAlert,
+  Eye,
+  Brain,
+  BarChart3,
+  Crosshair,
+  AlertTriangle,
+  Clock,
+  Zap,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { agentsClient, type OrchestratorStatus, type TradeRecommendation, type AgentAlert } from '@/lib/agents-client';
+import {
+  agentsClient,
+  type OrchestratorStatus,
+  type TradeRecommendation,
+  type AgentAlert,
+} from '@/lib/agents-client';
 
 // ── Agent definitions ─────────────────────────────────────────────
 
@@ -27,7 +47,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'market_sentinel',
     name: 'Market Sentinel',
-    description: 'Monitors real-time market data, detects unusual activity, and generates alerts for significant price movements.',
+    description:
+      'Monitors real-time market data, detects unusual activity, and generates alerts for significant price movements.',
     icon: Eye,
     color: 'text-sky-400',
     badgeClass: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
@@ -35,7 +56,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'strategy_analyst',
     name: 'Strategy Analyst',
-    description: 'Runs strategy scans across the watchlist, analyzes technical patterns, and generates trading signals.',
+    description:
+      'Runs strategy scans across the watchlist, analyzes technical patterns, and generates trading signals.',
     icon: Brain,
     color: 'text-violet-400',
     badgeClass: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
@@ -43,7 +65,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'risk_monitor',
     name: 'Risk Monitor',
-    description: 'Assesses portfolio risk, checks position limits, calculates drawdown, and can trigger circuit breakers.',
+    description:
+      'Assesses portfolio risk, checks position limits, calculates drawdown, and can trigger circuit breakers.',
     icon: ShieldAlert,
     color: 'text-amber-400',
     badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
@@ -51,7 +74,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'research',
     name: 'Research Analyst',
-    description: 'Performs deep-dive analysis on individual tickers with technical indicators and trend assessment.',
+    description:
+      'Performs deep-dive analysis on individual tickers with technical indicators and trend assessment.',
     icon: BarChart3,
     color: 'text-emerald-400',
     badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -59,7 +83,8 @@ const agentDefs: AgentDef[] = [
   {
     role: 'execution_monitor',
     name: 'Execution Monitor',
-    description: 'Generates trade recommendations based on approved signals. Recommendations require human approval before execution.',
+    description:
+      'Generates trade recommendations based on approved signals. Recommendations require human approval before execution.',
     icon: Crosshair,
     color: 'text-rose-400',
     badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
@@ -67,9 +92,9 @@ const agentDefs: AgentDef[] = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  idle:     'text-muted-foreground',
-  running:  'text-sky-400',
-  error:    'text-destructive',
+  idle: 'text-muted-foreground',
+  running: 'text-sky-400',
+  error: 'text-destructive',
   cooldown: 'text-amber-400',
 };
 
@@ -172,7 +197,10 @@ export default function AgentsPage() {
               {status?.nextCycleAt && !isHalted && (
                 <span className="ml-2">
                   &middot; next cycle{' '}
-                  {new Date(status.nextCycleAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(status.nextCycleAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </span>
               )}
             </p>
@@ -202,11 +230,20 @@ export default function AgentsPage() {
             size="sm"
           >
             {isRunning || cycleTriggering ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /><span className="ml-1.5">Running...</span></>
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-1.5">Running...</span>
+              </>
             ) : isHalted ? (
-              <><Play className="h-4 w-4" /><span className="ml-1.5">Resume</span></>
+              <>
+                <Play className="h-4 w-4" />
+                <span className="ml-1.5">Resume</span>
+              </>
             ) : (
-              <><RefreshCw className="h-4 w-4" /><span className="ml-1.5">Run Cycle</span></>
+              <>
+                <RefreshCw className="h-4 w-4" />
+                <span className="ml-1.5">Run Cycle</span>
+              </>
             )}
           </Button>
           <Button onClick={handleHalt} disabled={isHalted || isRunning} variant="outline" size="sm">
@@ -225,7 +262,10 @@ export default function AgentsPage() {
           const isAgentRunning = statusStr === 'running';
 
           return (
-            <Card key={agent.role} className="bg-card/50 border-border/50 transition-colors hover:border-border">
+            <Card
+              key={agent.role}
+              className="bg-card/50 border-border/50 transition-colors hover:border-border"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2.5">
@@ -233,10 +273,23 @@ export default function AgentsPage() {
                       <Icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-semibold text-foreground">{agent.name}</CardTitle>
+                      <CardTitle className="text-sm font-semibold text-foreground">
+                        {agent.name}
+                      </CardTitle>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <Circle className={cn('h-2 w-2 fill-current', STATUS_COLORS[statusStr] ?? 'text-muted-foreground', isAgentRunning && 'animate-pulse')} />
-                        <span className={cn('text-[10px] font-medium capitalize', STATUS_COLORS[statusStr] ?? 'text-muted-foreground')}>
+                        <Circle
+                          className={cn(
+                            'h-2 w-2 fill-current',
+                            STATUS_COLORS[statusStr] ?? 'text-muted-foreground',
+                            isAgentRunning && 'animate-pulse',
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            'text-[10px] font-medium capitalize',
+                            STATUS_COLORS[statusStr] ?? 'text-muted-foreground',
+                          )}
+                        >
                           {statusStr}
                         </span>
                       </div>
@@ -260,7 +313,10 @@ export default function AgentsPage() {
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3 w-3 text-muted-foreground" />
                       <span className="text-[10px] text-muted-foreground">
-                        {new Date(agentStatus.lastRun).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(agentStatus.lastRun).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                     </div>
                   )}
@@ -286,27 +342,41 @@ export default function AgentsPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {recommendations.map((rec) => (
-              <div key={rec.id} className="flex items-center justify-between rounded-md border border-border/50 bg-muted/30 px-3 py-2.5">
+              <div
+                key={rec.id}
+                className="flex items-center justify-between rounded-md border border-border/50 bg-muted/30 px-3 py-2.5"
+              >
                 <div className="flex items-center gap-3">
-                  {rec.side === 'buy'
-                    ? <TrendingUp className="h-4 w-4 text-profit shrink-0" />
-                    : <TrendingDown className="h-4 w-4 text-loss shrink-0" />}
+                  {rec.side === 'buy' ? (
+                    <TrendingUp className="h-4 w-4 text-profit shrink-0" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-loss shrink-0" />
+                  )}
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-foreground">{rec.ticker}</span>
-                      <Badge className={cn('border text-[9px]', rec.side === 'buy'
-                        ? 'bg-profit/10 text-profit border-profit/20'
-                        : 'bg-loss/10 text-loss border-loss/20')}>
+                      <Badge
+                        className={cn(
+                          'border text-[9px]',
+                          rec.side === 'buy'
+                            ? 'bg-profit/10 text-profit border-profit/20'
+                            : 'bg-loss/10 text-loss border-loss/20',
+                        )}
+                      >
                         {rec.side.toUpperCase()}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{rec.quantity} shares @ {rec.order_type}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {rec.quantity} shares @ {rec.order_type}
+                      </span>
                     </div>
                     {rec.reason && (
                       <p className="text-[11px] text-muted-foreground mt-0.5">{rec.reason}</p>
                     )}
                     {rec.strategy_name && (
-                      <span className="text-[10px] font-mono text-muted-foreground">{rec.strategy_name}
-                        {rec.signal_strength != null && ` · strength ${(rec.signal_strength * 100).toFixed(0)}%`}
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        {rec.strategy_name}
+                        {rec.signal_strength != null &&
+                          ` · strength ${(rec.signal_strength * 100).toFixed(0)}%`}
                       </span>
                     )}
                   </div>
@@ -319,9 +389,14 @@ export default function AgentsPage() {
                     onClick={() => handleApprove(rec.id)}
                     className="h-7 text-xs bg-profit hover:bg-profit/80"
                   >
-                    {approvingId === rec.id
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <><CheckCircle2 className="h-3 w-3 mr-1" />Approve</>}
+                    {approvingId === rec.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Approve
+                      </>
+                    )}
                   </Button>
                   <Button
                     size="sm"
@@ -330,9 +405,14 @@ export default function AgentsPage() {
                     onClick={() => handleReject(rec.id)}
                     className="h-7 text-xs"
                   >
-                    {rejectingId === rec.id
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <><XCircle className="h-3 w-3 mr-1" />Reject</>}
+                    {rejectingId === rec.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Reject
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -349,28 +429,49 @@ export default function AgentsPage() {
         <CardContent>
           {alerts.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              {isOffline ? 'Agents server offline — start with: pnpm dev (in apps/agents)' : 'No alerts. Run a cycle to see agent activity.'}
+              {isOffline
+                ? 'Agents server offline — start with: pnpm dev (in apps/agents)'
+                : 'No alerts. Run a cycle to see agent activity.'}
             </p>
           ) : (
             <div className="max-h-64 overflow-y-auto space-y-1">
               {alerts.map((alert) => {
-                const severityColor = alert.severity === 'critical' ? 'text-loss'
-                  : alert.severity === 'warning' ? 'text-amber-400'
-                  : 'text-muted-foreground';
+                const severityColor =
+                  alert.severity === 'critical'
+                    ? 'text-loss'
+                    : alert.severity === 'warning'
+                      ? 'text-amber-400'
+                      : 'text-muted-foreground';
                 return (
-                  <div key={alert.id} className="flex items-start gap-2 py-1.5 border-b border-border/30 last:border-0">
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-2 py-1.5 border-b border-border/30 last:border-0"
+                  >
                     <span className="text-[10px] font-mono text-muted-foreground w-16 shrink-0 pt-0.5">
-                      {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(alert.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
-                    <Badge className={cn('border text-[9px] shrink-0',
-                      alert.severity === 'critical' ? 'bg-loss/15 text-loss border-loss/30' :
-                      alert.severity === 'warning' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-                      'bg-muted text-muted-foreground border-border')}>
+                    <Badge
+                      className={cn(
+                        'border text-[9px] shrink-0',
+                        alert.severity === 'critical'
+                          ? 'bg-loss/15 text-loss border-loss/30'
+                          : alert.severity === 'warning'
+                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                            : 'bg-muted text-muted-foreground border-border',
+                      )}
+                    >
                       {alert.severity}
                     </Badge>
                     <div>
-                      <span className={cn('text-[11px] font-medium', severityColor)}>{alert.title}</span>
-                      <span className="text-[11px] text-muted-foreground ml-1">— {alert.message}</span>
+                      <span className={cn('text-[11px] font-medium', severityColor)}>
+                        {alert.title}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground ml-1">
+                        — {alert.message}
+                      </span>
                     </div>
                   </div>
                 );

@@ -30,9 +30,7 @@ export function useRealtime<T extends { id: string }>({
   }, []);
 
   const handleUpdate = useCallback((payload: { new: T }) => {
-    setData((prev) =>
-      prev.map((item) => (item.id === payload.new.id ? payload.new : item)),
-    );
+    setData((prev) => prev.map((item) => (item.id === payload.new.id ? payload.new : item)));
   }, []);
 
   const handleDelete = useCallback((payload: { old: { id: string } }) => {

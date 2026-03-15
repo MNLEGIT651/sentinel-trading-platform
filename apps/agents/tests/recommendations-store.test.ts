@@ -55,10 +55,16 @@ describe('createRecommendation', () => {
         }),
       }),
     });
-    await expect(createRecommendation({
-      agent_role: 'execution_monitor', ticker: 'AAPL', side: 'buy',
-      quantity: 1, order_type: 'market', reason: 'test',
-    })).rejects.toThrow('DB error');
+    await expect(
+      createRecommendation({
+        agent_role: 'execution_monitor',
+        ticker: 'AAPL',
+        side: 'buy',
+        quantity: 1,
+        order_type: 'market',
+        reason: 'test',
+      }),
+    ).rejects.toThrow('DB error');
   });
 });
 
@@ -104,7 +110,15 @@ describe('createAlert', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('inserts alert and returns it', async () => {
-    const alert = { id: 'alt-1', severity: 'warning', title: 'Test', message: 'msg', ticker: null, acknowledged: false, created_at: '' };
+    const alert = {
+      id: 'alt-1',
+      severity: 'warning',
+      title: 'Test',
+      message: 'msg',
+      ticker: null,
+      acknowledged: false,
+      created_at: '',
+    };
     mockFrom.mockReturnValue({
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
@@ -194,7 +208,9 @@ describe('markFilled', () => {
     await markFilled('uuid-1', 'order-abc');
 
     expect(mockFrom).toHaveBeenCalledWith('agent_recommendations');
-    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ status: 'filled', order_id: 'order-abc' }));
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'filled', order_id: 'order-abc' }),
+    );
     expect(eqMock).toHaveBeenCalledWith('id', 'uuid-1');
   });
 
@@ -219,10 +235,12 @@ describe('markRiskBlocked', () => {
     await markRiskBlocked('uuid-1', 'exceeds max position size');
 
     expect(mockFrom).toHaveBeenCalledWith('agent_recommendations');
-    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
-      status: 'risk_blocked',
-      metadata: { block_reason: 'exceeds max position size' },
-    }));
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'risk_blocked',
+        metadata: { block_reason: 'exceeds max position size' },
+      }),
+    );
     expect(eqMock).toHaveBeenCalledWith('id', 'uuid-1');
   });
 
@@ -241,8 +259,22 @@ describe('listAlerts', () => {
 
   it('queries agent_alerts and returns an array', async () => {
     const rows = [
-      { id: 'alt-1', severity: 'warning', title: 'Alert 1', message: 'msg1', acknowledged: false, created_at: '' },
-      { id: 'alt-2', severity: 'critical', title: 'Alert 2', message: 'msg2', acknowledged: false, created_at: '' },
+      {
+        id: 'alt-1',
+        severity: 'warning',
+        title: 'Alert 1',
+        message: 'msg1',
+        acknowledged: false,
+        created_at: '',
+      },
+      {
+        id: 'alt-2',
+        severity: 'critical',
+        title: 'Alert 2',
+        message: 'msg2',
+        acknowledged: false,
+        created_at: '',
+      },
     ];
     const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
     const orderMock = vi.fn().mockReturnValue({ limit: limitMock });

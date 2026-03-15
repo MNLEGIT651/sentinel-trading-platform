@@ -84,14 +84,14 @@ pages get decomposed — no logic changes, pure extraction into focused componen
 Each large page becomes an orchestrator that composes focused sub-components.
 Components live in `src/components/<domain>/`.
 
-| Page | Lines | Extracted Components |
-| ---- | ----- | -------------------- |
-| `portfolio/page.tsx` | 758 | `PositionsTable`, `AllocationChart`, `SnapshotMetrics`, `OrderHistory` |
-| `settings/page.tsx` | 667 | `BrokerSettings`, `RiskSettings`, `ScheduleSettings`, `ConnectionStatus` |
-| `backtest/page.tsx` | 651 | `BacktestForm`, `ResultsChart`, `MetricsTable`, `TradeLog` |
-| `strategies/page.tsx` | 491 | `StrategyCard`, `StrategyParams`, `SignalBadge` |
-| `agents/page.tsx` | 384 | `AgentStatusCard`, `RecommendationCard`, `AgentAlertFeed` |
-| `signals/page.tsx` | 343 | `SignalCard`, `SignalFilters`, `SignalTimeline` |
+| Page                  | Lines | Extracted Components                                                     |
+| --------------------- | ----- | ------------------------------------------------------------------------ |
+| `portfolio/page.tsx`  | 758   | `PositionsTable`, `AllocationChart`, `SnapshotMetrics`, `OrderHistory`   |
+| `settings/page.tsx`   | 667   | `BrokerSettings`, `RiskSettings`, `ScheduleSettings`, `ConnectionStatus` |
+| `backtest/page.tsx`   | 651   | `BacktestForm`, `ResultsChart`, `MetricsTable`, `TradeLog`               |
+| `strategies/page.tsx` | 491   | `StrategyCard`, `StrategyParams`, `SignalBadge`                          |
+| `agents/page.tsx`     | 384   | `AgentStatusCard`, `RecommendationCard`, `AgentAlertFeed`                |
+| `signals/page.tsx`    | 343   | `SignalCard`, `SignalFilters`, `SignalTimeline`                          |
 
 The dashboard `page.tsx` (288 lines) is below the 300-line threshold and will not be structurally
 decomposed. It receives a smoke test (render + assert key elements) in Chunk 5.
@@ -254,18 +254,18 @@ All three migration files get a header comment block describing design intent:
 
 Ordered by dependency — each chunk is independently shippable:
 
-| # | Chunk | Work | Risk |
-| - | ----- | ---- | ---- |
-| 1 | Cleanup | Delete compass, fix .gitignore, verify .env not tracked | Zero |
-| 2 | Tooling | Prettier, EditorConfig, Husky, Commitlint, tsconfig.base, .nvmrc | Medium |
-| 3 | Refactor | Decompose 6 pages → components, add `useAsyncAction` hook | Medium |
-| 3b | TS Strict+ | Enable `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` | Medium |
-| 4 | Error handling | Sonner toasts, FastAPI custom exception handler, env validation | Low |
-| 5 | Testing — Web | Unit tests for components + missing pages + hooks | Low |
-| 6 | Testing — Engine | Integration test suite (6 route groups, respx mocks) | Low |
-| 7 | Testing — E2E | Three Playwright critical-path tests | Medium |
-| 8 | CI & Coverage | Measure baselines, add thresholds, ruff format in CI | Low |
-| 9 | Docs | Per-app READMEs, OpenAPI enrichment, migration header comments | Zero |
+| #   | Chunk            | Work                                                             | Risk   |
+| --- | ---------------- | ---------------------------------------------------------------- | ------ |
+| 1   | Cleanup          | Delete compass, fix .gitignore, verify .env not tracked          | Zero   |
+| 2   | Tooling          | Prettier, EditorConfig, Husky, Commitlint, tsconfig.base, .nvmrc | Medium |
+| 3   | Refactor         | Decompose 6 pages → components, add `useAsyncAction` hook        | Medium |
+| 3b  | TS Strict+       | Enable `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` | Medium |
+| 4   | Error handling   | Sonner toasts, FastAPI custom exception handler, env validation  | Low    |
+| 5   | Testing — Web    | Unit tests for components + missing pages + hooks                | Low    |
+| 6   | Testing — Engine | Integration test suite (6 route groups, respx mocks)             | Low    |
+| 7   | Testing — E2E    | Three Playwright critical-path tests                             | Medium |
+| 8   | CI & Coverage    | Measure baselines, add thresholds, ruff format in CI             | Low    |
+| 9   | Docs             | Per-app READMEs, OpenAPI enrichment, migration header comments   | Zero   |
 
 Chunk 2 is Medium risk: `tsconfig.base` + `strict` may surface existing type errors that must
 be fixed before the chunk is complete.
@@ -274,18 +274,18 @@ be fixed before the chunk is complete.
 
 ## 9. Success Criteria
 
-| Metric | Before | Target |
-| ------ | ------ | ------ |
-| Test coverage — web | ~25% (unverified) | ≥ 70% |
-| Test coverage — engine | ~35% (unverified) | ≥ 70% |
-| Test coverage — agents | ~67% (unverified) | ≥ 75% |
-| Largest page file | 758 lines | ≤ 200 lines |
-| Pre-commit hooks | None | Prettier + ESLint + Commitlint |
-| E2E tests | 0 | 3 critical paths |
-| Engine integration tests | 0 | 6 route suites |
-| `.env` tracked by git | Unknown | Confirmed not tracked |
-| `console.error` in prod code | 3 | 0 |
-| `compass` app | Present | Deleted |
-| TypeScript strict mode | Partial | Full (`strict` + deferred flags post-refactor) |
-| FastAPI error shape | Inconsistent | `{ error, detail }` uniformly |
-| OpenAPI docs enriched | None | All 13 routes have summary + tags |
+| Metric                       | Before            | Target                                         |
+| ---------------------------- | ----------------- | ---------------------------------------------- |
+| Test coverage — web          | ~25% (unverified) | ≥ 70%                                          |
+| Test coverage — engine       | ~35% (unverified) | ≥ 70%                                          |
+| Test coverage — agents       | ~67% (unverified) | ≥ 75%                                          |
+| Largest page file            | 758 lines         | ≤ 200 lines                                    |
+| Pre-commit hooks             | None              | Prettier + ESLint + Commitlint                 |
+| E2E tests                    | 0                 | 3 critical paths                               |
+| Engine integration tests     | 0                 | 6 route suites                                 |
+| `.env` tracked by git        | Unknown           | Confirmed not tracked                          |
+| `console.error` in prod code | 3                 | 0                                              |
+| `compass` app                | Present           | Deleted                                        |
+| TypeScript strict mode       | Partial           | Full (`strict` + deferred flags post-refactor) |
+| FastAPI error shape          | Inconsistent      | `{ error, detail }` uniformly                  |
+| OpenAPI docs enriched        | None              | All 13 routes have summary + tags              |

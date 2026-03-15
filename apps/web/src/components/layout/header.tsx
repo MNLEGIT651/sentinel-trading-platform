@@ -5,9 +5,7 @@ import { Activity, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function getETTime(): Date {
-  return new Date(
-    new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }),
-  );
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
 }
 
 function isMarketOpen(): boolean {
@@ -101,9 +99,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           <span className="font-mono text-[11px] font-medium tabular-nums text-muted-foreground">
             {time}
           </span>
-          <span className="font-mono text-[9px] text-muted-foreground/50 tracking-wider">
-            ET
-          </span>
+          <span className="font-mono text-[9px] text-muted-foreground/50 tracking-wider">ET</span>
         </div>
       </div>
     </header>

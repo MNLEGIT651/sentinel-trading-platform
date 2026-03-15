@@ -75,8 +75,7 @@ h3,
   gap: 1.4rem;
   padding: 1.4rem;
   border-right: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(20, 26, 31, 0.95), rgba(13, 16, 19, 0.96));
+  background: linear-gradient(180deg, rgba(20, 26, 31, 0.95), rgba(13, 16, 19, 0.96));
 }
 
 .brand-block,
@@ -481,8 +480,7 @@ h3,
 .control-strip-card,
 .ledger-card {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-    var(--bg-panel);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)), var(--bg-panel);
 }
 
 .lab-shell {
@@ -580,8 +578,7 @@ h3,
 .catalog-card-active {
   border-color: rgba(42, 161, 152, 0.38);
   background:
-    linear-gradient(135deg, rgba(42, 161, 152, 0.15), rgba(255, 255, 255, 0.02)),
-    var(--bg-panel);
+    linear-gradient(135deg, rgba(42, 161, 152, 0.15), rgba(255, 255, 255, 0.02)), var(--bg-panel);
 }
 
 .detail-card {

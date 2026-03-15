@@ -108,9 +108,7 @@ export class Agent {
     const tools = getToolsForAgent(this.config.role);
     const systemPrompt = SYSTEM_PROMPTS[this.config.role];
 
-    const messages: Anthropic.MessageParam[] = [
-      { role: 'user', content: userPrompt },
-    ];
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userPrompt }];
 
     let lastTextResponse = '';
 
@@ -150,8 +148,7 @@ export class Agent {
 
       // Process tool calls
       const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ToolUseBlock =>
-          b.type === 'tool_use',
+        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use',
       );
 
       if (toolUseBlocks.length === 0) {

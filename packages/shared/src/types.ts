@@ -1,32 +1,23 @@
 // ─── Enums as Union Types ───────────────────────────────────────────
 
-export type AssetClass = "equity" | "etf" | "option" | "crypto" | "future";
-export type Exchange = "NYSE" | "NASDAQ" | "AMEX" | "ARCA" | "BATS" | "OTC";
-export type SignalDirection = "long" | "short" | "close";
-export type SignalStrength = "strong" | "moderate" | "weak";
-export type OrderSide = "buy" | "sell";
-export type OrderType = "market" | "limit" | "stop" | "stop_limit";
+export type AssetClass = 'equity' | 'etf' | 'option' | 'crypto' | 'future';
+export type Exchange = 'NYSE' | 'NASDAQ' | 'AMEX' | 'ARCA' | 'BATS' | 'OTC';
+export type SignalDirection = 'long' | 'short' | 'close';
+export type SignalStrength = 'strong' | 'moderate' | 'weak';
+export type OrderSide = 'buy' | 'sell';
+export type OrderType = 'market' | 'limit' | 'stop' | 'stop_limit';
 export type OrderStatus =
-  | "pending"
-  | "submitted"
-  | "partial"
-  | "filled"
-  | "cancelled"
-  | "rejected"
-  | "expired";
-export type BrokerMode = "paper" | "live";
-export type AlertSeverity = "info" | "warning" | "critical";
-export type AlertStatus = "active" | "acknowledged" | "resolved";
-export type Timeframe =
-  | "1m"
-  | "5m"
-  | "15m"
-  | "30m"
-  | "1h"
-  | "4h"
-  | "1d"
-  | "1w"
-  | "1M";
+  | 'pending'
+  | 'submitted'
+  | 'partial'
+  | 'filled'
+  | 'cancelled'
+  | 'rejected'
+  | 'expired';
+export type BrokerMode = 'paper' | 'live';
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
+export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
 
 // ─── Database Row Types ─────────────────────────────────────────────
 

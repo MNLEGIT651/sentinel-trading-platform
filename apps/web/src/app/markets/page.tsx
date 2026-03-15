@@ -73,10 +73,9 @@ export default function MarketsPage() {
     async function fetchQuotes() {
       try {
         const tickers = WATCHLIST_TICKERS.map((w) => w.ticker).join(',');
-        const res = await fetch(
-          `${ENGINE_URL}/api/v1/data/quotes?tickers=${tickers}`,
-          { signal: AbortSignal.timeout(8000) },
-        );
+        const res = await fetch(`${ENGINE_URL}/api/v1/data/quotes?tickers=${tickers}`, {
+          signal: AbortSignal.timeout(8000),
+        });
         if (!res.ok) throw new Error(`${res.status}`);
         const quotes: MarketQuote[] = await res.json();
         if (cancelled) return;
@@ -98,7 +97,9 @@ export default function MarketsPage() {
         setWatchlist(
           WATCHLIST_TICKERS.map((w, i) => ({
             ...w,
-            price: [178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38][i],
+            price: [178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38][
+              i
+            ],
             change: [1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62][i],
           })),
         );
@@ -108,43 +109,56 @@ export default function MarketsPage() {
       }
     }
     fetchQuotes();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fetch bars when ticker changes
-  const fetchBars = useCallback(async (ticker: string) => {
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setChartLoading(true);
+  const fetchBars = useCallback(
+    async (ticker: string) => {
+      if (abortRef.current) abortRef.current.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setChartLoading(true);
 
-    try {
-      const res = await fetch(
-        `${ENGINE_URL}/api/v1/data/bars/${ticker}?timeframe=1d&days=90`,
-        { signal: controller.signal },
-      );
-      if (!res.ok) throw new Error(`${res.status}`);
-      const bars = await res.json();
-      if (controller.signal.aborted) return;
-      setChartData(
-        bars.map((b: { timestamp: string; open: number; high: number; low: number; close: number; volume: number }) => ({
-          timestamp: b.timestamp,
-          open: b.open,
-          high: b.high,
-          low: b.low,
-          close: b.close,
-          volume: b.volume,
-        })),
-      );
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      // Fallback: synthetic data
-      const stock = watchlist.find((w) => w.ticker === ticker);
-      setChartData(generateSampleData(stock?.price || 150));
-    } finally {
-      if (!controller.signal.aborted) setChartLoading(false);
-    }
-  }, [watchlist]);
+      try {
+        const res = await fetch(`${ENGINE_URL}/api/v1/data/bars/${ticker}?timeframe=1d&days=90`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        const bars = await res.json();
+        if (controller.signal.aborted) return;
+        setChartData(
+          bars.map(
+            (b: {
+              timestamp: string;
+              open: number;
+              high: number;
+              low: number;
+              close: number;
+              volume: number;
+            }) => ({
+              timestamp: b.timestamp,
+              open: b.open,
+              high: b.high,
+              low: b.low,
+              close: b.close,
+              volume: b.volume,
+            }),
+          ),
+        );
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        // Fallback: synthetic data
+        const stock = watchlist.find((w) => w.ticker === ticker);
+        setChartData(generateSampleData(stock?.price || 150));
+      } finally {
+        if (!controller.signal.aborted) setChartLoading(false);
+      }
+    },
+    [watchlist],
+  );
 
   useEffect(() => {
     fetchBars(selectedTicker);
@@ -158,16 +172,12 @@ export default function MarketsPage() {
       <Card className="w-72 shrink-0 bg-card border-border">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Watchlist
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Watchlist</CardTitle>
             {!loading && (
               <span
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase',
-                  isLive
-                    ? 'bg-profit/15 text-profit'
-                    : 'bg-muted text-muted-foreground',
+                  isLive ? 'bg-profit/15 text-profit' : 'bg-muted text-muted-foreground',
                 )}
               >
                 <span
@@ -197,15 +207,11 @@ export default function MarketsPage() {
                 >
                   <div>
                     <p className="text-sm font-medium">{stock.ticker}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {stock.name}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">{stock.name}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">
-                      {stock.price > 0
-                        ? `$${stock.price.toFixed(2)}`
-                        : '--'}
+                      {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '--'}
                     </p>
                     <p
                       className={cn(
@@ -229,18 +235,12 @@ export default function MarketsPage() {
       <Card className="flex-1 bg-card border-border">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-bold">
-              {selectedTicker}
-            </CardTitle>
+            <CardTitle className="text-lg font-bold">{selectedTicker}</CardTitle>
             {selectedStock && (
               <>
-                <span className="text-sm text-muted-foreground">
-                  {selectedStock.name}
-                </span>
+                <span className="text-sm text-muted-foreground">{selectedStock.name}</span>
                 <span className="text-lg font-semibold">
-                  {selectedStock.price > 0
-                    ? `$${selectedStock.price.toFixed(2)}`
-                    : '--'}
+                  {selectedStock.price > 0 ? `$${selectedStock.price.toFixed(2)}` : '--'}
                 </span>
                 {selectedStock.price > 0 && (
                   <span
@@ -256,9 +256,7 @@ export default function MarketsPage() {
               </>
             )}
             {chartLoading && (
-              <span className="text-xs text-muted-foreground animate-pulse">
-                Loading...
-              </span>
+              <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>
             )}
           </div>
         </CardHeader>

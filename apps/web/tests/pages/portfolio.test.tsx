@@ -22,8 +22,30 @@ const mockPositions = [
 ];
 
 const mockQuotes = [
-  { ticker: 'AAPL', close: 252.0, change_pct: 0.8, open: 250, high: 253, low: 249, volume: 1000000, vwap: 251, timestamp: '2026-03-15', change: 2 },
-  { ticker: 'MSFT', close: 398.0, change_pct: 0.76, open: 395, high: 399, low: 394, volume: 800000, vwap: 397, timestamp: '2026-03-15', change: 3 },
+  {
+    ticker: 'AAPL',
+    close: 252.0,
+    change_pct: 0.8,
+    open: 250,
+    high: 253,
+    low: 249,
+    volume: 1000000,
+    vwap: 251,
+    timestamp: '2026-03-15',
+    change: 2,
+  },
+  {
+    ticker: 'MSFT',
+    close: 398.0,
+    change_pct: 0.76,
+    open: 395,
+    high: 399,
+    low: 394,
+    volume: 800000,
+    vwap: 397,
+    timestamp: '2026-03-15',
+    change: 3,
+  },
 ];
 
 beforeEach(() => {

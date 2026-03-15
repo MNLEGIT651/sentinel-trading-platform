@@ -19,7 +19,7 @@ const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META',
 const fallbackTickerData = [
   { ticker: 'AAPL', price: 178.72, change: 1.24 },
   { ticker: 'MSFT', price: 378.91, change: 0.82 },
-  { ticker: 'GOOGL', price: 141.80, change: -0.56 },
+  { ticker: 'GOOGL', price: 141.8, change: -0.56 },
   { ticker: 'AMZN', price: 178.25, change: 1.89 },
   { ticker: 'NVDA', price: 495.22, change: 3.12 },
   { ticker: 'TSLA', price: 248.48, change: -2.15 },
@@ -77,13 +77,15 @@ export default function DashboardPage() {
   const [isLive, setIsLive] = useState(false);
   const [account, setAccount] = useState<BrokerAccount | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>(sampleAlerts);
-  const [recentSignals, setRecentSignals] = useState<Array<{
-    ticker: string;
-    side: string;
-    reason: string;
-    strength: number | null;
-    ts: string;
-  }>>([]);
+  const [recentSignals, setRecentSignals] = useState<
+    Array<{
+      ticker: string;
+      side: string;
+      reason: string;
+      strength: number | null;
+      ts: string;
+    }>
+  >([]);
 
   const fetchPrices = useCallback(async () => {
     try {
@@ -130,27 +132,29 @@ export default function DashboardPage() {
       ]);
 
       if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {
-        const data = await alertsRes.value.json() as { alerts: AgentAlert[] };
+        const data = (await alertsRes.value.json()) as { alerts: AgentAlert[] };
         if (data.alerts.length > 0) {
-          setAlerts(data.alerts.map((a) => ({
-            id: a.id,
-            account_id: null,
-            instrument_id: a.ticker ?? null,
-            severity: a.severity,
-            status: 'active' as const,
-            title: a.title,
-            message: a.message,
-            metadata: null,
-            triggered_at: a.created_at,
-            acknowledged_at: null,
-            resolved_at: null,
-            created_at: a.created_at,
-          })));
+          setAlerts(
+            data.alerts.map((a) => ({
+              id: a.id,
+              account_id: null,
+              instrument_id: a.ticker ?? null,
+              severity: a.severity,
+              status: 'active' as const,
+              title: a.title,
+              message: a.message,
+              metadata: null,
+              triggered_at: a.created_at,
+              acknowledged_at: null,
+              resolved_at: null,
+              created_at: a.created_at,
+            })),
+          );
         }
       }
 
       if (recsRes.status === 'fulfilled' && recsRes.value.ok) {
-        const data = await recsRes.value.json() as {
+        const data = (await recsRes.value.json()) as {
           recommendations: Array<{
             ticker: string;
             side: string;
@@ -257,16 +261,12 @@ export default function DashboardPage() {
                       <span
                         className={cn(
                           'text-[10px] font-bold px-1.5 py-0.5 rounded',
-                          s.side === 'buy'
-                            ? 'bg-profit/15 text-profit'
-                            : 'bg-loss/15 text-loss',
+                          s.side === 'buy' ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss',
                         )}
                       >
                         {s.side.toUpperCase()}
                       </span>
-                      <span className="text-sm font-semibold text-foreground">
-                        {s.ticker}
-                      </span>
+                      <span className="text-sm font-semibold text-foreground">{s.ticker}</span>
                     </div>
                     {s.strength != null && (
                       <span className="text-xs font-mono text-muted-foreground">

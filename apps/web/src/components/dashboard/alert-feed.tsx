@@ -30,16 +30,12 @@ export function AlertFeed({ alerts }: AlertFeedProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          Recent Alerts
-        </CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">Recent Alerts</CardTitle>
         <Bell className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         {alerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No alerts
-          </p>
+          <p className="text-sm text-muted-foreground py-4 text-center">No alerts</p>
         ) : (
           <ScrollArea className="h-[300px]">
             <div className="space-y-3">
@@ -49,20 +45,13 @@ export function AlertFeed({ alerts }: AlertFeedProps) {
                   className="flex items-start gap-3 rounded-md border border-border p-3"
                 >
                   <Badge
-                    className={cn(
-                      'text-[10px] uppercase shrink-0',
-                      severityStyles[alert.severity],
-                    )}
+                    className={cn('text-[10px] uppercase shrink-0', severityStyles[alert.severity])}
                   >
                     {alert.severity}
                   </Badge>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {alert.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                      {alert.message}
-                    </p>
+                    <p className="text-sm font-medium truncate">{alert.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{alert.message}</p>
                   </div>
                   <span className="text-[10px] text-muted-foreground shrink-0">
                     {formatTime(alert.triggered_at)}

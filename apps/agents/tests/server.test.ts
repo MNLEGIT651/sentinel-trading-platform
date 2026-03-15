@@ -6,10 +6,19 @@ import request from 'supertest';
 const mockOrchestrator = {
   currentState: {
     agents: {
-      market_sentinel: 'idle', strategy_analyst: 'idle',
-      risk_monitor: 'idle', research: 'idle', execution_monitor: 'idle',
+      market_sentinel: 'idle',
+      strategy_analyst: 'idle',
+      risk_monitor: 'idle',
+      research: 'idle',
+      execution_monitor: 'idle',
     },
-    lastRun: { market_sentinel: null, strategy_analyst: null, risk_monitor: null, research: null, execution_monitor: null },
+    lastRun: {
+      market_sentinel: null,
+      strategy_analyst: null,
+      risk_monitor: null,
+      research: null,
+      execution_monitor: null,
+    },
     cycleCount: 3,
     halted: false,
   },
@@ -36,7 +45,9 @@ vi.mock('../src/scheduler.js', () => ({
 
 vi.mock('../src/engine-client.js', () => ({
   EngineClient: vi.fn().mockImplementation(() => ({
-    submitOrder: vi.fn().mockResolvedValue({ order_id: 'alpaca-123', status: 'filled', fill_price: 180 }),
+    submitOrder: vi
+      .fn()
+      .mockResolvedValue({ order_id: 'alpaca-123', status: 'filled', fill_price: 180 }),
   })),
 }));
 
@@ -122,7 +133,13 @@ describe('POST /recommendations/:id/approve', () => {
 
   it('returns 409 when recommendation is not pending (atomicApprove returns null)', async () => {
     const { getRecommendation, atomicApprove } = await import('../src/recommendations-store.js');
-    vi.mocked(getRecommendation).mockResolvedValue({ id: 'rec-1', ticker: 'AAPL', side: 'buy', order_type: 'market', quantity: 5 } as any);
+    vi.mocked(getRecommendation).mockResolvedValue({
+      id: 'rec-1',
+      ticker: 'AAPL',
+      side: 'buy',
+      order_type: 'market',
+      quantity: 5,
+    } as any);
     vi.mocked(atomicApprove).mockResolvedValue(null);
     const res = await request(app).post('/recommendations/rec-1/approve');
     expect(res.status).toBe(409);

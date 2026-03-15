@@ -36,7 +36,10 @@ function StrengthBar({ value }: { value: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
-        <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn('h-full rounded-full transition-all', color)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <span className="text-xs font-mono text-muted-foreground w-7 text-right">{pct}</span>
     </div>
@@ -47,7 +50,11 @@ export default function SignalsPage() {
   const [signals, setSignals] = useState<SignalRow[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanTime, setLastScanTime] = useState<string | null>(null);
-  const [scanMeta, setScanMeta] = useState<{ tickers: number; strategies: number; errors: string[] } | null>(null);
+  const [scanMeta, setScanMeta] = useState<{
+    tickers: number;
+    strategies: number;
+    errors: string[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('strength');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -83,7 +90,11 @@ export default function SignalsPage() {
         id: `sig-${Date.now()}-${i}`,
       }));
       setSignals(rows);
-      setScanMeta({ tickers: data.tickers_scanned, strategies: data.strategies_run, errors: data.errors });
+      setScanMeta({
+        tickers: data.tickers_scanned,
+        strategies: data.strategies_run,
+        errors: data.errors,
+      });
       setLastScanTime(new Date().toLocaleTimeString());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Scan failed');
@@ -96,7 +107,10 @@ export default function SignalsPage() {
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortField(field); setSortDir('desc'); }
+    else {
+      setSortField(field);
+      setSortDir('desc');
+    }
   };
 
   const sortedSignals = useMemo(() => {
@@ -111,9 +125,10 @@ export default function SignalsPage() {
 
   const longCount = signals.filter((s) => s.direction === 'long').length;
   const shortCount = signals.filter((s) => s.direction === 'short').length;
-  const avgStrength = signals.length > 0
-    ? Math.round((signals.reduce((sum, s) => sum + s.strength, 0) / signals.length) * 100)
-    : 0;
+  const avgStrength =
+    signals.length > 0
+      ? Math.round((signals.reduce((sum, s) => sum + s.strength, 0) / signals.length) * 100)
+      : 0;
 
   return (
     <div className="space-y-4 p-4">
@@ -131,17 +146,20 @@ export default function SignalsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowConfig((v) => !v)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowConfig((v) => !v)}>
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            {showConfig ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+            {showConfig ? (
+              <ChevronUp className="h-3 w-3 ml-1" />
+            ) : (
+              <ChevronDown className="h-3 w-3 ml-1" />
+            )}
           </Button>
           <Button onClick={handleRunScan} disabled={isScanning} size="sm">
             {isScanning ? (
-              <><Loader2 className="h-3.5 w-3.5 animate-spin" /><span className="ml-1.5">Scanning…</span></>
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span className="ml-1.5">Scanning…</span>
+              </>
             ) : (
               <span>Run Scan</span>
             )}
@@ -175,7 +193,9 @@ export default function SignalsPage() {
                   className="bg-background border border-border rounded px-2 py-1 text-sm text-foreground focus:outline-none"
                 >
                   {[60, 90, 120, 180, 252].map((d) => (
-                    <option key={d} value={d}>{d}d</option>
+                    <option key={d} value={d}>
+                      {d}d
+                    </option>
                   ))}
                 </select>
               </div>
@@ -189,7 +209,9 @@ export default function SignalsPage() {
                   className="bg-background border border-border rounded px-2 py-1 text-sm text-foreground focus:outline-none"
                 >
                   {[0.0, 0.1, 0.2, 0.3, 0.4, 0.5].map((v) => (
-                    <option key={v} value={v}>{Math.round(v * 100)}%</option>
+                    <option key={v} value={v}>
+                      {Math.round(v * 100)}%
+                    </option>
                   ))}
                 </select>
               </div>
@@ -213,7 +235,8 @@ export default function SignalsPage() {
         <Card className="bg-amber-500/10 border-amber-500/30">
           <CardContent className="py-2 px-4">
             <p className="text-xs text-amber-400">
-              {scanMeta.errors.length} ticker(s) had errors: {scanMeta.errors.slice(0, 3).join('; ')}
+              {scanMeta.errors.length} ticker(s) had errors:{' '}
+              {scanMeta.errors.slice(0, 3).join('; ')}
               {scanMeta.errors.length > 3 ? ` +${scanMeta.errors.length - 3} more` : ''}
             </p>
           </CardContent>
@@ -263,7 +286,8 @@ export default function SignalsPage() {
               No signals yet. Configure tickers above and run a scan.
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1 text-center max-w-xs">
-              Free-tier Polygon processes ~1 ticker per 12s — scans over 5 tickers may take a minute.
+              Free-tier Polygon processes ~1 ticker per 12s — scans over 5 tickers may take a
+              minute.
             </p>
           </CardContent>
         </Card>
@@ -291,10 +315,14 @@ export default function SignalsPage() {
                       </th>
                     ))}
                     <th className="px-4 py-2 text-left">
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Strategy</span>
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Strategy
+                      </span>
                     </th>
                     <th className="px-4 py-2 text-left">
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Reason</span>
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        Reason
+                      </span>
                     </th>
                   </tr>
                 </thead>
@@ -302,7 +330,9 @@ export default function SignalsPage() {
                   {sortedSignals.map((signal) => (
                     <tr key={signal.id} className="transition-colors hover:bg-accent/30">
                       <td className="px-4 py-3">
-                        <span className="text-sm font-semibold text-foreground">{signal.ticker}</span>
+                        <span className="text-sm font-semibold text-foreground">
+                          {signal.ticker}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <Badge
@@ -313,9 +343,11 @@ export default function SignalsPage() {
                               : 'bg-loss/15 text-loss border-loss/30',
                           )}
                         >
-                          {signal.direction === 'long'
-                            ? <ArrowUp className="mr-0.5 h-3 w-3" />
-                            : <ArrowDown className="mr-0.5 h-3 w-3" />}
+                          {signal.direction === 'long' ? (
+                            <ArrowUp className="mr-0.5 h-3 w-3" />
+                          ) : (
+                            <ArrowDown className="mr-0.5 h-3 w-3" />
+                          )}
                           {signal.direction.toUpperCase()}
                         </Badge>
                       </td>
@@ -323,7 +355,9 @@ export default function SignalsPage() {
                         <StrengthBar value={signal.strength} />
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs text-muted-foreground">{signal.strategy_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {signal.strategy_name}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs text-muted-foreground leading-relaxed line-clamp-2 max-w-xs">
