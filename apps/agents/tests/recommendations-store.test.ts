@@ -7,8 +7,17 @@ vi.mock('../src/supabase-client.js', () => ({
   getSupabaseClient: () => ({ from: mockFrom }),
 }));
 
-const { createRecommendation, listRecommendations, atomicApprove, rejectRecommendation, createAlert, listAlerts } =
-  await import('../src/recommendations-store.js');
+const {
+  createRecommendation,
+  listRecommendations,
+  getRecommendation,
+  atomicApprove,
+  rejectRecommendation,
+  markFilled,
+  markRiskBlocked,
+  createAlert,
+  listAlerts,
+} = await import('../src/recommendations-store.js');
 
 describe('createRecommendation', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -105,5 +114,154 @@ describe('createAlert', () => {
     });
     const result = await createAlert({ severity: 'warning', title: 'Test', message: 'msg' });
     expect(result.severity).toBe('warning');
+  });
+});
+
+describe('listRecommendations', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('queries agent_recommendations and returns an array', async () => {
+    const rows = [
+      { id: 'uuid-1', status: 'pending', ticker: 'AAPL' },
+      { id: 'uuid-2', status: 'approved', ticker: 'TSLA' },
+    ];
+    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    const result = await listRecommendations();
+    expect(mockFrom).toHaveBeenCalledWith('agent_recommendations');
+    expect(result).toHaveLength(2);
+    expect(result[0].ticker).toBe('AAPL');
+  });
+
+  it('filters by status when provided', async () => {
+    const rows = [{ id: 'uuid-3', status: 'pending', ticker: 'MSFT' }];
+    const eqMock = vi.fn().mockResolvedValue({ data: rows, error: null });
+    const limitMock = vi.fn().mockReturnValue({ eq: eqMock });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    const result = await listRecommendations('pending');
+    expect(result).toHaveLength(1);
+    expect(result[0].status).toBe('pending');
+  });
+});
+
+describe('getRecommendation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns the row when found', async () => {
+    const rec = { id: 'uuid-1', status: 'pending', ticker: 'AAPL' };
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: rec, error: null }),
+        }),
+      }),
+    });
+
+    const result = await getRecommendation('uuid-1');
+    expect(mockFrom).toHaveBeenCalledWith('agent_recommendations');
+    expect(result).not.toBeNull();
+    expect(result?.ticker).toBe('AAPL');
+  });
+
+  it('returns null on PGRST116 (not found)', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+        }),
+      }),
+    });
+
+    const result = await getRecommendation('nonexistent');
+    expect(result).toBeNull();
+  });
+});
+
+describe('markFilled', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('updates status to filled with the order_id', async () => {
+    const eqMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
+    mockFrom.mockReturnValue({ update: updateMock });
+
+    await markFilled('uuid-1', 'order-abc');
+
+    expect(mockFrom).toHaveBeenCalledWith('agent_recommendations');
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ status: 'filled', order_id: 'order-abc' }));
+    expect(eqMock).toHaveBeenCalledWith('id', 'uuid-1');
+  });
+
+  it('throws on Supabase error', async () => {
+    const eqMock = vi.fn().mockResolvedValue({ data: null, error: { message: 'update failed' } });
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({ eq: eqMock }),
+    });
+
+    await expect(markFilled('uuid-1', 'order-abc')).rejects.toThrow('update failed');
+  });
+});
+
+describe('markRiskBlocked', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('updates status to risk_blocked with metadata.block_reason', async () => {
+    const eqMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
+    mockFrom.mockReturnValue({ update: updateMock });
+
+    await markRiskBlocked('uuid-1', 'exceeds max position size');
+
+    expect(mockFrom).toHaveBeenCalledWith('agent_recommendations');
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({
+      status: 'risk_blocked',
+      metadata: { block_reason: 'exceeds max position size' },
+    }));
+    expect(eqMock).toHaveBeenCalledWith('id', 'uuid-1');
+  });
+
+  it('throws on Supabase error', async () => {
+    const eqMock = vi.fn().mockResolvedValue({ data: null, error: { message: 'block failed' } });
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({ eq: eqMock }),
+    });
+
+    await expect(markRiskBlocked('uuid-1', 'reason')).rejects.toThrow('block failed');
+  });
+});
+
+describe('listAlerts', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('queries agent_alerts and returns an array', async () => {
+    const rows = [
+      { id: 'alt-1', severity: 'warning', title: 'Alert 1', message: 'msg1', acknowledged: false, created_at: '' },
+      { id: 'alt-2', severity: 'critical', title: 'Alert 2', message: 'msg2', acknowledged: false, created_at: '' },
+    ];
+    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    const result = await listAlerts();
+    expect(mockFrom).toHaveBeenCalledWith('agent_alerts');
+    expect(result).toHaveLength(2);
+    expect(result[0].severity).toBe('warning');
+  });
+
+  it('returns empty array when no alerts exist', async () => {
+    const limitMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    const result = await listAlerts();
+    expect(result).toEqual([]);
   });
 });
