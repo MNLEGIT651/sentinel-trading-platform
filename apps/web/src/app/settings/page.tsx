@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Settings,
   Key,
@@ -14,6 +14,8 @@ import {
   Globe,
   Database,
   Bot,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +23,21 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
-// ── Input field helper ───────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────
+
+type ServiceStatus = 'connected' | 'disconnected' | 'not_configured' | 'checking';
+
+interface ServiceStatuses {
+  engine: ServiceStatus;
+  polygon: ServiceStatus;
+  supabase: ServiceStatus;
+  anthropic: ServiceStatus;
+  alpaca: ServiceStatus;
+}
+
+const STORAGE_KEY = 'sentinel:settings';
+
+// ── Input field helper ────────────────────────────────────────────────
 
 function SettingsField({
   label,
@@ -106,7 +122,7 @@ function ToggleField({
   );
 }
 
-// ── Status indicator ─────────────────────────────────────────────────
+// ── Status indicator ──────────────────────────────────────────────────
 
 function ConnectionStatus({
   label,
@@ -115,29 +131,61 @@ function ConnectionStatus({
 }: {
   label: string;
   icon: React.ElementType;
-  status: 'connected' | 'disconnected' | 'not_configured';
+  status: ServiceStatus;
 }) {
-  const config = {
-    connected: { color: 'text-profit', badge: 'bg-profit/15 text-profit border-profit/30', text: 'Connected' },
-    disconnected: { color: 'text-loss', badge: 'bg-loss/15 text-loss border-loss/30', text: 'Disconnected' },
-    not_configured: { color: 'text-amber-400', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30', text: 'Not Configured' },
-  }[status];
+  const config: Record<ServiceStatus, { color: string; badge: string; text: string }> = {
+    connected: {
+      color: 'text-profit',
+      badge: 'bg-profit/15 text-profit border-profit/30',
+      text: 'Connected',
+    },
+    disconnected: {
+      color: 'text-loss',
+      badge: 'bg-loss/15 text-loss border-loss/30',
+      text: 'Disconnected',
+    },
+    not_configured: {
+      color: 'text-amber-400',
+      badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      text: 'Not Configured',
+    },
+    checking: {
+      color: 'text-muted-foreground',
+      badge: 'bg-muted/30 text-muted-foreground border-border',
+      text: 'Checking…',
+    },
+  };
+
+  const c = config[status];
 
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
       <div className="flex items-center gap-2.5">
-        <Icon className={cn('h-4 w-4', config.color)} />
+        {status === 'checking' ? (
+          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+        ) : (
+          <Icon className={cn('h-4 w-4', c.color)} />
+        )}
         <span className="text-sm text-foreground">{label}</span>
       </div>
-      <Badge className={cn('border text-[10px]', config.badge)}>{config.text}</Badge>
+      <Badge className={cn('border text-[10px]', c.badge)}>{c.text}</Badge>
     </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────
+// ── Main page ─────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
+  const [checkingConnections, setCheckingConnections] = useState(false);
+
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatuses>({
+    engine: 'checking',
+    polygon: 'checking',
+    supabase: 'checking',
+    anthropic: 'checking',
+    alpaca: 'checking',
+  });
 
   // API Keys
   const [polygonKey, setPolygonKey] = useState('');
@@ -168,7 +216,87 @@ export default function SettingsPage() {
   const [autoTrading, setAutoTrading] = useState(false);
   const [requireConfirmation, setRequireConfirmation] = useState(true);
 
+  const checkConnections = useCallback(async () => {
+    setCheckingConnections(true);
+    try {
+      const r = await fetch('/api/settings/status');
+      const data = await r.json() as ServiceStatuses;
+      setServiceStatus(data);
+    } catch {
+      setServiceStatus({
+        engine: 'disconnected',
+        polygon: 'not_configured',
+        supabase: 'not_configured',
+        anthropic: 'not_configured',
+        alpaca: 'not_configured',
+      });
+    } finally {
+      setCheckingConnections(false);
+    }
+  }, []);
+
+  // Load persisted settings from localStorage and fetch real service status
+  useEffect(() => {
+    // Hydrate fields from localStorage
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw) as Record<string, unknown>;
+        if (typeof s.polygonKey === 'string') setPolygonKey(s.polygonKey);
+        if (typeof s.alpacaKey === 'string') setAlpacaKey(s.alpacaKey);
+        if (typeof s.alpacaSecret === 'string') setAlpacaSecret(s.alpacaSecret);
+        if (typeof s.anthropicKey === 'string') setAnthropicKey(s.anthropicKey);
+        if (typeof s.supabaseUrl === 'string') setSupabaseUrl(s.supabaseUrl);
+        if (typeof s.supabaseKey === 'string') setSupabaseKey(s.supabaseKey);
+        if (typeof s.maxPosition === 'string') setMaxPosition(s.maxPosition);
+        if (typeof s.maxSector === 'string') setMaxSector(s.maxSector);
+        if (typeof s.dailyLossLimit === 'string') setDailyLossLimit(s.dailyLossLimit);
+        if (typeof s.softDrawdown === 'string') setSoftDrawdown(s.softDrawdown);
+        if (typeof s.hardDrawdown === 'string') setHardDrawdown(s.hardDrawdown);
+        if (typeof s.maxPositions === 'string') setMaxPositions(s.maxPositions);
+        if (typeof s.alertCritical === 'boolean') setAlertCritical(s.alertCritical);
+        if (typeof s.alertWarning === 'boolean') setAlertWarning(s.alertWarning);
+        if (typeof s.alertInfo === 'boolean') setAlertInfo(s.alertInfo);
+        if (typeof s.alertSound === 'boolean') setAlertSound(s.alertSound);
+        if (typeof s.agentNotifications === 'boolean') setAgentNotifications(s.agentNotifications);
+        if (typeof s.tradeNotifications === 'boolean') setTradeNotifications(s.tradeNotifications);
+        if (typeof s.paperMode === 'boolean') setPaperMode(s.paperMode);
+        if (typeof s.autoTrading === 'boolean') setAutoTrading(s.autoTrading);
+        if (typeof s.requireConfirmation === 'boolean') setRequireConfirmation(s.requireConfirmation);
+      }
+    } catch {
+      // Ignore corrupt storage
+    }
+
+    checkConnections();
+  }, [checkConnections]);
+
   const handleSave = () => {
+    // Persist all settings to localStorage
+    const settings = {
+      polygonKey,
+      alpacaKey,
+      alpacaSecret,
+      anthropicKey,
+      supabaseUrl,
+      supabaseKey,
+      maxPosition,
+      maxSector,
+      dailyLossLimit,
+      softDrawdown,
+      hardDrawdown,
+      maxPositions,
+      alertCritical,
+      alertWarning,
+      alertInfo,
+      alertSound,
+      agentNotifications,
+      tradeNotifications,
+      paperMode,
+      autoTrading,
+      requireConfirmation,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -204,32 +332,26 @@ export default function SettingsPage() {
       {/* Connection Status */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Service Status
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Service Status
+            </CardTitle>
+            <button
+              onClick={checkConnections}
+              disabled={checkingConnections}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={cn('h-3 w-3', checkingConnections && 'animate-spin')} />
+              {checkingConnections ? 'Checking...' : 'Test'}
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
-          <ConnectionStatus icon={Server} label="Quant Engine (FastAPI)" status="connected" />
-          <ConnectionStatus
-            icon={Globe}
-            label="Polygon.io Market Data"
-            status={polygonKey ? 'connected' : 'not_configured'}
-          />
-          <ConnectionStatus
-            icon={Database}
-            label="Supabase Database"
-            status={supabaseUrl ? 'connected' : 'not_configured'}
-          />
-          <ConnectionStatus
-            icon={Bot}
-            label="Claude AI (Anthropic)"
-            status={anthropicKey ? 'connected' : 'not_configured'}
-          />
-          <ConnectionStatus
-            icon={Shield}
-            label="Alpaca Broker"
-            status={alpacaKey ? 'connected' : 'not_configured'}
-          />
+          <ConnectionStatus icon={Server} label="Quant Engine (FastAPI)" status={serviceStatus.engine} />
+          <ConnectionStatus icon={Globe} label="Polygon.io Market Data" status={serviceStatus.polygon} />
+          <ConnectionStatus icon={Database} label="Supabase Database" status={serviceStatus.supabase} />
+          <ConnectionStatus icon={Bot} label="Claude AI (Anthropic)" status={serviceStatus.anthropic} />
+          <ConnectionStatus icon={Shield} label="Alpaca Broker" status={serviceStatus.alpaca} />
         </CardContent>
       </Card>
 
@@ -425,7 +547,7 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        {/* ── Notifications ────────────────────────────────────────── */}
+        {/* ── Notifications ─────────────────────────────────────────── */}
         <TabsContent value="notifications">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
