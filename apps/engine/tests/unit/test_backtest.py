@@ -294,3 +294,23 @@ class TestBacktestAPI:
             "bars": 150,
         })
         assert resp.status_code == 200
+
+    def test_backtest_response_includes_trades(self, client) -> None:
+        """Backtest response should include a trades list."""
+        payload = {
+            "strategy_name": "sma_crossover",
+            "bars": 100,
+            "trend": "up",
+            "seed": 1,
+        }
+        response = client.post("/api/v1/backtest/run", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert "trades" in data
+        assert isinstance(data["trades"], list)
+        if data["trades"]:
+            trade = data["trades"][0]
+            assert "side" in trade
+            assert "entry_price" in trade
+            assert "pnl" in trade
+            assert "return_pct" in trade

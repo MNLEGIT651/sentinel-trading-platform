@@ -48,6 +48,18 @@ class BacktestSummary(BaseModel):
     avg_holding_bars: str
 
 
+class TradeOut(BaseModel):
+    """Individual trade record from backtest."""
+
+    side: str
+    entry_bar: int
+    exit_bar: int
+    entry_price: float
+    exit_price: float
+    pnl: float
+    return_pct: float
+
+
 class BacktestResponse(BaseModel):
     """Full backtest result."""
 
@@ -55,6 +67,7 @@ class BacktestResponse(BaseModel):
     equity_curve: list[float]
     drawdown_curve: list[float]
     trade_count: int
+    trades: list[TradeOut]
 
 
 def generate_synthetic_data(
@@ -117,6 +130,18 @@ async def run_backtest(req: BacktestRequest) -> BacktestResponse:
         equity_curve=result.equity_curve.equity.tolist(),
         drawdown_curve=result.equity_curve.drawdown.tolist(),
         trade_count=result.total_trades,
+        trades=[
+            TradeOut(
+                side=t.side,
+                entry_bar=int(t.entry_bar),
+                exit_bar=int(t.exit_bar),
+                entry_price=float(t.entry_price),
+                exit_price=float(t.exit_price),
+                pnl=float(t.pnl),
+                return_pct=float(t.pnl_pct),
+            )
+            for t in result.trades
+        ],
     )
 
 
