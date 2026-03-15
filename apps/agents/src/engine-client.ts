@@ -129,4 +129,67 @@ export class EngineClient {
       body: JSON.stringify({ tickers, timeframe }),
     });
   }
+
+  // ── Portfolio ──────────────────────────────────────────────────
+
+  async getAccount(): Promise<{
+    cash: number; equity: number; positions_value: number;
+    initial_capital: number; buying_power?: number; status?: string; account_id?: string;
+  }> {
+    return this.request('/api/v1/portfolio/account');
+  }
+
+  async getPositions(): Promise<Array<{
+    instrument_id: string; quantity: number; avg_price: number;
+    market_value: number; side: string; current_price?: number;
+  }>> {
+    return this.request('/api/v1/portfolio/positions');
+  }
+
+  async submitOrder(params: {
+    symbol: string; side: 'buy' | 'sell'; order_type: 'market' | 'limit';
+    quantity: number; limit_price?: number; time_in_force?: string;
+  }): Promise<{ order_id: string; status: string; fill_price?: number; fill_quantity?: number; risk_note?: string }> {
+    return this.request('/api/v1/portfolio/orders', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  async getOpenOrders(): Promise<unknown[]> {
+    return this.request('/api/v1/portfolio/orders?status=open');
+  }
+
+  // ── Strategies ─────────────────────────────────────────────────
+
+  async scanStrategies(params: {
+    tickers: string[]; days?: number; min_strength?: number; use_composite?: boolean;
+  } | string[]): Promise<{
+    signals: Array<{ ticker: string; direction: string; strength: number; strategy_name: string; reason: string }>;
+    total_signals: number; tickers_scanned: number; strategies_run: number; errors: string[];
+  }> {
+    const body = Array.isArray(params)
+      ? { tickers: params, days: 90, min_strength: 0.3 }
+      : { days: 90, min_strength: 0.3, ...params };
+    return this.request('/api/v1/strategies/scan', { method: 'POST', body: JSON.stringify(body) });
+  }
+
+  // ── Data ───────────────────────────────────────────────────────
+
+  async getQuotes(tickers: string[]): Promise<Array<{
+    ticker: string; close: number; change_pct: number;
+    open: number; high: number; low: number; volume: number; timestamp: string;
+  }>> {
+    return this.request(`/api/v1/data/quotes?tickers=${tickers.join(',')}`);
+  }
+
+  // ── Risk ───────────────────────────────────────────────────────
+
+  async preTradeCheck(params: {
+    ticker: string; shares: number; price: number; side: 'buy' | 'sell';
+    equity: number; cash: number; peak_equity: number; daily_starting_equity: number;
+    positions: Record<string, number>; position_sectors: Record<string, string>;
+  }): Promise<{ allowed: boolean; action: string; reason: string; adjusted_shares: number | null }> {
+    return this.request('/api/v1/risk/pre-trade-check', { method: 'POST', body: JSON.stringify(params) });
+  }
 }
