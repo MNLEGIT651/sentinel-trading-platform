@@ -22,11 +22,11 @@ vi.mock('@/lib/agents-client', () => ({
 
 const mockStatus = {
   agents: {
-    market_sentinel: { status: 'idle', lastRun: null },
-    strategy_analyst: { status: 'idle', lastRun: null },
-    risk_monitor: { status: 'idle', lastRun: null },
-    research: { status: 'idle', lastRun: null },
-    execution_monitor: { status: 'idle', lastRun: null },
+    market_sentinel: { status: 'idle' as const, lastRun: null },
+    strategy_analyst: { status: 'idle' as const, lastRun: null },
+    risk_monitor: { status: 'idle' as const, lastRun: null },
+    research: { status: 'idle' as const, lastRun: null },
+    execution_monitor: { status: 'idle' as const, lastRun: null },
   },
   cycleCount: 7,
   halted: false,
