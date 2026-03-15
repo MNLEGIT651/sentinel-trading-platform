@@ -8,3 +8,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 }
+
+// Polyfill Element.prototype.getAnimations for jsdom (needed by @base-ui/react ScrollArea)
+if (typeof Element !== 'undefined' && !Element.prototype.getAnimations) {
+  Element.prototype.getAnimations = () => [];
+}

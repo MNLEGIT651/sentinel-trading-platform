@@ -21,6 +21,9 @@ import { cn } from '@/lib/utils';
 
 // ── Strategy & trend options ─────────────────────────────────────────
 
+const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
+
+
 const strategyOptions = [
   { id: 'sma_crossover', label: 'SMA Crossover', family: 'Trend Following' },
   { id: 'ema_momentum_trend', label: 'EMA Momentum Trend', family: 'Trend Following' },
@@ -62,6 +65,36 @@ interface BacktestResult {
     pnl: number;
     return_pct: number;
   }[];
+}
+
+// ── Engine API types ─────────────────────────────────────────────────
+
+interface EngineBacktestSummary {
+  strategy: string;
+  ticker: string;
+  total_return: string;      // e.g. "12.50%"
+  annualized_return: string;
+  max_drawdown: string;      // e.g. "-8.32%"
+  sharpe_ratio: string;
+  sortino_ratio: string;
+  win_rate: string;          // e.g. "55.0%"
+  profit_factor: string;
+  total_trades: number;
+  avg_holding_bars: string;  // e.g. "15.3"
+}
+
+interface EngineBacktestResponse {
+  summary: EngineBacktestSummary;
+  equity_curve: number[];
+  drawdown_curve: number[];
+  trade_count: number;
+  trades: BacktestResult['trades'];
+}
+
+/** Parse "12.50%" → 0.125  |  "1.234" → 1.234  |  "15.3" → 15.3 */
+function parsePct(s: string): number {
+  if (s.endsWith('%')) return parseFloat(s) / 100;
+  return parseFloat(s);
 }
 
 // ── Synthetic backtest runner (client-side) ──────────────────────────
@@ -247,14 +280,69 @@ export default function BacktestPage() {
   const [capital, setCapital] = useState(100_000);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
+  const [engineError, setEngineError] = useState<string | null>(null);
 
   const handleRun = useCallback(async () => {
     setIsRunning(true);
-    // Simulate a brief delay for realism
-    await new Promise((r) => setTimeout(r, 800));
-    const seed = Math.floor(Math.random() * 100_000);
-    const res = runSyntheticBacktest(strategy, bars, trend, capital, seed);
-    setResult(res);
+    setEngineError(null);
+
+    let ran = false;
+    try {
+      const seed = Math.floor(Math.random() * 100_000);
+      const res = await fetch(`${ENGINE_URL}/api/v1/backtest/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          strategy_name: strategy,
+          bars,
+          initial_capital: capital,
+          trend,
+          seed,
+          ticker: 'SYNTHETIC',
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { detail?: string };
+        throw new Error(err.detail ?? `Engine error ${res.status}`);
+      }
+
+      const data: EngineBacktestResponse = await res.json();
+      const s = data.summary;
+
+      setResult({
+        summary: {
+          strategy: s.strategy,
+          ticker: s.ticker,
+          initial_capital: capital,
+          final_equity: capital * (1 + parsePct(s.total_return)),
+          total_return: parsePct(s.total_return),
+          total_trades: s.total_trades,
+          win_rate: parsePct(s.win_rate),
+          sharpe_ratio: parsePct(s.sharpe_ratio),
+          sortino_ratio: parsePct(s.sortino_ratio),
+          max_drawdown: parsePct(s.max_drawdown),
+          profit_factor: parsePct(s.profit_factor),
+          avg_trade_pnl: data.trades.length > 0
+            ? data.trades.reduce((sum, t) => sum + t.pnl, 0) / data.trades.length
+            : 0,
+          avg_holding_bars: parseFloat(s.avg_holding_bars),
+        },
+        equity_curve: data.equity_curve,
+        trades: data.trades,
+      });
+      ran = true;
+    } catch {
+      // Engine offline or strategy unknown — fall back to client-side simulation
+    }
+
+    if (!ran) {
+      await new Promise((r) => setTimeout(r, 800));
+      const seed = Math.floor(Math.random() * 100_000);
+      setResult(runSyntheticBacktest(strategy, bars, trend, capital, seed));
+    }
+
     setIsRunning(false);
   }, [strategy, bars, trend, capital]);
 
