@@ -8,8 +8,11 @@ import { PriceTicker } from '@/components/dashboard/price-ticker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Alert } from '@sentinel/shared';
 import type { MarketQuote, BrokerAccount } from '@/lib/engine-client';
+import type { AgentAlert } from '@/lib/agents-client';
+import { cn } from '@/lib/utils';
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
+const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
 
 const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
 
@@ -73,6 +76,14 @@ export default function DashboardPage() {
   const [tickerData, setTickerData] = useState(fallbackTickerData);
   const [isLive, setIsLive] = useState(false);
   const [account, setAccount] = useState<BrokerAccount | null>(null);
+  const [alerts, setAlerts] = useState<Alert[]>(sampleAlerts);
+  const [recentSignals, setRecentSignals] = useState<Array<{
+    ticker: string;
+    side: string;
+    reason: string;
+    strength: number | null;
+    ts: string;
+  }>>([]);
 
   const fetchPrices = useCallback(async () => {
     try {
@@ -111,10 +122,63 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const [alertsRes, recsRes] = await Promise.allSettled([
+        fetch(`${AGENTS_URL}/alerts`, { signal: AbortSignal.timeout(3000) }),
+        fetch(`${AGENTS_URL}/recommendations?status=filled`, { signal: AbortSignal.timeout(3000) }),
+      ]);
+
+      if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {
+        const data = await alertsRes.value.json() as { alerts: AgentAlert[] };
+        if (data.alerts.length > 0) {
+          setAlerts(data.alerts.map((a) => ({
+            id: a.id,
+            account_id: null,
+            instrument_id: a.ticker ?? null,
+            severity: a.severity,
+            status: 'active' as const,
+            title: a.title,
+            message: a.message,
+            metadata: null,
+            triggered_at: a.created_at,
+            acknowledged_at: null,
+            resolved_at: null,
+            created_at: a.created_at,
+          })));
+        }
+      }
+
+      if (recsRes.status === 'fulfilled' && recsRes.value.ok) {
+        const data = await recsRes.value.json() as {
+          recommendations: Array<{
+            ticker: string;
+            side: string;
+            reason?: string;
+            signal_strength?: number | null;
+            created_at: string;
+          }>;
+        };
+        setRecentSignals(
+          data.recommendations.slice(0, 5).map((r) => ({
+            ticker: r.ticker,
+            side: r.side,
+            reason: r.reason ?? '',
+            strength: r.signal_strength ?? null,
+            ts: r.created_at,
+          })),
+        );
+      }
+    } catch {
+      // Agents offline — keep sampleAlerts
+    }
+  }, []);
+
   useEffect(() => {
     fetchPrices();
     fetchAccount();
-  }, [fetchPrices, fetchAccount]);
+    fetchAlerts();
+  }, [fetchPrices, fetchAccount, fetchAlerts]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -178,14 +242,46 @@ export default function DashboardPage() {
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              No active signals. Strategies will generate signals during market hours.
-            </p>
+            {recentSignals.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                No recent signals. Strategies generate signals during market hours.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {recentSignals.map((s, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                          s.side === 'buy'
+                            ? 'bg-profit/15 text-profit'
+                            : 'bg-loss/15 text-loss',
+                        )}
+                      >
+                        {s.side.toUpperCase()}
+                      </span>
+                      <span className="text-sm font-semibold text-foreground">
+                        {s.ticker}
+                      </span>
+                    </div>
+                    {s.strength != null && (
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {(s.strength * 100).toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Alert Feed */}
-        <AlertFeed alerts={sampleAlerts} />
+        <AlertFeed alerts={alerts} />
       </div>
     </div>
   );
