@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\config.py
+# hypothesis_version: 6.151.9
+
+[1440, '../../.env', 'ignore', 'paper', 'sentinel-dev-key', 'utf-8']

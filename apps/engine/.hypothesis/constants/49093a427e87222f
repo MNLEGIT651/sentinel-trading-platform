@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\registry.py
+# hypothesis_version: 6.151.9
+
+[1.0, 'bollinger_reversion', 'composite', 'default_params', 'description', 'ema_momentum_trend', 'family', 'macd_trend', 'mean_reversion', 'momentum', 'name', 'obv_divergence', 'other', 'pairs', 'pairs_spread', 'price_to_ma_value', 'relative_value', 'roc_momentum', 'rsi_mean_reversion', 'rsi_momentum', 'sma_crossover', 'trend_following', 'value', 'zscore_reversion']

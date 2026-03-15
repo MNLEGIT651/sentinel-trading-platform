@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\portfolio.py
+# hypothesis_version: 6.151.9
+
+[100000.0, '/portfolio', '/{account_id}', 'account_id', 'cash', 'equity', 'portfolio', 'positions']

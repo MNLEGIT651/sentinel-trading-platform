@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\momentum.py
+# hypothesis_version: 6.151.9
+
+[0.2, 0.3, 1.0, 1.5, 3.0, 30.0, 40.0, 60.0, 70.0, 'lookback', 'momentum_zone_high', 'momentum_zone_low', 'obv_change', 'obv_divergence', 'obv_sma_period', 'overbought', 'oversold', 'prev_rsi', 'price', 'roc', 'roc_momentum', 'roc_period', 'rsi', 'rsi_momentum', 'rsi_period', 'threshold', 'volume_multiplier', 'volume_ratio', 'volume_sma_period']

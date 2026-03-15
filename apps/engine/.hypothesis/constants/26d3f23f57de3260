@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\risk\position_sizer.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 1.0, 2.0, 'adjusted_pct', 'atr', 'equal_weight', 'fixed_fraction', 'kelly_criterion', 'kelly_pct', 'risk_parity', 'target_vol', 'volatility', 'volatility_target', 'win_rate']

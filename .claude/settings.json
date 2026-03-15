@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vercel whoami:*)",
+      "Bash(vercel teams:*)",
+      "Bash(vercel projects:*)",
+      "Bash(vercel link:*)",
+      "Bash(vercel env:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel deploy:*)",
+      "Read(//c/Users/steve/.config/vercel/**)",
+      "Read(//c/Users/steve/.local/share/vercel/**)",
+      "Read(//c/Users/steve/.config/**)",
+      "Read(//c/Users/steve/AppData/Roaming/com.vercel.cli/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "Read(//c/Users/steve/AppData/Roaming//**)",
+      "Bash(python3 -c \":*)",
+      "Bash(pnpm --version)",
+      "Bash(grep -rn compass 'C:/Users/steve/Projects/personal/Stock Trading App/' --include=*.json --include=*.yaml --include=*.yml --include=*.ts --include=*.tsx)"
+    ]
+  }
+}

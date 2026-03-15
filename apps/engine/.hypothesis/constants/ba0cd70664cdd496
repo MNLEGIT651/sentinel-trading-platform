@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\composite.py
+# hypothesis_version: 6.151.9
+
+[0.3, 0.5, 1.0, 'composite', 'conflict_penalty', 'long_strength', 'min_agreement', 'min_strength', 'short_strength', 'signal_count']

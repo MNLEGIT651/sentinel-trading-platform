@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\pairs_trading.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.5, 0.7, 1.0, 2.0, 4.0, 'beta', 'correlation', 'correlation_window', 'entry_z', 'exit_z', 'lookback', 'min_correlation', 'pair', 'pairs_spread', 'spread_mean', 'spread_std', 'z_score']

@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\backtest\engine.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.001, 0.005, 0.1, 1.0, 100000.0, 252, 'annualized_return', 'avg_holding_bars', 'inf', 'long', 'max_drawdown', 'profit_factor', 'sharpe_ratio', 'short', 'sortino_ratio', 'strategy', 'ticker', 'total_return', 'total_trades', 'win_rate']

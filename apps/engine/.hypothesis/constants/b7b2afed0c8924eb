@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\data\polygon_client.py
+# hypothesis_version: 6.151.9
+
+[12.0, 30.0, 429, 1000, 2020, 5000, '1', '15', '15m', '1d', '1h', '1m', '1w', '5', '5m', 'GET', 'adjusted', 'apiKey', 'c', 'day', 'h', 'hour', 'l', 'limit', 'minute', 'o', 'results', 't', 'true', 'v', 'vw', 'week']

@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\risk\risk_manager.py
+# hypothesis_version: 6.151.9
+
+[0.0, 1.0, 'action', 'alerts', 'allow', 'buy', 'cash', 'cash_pct', 'concentration', 'concentrations', 'critical', 'current', 'daily_loss_limit', 'daily_pnl', 'drawdown', 'drawdown_hard_limit', 'drawdown_soft_limit', 'equity', 'halt', 'halted', 'info', 'invested_pct', 'limit', 'liquidate', 'manual_reset', 'message', 'peak', 'position_count', 'reduce', 'reject', 'rule', 'severity', 'ticker', 'unknown', 'warning']

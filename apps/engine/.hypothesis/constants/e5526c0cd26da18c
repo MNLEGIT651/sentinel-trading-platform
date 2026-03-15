@@ -1,0 +1,4 @@
+# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\data\ingestion.py
+# hypothesis_version: 6.151.9
+
+['1d', 'adjusted_close', 'close', 'high', 'id', 'instrument_id', 'instruments', 'low', 'market_data', 'open', 'polygon', 'source', 'ticker', 'timeframe', 'timestamp', 'volume', 'vwap']
