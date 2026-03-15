@@ -91,7 +91,7 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Cycle control ───────────────────────────────────────────────
 
-  app.post('/cycle', (req: Request, res: Response) => {
+  app.post('/cycle', (_req: Request, res: Response) => {
     if (orchestrator.currentState.halted) {
       return res.status(409).json({
         error: 'halted',

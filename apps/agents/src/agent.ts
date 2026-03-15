@@ -150,7 +150,7 @@ export class Agent {
 
       // Process tool calls
       const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ContentBlockParam & { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
+        (b): b is Anthropic.ToolUseBlock =>
           b.type === 'tool_use',
       );
 
