@@ -20,15 +20,17 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "prettier --write",
+      "prettier --write"
+    ],
+    "apps/web/**/*.{ts,tsx}": [
       "eslint --fix --max-warnings=0"
     ],
     "*.{json,css,md,yaml,yml}": [
       "prettier --write"
     ],
     "*.py": [
-      "apps/engine/.venv/Scripts/ruff check --fix --exit-zero",
-      "apps/engine/.venv/Scripts/ruff format"
+      "python -m ruff check --fix --exit-zero",
+      "python -m ruff format"
     ]
   },
   "pnpm": {
