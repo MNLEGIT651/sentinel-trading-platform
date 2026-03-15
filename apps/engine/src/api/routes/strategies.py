@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from src.config import Settings
 from src.data.polygon_client import PolygonClient
 from src.strategies.base import OHLCVData
-from src.strategies.registry import list_strategies, FAMILY_MAP
+from src.strategies.registry import FAMILY_MAP, list_strategies
 from src.strategies.signal_generator import SignalGenerator
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,7 @@ router = APIRouter(prefix="/strategies", tags=["strategies"])
 # ---------------------------------------------------------------------------
 # Response Models
 # ---------------------------------------------------------------------------
+
 
 class StrategyInfo(BaseModel):
     """Strategy metadata."""
@@ -81,6 +82,7 @@ class ScanRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def _fetch_ohlcv(polygon: PolygonClient, ticker: str, days: int) -> OHLCVData | None:
     """Fetch bars from Polygon and convert to OHLCVData."""
     end = date.today()
@@ -102,6 +104,7 @@ async def _fetch_ohlcv(polygon: PolygonClient, ticker: str, days: int) -> OHLCVD
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.get("/", response_model=StrategyListResponse)
 async def get_strategies() -> StrategyListResponse:

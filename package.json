@@ -27,8 +27,8 @@
       "prettier --write"
     ],
     "*.py": [
-      "ruff check --fix",
-      "ruff format"
+      "apps/engine/.venv/Scripts/ruff check --fix --exit-zero",
+      "apps/engine/.venv/Scripts/ruff format"
     ]
   },
   "pnpm": {

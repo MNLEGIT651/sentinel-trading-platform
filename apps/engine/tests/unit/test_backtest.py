@@ -3,16 +3,15 @@
 import numpy as np
 import pytest
 
-from src.backtest.engine import BacktestEngine, BacktestResult, EquityCurve, TradeRecord
+from src.backtest.engine import BacktestEngine, BacktestResult, EquityCurve
 from src.strategies.base import OHLCVData, Signal, SignalDirection, Strategy
-from src.strategies.trend_following import EMAMomentumTrend
 from src.strategies.mean_reversion import ZScoreReversion
-from src.strategies.registry import create_strategy
-
+from src.strategies.trend_following import EMAMomentumTrend
 
 # ---------------------------------------------------------------------------
 # Test Data
 # ---------------------------------------------------------------------------
+
 
 def make_trending_data(direction: str = "up", n: int = 200, seed: int = 42) -> OHLCVData:
     """Generate trending OHLCV data for backtesting."""
@@ -50,8 +49,11 @@ class AlwaysLongStrategy(Strategy):
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
         return [
             Signal(
-                ticker=data.ticker, direction=SignalDirection.LONG,
-                strength=0.8, strategy_name=self.name, reason="Test",
+                ticker=data.ticker,
+                direction=SignalDirection.LONG,
+                strength=0.8,
+                strategy_name=self.name,
+                reason="Test",
             )
         ]
 
@@ -67,8 +69,11 @@ class AlternatingStrategy(Strategy):
         direction = SignalDirection.LONG if (bar // 10) % 2 == 0 else SignalDirection.SHORT
         return [
             Signal(
-                ticker=data.ticker, direction=direction,
-                strength=0.7, strategy_name=self.name, reason="Alternating",
+                ticker=data.ticker,
+                direction=direction,
+                strength=0.7,
+                strategy_name=self.name,
+                reason="Alternating",
             )
         ]
 
@@ -86,6 +91,7 @@ class NeverSignalStrategy(Strategy):
 # ---------------------------------------------------------------------------
 # BacktestEngine Tests
 # ---------------------------------------------------------------------------
+
 
 class TestBacktestEngine:
     def test_basic_run(self):
@@ -244,19 +250,25 @@ class TestWithRealStrategies:
 # Backtest API Tests
 # ---------------------------------------------------------------------------
 
+
 class TestBacktestAPI:
     @pytest.fixture
     def client(self):
         from fastapi.testclient import TestClient
+
         from src.api.main import app
+
         return TestClient(app)
 
     def test_run_backtest(self, client):
-        resp = client.post("/api/v1/backtest/run", json={
-            "strategy_name": "sma_crossover",
-            "bars": 200,
-            "trend": "up",
-        })
+        resp = client.post(
+            "/api/v1/backtest/run",
+            json={
+                "strategy_name": "sma_crossover",
+                "bars": 200,
+                "trend": "up",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "summary" in data
@@ -264,9 +276,12 @@ class TestBacktestAPI:
         assert len(data["equity_curve"]) == 200
 
     def test_run_backtest_unknown_strategy(self, client):
-        resp = client.post("/api/v1/backtest/run", json={
-            "strategy_name": "nonexistent",
-        })
+        resp = client.post(
+            "/api/v1/backtest/run",
+            json={
+                "strategy_name": "nonexistent",
+            },
+        )
         assert resp.status_code == 404
 
     def test_list_backtestable_strategies(self, client):
@@ -277,22 +292,28 @@ class TestBacktestAPI:
         assert "up" in data["trends"]
 
     def test_run_backtest_volatile(self, client):
-        resp = client.post("/api/v1/backtest/run", json={
-            "strategy_name": "bollinger_reversion",
-            "bars": 300,
-            "trend": "volatile",
-            "seed": 99,
-        })
+        resp = client.post(
+            "/api/v1/backtest/run",
+            json={
+                "strategy_name": "bollinger_reversion",
+                "bars": 300,
+                "trend": "volatile",
+                "seed": 99,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["summary"]["strategy"] == "bollinger_reversion"
 
     def test_backtest_with_custom_capital(self, client):
-        resp = client.post("/api/v1/backtest/run", json={
-            "strategy_name": "rsi_momentum",
-            "initial_capital": 50000,
-            "bars": 150,
-        })
+        resp = client.post(
+            "/api/v1/backtest/run",
+            json={
+                "strategy_name": "rsi_momentum",
+                "initial_capital": 50000,
+                "bars": 150,
+            },
+        )
         assert resp.status_code == 200
 
     def test_backtest_response_includes_trades(self, client) -> None:

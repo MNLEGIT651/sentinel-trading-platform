@@ -87,12 +87,10 @@ class CompositeStrategy(Strategy):
 
         # Calculate weighted strength for each direction
         long_strength = sum(
-            s.strength * weight_map.get(s.strategy_name, 1.0 / len(signals))
-            for s in long_sigs
+            s.strength * weight_map.get(s.strategy_name, 1.0 / len(signals)) for s in long_sigs
         )
         short_strength = sum(
-            s.strength * weight_map.get(s.strategy_name, 1.0 / len(signals))
-            for s in short_sigs
+            s.strength * weight_map.get(s.strategy_name, 1.0 / len(signals)) for s in short_sigs
         )
 
         # Apply conflict penalty
@@ -111,19 +109,21 @@ class CompositeStrategy(Strategy):
             and long_strength > short_strength
         ):
             contributing = [s.strategy_name for s in long_sigs]
-            result.append(Signal(
-                ticker=ticker,
-                direction=SignalDirection.LONG,
-                strength=min(long_strength, 1.0),
-                strategy_name=self.name,
-                reason=f"Composite LONG consensus: {len(long_sigs)} strategies agree ({', '.join(contributing)})",
-                metadata={
-                    "contributing_strategies": contributing,
-                    "long_strength": long_strength,
-                    "short_strength": short_strength,
-                    "signal_count": len(long_sigs),
-                },
-            ))
+            result.append(
+                Signal(
+                    ticker=ticker,
+                    direction=SignalDirection.LONG,
+                    strength=min(long_strength, 1.0),
+                    strategy_name=self.name,
+                    reason=f"Composite LONG consensus: {len(long_sigs)} strategies agree ({', '.join(contributing)})",
+                    metadata={
+                        "contributing_strategies": contributing,
+                        "long_strength": long_strength,
+                        "short_strength": short_strength,
+                        "signal_count": len(long_sigs),
+                    },
+                )
+            )
 
         # Emit short signal if consensus
         elif (
@@ -132,18 +132,20 @@ class CompositeStrategy(Strategy):
             and short_strength > long_strength
         ):
             contributing = [s.strategy_name for s in short_sigs]
-            result.append(Signal(
-                ticker=ticker,
-                direction=SignalDirection.SHORT,
-                strength=min(short_strength, 1.0),
-                strategy_name=self.name,
-                reason=f"Composite SHORT consensus: {len(short_sigs)} strategies agree ({', '.join(contributing)})",
-                metadata={
-                    "contributing_strategies": contributing,
-                    "long_strength": long_strength,
-                    "short_strength": short_strength,
-                    "signal_count": len(short_sigs),
-                },
-            ))
+            result.append(
+                Signal(
+                    ticker=ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=min(short_strength, 1.0),
+                    strategy_name=self.name,
+                    reason=f"Composite SHORT consensus: {len(short_sigs)} strategies agree ({', '.join(contributing)})",
+                    metadata={
+                        "contributing_strategies": contributing,
+                        "long_strength": long_strength,
+                        "short_strength": short_strength,
+                        "signal_count": len(short_sigs),
+                    },
+                )
+            )
 
         return result

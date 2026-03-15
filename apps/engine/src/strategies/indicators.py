@@ -9,10 +9,10 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-
 # ---------------------------------------------------------------------------
 # Moving Averages
 # ---------------------------------------------------------------------------
+
 
 def sma(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
     """Simple Moving Average.
@@ -65,6 +65,7 @@ def wma(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
 # ---------------------------------------------------------------------------
 # Oscillators
 # ---------------------------------------------------------------------------
+
 
 def rsi(close: NDArray[np.float64], period: int = 14) -> NDArray[np.float64]:
     """Relative Strength Index (Wilder's smoothing).
@@ -133,6 +134,7 @@ def stochastic(
 # ---------------------------------------------------------------------------
 # Trend Indicators
 # ---------------------------------------------------------------------------
+
 
 def macd(
     close: NDArray[np.float64],
@@ -222,6 +224,7 @@ def adx(
 # Volatility
 # ---------------------------------------------------------------------------
 
+
 def bollinger_bands(
     close: NDArray[np.float64],
     period: int = 20,
@@ -304,6 +307,7 @@ def keltner_channels(
 # Volume Indicators
 # ---------------------------------------------------------------------------
 
+
 def vwap(
     high: NDArray[np.float64],
     low: NDArray[np.float64],
@@ -373,6 +377,7 @@ def money_flow_index(
 # ---------------------------------------------------------------------------
 # Momentum
 # ---------------------------------------------------------------------------
+
 
 def rate_of_change(close: NDArray[np.float64], period: int = 10) -> NDArray[np.float64]:
     """Rate of Change (percentage)."""

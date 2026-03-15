@@ -11,7 +11,6 @@ from src.strategies.indicators import (
     bollinger_bands,
     ema,
     macd,
-    money_flow_index,
     obv,
     rate_of_change,
     rsi,
@@ -20,13 +19,12 @@ from src.strategies.indicators import (
     true_range,
     vwap,
     williams_r,
-    wma,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def make_close(values: list[float]) -> np.ndarray:
     return np.array(values, dtype=np.float64)
@@ -46,6 +44,7 @@ def make_ohlcv(n: int = 50, seed: int = 42):
 # ---------------------------------------------------------------------------
 # SMA Tests
 # ---------------------------------------------------------------------------
+
 
 class TestSMA:
     def test_period_1_equals_close(self):
@@ -97,6 +96,7 @@ class TestSMA:
 # EMA Tests
 # ---------------------------------------------------------------------------
 
+
 class TestEMA:
     def test_basic_ema(self):
         close = make_close([10, 11, 12, 13, 14, 15])
@@ -131,6 +131,7 @@ class TestEMA:
 # RSI Tests
 # ---------------------------------------------------------------------------
 
+
 class TestRSI:
     def test_all_gains_gives_100(self):
         close = make_close([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
@@ -164,6 +165,7 @@ class TestRSI:
 # MACD Tests
 # ---------------------------------------------------------------------------
 
+
 class TestMACD:
     def test_macd_components(self):
         _, _, _, close, _ = make_ohlcv(100)
@@ -191,6 +193,7 @@ class TestMACD:
 # Bollinger Bands Tests
 # ---------------------------------------------------------------------------
 
+
 class TestBollingerBands:
     def test_upper_above_middle_above_lower(self):
         _, _, _, close, _ = make_ohlcv(50)
@@ -214,6 +217,7 @@ class TestBollingerBands:
 # ---------------------------------------------------------------------------
 # ATR Tests
 # ---------------------------------------------------------------------------
+
 
 class TestATR:
     def test_atr_positive(self):
@@ -240,6 +244,7 @@ class TestATR:
 # Stochastic Tests
 # ---------------------------------------------------------------------------
 
+
 class TestStochastic:
     def test_range_0_100(self):
         _, high, low, close, _ = make_ohlcv(50)
@@ -260,6 +265,7 @@ class TestStochastic:
 # ---------------------------------------------------------------------------
 # Volume Indicators Tests
 # ---------------------------------------------------------------------------
+
 
 class TestOBV:
     def test_increasing_prices(self):
@@ -298,6 +304,7 @@ class TestVWAP:
 # ---------------------------------------------------------------------------
 # Rate of Change Tests
 # ---------------------------------------------------------------------------
+
 
 class TestROC:
     def test_basic_roc(self):

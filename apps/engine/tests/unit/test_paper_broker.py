@@ -58,7 +58,9 @@ class TestMarketBuy:
 class TestGetPositions:
     async def test_positions_after_buy(self):
         broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
-        await broker.submit_order(_buy_order(instrument_id="AAPL", quantity=5.0), current_price=150.0)
+        await broker.submit_order(
+            _buy_order(instrument_id="AAPL", quantity=5.0), current_price=150.0
+        )
 
         positions = await broker.get_positions()
         assert len(positions) == 1
@@ -111,9 +113,7 @@ class TestSlippageModel:
         """Buy fill price should always be >= the current price."""
         broker = PaperBroker(initial_capital=1_000_000.0, slippage_bps=10.0)
         for _ in range(50):
-            result = await broker.submit_order(
-                _buy_order(quantity=1.0), current_price=100.0
-            )
+            result = await broker.submit_order(_buy_order(quantity=1.0), current_price=100.0)
             assert result.fill_price is not None
             assert result.fill_price >= 100.0
 

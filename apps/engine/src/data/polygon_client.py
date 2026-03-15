@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import httpx
 
@@ -57,8 +57,7 @@ class PolygonClient:
     def _map_timeframe(self, timeframe: str) -> tuple[str, str]:
         if timeframe not in TIMEFRAME_MAP:
             raise ValueError(
-                f"Invalid timeframe '{timeframe}'. "
-                f"Must be one of: {list(TIMEFRAME_MAP.keys())}"
+                f"Invalid timeframe '{timeframe}'. Must be one of: {list(TIMEFRAME_MAP.keys())}"
             )
         return TIMEFRAME_MAP[timeframe]
 
@@ -73,7 +72,7 @@ class PolygonClient:
         results = data.get("results", [])
         bars: list[PolygonBar] = []
         for r in results:
-            ts = datetime.fromtimestamp(r["t"] / 1000, tz=timezone.utc)
+            ts = datetime.fromtimestamp(r["t"] / 1000, tz=UTC)
             bars.append(
                 PolygonBar(
                     timestamp=ts,
@@ -101,8 +100,7 @@ class PolygonClient:
                 if response.status_code == 429:
                     wait = _INITIAL_BACKOFF * (2**attempt)
                     logger.warning(
-                        "Polygon 429 rate-limited on %s (attempt %d/%d), "
-                        "retrying in %.1fs",
+                        "Polygon 429 rate-limited on %s (attempt %d/%d), retrying in %.1fs",
                         url,
                         attempt + 1,
                         _MAX_RETRIES + 1,
@@ -156,9 +154,7 @@ class PolygonClient:
 
     async def get_latest_price(self, ticker: str) -> PolygonBar | None:
         """Fetch the previous day's bar for a ticker."""
-        response = await self._request_with_retry(
-            "GET", f"/v2/aggs/ticker/{ticker}/prev"
-        )
+        response = await self._request_with_retry("GET", f"/v2/aggs/ticker/{ticker}/prev")
         bars = self._parse_bars(response.json())
         return bars[0] if bars else None
 

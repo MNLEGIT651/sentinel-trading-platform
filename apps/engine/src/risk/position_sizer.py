@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 import numpy as np
-from numpy.typing import NDArray
 
 
 class SizingMethod(str, Enum):
@@ -44,12 +43,12 @@ class RiskLimits:
     Based on the trading blueprint's Layer B risk controls.
     """
 
-    max_position_pct: float = 0.05       # 5% max single position
-    max_sector_pct: float = 0.20         # 20% max sector concentration
+    max_position_pct: float = 0.05  # 5% max single position
+    max_sector_pct: float = 0.20  # 20% max sector concentration
     max_portfolio_risk_pct: float = 0.02  # 2% daily loss limit
-    max_drawdown_soft: float = 0.10      # 10% drawdown warning
-    max_drawdown_hard: float = 0.15      # 15% drawdown circuit breaker
-    max_correlated_exposure: float = 0.30 # 30% max correlated group
+    max_drawdown_soft: float = 0.10  # 10% drawdown warning
+    max_drawdown_hard: float = 0.15  # 15% drawdown circuit breaker
+    max_correlated_exposure: float = 0.30  # 30% max correlated group
     max_open_positions: int = 20
 
 
@@ -123,8 +122,12 @@ class PositionSizer:
         """
         if atr <= 0 or price <= 0:
             return PositionSize(
-                ticker=ticker, shares=0, dollar_amount=0.0, weight=0.0,
-                method=SizingMethod.VOLATILITY_TARGET, risk_per_share=0.0,
+                ticker=ticker,
+                shares=0,
+                dollar_amount=0.0,
+                weight=0.0,
+                method=SizingMethod.VOLATILITY_TARGET,
+                risk_per_share=0.0,
             )
 
         risk_budget = self.total_equity * target_vol
@@ -173,8 +176,12 @@ class PositionSizer:
         """
         if avg_loss <= 0 or price <= 0:
             return PositionSize(
-                ticker=ticker, shares=0, dollar_amount=0.0, weight=0.0,
-                method=SizingMethod.KELLY_CRITERION, risk_per_share=0.0,
+                ticker=ticker,
+                shares=0,
+                dollar_amount=0.0,
+                weight=0.0,
+                method=SizingMethod.KELLY_CRITERION,
+                risk_per_share=0.0,
             )
 
         # Kelly formula: f* = (p * b - q) / b
@@ -221,7 +228,9 @@ class PositionSizer:
             PositionSize(
                 ticker=t,
                 shares=int(budget_per / prices[t]) if prices.get(t, 0) > 0 else 0,
-                dollar_amount=int(budget_per / prices[t]) * prices[t] if prices.get(t, 0) > 0 else 0,
+                dollar_amount=int(budget_per / prices[t]) * prices[t]
+                if prices.get(t, 0) > 0
+                else 0,
                 weight=weight_per,
                 method=SizingMethod.EQUAL_WEIGHT,
                 risk_per_share=prices.get(t, 0) * 0.02,
@@ -263,14 +272,16 @@ class PositionSizer:
             budget = self.total_equity * w
             price = prices.get(t, 0)
             shares = int(budget / price) if price > 0 else 0
-            results.append(PositionSize(
-                ticker=t,
-                shares=shares,
-                dollar_amount=shares * price,
-                weight=w,
-                method=SizingMethod.RISK_PARITY,
-                risk_per_share=price * vols[i] if price > 0 else 0,
-                metadata={"volatility": float(vols[i])},
-            ))
+            results.append(
+                PositionSize(
+                    ticker=t,
+                    shares=shares,
+                    dollar_amount=shares * price,
+                    weight=w,
+                    method=SizingMethod.RISK_PARITY,
+                    risk_per_share=price * vols[i] if price > 0 else 0,
+                    metadata={"volatility": float(vols[i])},
+                )
+            )
 
         return results

@@ -181,7 +181,9 @@ class RiskManager:
 
         if side == "buy":
             return self._check_buy(ticker, shares, price, state, sector)
-        return PreTradeCheck(allowed=True, action=RiskAction.ALLOW, reason="Sells are always allowed")
+        return PreTradeCheck(
+            allowed=True, action=RiskAction.ALLOW, reason="Sells are always allowed"
+        )
 
     def _check_buy(
         self,
@@ -217,8 +219,7 @@ class RiskManager:
 
         # 2. Sector concentration limit
         sector_value = sum(
-            v for t, v in state.positions.items()
-            if state.position_sectors.get(t) == sector
+            v for t, v in state.positions.items() if state.position_sectors.get(t) == sector
         )
         sector_value += trade_value
         sector_pct = sector_value / state.equity if state.equity > 0 else 1.0
@@ -301,8 +302,7 @@ class RiskManager:
             sector_totals[sector] = sector_totals.get(sector, 0) + value
 
         sector_concentrations = {
-            s: v / state.equity if state.equity > 0 else 0
-            for s, v in sector_totals.items()
+            s: v / state.equity if state.equity > 0 else 0 for s, v in sector_totals.items()
         }
 
         # Check limits
@@ -312,13 +312,15 @@ class RiskManager:
         # Check individual position limits
         for ticker, pct in concentrations.items():
             if pct > self.limits.max_position_pct:
-                self._alerts.append(RiskAlert(
-                    severity=AlertSeverity.WARNING,
-                    rule="position_concentration",
-                    message=f"{ticker} exceeds position limit: {pct:.1%} > {self.limits.max_position_pct:.0%}",
-                    action=RiskAction.REDUCE,
-                    metadata={"ticker": ticker, "concentration": pct},
-                ))
+                self._alerts.append(
+                    RiskAlert(
+                        severity=AlertSeverity.WARNING,
+                        rule="position_concentration",
+                        message=f"{ticker} exceeds position limit: {pct:.1%} > {self.limits.max_position_pct:.0%}",
+                        action=RiskAction.REDUCE,
+                        metadata={"ticker": ticker, "concentration": pct},
+                    )
+                )
 
         return {
             "equity": state.equity,
@@ -345,9 +347,11 @@ class RiskManager:
     def reset_halt(self) -> None:
         """Manually reset circuit breaker (requires human approval)."""
         self._halted = False
-        self._alerts.append(RiskAlert(
-            severity=AlertSeverity.INFO,
-            rule="manual_reset",
-            message="Circuit breaker manually reset",
-            action=RiskAction.ALLOW,
-        ))
+        self._alerts.append(
+            RiskAlert(
+                severity=AlertSeverity.INFO,
+                rule="manual_reset",
+                message="Circuit breaker manually reset",
+                action=RiskAction.ALLOW,
+            )
+        )

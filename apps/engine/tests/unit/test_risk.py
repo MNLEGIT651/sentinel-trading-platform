@@ -3,29 +3,25 @@
 import numpy as np
 import pytest
 
+from src.risk.portfolio_optimizer import (
+    PortfolioOptimizer,
+)
 from src.risk.position_sizer import (
     PositionSizer,
-    PositionSize,
     RiskLimits,
     SizingMethod,
 )
 from src.risk.risk_manager import (
     AlertSeverity,
     PortfolioState,
-    PreTradeCheck,
     RiskAction,
-    RiskAlert,
     RiskManager,
 )
-from src.risk.portfolio_optimizer import (
-    PortfolioOptimizer,
-    RebalanceAction,
-)
-
 
 # ---------------------------------------------------------------------------
 # Position Sizer Tests
 # ---------------------------------------------------------------------------
+
 
 class TestFixedFraction:
     def test_basic_sizing(self):
@@ -80,7 +76,11 @@ class TestKellyCriterion:
     def test_positive_edge(self):
         sizer = PositionSizer(total_equity=100_000)
         result = sizer.kelly_criterion(
-            "AAPL", price=150.0, win_rate=0.60, avg_win=0.02, avg_loss=0.01,
+            "AAPL",
+            price=150.0,
+            win_rate=0.60,
+            avg_win=0.02,
+            avg_loss=0.01,
         )
         assert result.shares > 0
         assert result.method == SizingMethod.KELLY_CRITERION
@@ -88,14 +88,22 @@ class TestKellyCriterion:
     def test_negative_edge_no_position(self):
         sizer = PositionSizer(total_equity=100_000)
         result = sizer.kelly_criterion(
-            "AAPL", price=150.0, win_rate=0.30, avg_win=0.01, avg_loss=0.02,
+            "AAPL",
+            price=150.0,
+            win_rate=0.30,
+            avg_win=0.01,
+            avg_loss=0.02,
         )
         assert result.shares == 0
 
     def test_zero_avg_loss(self):
         sizer = PositionSizer(total_equity=100_000)
         result = sizer.kelly_criterion(
-            "AAPL", price=150.0, win_rate=0.60, avg_win=0.02, avg_loss=0.0,
+            "AAPL",
+            price=150.0,
+            win_rate=0.60,
+            avg_win=0.02,
+            avg_loss=0.0,
         )
         assert result.shares == 0
 
@@ -135,6 +143,7 @@ class TestRiskParity:
 # ---------------------------------------------------------------------------
 # Risk Manager Tests
 # ---------------------------------------------------------------------------
+
 
 def make_state(**overrides) -> PortfolioState:
     defaults = dict(
@@ -226,7 +235,12 @@ class TestPreTradeCheck:
         )
         # Adding $7000 more tech would push to 27% > 20%
         result = manager.pre_trade_check(
-            "GOOGL", 50, 140.0, "buy", state, sector="tech",
+            "GOOGL",
+            50,
+            140.0,
+            "buy",
+            state,
+            sector="tech",
         )
         assert result.action == RiskAction.REJECT
 
@@ -280,6 +294,7 @@ class TestResetHalt:
 # ---------------------------------------------------------------------------
 # Portfolio Optimizer Tests
 # ---------------------------------------------------------------------------
+
 
 def make_prices(n: int = 252, seed: int = 42) -> dict[str, np.ndarray]:
     """Generate synthetic price histories for testing."""
@@ -412,30 +427,43 @@ class TestRebalancing:
 # Risk API Tests
 # ---------------------------------------------------------------------------
 
+
 class TestRiskAPI:
     @pytest.fixture
     def client(self):
         from fastapi.testclient import TestClient
+
         from src.api.main import app
+
         return TestClient(app)
 
     def test_position_size_endpoint(self, client):
-        resp = client.post("/api/v1/risk/position-size", json={
-            "ticker": "AAPL", "price": 150.0, "equity": 100000,
-            "risk_fraction": 0.01,
-        })
+        resp = client.post(
+            "/api/v1/risk/position-size",
+            json={
+                "ticker": "AAPL",
+                "price": 150.0,
+                "equity": 100000,
+                "risk_fraction": 0.01,
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["ticker"] == "AAPL"
         assert data["shares"] > 0
 
     def test_risk_assessment_endpoint(self, client):
-        resp = client.post("/api/v1/risk/assess", json={
-            "equity": 100000, "cash": 50000,
-            "peak_equity": 100000, "daily_starting_equity": 100000,
-            "positions": {"AAPL": 25000, "MSFT": 25000},
-            "position_sectors": {"AAPL": "tech", "MSFT": "tech"},
-        })
+        resp = client.post(
+            "/api/v1/risk/assess",
+            json={
+                "equity": 100000,
+                "cash": 50000,
+                "peak_equity": 100000,
+                "daily_starting_equity": 100000,
+                "positions": {"AAPL": 25000, "MSFT": 25000},
+                "position_sectors": {"AAPL": "tech", "MSFT": "tech"},
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "drawdown" in data
@@ -443,12 +471,21 @@ class TestRiskAPI:
         assert data["halted"] is False
 
     def test_pre_trade_check_endpoint(self, client):
-        resp = client.post("/api/v1/risk/pre-trade-check", json={
-            "ticker": "GOOGL", "shares": 10, "price": 140.0, "side": "buy",
-            "equity": 100000, "cash": 50000,
-            "peak_equity": 100000, "daily_starting_equity": 100000,
-            "positions": {}, "position_sectors": {},
-        })
+        resp = client.post(
+            "/api/v1/risk/pre-trade-check",
+            json={
+                "ticker": "GOOGL",
+                "shares": 10,
+                "price": 140.0,
+                "side": "buy",
+                "equity": 100000,
+                "cash": 50000,
+                "peak_equity": 100000,
+                "daily_starting_equity": 100000,
+                "positions": {},
+                "position_sectors": {},
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["allowed"] is True

@@ -97,9 +97,7 @@ async def ingest_data(request: IngestRequest) -> IngestResponse:
     settings = Settings()
     polygon = PolygonClient(api_key=settings.polygon_api_key)
     service = DataIngestionService(polygon=polygon, db=db)
-    result = await service.ingest_batch(
-        tickers=request.tickers, timeframe=request.timeframe
-    )
+    result = await service.ingest_batch(tickers=request.tickers, timeframe=request.timeframe)
     return IngestResponse(ingested=result.ingested, errors=result.errors)
 
 
@@ -114,7 +112,9 @@ async def get_quote(ticker: str) -> MarketQuote:
         return _bar_to_quote(ticker.upper(), bar)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 429:
-            raise HTTPException(status_code=429, detail="Polygon rate limit exceeded. Try again shortly.")
+            raise HTTPException(
+                status_code=429, detail="Polygon rate limit exceeded. Try again shortly."
+            )
         raise
     finally:
         await polygon.close()
@@ -178,7 +178,9 @@ async def get_bars(
         ]
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 429:
-            raise HTTPException(status_code=429, detail="Polygon rate limit exceeded. Try again shortly.")
+            raise HTTPException(
+                status_code=429, detail="Polygon rate limit exceeded. Try again shortly."
+            )
         raise
     finally:
         await polygon.close()

@@ -5,15 +5,13 @@ Endpoints for running strategy backtests against historical data.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException
-
 import numpy as np
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 from src.backtest.engine import BacktestEngine
 from src.strategies.base import OHLCVData
-from src.strategies.registry import create_strategy, STRATEGY_CLASSES
-
+from src.strategies.registry import STRATEGY_CLASSES, create_strategy
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 
@@ -71,7 +69,10 @@ class BacktestResponse(BaseModel):
 
 
 def generate_synthetic_data(
-    ticker: str, n: int, trend: str, seed: int,
+    ticker: str,
+    n: int,
+    trend: str,
+    seed: int,
 ) -> OHLCVData:
     """Generate synthetic OHLCV data for backtesting."""
     rng = np.random.default_rng(seed)

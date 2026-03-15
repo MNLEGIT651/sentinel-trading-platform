@@ -106,8 +106,11 @@ class PortfolioOptimizer:
 
         if n == 0:
             return OptimizationResult(
-                weights={}, expected_return=0, expected_volatility=0,
-                sharpe_ratio=0, method="minimum_variance",
+                weights={},
+                expected_return=0,
+                expected_volatility=0,
+                sharpe_ratio=0,
+                method="minimum_variance",
             )
 
         # Analytical min-variance: w = Σ⁻¹ · 1 / (1ᵀ · Σ⁻¹ · 1)
@@ -140,8 +143,11 @@ class PortfolioOptimizer:
 
         if n == 0:
             return OptimizationResult(
-                weights={}, expected_return=0, expected_volatility=0,
-                sharpe_ratio=0, method="risk_parity",
+                weights={},
+                expected_return=0,
+                expected_volatility=0,
+                sharpe_ratio=0,
+                method="risk_parity",
             )
 
         # Start with inverse-volatility weights
@@ -185,8 +191,11 @@ class PortfolioOptimizer:
 
         if n == 0:
             return OptimizationResult(
-                weights={}, expected_return=0, expected_volatility=0,
-                sharpe_ratio=0, method="max_sharpe",
+                weights={},
+                expected_return=0,
+                expected_volatility=0,
+                sharpe_ratio=0,
+                method="max_sharpe",
             )
 
         excess_ret = exp_ret - self.risk_free_rate
@@ -235,14 +244,16 @@ class PortfolioOptimizer:
             if abs(delta) < min_trade_pct:
                 continue
 
-            actions.append(RebalanceAction(
-                ticker=ticker,
-                current_weight=current,
-                target_weight=target,
-                delta_weight=delta,
-                direction="buy" if delta > 0 else "sell",
-                priority=abs(delta),
-            ))
+            actions.append(
+                RebalanceAction(
+                    ticker=ticker,
+                    current_weight=current,
+                    target_weight=target,
+                    delta_weight=delta,
+                    direction="buy" if delta > 0 else "sell",
+                    priority=abs(delta),
+                )
+            )
 
         # Sort by priority (largest deviations first)
         actions.sort(key=lambda a: a.priority, reverse=True)

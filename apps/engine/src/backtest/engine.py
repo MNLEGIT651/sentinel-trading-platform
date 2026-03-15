@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from src.strategies.base import OHLCVData, Signal, SignalDirection, Strategy
+from src.strategies.base import OHLCVData, SignalDirection, Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -166,8 +166,13 @@ class BacktestEngine:
             if self.max_holding_bars and position != 0:
                 if (i - entry_bar) >= self.max_holding_bars:
                     cash, trade = self._close_position(
-                        data.ticker, position, entry_price, current_price,
-                        entry_bar, i, cash,
+                        data.ticker,
+                        position,
+                        entry_price,
+                        current_price,
+                        entry_bar,
+                        i,
+                        cash,
                     )
                     trades.append(trade)
                     position = 0
@@ -221,14 +226,18 @@ class BacktestEngine:
 
             else:
                 # Check for exit signal (opposite direction)
-                should_exit = (
-                    (position > 0 and best_signal.direction == SignalDirection.SHORT)
-                    or (position < 0 and best_signal.direction == SignalDirection.LONG)
+                should_exit = (position > 0 and best_signal.direction == SignalDirection.SHORT) or (
+                    position < 0 and best_signal.direction == SignalDirection.LONG
                 )
                 if should_exit:
                     cash, trade = self._close_position(
-                        data.ticker, position, entry_price, current_price,
-                        entry_bar, i, cash,
+                        data.ticker,
+                        position,
+                        entry_price,
+                        current_price,
+                        entry_bar,
+                        i,
+                        cash,
                     )
                     trades.append(trade)
                     position = 0
@@ -237,8 +246,13 @@ class BacktestEngine:
         if position != 0:
             final_price = float(data.close[-1])
             cash, trade = self._close_position(
-                data.ticker, position, entry_price, final_price,
-                entry_bar, n - 1, cash,
+                data.ticker,
+                position,
+                entry_price,
+                final_price,
+                entry_bar,
+                n - 1,
+                cash,
             )
             trades.append(trade)
 
@@ -246,8 +260,13 @@ class BacktestEngine:
         equity_arr[-1] = cash
 
         return self._compute_results(
-            strategy.name, data.ticker, start_bar, n - 1,
-            equity_arr, cash_arr, trades,
+            strategy.name,
+            data.ticker,
+            start_bar,
+            n - 1,
+            equity_arr,
+            cash_arr,
+            trades,
         )
 
     def _calculate_shares(self, cash: float, price: float) -> int:
@@ -314,7 +333,9 @@ class BacktestEngine:
         drawdown = np.where(peak > 0, (equity - peak) / peak, 0.0)
 
         # Returns
-        total_return = (equity[-1] / self.initial_capital) - 1.0 if self.initial_capital > 0 else 0.0
+        total_return = (
+            (equity[-1] / self.initial_capital) - 1.0 if self.initial_capital > 0 else 0.0
+        )
         n_bars = end_bar - start_bar + 1
         annualized_return = (1 + total_return) ** (252 / max(n_bars, 1)) - 1 if n_bars > 0 else 0
 
@@ -342,7 +363,13 @@ class BacktestEngine:
         avg_loss = np.mean([t.pnl_pct for t in losses]) if losses else 0.0
         gross_profit = sum(t.pnl for t in wins)
         gross_loss = abs(sum(t.pnl for t in losses))
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf') if gross_profit > 0 else 0.0
+        profit_factor = (
+            gross_profit / gross_loss
+            if gross_loss > 0
+            else float("inf")
+            if gross_profit > 0
+            else 0.0
+        )
         avg_holding = np.mean([t.holding_bars for t in trades]) if trades else 0.0
 
         curve = EquityCurve(

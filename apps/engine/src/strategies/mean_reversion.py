@@ -62,33 +62,43 @@ class BollingerReversion(Strategy):
             # Strength based on how far below lower band
             penetration = (lower[i] - price) / band_width if band_width > 0 else 0
             strength = min(0.4 + penetration * 3, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Price below lower BB (${price:.2f} < ${lower[i]:.2f}), RSI={current_rsi:.1f}",
-                metadata={
-                    "price": price, "lower_band": lower[i], "upper_band": upper[i],
-                    "middle_band": middle[i], "rsi": current_rsi,
-                },
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Price below lower BB (${price:.2f} < ${lower[i]:.2f}), RSI={current_rsi:.1f}",
+                    metadata={
+                        "price": price,
+                        "lower_band": lower[i],
+                        "upper_band": upper[i],
+                        "middle_band": middle[i],
+                        "rsi": current_rsi,
+                    },
+                )
+            )
 
         # Short: price at or above upper band + RSI confirms overbought
         elif price >= upper[i] and current_rsi >= self.params["rsi_overbought"]:
             penetration = (price - upper[i]) / band_width if band_width > 0 else 0
             strength = min(0.4 + penetration * 3, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Price above upper BB (${price:.2f} > ${upper[i]:.2f}), RSI={current_rsi:.1f}",
-                metadata={
-                    "price": price, "lower_band": lower[i], "upper_band": upper[i],
-                    "middle_band": middle[i], "rsi": current_rsi,
-                },
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Price above upper BB (${price:.2f} > ${upper[i]:.2f}), RSI={current_rsi:.1f}",
+                    metadata={
+                        "price": price,
+                        "lower_band": lower[i],
+                        "upper_band": upper[i],
+                        "middle_band": middle[i],
+                        "rsi": current_rsi,
+                    },
+                )
+            )
 
         return signals
 
@@ -132,25 +142,29 @@ class ZScoreReversion(Strategy):
 
         if z < -self.params["entry_z"]:
             strength = min(abs(z) / 4.0, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Extreme low z-score: {z:.2f} (mean=${mean:.2f}, std=${std:.2f})",
-                metadata={"z_score": z, "mean": mean, "std": std},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Extreme low z-score: {z:.2f} (mean=${mean:.2f}, std=${std:.2f})",
+                    metadata={"z_score": z, "mean": mean, "std": std},
+                )
+            )
 
         elif z > self.params["entry_z"]:
             strength = min(abs(z) / 4.0, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Extreme high z-score: {z:.2f} (mean=${mean:.2f}, std=${std:.2f})",
-                metadata={"z_score": z, "mean": mean, "std": std},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Extreme high z-score: {z:.2f} (mean=${mean:.2f}, std=${std:.2f})",
+                    metadata={"z_score": z, "mean": mean, "std": std},
+                )
+            )
 
         return signals
 
@@ -198,14 +212,16 @@ class RSIMeanReversion(Strategy):
         ):
             avg_rsi = (fast_rsi[i] + slow_rsi[i]) / 2
             strength = min((self.params["extreme_oversold"] - avg_rsi) / 20.0 + 0.4, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Double RSI extreme oversold (fast={fast_rsi[i]:.1f}, slow={slow_rsi[i]:.1f})",
-                metadata={"fast_rsi": fast_rsi[i], "slow_rsi": slow_rsi[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Double RSI extreme oversold (fast={fast_rsi[i]:.1f}, slow={slow_rsi[i]:.1f})",
+                    metadata={"fast_rsi": fast_rsi[i], "slow_rsi": slow_rsi[i]},
+                )
+            )
 
         # Both RSI periods in extreme overbought
         elif (
@@ -214,13 +230,15 @@ class RSIMeanReversion(Strategy):
         ):
             avg_rsi = (fast_rsi[i] + slow_rsi[i]) / 2
             strength = min((avg_rsi - self.params["extreme_overbought"]) / 20.0 + 0.4, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Double RSI extreme overbought (fast={fast_rsi[i]:.1f}, slow={slow_rsi[i]:.1f})",
-                metadata={"fast_rsi": fast_rsi[i], "slow_rsi": slow_rsi[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Double RSI extreme overbought (fast={fast_rsi[i]:.1f}, slow={slow_rsi[i]:.1f})",
+                    metadata={"fast_rsi": fast_rsi[i], "slow_rsi": slow_rsi[i]},
+                )
+            )
 
         return signals

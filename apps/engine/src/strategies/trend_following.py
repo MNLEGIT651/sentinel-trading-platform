@@ -60,25 +60,29 @@ class SMACrossover(Strategy):
 
         # Golden cross: fast crosses above slow
         if fast[i - 1] <= slow[i - 1] and fast[i] > slow[i]:
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"SMA golden cross (fast={self.params['fast_period']}, slow={self.params['slow_period']}), ADX={curr_adx:.1f}",
-                metadata={"fast_sma": fast[i], "slow_sma": slow[i], "adx": curr_adx},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"SMA golden cross (fast={self.params['fast_period']}, slow={self.params['slow_period']}), ADX={curr_adx:.1f}",
+                    metadata={"fast_sma": fast[i], "slow_sma": slow[i], "adx": curr_adx},
+                )
+            )
 
         # Death cross: fast crosses below slow
         elif fast[i - 1] >= slow[i - 1] and fast[i] < slow[i]:
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"SMA death cross (fast={self.params['fast_period']}, slow={self.params['slow_period']}), ADX={curr_adx:.1f}",
-                metadata={"fast_sma": fast[i], "slow_sma": slow[i], "adx": curr_adx},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"SMA death cross (fast={self.params['fast_period']}, slow={self.params['slow_period']}), ADX={curr_adx:.1f}",
+                    metadata={"fast_sma": fast[i], "slow_sma": slow[i], "adx": curr_adx},
+                )
+            )
 
         return signals
 
@@ -124,27 +128,31 @@ class EMAMomentumTrend(Strategy):
             # All aligned bullish
             spread = (fast[i] - slow[i]) / slow[i]
             strength = min(spread * 20, 1.0)  # Normalize
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=max(strength, 0.1),
-                strategy_name=self.name,
-                reason=f"Triple EMA bullish alignment (spread={spread:.4f})",
-                metadata={"fast": fast[i], "medium": medium[i], "slow": slow[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=max(strength, 0.1),
+                    strategy_name=self.name,
+                    reason=f"Triple EMA bullish alignment (spread={spread:.4f})",
+                    metadata={"fast": fast[i], "medium": medium[i], "slow": slow[i]},
+                )
+            )
 
         elif fast[i] < medium[i] < slow[i]:
             # All aligned bearish
             spread = (slow[i] - fast[i]) / slow[i]
             strength = min(spread * 20, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=max(strength, 0.1),
-                strategy_name=self.name,
-                reason=f"Triple EMA bearish alignment (spread={spread:.4f})",
-                metadata={"fast": fast[i], "medium": medium[i], "slow": slow[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=max(strength, 0.1),
+                    strategy_name=self.name,
+                    reason=f"Triple EMA bearish alignment (spread={spread:.4f})",
+                    metadata={"fast": fast[i], "medium": medium[i], "slow": slow[i]},
+                )
+            )
 
         return signals
 
@@ -184,7 +192,10 @@ class MACDTrend(Strategy):
         )
 
         i = len(data) - 1
-        if any(np.isnan(x) for x in [macd_line[i], signal_line[i], macd_line[i - 1], signal_line[i - 1]]):
+        if any(
+            np.isnan(x)
+            for x in [macd_line[i], signal_line[i], macd_line[i - 1], signal_line[i - 1]]
+        ):
             return []
 
         signals: list[Signal] = []
@@ -192,25 +203,37 @@ class MACDTrend(Strategy):
         # Bullish crossover
         if macd_line[i - 1] <= signal_line[i - 1] and macd_line[i] > signal_line[i]:
             strength = min(abs(histogram[i]) / data.last_close * 100, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=max(strength, 0.1),
-                strategy_name=self.name,
-                reason=f"MACD bullish crossover (hist={histogram[i]:.4f})",
-                metadata={"macd": macd_line[i], "signal": signal_line[i], "histogram": histogram[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=max(strength, 0.1),
+                    strategy_name=self.name,
+                    reason=f"MACD bullish crossover (hist={histogram[i]:.4f})",
+                    metadata={
+                        "macd": macd_line[i],
+                        "signal": signal_line[i],
+                        "histogram": histogram[i],
+                    },
+                )
+            )
 
         # Bearish crossover
         elif macd_line[i - 1] >= signal_line[i - 1] and macd_line[i] < signal_line[i]:
             strength = min(abs(histogram[i]) / data.last_close * 100, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=max(strength, 0.1),
-                strategy_name=self.name,
-                reason=f"MACD bearish crossover (hist={histogram[i]:.4f})",
-                metadata={"macd": macd_line[i], "signal": signal_line[i], "histogram": histogram[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=max(strength, 0.1),
+                    strategy_name=self.name,
+                    reason=f"MACD bearish crossover (hist={histogram[i]:.4f})",
+                    metadata={
+                        "macd": macd_line[i],
+                        "signal": signal_line[i],
+                        "histogram": histogram[i],
+                    },
+                )
+            )
 
         return signals

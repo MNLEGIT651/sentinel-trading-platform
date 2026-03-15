@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+
 from src.strategies.base import OHLCVData, Signal, SignalDirection, Strategy
 from src.strategies.registry import create_composite, create_strategy
 
@@ -94,10 +95,7 @@ class SignalGenerator:
                 try:
                     signals = strategy.generate_signals(data)
                     # Filter by minimum strength
-                    filtered = [
-                        s for s in signals
-                        if s.strength >= self.min_signal_strength
-                    ]
+                    filtered = [s for s in signals if s.strength >= self.min_signal_strength]
                     ticker_signals.extend(filtered)
                 except Exception as e:
                     error_msg = f"{strategy.name} failed on {ticker}: {e}"
@@ -132,10 +130,7 @@ class SignalGenerator:
             batch.strategies_run += 1
             try:
                 signals = composite.generate_signals(data)
-                filtered = [
-                    s for s in signals
-                    if s.strength >= self.min_signal_strength
-                ]
+                filtered = [s for s in signals if s.strength >= self.min_signal_strength]
                 batch.signals.extend(filtered)
             except Exception as e:
                 error_msg = f"Composite failed on {ticker}: {e}"

@@ -114,7 +114,9 @@ class AlpacaBroker(BrokerAdapter):
                 "filled_qty": float(o["filled_qty"]) if o.get("filled_qty") else 0,
                 "status": o["status"],
                 "submitted_at": o["submitted_at"],
-                "filled_avg_price": float(o["filled_avg_price"]) if o.get("filled_avg_price") else None,
+                "filled_avg_price": float(o["filled_avg_price"])
+                if o.get("filled_avg_price")
+                else None,
             }
             for o in res.json()
         ]

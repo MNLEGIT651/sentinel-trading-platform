@@ -6,12 +6,11 @@ and risk configuration.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
-from src.risk.position_sizer import PositionSizer, RiskLimits, SizingMethod
-from src.risk.risk_manager import RiskManager, PortfolioState
-
+from src.risk.position_sizer import PositionSizer, RiskLimits
+from src.risk.risk_manager import PortfolioState, RiskManager
 
 router = APIRouter(prefix="/risk", tags=["risk"])
 
@@ -19,6 +18,7 @@ router = APIRouter(prefix="/risk", tags=["risk"])
 # ---------------------------------------------------------------------------
 # Request / Response Models
 # ---------------------------------------------------------------------------
+
 
 class PositionSizeRequest(BaseModel):
     """Request for position sizing calculation."""
@@ -77,6 +77,7 @@ class PreTradeCheckRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.post("/position-size", response_model=PositionSizeResponse)
 async def calculate_position_size(req: PositionSizeRequest) -> PositionSizeResponse:
     """Calculate position size for a proposed trade."""
@@ -86,13 +87,18 @@ async def calculate_position_size(req: PositionSizeRequest) -> PositionSizeRespo
         result = sizer.volatility_target(ticker=req.ticker, price=req.price, atr=req.atr)
     elif req.method == "kelly_criterion" and all([req.win_rate, req.avg_win, req.avg_loss]):
         result = sizer.kelly_criterion(
-            ticker=req.ticker, price=req.price,
-            win_rate=req.win_rate, avg_win=req.avg_win, avg_loss=req.avg_loss,
+            ticker=req.ticker,
+            price=req.price,
+            win_rate=req.win_rate,
+            avg_win=req.avg_win,
+            avg_loss=req.avg_loss,
         )
     else:
         result = sizer.fixed_fraction(
-            ticker=req.ticker, price=req.price,
-            risk_fraction=req.risk_fraction, stop_distance=req.stop_distance,
+            ticker=req.ticker,
+            price=req.price,
+            risk_fraction=req.risk_fraction,
+            stop_distance=req.stop_distance,
         )
 
     return PositionSizeResponse(
@@ -133,8 +139,12 @@ async def pre_trade_check(req: PreTradeCheckRequest) -> dict:
         position_sectors=req.position_sectors,
     )
     result = manager.pre_trade_check(
-        ticker=req.ticker, shares=req.shares, price=req.price,
-        side=req.side, state=state, sector=req.sector,
+        ticker=req.ticker,
+        shares=req.shares,
+        price=req.price,
+        side=req.side,
+        state=state,
+        sector=req.sector,
     )
     return {
         "allowed": result.allowed,

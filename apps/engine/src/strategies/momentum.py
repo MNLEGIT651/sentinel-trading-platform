@@ -61,14 +61,16 @@ class RSIMomentum(Strategy):
             and current_rsi > prev_rsi
         ):
             strength = min((self.params["oversold"] - prev2_rsi) / 30.0 + 0.3, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"RSI oversold recovery ({prev2_rsi:.1f} → {current_rsi:.1f})",
-                metadata={"rsi": current_rsi, "prev_rsi": prev2_rsi},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"RSI oversold recovery ({prev2_rsi:.1f} → {current_rsi:.1f})",
+                    metadata={"rsi": current_rsi, "prev_rsi": prev2_rsi},
+                )
+            )
 
         # Bearish: RSI was overbought and is now falling
         elif (
@@ -77,14 +79,16 @@ class RSIMomentum(Strategy):
             and current_rsi < prev_rsi
         ):
             strength = min((prev2_rsi - self.params["overbought"]) / 30.0 + 0.3, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"RSI overbought reversal ({prev2_rsi:.1f} → {current_rsi:.1f})",
-                metadata={"rsi": current_rsi, "prev_rsi": prev2_rsi},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"RSI overbought reversal ({prev2_rsi:.1f} → {current_rsi:.1f})",
+                    metadata={"rsi": current_rsi, "prev_rsi": prev2_rsi},
+                )
+            )
 
         return signals
 
@@ -135,24 +139,28 @@ class RateOfChangeMomentum(Strategy):
 
         if current_roc > threshold:
             strength = min(current_roc / (threshold * 3), 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Strong upward momentum: ROC={current_roc:.2f}%, vol={volume_ratio:.1f}×avg",
-                metadata={"roc": current_roc, "volume_ratio": volume_ratio},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Strong upward momentum: ROC={current_roc:.2f}%, vol={volume_ratio:.1f}×avg",
+                    metadata={"roc": current_roc, "volume_ratio": volume_ratio},
+                )
+            )
         elif current_roc < -threshold:
             strength = min(abs(current_roc) / (threshold * 3), 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Strong downward momentum: ROC={current_roc:.2f}%, vol={volume_ratio:.1f}×avg",
-                metadata={"roc": current_roc, "volume_ratio": volume_ratio},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Strong downward momentum: ROC={current_roc:.2f}%, vol={volume_ratio:.1f}×avg",
+                    metadata={"roc": current_roc, "volume_ratio": volume_ratio},
+                )
+            )
 
         return signals
 
@@ -204,28 +212,36 @@ class OBVDivergence(Strategy):
 
         # Bearish divergence: price at high but OBV declining
         if price_higher_high and obv_declining:
-            obv_drop = (obv_window[0] - obv_window[-1]) / abs(obv_window[0]) if obv_window[0] != 0 else 0
+            obv_drop = (
+                (obv_window[0] - obv_window[-1]) / abs(obv_window[0]) if obv_window[0] != 0 else 0
+            )
             strength = min(abs(obv_drop) * 5, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=max(strength, 0.2),
-                strategy_name=self.name,
-                reason=f"Bearish OBV divergence: price at high but volume declining",
-                metadata={"obv_change": obv_drop, "price": data.last_close},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=max(strength, 0.2),
+                    strategy_name=self.name,
+                    reason="Bearish OBV divergence: price at high but volume declining",
+                    metadata={"obv_change": obv_drop, "price": data.last_close},
+                )
+            )
 
         # Bullish divergence: price at low but OBV rising
         elif price_lower_low and obv_rising:
-            obv_rise = (obv_window[-1] - obv_window[0]) / abs(obv_window[0]) if obv_window[0] != 0 else 0
+            obv_rise = (
+                (obv_window[-1] - obv_window[0]) / abs(obv_window[0]) if obv_window[0] != 0 else 0
+            )
             strength = min(abs(obv_rise) * 5, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=max(strength, 0.2),
-                strategy_name=self.name,
-                reason=f"Bullish OBV divergence: price at low but volume rising",
-                metadata={"obv_change": obv_rise, "price": data.last_close},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=max(strength, 0.2),
+                    strategy_name=self.name,
+                    reason="Bullish OBV divergence: price at low but volume rising",
+                    metadata={"obv_change": obv_rise, "price": data.last_close},
+                )
+            )
 
         return signals

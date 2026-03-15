@@ -73,9 +73,7 @@ def create_strategy(name: str, params: dict[str, Any] | None = None) -> Strategy
         KeyError: If strategy name is not registered.
     """
     if name not in STRATEGY_CLASSES:
-        raise KeyError(
-            f"Unknown strategy '{name}'. Available: {sorted(STRATEGY_CLASSES.keys())}"
-        )
+        raise KeyError(f"Unknown strategy '{name}'. Available: {sorted(STRATEGY_CLASSES.keys())}")
     return STRATEGY_CLASSES[name](params=params)
 
 
@@ -93,9 +91,7 @@ def create_family(family: str, params: dict[str, Any] | None = None) -> list[Str
         KeyError: If family name is not registered.
     """
     if family not in FAMILY_MAP:
-        raise KeyError(
-            f"Unknown family '{family}'. Available: {sorted(FAMILY_MAP.keys())}"
-        )
+        raise KeyError(f"Unknown family '{family}'. Available: {sorted(FAMILY_MAP.keys())}")
     return [create_strategy(name, params) for name in FAMILY_MAP[family]]
 
 
@@ -113,10 +109,7 @@ def create_composite(
         names = [n for n in STRATEGY_CLASSES if n not in exclude]
         strategy_weights = {n: 1.0 for n in names}
 
-    strategies = [
-        (create_strategy(name), weight)
-        for name, weight in strategy_weights.items()
-    ]
+    strategies = [(create_strategy(name), weight) for name, weight in strategy_weights.items()]
     return CompositeStrategy(strategies=strategies, params=params)
 
 

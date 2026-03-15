@@ -4,26 +4,26 @@ import numpy as np
 import pytest
 
 from src.strategies.base import OHLCVData, Signal, SignalDirection
-from src.strategies.trend_following import SMACrossover, EMAMomentumTrend, MACDTrend
-from src.strategies.momentum import RSIMomentum, RateOfChangeMomentum, OBVDivergence
-from src.strategies.mean_reversion import BollingerReversion, ZScoreReversion, RSIMeanReversion
-from src.strategies.value import PriceToMAValue, RelativeValue
-from src.strategies.pairs_trading import PairsSpreadTrading, compute_spread, rolling_correlation
 from src.strategies.composite import CompositeStrategy
+from src.strategies.mean_reversion import BollingerReversion, RSIMeanReversion, ZScoreReversion
+from src.strategies.momentum import OBVDivergence, RateOfChangeMomentum, RSIMomentum
+from src.strategies.pairs_trading import PairsSpreadTrading, compute_spread, rolling_correlation
 from src.strategies.registry import (
-    create_strategy,
-    create_family,
-    create_composite,
-    list_strategies,
-    STRATEGY_CLASSES,
     FAMILY_MAP,
+    STRATEGY_CLASSES,
+    create_composite,
+    create_family,
+    create_strategy,
+    list_strategies,
 )
-from src.strategies.signal_generator import SignalGenerator, SignalBatch
-
+from src.strategies.signal_generator import SignalBatch, SignalGenerator
+from src.strategies.trend_following import EMAMomentumTrend, MACDTrend, SMACrossover
+from src.strategies.value import PriceToMAValue, RelativeValue
 
 # ---------------------------------------------------------------------------
 # Test Data Factories
 # ---------------------------------------------------------------------------
+
 
 def make_data(
     ticker: str = "TEST",
@@ -71,15 +71,19 @@ def make_crossover_data(direction: str = "golden") -> OHLCVData:
     n = 80
     if direction == "golden":
         # Slow decline followed by sharp rise
-        close = np.concatenate([
-            np.linspace(120, 100, 60),
-            np.linspace(100, 130, 20),
-        ]).astype(np.float64)
+        close = np.concatenate(
+            [
+                np.linspace(120, 100, 60),
+                np.linspace(100, 130, 20),
+            ]
+        ).astype(np.float64)
     else:  # death
-        close = np.concatenate([
-            np.linspace(100, 120, 60),
-            np.linspace(120, 90, 20),
-        ]).astype(np.float64)
+        close = np.concatenate(
+            [
+                np.linspace(100, 120, 60),
+                np.linspace(120, 90, 20),
+            ]
+        ).astype(np.float64)
 
     rng = np.random.default_rng(99)
     high = (close + 1).astype(np.float64)
@@ -103,24 +107,38 @@ def make_crossover_data(direction: str = "golden") -> OHLCVData:
 # Signal & OHLCVData Tests
 # ---------------------------------------------------------------------------
 
+
 class TestSignal:
     def test_valid_signal(self):
         sig = Signal(
-            ticker="AAPL", direction=SignalDirection.LONG,
-            strength=0.8, strategy_name="test", reason="test reason",
+            ticker="AAPL",
+            direction=SignalDirection.LONG,
+            strength=0.8,
+            strategy_name="test",
+            reason="test reason",
         )
         assert sig.ticker == "AAPL"
         assert sig.strength == 0.8
 
     def test_invalid_strength_raises(self):
         with pytest.raises(ValueError):
-            Signal(ticker="X", direction=SignalDirection.LONG,
-                   strength=1.5, strategy_name="t", reason="r")
+            Signal(
+                ticker="X",
+                direction=SignalDirection.LONG,
+                strength=1.5,
+                strategy_name="t",
+                reason="r",
+            )
 
     def test_negative_strength_raises(self):
         with pytest.raises(ValueError):
-            Signal(ticker="X", direction=SignalDirection.LONG,
-                   strength=-0.1, strategy_name="t", reason="r")
+            Signal(
+                ticker="X",
+                direction=SignalDirection.LONG,
+                strength=-0.1,
+                strategy_name="t",
+                reason="r",
+            )
 
 
 class TestOHLCVData:
@@ -136,6 +154,7 @@ class TestOHLCVData:
 # ---------------------------------------------------------------------------
 # Trend Following Tests
 # ---------------------------------------------------------------------------
+
 
 class TestSMACrossover:
     def test_returns_empty_for_short_data(self):
@@ -200,6 +219,7 @@ class TestMACDTrend:
 # Momentum Tests
 # ---------------------------------------------------------------------------
 
+
 class TestRSIMomentum:
     def test_returns_valid_signals(self):
         data = make_data(n=100, trend="volatile")
@@ -235,6 +255,7 @@ class TestOBVDivergence:
 # Mean Reversion Tests
 # ---------------------------------------------------------------------------
 
+
 class TestBollingerReversion:
     def test_returns_valid_signals(self):
         data = make_data(n=100, trend="volatile")
@@ -248,10 +269,12 @@ class TestZScoreReversion:
     def test_extreme_low_produces_long(self):
         # Create data with mild noise (non-zero std) then extreme low at end
         rng = np.random.default_rng(42)
-        close = np.concatenate([
-            100.0 + rng.normal(0, 1.0, 55),  # Normal variation around 100
-            np.array([80.0]),  # Extreme low
-        ]).astype(np.float64)
+        close = np.concatenate(
+            [
+                100.0 + rng.normal(0, 1.0, 55),  # Normal variation around 100
+                np.array([80.0]),  # Extreme low
+            ]
+        ).astype(np.float64)
         n = len(close)
         data = OHLCVData(
             ticker="LOW",
@@ -269,10 +292,12 @@ class TestZScoreReversion:
 
     def test_extreme_high_produces_short(self):
         rng = np.random.default_rng(42)
-        close = np.concatenate([
-            100.0 + rng.normal(0, 1.0, 55),
-            np.array([120.0]),
-        ]).astype(np.float64)
+        close = np.concatenate(
+            [
+                100.0 + rng.normal(0, 1.0, 55),
+                np.array([120.0]),
+            ]
+        ).astype(np.float64)
         n = len(close)
         data = OHLCVData(
             ticker="HIGH",
@@ -302,6 +327,7 @@ class TestRSIMeanReversion:
 # Value Tests
 # ---------------------------------------------------------------------------
 
+
 class TestPriceToMAValue:
     def test_needs_long_data(self):
         data = make_data(n=50)
@@ -326,6 +352,7 @@ class TestRelativeValue:
 # ---------------------------------------------------------------------------
 # Pairs Trading Tests
 # ---------------------------------------------------------------------------
+
 
 class TestComputeSpread:
     def test_identical_series_zero_spread(self):
@@ -369,14 +396,22 @@ class TestPairsSpreadTrading:
         close_b = (base * 0.5 + 10 + rng.normal(0, 0.1, n)).astype(np.float64)
 
         data_a = OHLCVData(
-            ticker="A", timestamps=np.arange(n, dtype=np.float64),
-            open=close_a, high=close_a + 1, low=close_a - 1,
-            close=close_a, volume=np.full(n, 1e6, dtype=np.float64),
+            ticker="A",
+            timestamps=np.arange(n, dtype=np.float64),
+            open=close_a,
+            high=close_a + 1,
+            low=close_a - 1,
+            close=close_a,
+            volume=np.full(n, 1e6, dtype=np.float64),
         )
         data_b = OHLCVData(
-            ticker="B", timestamps=np.arange(n, dtype=np.float64),
-            open=close_b, high=close_b + 1, low=close_b - 1,
-            close=close_b, volume=np.full(n, 1e6, dtype=np.float64),
+            ticker="B",
+            timestamps=np.arange(n, dtype=np.float64),
+            open=close_b,
+            high=close_b + 1,
+            low=close_b - 1,
+            close=close_b,
+            volume=np.full(n, 1e6, dtype=np.float64),
         )
 
         strategy = PairsSpreadTrading()
@@ -390,6 +425,7 @@ class TestPairsSpreadTrading:
 # ---------------------------------------------------------------------------
 # Composite Tests
 # ---------------------------------------------------------------------------
+
 
 class TestCompositeStrategy:
     def test_empty_when_no_child_signals(self):
@@ -422,6 +458,7 @@ class TestCompositeStrategy:
 # ---------------------------------------------------------------------------
 # Registry Tests
 # ---------------------------------------------------------------------------
+
 
 class TestRegistry:
     def test_all_strategies_registered(self):
@@ -466,6 +503,7 @@ class TestRegistry:
 # Signal Generator Tests
 # ---------------------------------------------------------------------------
 
+
 class TestSignalGenerator:
     def test_scan_empty_data(self):
         gen = SignalGenerator()
@@ -487,12 +525,27 @@ class TestSignalGenerator:
     def test_signal_batch_properties(self):
         batch = SignalBatch(
             signals=[
-                Signal(ticker="A", direction=SignalDirection.LONG,
-                       strength=0.8, strategy_name="s1", reason="r1"),
-                Signal(ticker="B", direction=SignalDirection.SHORT,
-                       strength=0.6, strategy_name="s2", reason="r2"),
-                Signal(ticker="C", direction=SignalDirection.LONG,
-                       strength=0.9, strategy_name="s3", reason="r3"),
+                Signal(
+                    ticker="A",
+                    direction=SignalDirection.LONG,
+                    strength=0.8,
+                    strategy_name="s1",
+                    reason="r1",
+                ),
+                Signal(
+                    ticker="B",
+                    direction=SignalDirection.SHORT,
+                    strength=0.6,
+                    strategy_name="s2",
+                    reason="r2",
+                ),
+                Signal(
+                    ticker="C",
+                    direction=SignalDirection.LONG,
+                    strength=0.9,
+                    strategy_name="s3",
+                    reason="r3",
+                ),
             ],
             tickers_scanned=3,
             strategies_run=9,

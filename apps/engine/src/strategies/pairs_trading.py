@@ -132,48 +132,52 @@ class PairsSpreadTrading(Strategy):
         # Spread too high: short A, long B (spread will revert down)
         if z > self.params["entry_z"]:
             strength = min(abs(z) / 4.0, 1.0)
-            signals.append(Signal(
-                ticker=data_a.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=(
-                    f"Pairs spread high: z={z:.2f}, "
-                    f"{data_a.ticker}/{data_b.ticker} "
-                    f"(β={beta:.3f}, corr={corr[-1]:.2f})"
-                ),
-                metadata={
-                    "pair": f"{data_a.ticker}/{data_b.ticker}",
-                    "z_score": z,
-                    "beta": beta,
-                    "correlation": corr[-1],
-                    "spread_mean": spread_mean,
-                    "spread_std": spread_std,
-                },
-            ))
+            signals.append(
+                Signal(
+                    ticker=data_a.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=(
+                        f"Pairs spread high: z={z:.2f}, "
+                        f"{data_a.ticker}/{data_b.ticker} "
+                        f"(β={beta:.3f}, corr={corr[-1]:.2f})"
+                    ),
+                    metadata={
+                        "pair": f"{data_a.ticker}/{data_b.ticker}",
+                        "z_score": z,
+                        "beta": beta,
+                        "correlation": corr[-1],
+                        "spread_mean": spread_mean,
+                        "spread_std": spread_std,
+                    },
+                )
+            )
 
         # Spread too low: long A, short B (spread will revert up)
         elif z < -self.params["entry_z"]:
             strength = min(abs(z) / 4.0, 1.0)
-            signals.append(Signal(
-                ticker=data_a.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=(
-                    f"Pairs spread low: z={z:.2f}, "
-                    f"{data_a.ticker}/{data_b.ticker} "
-                    f"(β={beta:.3f}, corr={corr[-1]:.2f})"
-                ),
-                metadata={
-                    "pair": f"{data_a.ticker}/{data_b.ticker}",
-                    "z_score": z,
-                    "beta": beta,
-                    "correlation": corr[-1],
-                    "spread_mean": spread_mean,
-                    "spread_std": spread_std,
-                },
-            ))
+            signals.append(
+                Signal(
+                    ticker=data_a.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=(
+                        f"Pairs spread low: z={z:.2f}, "
+                        f"{data_a.ticker}/{data_b.ticker} "
+                        f"(β={beta:.3f}, corr={corr[-1]:.2f})"
+                    ),
+                    metadata={
+                        "pair": f"{data_a.ticker}/{data_b.ticker}",
+                        "z_score": z,
+                        "beta": beta,
+                        "correlation": corr[-1],
+                        "spread_mean": spread_mean,
+                        "spread_std": spread_std,
+                    },
+                )
+            )
 
         return signals
 

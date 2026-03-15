@@ -53,26 +53,30 @@ class PriceToMAValue(Strategy):
         # Value long: price significantly below long-term MA
         if self.params["max_long_deviation"] <= deviation <= self.params["entry_deviation"]:
             strength = min(abs(deviation) / 0.20, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Price {deviation:.1%} below {self.params['ma_period']}-day MA (${ma[i]:.2f})",
-                metadata={"deviation": deviation, "ma": ma[i], "price": data.close[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Price {deviation:.1%} below {self.params['ma_period']}-day MA (${ma[i]:.2f})",
+                    metadata={"deviation": deviation, "ma": ma[i], "price": data.close[i]},
+                )
+            )
 
         # Overvalued: price significantly above long-term MA
         elif deviation > abs(self.params["entry_deviation"]):
             strength = min(deviation / 0.20, 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=strength,
-                strategy_name=self.name,
-                reason=f"Price {deviation:.1%} above {self.params['ma_period']}-day MA (${ma[i]:.2f})",
-                metadata={"deviation": deviation, "ma": ma[i], "price": data.close[i]},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=strength,
+                    strategy_name=self.name,
+                    reason=f"Price {deviation:.1%} above {self.params['ma_period']}-day MA (${ma[i]:.2f})",
+                    metadata={"deviation": deviation, "ma": ma[i], "price": data.close[i]},
+                )
+            )
 
         return signals
 
@@ -122,25 +126,37 @@ class RelativeValue(Strategy):
         if divergence > threshold and short_dev < 0:
             # Price dipped below short MA but above long MA = buying opportunity
             strength = min(abs(divergence) / (threshold * 3), 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.LONG,
-                strength=max(strength, 0.2),
-                strategy_name=self.name,
-                reason=f"Relative value long: short-term dip in uptrend (div={divergence:.3f})",
-                metadata={"short_dev": short_dev, "long_dev": long_dev, "divergence": divergence},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.LONG,
+                    strength=max(strength, 0.2),
+                    strategy_name=self.name,
+                    reason=f"Relative value long: short-term dip in uptrend (div={divergence:.3f})",
+                    metadata={
+                        "short_dev": short_dev,
+                        "long_dev": long_dev,
+                        "divergence": divergence,
+                    },
+                )
+            )
 
         elif divergence < -threshold and short_dev > 0:
             # Price spiked above short MA but below long MA = selling opportunity
             strength = min(abs(divergence) / (threshold * 3), 1.0)
-            signals.append(Signal(
-                ticker=data.ticker,
-                direction=SignalDirection.SHORT,
-                strength=max(strength, 0.2),
-                strategy_name=self.name,
-                reason=f"Relative value short: short-term spike in downtrend (div={divergence:.3f})",
-                metadata={"short_dev": short_dev, "long_dev": long_dev, "divergence": divergence},
-            ))
+            signals.append(
+                Signal(
+                    ticker=data.ticker,
+                    direction=SignalDirection.SHORT,
+                    strength=max(strength, 0.2),
+                    strategy_name=self.name,
+                    reason=f"Relative value short: short-term spike in downtrend (div={divergence:.3f})",
+                    metadata={
+                        "short_dev": short_dev,
+                        "long_dev": long_dev,
+                        "divergence": divergence,
+                    },
+                )
+            )
 
         return signals
