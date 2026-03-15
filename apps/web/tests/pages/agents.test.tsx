@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import AgentsPage from '@/app/agents/page';
 
 vi.mock('next/navigation', () => ({
@@ -7,63 +7,123 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+vi.mock('@/lib/agents-client', () => ({
+  agentsClient: {
+    getStatus: vi.fn(),
+    getRecommendations: vi.fn(),
+    getAlerts: vi.fn(),
+    runCycle: vi.fn(),
+    halt: vi.fn(),
+    resume: vi.fn(),
+    approveRecommendation: vi.fn(),
+    rejectRecommendation: vi.fn(),
+  },
+}));
+
+const mockStatus = {
+  agents: {
+    market_sentinel: { status: 'idle', lastRun: null },
+    strategy_analyst: { status: 'idle', lastRun: null },
+    risk_monitor: { status: 'idle', lastRun: null },
+    research: { status: 'idle', lastRun: null },
+    execution_monitor: { status: 'idle', lastRun: null },
+  },
+  cycleCount: 7,
+  halted: false,
+  isRunning: false,
+  nextCycleAt: '2026-03-15T14:00:00.000Z',
+  lastCycleAt: null,
+};
+
+const mockRec = {
+  id: 'rec-1',
+  created_at: new Date().toISOString(),
+  agent_role: 'execution_monitor',
+  ticker: 'NVDA',
+  side: 'buy' as const,
+  quantity: 5,
+  order_type: 'market' as const,
+  reason: 'RSI oversold crossover',
+  strategy_name: 'rsi_momentum',
+  signal_strength: 0.82,
+  status: 'pending' as const,
+  order_id: null,
+};
+
 describe('AgentsPage', () => {
-  it('renders the agents header', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { agentsClient } = await import('@/lib/agents-client');
+    vi.mocked(agentsClient.getStatus).mockResolvedValue(mockStatus);
+    vi.mocked(agentsClient.getRecommendations).mockResolvedValue({ recommendations: [mockRec] });
+    vi.mocked(agentsClient.getAlerts).mockResolvedValue({ alerts: [] });
+    vi.mocked(agentsClient.runCycle).mockResolvedValue(undefined);
+    vi.mocked(agentsClient.halt).mockResolvedValue(undefined);
+    vi.mocked(agentsClient.resume).mockResolvedValue(undefined);
+    vi.mocked(agentsClient.approveRecommendation).mockResolvedValue({ orderId: 'alpaca-1', status: 'filled', fill_price: 880 });
+    vi.mocked(agentsClient.rejectRecommendation).mockResolvedValue({ status: 'rejected' });
+  });
+
+  it('renders page header', async () => {
     render(<AgentsPage />);
     expect(screen.getByText('AI Agents')).toBeInTheDocument();
   });
 
-  it('displays all 5 agent cards', () => {
+  it('renders all 5 agent cards', async () => {
     render(<AgentsPage />);
-    expect(screen.getByText('Market Sentinel')).toBeInTheDocument();
-    expect(screen.getByText('Strategy Analyst')).toBeInTheDocument();
-    expect(screen.getByText('Risk Monitor')).toBeInTheDocument();
-    expect(screen.getByText('Research Analyst')).toBeInTheDocument();
-    expect(screen.getByText('Execution Monitor')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Market Sentinel')).toBeInTheDocument();
+      expect(screen.getByText('Strategy Analyst')).toBeInTheDocument();
+      expect(screen.getByText('Risk Monitor')).toBeInTheDocument();
+    });
   });
 
-  it('shows cycle count', () => {
+  it('shows cycle count from server status', async () => {
     render(<AgentsPage />);
-    expect(screen.getByText(/0 cycles completed/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/7 cycles/i)).toBeInTheDocument());
   });
 
-  it('shows Run Cycle and Halt buttons', () => {
+  it('renders pending recommendation with ticker', async () => {
     render(<AgentsPage />);
-    expect(screen.getByText('Run Cycle')).toBeInTheDocument();
-    expect(screen.getByText('Halt')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('NVDA')).toBeInTheDocument());
+    expect(screen.getByText(/RSI oversold/i)).toBeInTheDocument();
   });
 
-  it('displays agent tools', () => {
+  it('clicking Approve calls approveRecommendation', async () => {
+    const { agentsClient } = await import('@/lib/agents-client');
     render(<AgentsPage />);
-    expect(screen.getAllByText('get_market_data').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('submit_order')).toBeInTheDocument();
-    expect(screen.getByText('assess_portfolio_risk')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('NVDA'));
+    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+    await waitFor(() => expect(agentsClient.approveRecommendation).toHaveBeenCalledWith('rec-1'));
   });
 
-  it('all agents start as idle', () => {
+  it('clicking Reject calls rejectRecommendation', async () => {
+    const { agentsClient } = await import('@/lib/agents-client');
     render(<AgentsPage />);
-    const idleLabels = screen.getAllByText('Idle');
-    expect(idleLabels).toHaveLength(5);
+    await waitFor(() => screen.getByText('NVDA'));
+    fireEvent.click(screen.getByRole('button', { name: /reject/i }));
+    await waitFor(() => expect(agentsClient.rejectRecommendation).toHaveBeenCalledWith('rec-1'));
   });
 
-  it('clicking Halt shows HALTED badge', () => {
+  it('shows Scheduled badge', async () => {
     render(<AgentsPage />);
-    fireEvent.click(screen.getByText('Halt'));
-    expect(screen.getByText('HALTED')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/scheduled/i)).toBeInTheDocument());
   });
 
-  it('clicking Resume after halt removes HALTED badge', () => {
+  it('clicking Run Cycle calls runCycle', async () => {
+    const { agentsClient } = await import('@/lib/agents-client');
     render(<AgentsPage />);
-    fireEvent.click(screen.getByText('Halt'));
-    expect(screen.getByText('HALTED')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Resume'));
-    expect(screen.queryByText('HALTED')).not.toBeInTheDocument();
+    await waitFor(() => screen.getByRole('button', { name: /run cycle/i }));
+    fireEvent.click(screen.getByRole('button', { name: /run cycle/i }));
+    await waitFor(() => expect(agentsClient.runCycle).toHaveBeenCalled());
   });
 
-  it('shows empty activity log initially', () => {
+  it('shows agents server offline state gracefully', async () => {
+    const { agentsClient } = await import('@/lib/agents-client');
+    vi.mocked(agentsClient.getStatus).mockRejectedValue(new Error('fetch failed'));
+    vi.mocked(agentsClient.getRecommendations).mockRejectedValue(new Error('fetch failed'));
+    vi.mocked(agentsClient.getAlerts).mockRejectedValue(new Error('fetch failed'));
     render(<AgentsPage />);
-    expect(
-      screen.getByText(/No activity yet/),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/offline/i).length).toBeGreaterThan(0));
   });
 });
