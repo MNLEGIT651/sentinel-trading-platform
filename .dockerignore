@@ -1,0 +1,47 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (rebuilt inside Docker)
+**/node_modules
+**/.pnpm-store
+
+# Python artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.hypothesis
+**/.pytest_cache
+**/.venv
+
+# Build outputs
+**/.next
+**/dist
+**/build
+**/.turbo
+
+# Test artifacts
+**/coverage
+**/.nyc_output
+
+# IDE and OS
+.vscode
+.idea
+**/.DS_Store
+**/Thumbs.db
+
+# Local env (injected at runtime via env_file)
+.env
+.env.*
+!.env.example
+
+# Docs and non-essential files
+docs
+*.md
+!apps/*/README.md
+*.xlsx
+Codex
+
+# Supabase local
+supabase/.branches
+supabase/.temp
