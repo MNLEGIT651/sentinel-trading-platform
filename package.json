@@ -23,7 +23,7 @@
       "prettier --write"
     ],
     "apps/web/**/*.{ts,tsx}": [
-      "eslint --fix --max-warnings=0"
+      "pnpm --filter web exec eslint --fix --max-warnings=0"
     ],
     "*.{json,css,md,yaml,yml}": [
       "prettier --write"
