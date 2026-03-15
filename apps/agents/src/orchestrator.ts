@@ -97,6 +97,7 @@ export class Orchestrator {
       ) as Record<AgentRole, null>,
       cycleCount: 0,
       halted: false,
+      lastCycleAt: null,
     };
   }
 
@@ -151,6 +152,7 @@ export class Orchestrator {
 
     console.log(`\n[Orchestrator] Cycle #${this.state.cycleCount} complete`);
     console.log(`  Results: ${results.filter((r) => r.success).length}/${results.length} successful`);
+    this.state.lastCycleAt = new Date().toISOString();
     return results;
   }
 

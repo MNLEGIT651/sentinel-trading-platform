@@ -61,4 +61,13 @@ describe('Orchestrator', () => {
     const results = await orchestrator.runCycle();
     expect(results).toHaveLength(0);
   });
+
+  it('records lastCycleAt after runCycle completes', async () => {
+    const orchestrator = new Orchestrator({ apiKey: 'test-key' });
+    const before = Date.now();
+    await orchestrator.runCycle();
+    const state = orchestrator.currentState;
+    expect(state.lastCycleAt).not.toBeNull();
+    expect(new Date(state.lastCycleAt!).getTime()).toBeGreaterThanOrEqual(before);
+  });
 });

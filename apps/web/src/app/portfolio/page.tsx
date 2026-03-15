@@ -267,8 +267,34 @@ export default function PortfolioPage() {
       );
       setOrderSymbol('');
       setOrderQty('');
-      // Refresh portfolio after order
-      setTimeout(() => fetchPortfolio(), 500);
+      // Poll for order fill — Alpaca paper fills asynchronously
+      const orderId = (result as { order_id?: string }).order_id;
+      if (orderId) {
+        const POLL_INTERVAL = 2000;
+        const MAX_POLLS = 10;
+        let polls = 0;
+        const poll = async () => {
+          try {
+            const ordersRes = await fetch(
+              `${ENGINE_URL}/api/v1/portfolio/orders?status=open`,
+              { signal: AbortSignal.timeout(5000) },
+            );
+            if (ordersRes.ok) {
+              const orders = await ordersRes.json() as Array<{ order_id: string }>;
+              const isStillOpen = orders.some((o) => o.order_id === orderId);
+              if (!isStillOpen || polls >= MAX_POLLS) {
+                await fetchPortfolio();
+                return;
+              }
+            }
+          } catch { /* ignore */ }
+          polls++;
+          setTimeout(poll, POLL_INTERVAL);
+        };
+        setTimeout(poll, POLL_INTERVAL);
+      } else {
+        setTimeout(() => fetchPortfolio(), 500);
+      }
     } catch {
       setOrderStatus('Order failed — check engine');
     } finally {

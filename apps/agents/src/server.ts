@@ -85,7 +85,7 @@ export function createApp(orchestrator: Orchestrator): Express {
       halted: state.halted,
       isRunning: _isRunning,
       nextCycleAt: getNextCycleAt(),
-      lastCycleAt: null, // TODO: track in Orchestrator state
+      lastCycleAt: state.lastCycleAt,
     });
   });
 

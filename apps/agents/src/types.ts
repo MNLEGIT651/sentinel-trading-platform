@@ -95,4 +95,5 @@ export interface OrchestratorState {
   lastRun: Record<AgentRole, string | null>;
   cycleCount: number;
   halted: boolean;
+  lastCycleAt: string | null;
 }
