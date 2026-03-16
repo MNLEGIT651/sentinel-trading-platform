@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { PieChart, RefreshCw, SendHorizonal } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { PieChart, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { BrokerAccount, BrokerPosition, MarketQuote } from '@/lib/engine-client';
@@ -18,54 +17,10 @@ import {
 } from '@/components/portfolio/positions-table';
 import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
+import { QuickOrder } from '@/components/portfolio/quick-order';
+import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
-
-const TICKER_NAMES: Record<string, string> = {
-  AAPL: 'Apple Inc.',
-  MSFT: 'Microsoft Corp.',
-  GOOGL: 'Alphabet Inc.',
-  AMZN: 'Amazon.com Inc.',
-  NVDA: 'NVIDIA Corp.',
-  TSLA: 'Tesla Inc.',
-  META: 'Meta Platforms',
-  JPM: 'JPMorgan Chase',
-  V: 'Visa Inc.',
-  SPY: 'SPDR S&P 500',
-  QQQ: 'Invesco QQQ',
-  AMD: 'AMD Inc.',
-  NFLX: 'Netflix Inc.',
-  DIS: 'Walt Disney',
-  BA: 'Boeing Co.',
-};
-
-const SECTOR_MAP: Record<string, string> = {
-  AAPL: 'Technology',
-  MSFT: 'Technology',
-  GOOGL: 'Technology',
-  NVDA: 'Technology',
-  META: 'Technology',
-  AMD: 'Technology',
-  NFLX: 'Technology',
-  AMZN: 'Consumer',
-  TSLA: 'Consumer',
-  DIS: 'Consumer',
-  JPM: 'Financials',
-  V: 'Financials',
-  SPY: 'Index',
-  QQQ: 'Index',
-  BA: 'Industrials',
-};
-
-const sectorColors: Record<string, string> = {
-  Technology: 'bg-blue-500',
-  Financials: 'bg-amber-500',
-  Consumer: 'bg-emerald-500',
-  Index: 'bg-violet-500',
-  Healthcare: 'bg-rose-500',
-  Energy: 'bg-orange-500',
-  Industrials: 'bg-cyan-500',
-};
 
 export default function PortfolioPage() {
   const [sortField, setSortField] = useState<SortField>('marketValue');
@@ -257,7 +212,7 @@ export default function PortfolioPage() {
       .map(([label, val]) => ({
         label,
         pct: (val / totalValue) * 100,
-        color: sectorColors[label] ?? 'bg-gray-500',
+        color: SECTOR_COLORS[label] ?? 'bg-gray-500',
       }))
       .sort((a, b) => b.pct - a.pct);
   }, [positions, totalValue]);
@@ -306,73 +261,17 @@ export default function PortfolioPage() {
         totalValue={totalValue}
       />
 
-      {/* Quick Order Entry */}
-      <Card className="bg-card border-border">
-        <CardContent className="py-3 px-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Quick Order
-            </span>
-            <div className="flex items-center gap-1.5 rounded-md bg-muted/50 p-0.5">
-              <button
-                onClick={() => setOrderSide('buy')}
-                className={cn(
-                  'rounded px-3 py-1 text-xs font-medium transition-colors',
-                  orderSide === 'buy'
-                    ? 'bg-profit/20 text-profit'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Buy
-              </button>
-              <button
-                onClick={() => setOrderSide('sell')}
-                className={cn(
-                  'rounded px-3 py-1 text-xs font-medium transition-colors',
-                  orderSide === 'sell'
-                    ? 'bg-loss/20 text-loss'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Sell
-              </button>
-            </div>
-            <input
-              type="text"
-              value={orderSymbol}
-              onChange={(e) => setOrderSymbol(e.target.value.toUpperCase())}
-              placeholder="Symbol"
-              className="w-24 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <input
-              type="number"
-              value={orderQty}
-              onChange={(e) => setOrderQty(e.target.value)}
-              placeholder="Qty"
-              min="1"
-              className="w-20 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <button
-              onClick={handleSubmitOrder}
-              disabled={submitting || !orderSymbol || !orderQty}
-              className="flex items-center gap-1.5 rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
-            >
-              <SendHorizonal className="h-3.5 w-3.5" />
-              {submitting ? 'Sending...' : 'Submit'}
-            </button>
-            {orderStatus && (
-              <span
-                className={cn(
-                  'text-xs font-mono',
-                  orderStatus.startsWith('Filled') ? 'text-profit' : 'text-loss',
-                )}
-              >
-                {orderStatus}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <QuickOrder
+        symbol={orderSymbol}
+        side={orderSide}
+        qty={orderQty}
+        status={orderStatus}
+        submitting={submitting}
+        onSymbolChange={setOrderSymbol}
+        onSideChange={setOrderSide}
+        onQtyChange={setOrderQty}
+        onSubmit={handleSubmitOrder}
+      />
 
       <Tabs defaultValue="positions" className="space-y-3">
         <TabsList className="bg-muted/50">
