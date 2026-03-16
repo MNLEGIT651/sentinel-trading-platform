@@ -153,7 +153,7 @@ export default function StrategiesPage() {
                       <StrategyCard
                         key={strategy.id}
                         strategy={strategy}
-                        accentColor={config?.color}
+                        {...(config?.color !== undefined && { accentColor: config.color })}
                       />
                     ))}
                   </div>

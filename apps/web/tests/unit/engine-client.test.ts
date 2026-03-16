@@ -69,9 +69,9 @@ describe('EngineClient.getStrategies', () => {
       headers: client.getHeaders(),
     });
     expect(result).toEqual(mockResponse);
-    expect(result[0].family).toBe('trend_following');
-    expect(result[0].strategies).toHaveLength(1);
-    expect(result[0].strategies[0].name).toBe('SMA Crossover');
+    expect(result[0]?.family).toBe('trend_following');
+    expect(result[0]?.strategies).toHaveLength(1);
+    expect(result[0]?.strategies[0]?.name).toBe('SMA Crossover');
   });
 
   it('throws on non-ok response', async () => {

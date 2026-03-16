@@ -242,10 +242,12 @@ export class ToolExecutor {
       side: input.side as 'buy' | 'sell',
       quantity: input.quantity as number,
       order_type: (input.order_type as 'market' | 'limit') ?? 'market',
-      limit_price: input.limit_price as number | undefined,
       reason: 'Agent-generated trade recommendation',
-      strategy_name: input.strategy_name as string | undefined,
     };
+    const limitPrice = input.limit_price as number | undefined;
+    if (limitPrice !== undefined) rec.limit_price = limitPrice;
+    const strategyName = input.strategy_name as string | undefined;
+    if (strategyName !== undefined) rec.strategy_name = strategyName;
 
     const recommendation = await createRecommendation(rec);
 
@@ -304,11 +306,13 @@ export class ToolExecutor {
   // ── Alerts ─────────────────────────────────────────────────────
 
   private async createAlert(input: Record<string, unknown>) {
-    return dbCreateAlert({
+    const alertData: import('./recommendations-store.js').AlertCreate = {
       severity: input.severity as 'info' | 'warning' | 'critical',
       title: input.title as string,
       message: input.message as string,
-      ticker: input.ticker as string | undefined,
-    });
+    };
+    const ticker = input.ticker as string | undefined;
+    if (ticker !== undefined) alertData.ticker = ticker;
+    return dbCreateAlert(alertData);
   }
 }

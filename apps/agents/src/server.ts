@@ -147,7 +147,8 @@ export function createApp(orchestrator: Orchestrator): Express {
     '/recommendations/:id/approve',
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const { id } = req.params;
+        const id = req.params['id'];
+        if (!id) return res.status(400).json({ error: 'missing_id' });
 
         const rec = await getRecommendation(id);
         if (!rec) {
@@ -168,14 +169,17 @@ export function createApp(orchestrator: Orchestrator): Express {
         // Submit to engine (which routes to Alpaca paper/live)
         const engine = new EngineClient();
         try {
-          const result = await engine.submitOrder({
+          const orderParams: Parameters<typeof engine.submitOrder>[0] = {
             symbol: rec.ticker,
             side: rec.side,
             order_type: rec.order_type,
             quantity: rec.quantity,
-            limit_price: rec.limit_price ?? undefined,
             time_in_force: 'day',
-          });
+          };
+          if (rec.limit_price !== undefined && rec.limit_price !== null) {
+            orderParams.limit_price = rec.limit_price;
+          }
+          const result = await engine.submitOrder(orderParams);
 
           await markFilled(id, result.order_id);
 
@@ -206,7 +210,8 @@ export function createApp(orchestrator: Orchestrator): Express {
     '/recommendations/:id/reject',
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const { id } = req.params;
+        const id = req.params['id'];
+        if (!id) return res.status(400).json({ error: 'missing_id' });
 
         const rec = await getRecommendation(id);
         if (!rec) {

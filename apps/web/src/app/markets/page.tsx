@@ -94,13 +94,15 @@ export default function MarketsPage() {
       } catch {
         if (cancelled) return;
         // Fallback: use static placeholder prices
+        const staticPrices = [
+          178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38,
+        ];
+        const staticChanges = [1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62];
         setWatchlist(
           WATCHLIST_TICKERS.map((w, i) => ({
             ...w,
-            price: [178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38][
-              i
-            ],
-            change: [1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62][i],
+            price: staticPrices[i] ?? 0,
+            change: staticChanges[i] ?? 0,
           })),
         );
         setIsLive(false);
@@ -148,7 +150,7 @@ export default function MarketsPage() {
             }),
           ),
         );
-      } catch (err) {
+      } catch {
         if (controller.signal.aborted) return;
         // Fallback: synthetic data
         const stock = watchlist.find((w) => w.ticker === ticker);

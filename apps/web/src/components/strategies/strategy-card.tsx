@@ -33,7 +33,10 @@ export function StrategyCard({ strategy, accentColor }: StrategyCardProps) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <StrategyParams parameters={strategy.parameters} accentColor={accentColor} />
+        <StrategyParams
+          parameters={strategy.parameters}
+          {...(accentColor !== undefined && { accentColor })}
+        />
         <div className="mt-2 flex items-center gap-2">
           <span className="text-[10px] text-muted-foreground">v{strategy.version}</span>
         </div>

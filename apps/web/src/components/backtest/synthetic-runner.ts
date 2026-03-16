@@ -34,7 +34,7 @@ export function runSyntheticBacktest(
             : (rand() - 0.5) * 0.0002;
     const vol = trend === 'volatile' ? 0.025 : 0.015;
     const ret = drift + (rand() - 0.5) * vol;
-    prices.push(Math.max(prices[i - 1] * (1 + ret), 5));
+    prices.push(Math.max((prices[i - 1] ?? 100) * (1 + ret), 5));
   }
 
   // Simple signal generation
@@ -46,7 +46,7 @@ export function runSyntheticBacktest(
   const trades: TradeEntry[] = [];
 
   for (let i = 0; i < bars; i++) {
-    const price = prices[i];
+    const price = prices[i] ?? 0;
     const portfolioValue = cash + shares * price;
     equity.push(portfolioValue);
 
@@ -80,7 +80,7 @@ export function runSyntheticBacktest(
 
   // Close final position
   if (shares > 0) {
-    const lastPrice = prices[bars - 1];
+    const lastPrice = prices[bars - 1] ?? 0;
     cash += shares * lastPrice;
     trades.push({
       side: 'long',
@@ -109,7 +109,9 @@ export function runSyntheticBacktest(
 
   const returns: number[] = [];
   for (let i = 1; i < equity.length; i++) {
-    returns.push((equity[i] - equity[i - 1]) / equity[i - 1]);
+    const curr = equity[i] ?? 0;
+    const prev = equity[i - 1] ?? 1;
+    returns.push((curr - prev) / prev);
   }
   const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
   const stdReturn = Math.sqrt(
@@ -120,11 +122,11 @@ export function runSyntheticBacktest(
     downReturns.reduce((a, b) => a + b ** 2, 0) / Math.max(downReturns.length, 1),
   );
 
-  let peak = equity[0];
+  let peak = equity[0] ?? 0;
   let maxDd = 0;
   for (const e of equity) {
     if (e > peak) peak = e;
-    const dd = (e - peak) / peak;
+    const dd = peak > 0 ? (e - peak) / peak : 0;
     if (dd < maxDd) maxDd = dd;
   }
 

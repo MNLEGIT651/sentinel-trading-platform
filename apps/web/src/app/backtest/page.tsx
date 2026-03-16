@@ -18,7 +18,7 @@ import { type EngineBacktestResponse, parsePct } from '@/components/backtest/eng
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
 
 export default function BacktestPage() {
-  const [strategy, setStrategy] = useState(strategyOptions[0].id);
+  const [strategy, setStrategy] = useState(strategyOptions[0]?.id ?? '');
   const [trend, setTrend] = useState<TrendOption>('up');
   const [bars, setBars] = useState(300);
   const [capital, setCapital] = useState(100_000);

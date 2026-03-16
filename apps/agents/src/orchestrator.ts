@@ -71,10 +71,11 @@ export class Orchestrator {
 
     // Initialize all agents
     for (const config of configs) {
-      const agent = new Agent(config, {
-        apiKey: options?.apiKey,
+      const agentOptions: { apiKey?: string; executor: ToolExecutor } = {
         executor: this.executor,
-      });
+      };
+      if (options?.apiKey !== undefined) agentOptions.apiKey = options.apiKey;
+      const agent = new Agent(config, agentOptions);
       this.agents.set(config.role, agent);
     }
 

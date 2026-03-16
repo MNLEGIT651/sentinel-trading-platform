@@ -20,8 +20,8 @@ function AllocationDonut({ allocations }: { allocations: AllocationEntry[] }) {
     { label: string; pct: number; color: string; dashLen: number; dashOffset: number }[]
   >((acc, a) => {
     const dashLen = (a.pct / 100) * circumference;
-    const prevOffset =
-      acc.length > 0 ? acc[acc.length - 1].dashOffset + acc[acc.length - 1].dashLen : 0;
+    const last = acc[acc.length - 1];
+    const prevOffset = last !== undefined ? last.dashOffset + last.dashLen : 0;
     acc.push({ ...a, dashLen, dashOffset: -prevOffset });
     return acc;
   }, []);

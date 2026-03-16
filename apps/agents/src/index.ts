@@ -45,7 +45,7 @@ async function main() {
     console.warn('\n⚠️  ANTHROPIC_API_KEY not set — agents will error when triggered\n');
   }
 
-  const orchestrator = new Orchestrator({ apiKey });
+  const orchestrator = new Orchestrator(apiKey !== undefined ? { apiKey } : {});
 
   // ── HTTP server ────────────────────────────────────────────────
   const app = createApp(orchestrator);

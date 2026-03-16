@@ -76,16 +76,17 @@ export default function PortfolioPage() {
           brokerPositions.map((bp) => {
             const quote = quotes.find((q) => q.ticker === bp.instrument_id);
             const currentPrice = bp.current_price ?? quote?.close ?? bp.avg_price;
-            return {
+            const pos: import('@/components/portfolio/positions-table').Position = {
               ticker: bp.instrument_id,
               name: TICKER_NAMES[bp.instrument_id] ?? bp.instrument_id,
               shares: bp.quantity,
               avgEntry: bp.avg_price,
               currentPrice,
               sector: SECTOR_MAP[bp.instrument_id] ?? 'Other',
-              unrealizedPl: bp.unrealized_pl,
-              unrealizedPlPct: bp.unrealized_plpc,
             };
+            if (bp.unrealized_pl !== undefined) pos.unrealizedPl = bp.unrealized_pl;
+            if (bp.unrealized_plpc !== undefined) pos.unrealizedPlPct = bp.unrealized_plpc;
+            return pos;
           }),
         );
       } else {

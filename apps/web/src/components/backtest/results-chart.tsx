@@ -19,7 +19,7 @@ function EquityCurveChart({ curve, className }: { curve: number[]; className?: s
     .map((v, i) => `${(i / (w - 1)) * 100},${h - ((v - min) / range) * (h - 20)}`)
     .join(' ');
 
-  const isPositive = curve[curve.length - 1] >= curve[0];
+  const isPositive = (curve[curve.length - 1] ?? 0) >= (curve[0] ?? 0);
 
   return (
     <div className={cn('w-full', className)}>
