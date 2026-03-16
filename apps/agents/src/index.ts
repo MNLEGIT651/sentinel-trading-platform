@@ -41,8 +41,18 @@ async function main() {
   console.log('║   ⚡  Execution Monitor  — Trade recommendations  ║');
   console.log('╚═══════════════════════════════════════════════════╝');
 
-  if (!apiKey) {
-    console.warn('\n⚠️  ANTHROPIC_API_KEY not set — agents will error when triggered\n');
+  const required: Record<string, string | undefined> = {
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    ENGINE_URL: process.env.ENGINE_URL,
+  };
+  const missing = Object.entries(required)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+  if (missing.length > 0) {
+    console.error(`Missing required env vars: ${missing.join(', ')}. See .env.example.`);
+    process.exit(1);
   }
 
   const orchestrator = new Orchestrator(apiKey !== undefined ? { apiKey } : {});
