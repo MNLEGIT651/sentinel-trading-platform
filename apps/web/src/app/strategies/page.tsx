@@ -1,58 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Brain,
-  ChevronDown,
-  ChevronRight,
-  TrendingUp,
-  Zap,
-  BarChart3,
-  DollarSign,
-  GitBranch,
-  Loader2,
-} from 'lucide-react';
+import { Brain, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { StrategyCard, type StrategyEntry } from '@/components/strategies/strategy-card';
 import { strategyFamilies, type StrategyFamily } from '@/components/strategies/strategy-data';
-
-// Strategy family configuration with accent colors
-const familyConfig: Record<
-  string,
-  { label: string; icon: React.ElementType; color: string; badgeClass: string }
-> = {
-  trend_following: {
-    label: 'Trend Following',
-    icon: TrendingUp,
-    color: 'text-emerald-400',
-    badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  },
-  momentum: {
-    label: 'Momentum',
-    icon: Zap,
-    color: 'text-amber-400',
-    badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  },
-  mean_reversion: {
-    label: 'Mean Reversion',
-    icon: BarChart3,
-    color: 'text-sky-400',
-    badgeClass: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
-  },
-  value: {
-    label: 'Value',
-    icon: DollarSign,
-    color: 'text-violet-400',
-    badgeClass: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
-  },
-  pairs: {
-    label: 'Pairs Trading',
-    icon: GitBranch,
-    color: 'text-rose-400',
-    badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  },
-};
+import { familyConfig } from '@/components/strategies/family-config';
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
 

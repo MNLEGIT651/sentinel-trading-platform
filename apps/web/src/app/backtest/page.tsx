@@ -11,40 +11,11 @@ import {
 } from '@/components/backtest/backtest-form';
 import { MetricsTable } from '@/components/backtest/metrics-table';
 import { ResultsChart } from '@/components/backtest/results-chart';
-import { TradeLog, type TradeEntry } from '@/components/backtest/trade-log';
+import { TradeLog } from '@/components/backtest/trade-log';
 import { runSyntheticBacktest, type BacktestResult } from '@/components/backtest/synthetic-runner';
+import { type EngineBacktestResponse, parsePct } from '@/components/backtest/engine-types';
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
-
-// ── Engine API types ─────────────────────────────────────────────────
-
-interface EngineBacktestSummary {
-  strategy: string;
-  ticker: string;
-  total_return: string;
-  annualized_return: string;
-  max_drawdown: string;
-  sharpe_ratio: string;
-  sortino_ratio: string;
-  win_rate: string;
-  profit_factor: string;
-  total_trades: number;
-  avg_holding_bars: string;
-}
-
-interface EngineBacktestResponse {
-  summary: EngineBacktestSummary;
-  equity_curve: number[];
-  drawdown_curve: number[];
-  trade_count: number;
-  trades: TradeEntry[];
-}
-
-/** Parse "12.50%" → 0.125  |  "1.234" → 1.234  |  "15.3" → 15.3 */
-function parsePct(s: string): number {
-  if (s.endsWith('%')) return parseFloat(s) / 100;
-  return parseFloat(s);
-}
 
 export default function BacktestPage() {
   const [strategy, setStrategy] = useState(strategyOptions[0].id);
