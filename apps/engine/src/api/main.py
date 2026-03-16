@@ -17,7 +17,7 @@ from src.config import Settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-    # Startup
+    _settings.validate()
     yield
     # Shutdown
 

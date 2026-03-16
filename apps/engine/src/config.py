@@ -33,3 +33,25 @@ class Settings(BaseSettings):
     data_ingestion_interval_minutes: int = 1440
     signal_generation_interval_minutes: int = 15
     risk_update_interval_minutes: int = 5
+
+    def validate(self) -> None:
+        """Raise ValueError if any required environment variable is missing."""
+        import logging
+
+        required = {
+            "SUPABASE_URL": self.supabase_url,
+            "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+        }
+        missing = [name for name, value in required.items() if not value]
+        if missing:
+            raise ValueError(
+                f"Missing required environment variables: {', '.join(missing)}. "
+                "See .env.example for guidance."
+            )
+        optional_warnings = {
+            "POLYGON_API_KEY": self.polygon_api_key,
+            "ALPACA_API_KEY": self.alpaca_api_key,
+        }
+        for name, value in optional_warnings.items():
+            if not value:
+                logging.warning("Optional env var %s is not set — related features disabled.", name)
