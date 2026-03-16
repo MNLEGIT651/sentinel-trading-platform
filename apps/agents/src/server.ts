@@ -249,7 +249,7 @@ export function createApp(orchestrator: Orchestrator): Express {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('[Server] Unhandled error:', err.message);
-    res.status(500).json({ error: 'internal_error', message: err.message });
+    res.status(500).json({ error: 'internal_error', detail: err.message });
   });
 
   return app;
