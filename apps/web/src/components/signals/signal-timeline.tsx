@@ -9,8 +9,6 @@ export type SortDir = 'asc' | 'desc';
 
 interface SignalTimelineProps {
   signals: SignalRow[];
-  sortField: SortField;
-  sortDir: SortDir;
   onToggleSort: (field: SortField) => void;
 }
 

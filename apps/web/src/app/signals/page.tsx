@@ -212,12 +212,7 @@ export default function SignalsPage() {
 
       {/* Empty / Table */}
       {!isScanning && !error && (
-        <SignalTimeline
-          signals={sortedSignals}
-          sortField={sortField}
-          sortDir={sortDir}
-          onToggleSort={toggleSort}
-        />
+        <SignalTimeline signals={sortedSignals} onToggleSort={toggleSort} />
       )}
     </div>
   );
