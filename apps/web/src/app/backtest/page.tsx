@@ -62,8 +62,8 @@ export default function BacktestPage() {
           total_return: parsePct(s.total_return),
           total_trades: s.total_trades,
           win_rate: parsePct(s.win_rate),
-          sharpe_ratio: parsePct(s.sharpe_ratio),
-          sortino_ratio: parsePct(s.sortino_ratio),
+          sharpe_ratio: parseFloat(s.sharpe_ratio),
+          sortino_ratio: parseFloat(s.sortino_ratio),
           max_drawdown: parsePct(s.max_drawdown),
           profit_factor: parsePct(s.profit_factor),
           avg_trade_pnl:

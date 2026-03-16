@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpDown, PieChart } from 'lucide-react';
+import { ArrowUpDown, ChevronUp, ChevronDown, PieChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -49,7 +49,12 @@ interface PositionsTableProps {
   onToggleSort: (field: SortField) => void;
 }
 
-export function PositionsTable({ sortedPositions, onToggleSort }: PositionsTableProps) {
+export function PositionsTable({
+  sortedPositions,
+  sortField,
+  sortDir,
+  onToggleSort,
+}: PositionsTableProps) {
   if (sortedPositions.length === 0) {
     return (
       <Card className="bg-card border-border overflow-hidden">
@@ -84,10 +89,21 @@ export function PositionsTable({ sortedPositions, onToggleSort }: PositionsTable
                   <th key={field} className="px-4 py-2.5 text-left">
                     <button
                       onClick={() => onToggleSort(field)}
-                      className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                      className={cn(
+                        'flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider transition-colors hover:text-foreground',
+                        sortField === field ? 'text-primary' : 'text-muted-foreground',
+                      )}
                     >
                       {label}
-                      <ArrowUpDown className="h-3 w-3" />
+                      {sortField === field ? (
+                        sortDir === 'asc' ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
                     </button>
                   </th>
                 ))}

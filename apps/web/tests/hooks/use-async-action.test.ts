@@ -60,4 +60,11 @@ describe('useAsyncAction', () => {
     expect(result.current.error).toBeNull();
     expect(result.current.loading).toBe(false);
   });
+
+  it('execute reference is stable across renders', () => {
+    const { result, rerender } = renderHook(() => useAsyncAction(async () => 'value'));
+    const firstExecute = result.current.execute;
+    rerender();
+    expect(result.current.execute).toBe(firstExecute);
+  });
 });

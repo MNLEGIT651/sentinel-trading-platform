@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PieChart, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,13 @@ import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
 
 export default function PortfolioPage() {
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const [sortField, setSortField] = useState<SortField>('marketValue');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [positions, setPositions] = useState<Position[]>([]);
@@ -136,6 +143,7 @@ export default function PortfolioPage() {
         const MAX_POLLS = 10;
         let polls = 0;
         const poll = async () => {
+          if (!mountedRef.current) return;
           try {
             const ordersRes = await fetch(`${ENGINE_URL}/api/v1/portfolio/orders?status=open`, {
               signal: AbortSignal.timeout(5000),
@@ -159,9 +167,9 @@ export default function PortfolioPage() {
         setTimeout(() => fetchPortfolio(), 500);
       }
     } catch {
-      setOrderStatus('Order failed — check engine');
+      if (mountedRef.current) setOrderStatus('Order failed — check engine');
     } finally {
-      setSubmitting(false);
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 

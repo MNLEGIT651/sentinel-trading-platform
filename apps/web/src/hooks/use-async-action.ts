@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface AsyncActionState<T> {
   data: T | null;
@@ -12,19 +12,24 @@ export function useAsyncAction<T>(fn: () => Promise<T>): AsyncActionState<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fnRef = useRef(fn);
+
+  useEffect(() => {
+    fnRef.current = fn;
+  });
 
   const execute = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fn();
+      const result = await fnRef.current();
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  }, [fn]);
+  }, []);
 
   const reset = useCallback(() => {
     setData(null);

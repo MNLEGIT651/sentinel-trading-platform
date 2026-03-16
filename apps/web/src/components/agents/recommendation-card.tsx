@@ -81,7 +81,7 @@ export function RecommendationCard({
               <Button
                 size="sm"
                 variant="default"
-                disabled={approvingId === rec.id}
+                disabled={approvingId === rec.id || rejectingId === rec.id}
                 onClick={() => onApprove(rec.id)}
                 className="h-7 text-xs bg-profit hover:bg-profit/80"
               >
@@ -97,7 +97,7 @@ export function RecommendationCard({
               <Button
                 size="sm"
                 variant="outline"
-                disabled={rejectingId === rec.id}
+                disabled={rejectingId === rec.id || approvingId === rec.id}
                 onClick={() => onReject(rec.id)}
                 className="h-7 text-xs"
               >
