@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { agentsClient, type OrchestratorStatus } from '@/lib/agents-client';
@@ -54,7 +55,7 @@ export default function AgentsPage() {
       await agentsClient.runCycle();
       await fetchAll();
     } catch (err) {
-      console.error('Failed to start cycle:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to start cycle');
     } finally {
       setCycleTriggering(false);
     }
@@ -76,7 +77,7 @@ export default function AgentsPage() {
       await agentsClient.approveRecommendation(id);
       await fetchAll();
     } catch (err) {
-      console.error('Approve failed:', err);
+      toast.error(err instanceof Error ? err.message : 'Approve failed');
     } finally {
       setApprovingId(null);
     }
@@ -88,7 +89,7 @@ export default function AgentsPage() {
       await agentsClient.rejectRecommendation(id);
       await fetchAll();
     } catch (err) {
-      console.error('Reject failed:', err);
+      toast.error(err instanceof Error ? err.message : 'Reject failed');
     } finally {
       setRejectingId(null);
     }
@@ -180,7 +181,7 @@ export default function AgentsPage() {
               icon={agent.icon}
               color={agent.color}
               badgeClass={agent.badgeClass}
-              agentStatus={agentStatus}
+              {...(agentStatus !== undefined && { agentStatus })}
               isOffline={isOffline}
             />
           );
