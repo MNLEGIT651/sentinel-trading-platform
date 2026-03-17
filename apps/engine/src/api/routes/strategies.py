@@ -21,6 +21,7 @@ from src.data.polygon_client import PolygonClient
 from src.strategies.base import OHLCVData
 from src.strategies.registry import FAMILY_MAP, list_strategies
 from src.strategies.signal_generator import SignalGenerator
+from src.utils.circuit_breaker import with_circuit_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,9 @@ async def _fetch_ohlcv(polygon: PolygonClient, ticker: str, days: int) -> OHLCVD
     """Fetch bars from Polygon and convert to OHLCVData."""
     end = date.today()
     start = end - timedelta(days=days)
-    bars = await polygon.get_bars(ticker=ticker, timeframe="1d", start=start, end=end)
+    bars = await with_circuit_breaker(
+        lambda: polygon.get_bars(ticker=ticker, timeframe="1d", start=start, end=end)
+    )
     if len(bars) < 20:
         return None
     return OHLCVData(

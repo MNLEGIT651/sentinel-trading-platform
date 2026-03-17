@@ -14,6 +14,7 @@ from src.config import Settings
 from src.data.ingestion import DataIngestionService
 from src.data.polygon_client import PolygonClient
 from src.db import get_db
+from src.utils.circuit_breaker import with_circuit_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ async def get_quote(ticker: str) -> MarketQuote:
     """Fetch the latest price for a ticker from Polygon.io."""
     polygon = _get_polygon()
     try:
-        bar = await polygon.get_latest_price(ticker.upper())
+        bar = await with_circuit_breaker(lambda: polygon.get_latest_price(ticker.upper()))
         if not bar:
             raise HTTPException(status_code=404, detail=f"No data for {ticker}")
         return _bar_to_quote(ticker.upper(), bar)
