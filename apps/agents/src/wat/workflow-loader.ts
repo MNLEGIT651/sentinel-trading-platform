@@ -23,7 +23,7 @@ function parseFrontmatter(
   raw: string,
 ): { frontmatter: Record<string, unknown>; body: string } | null {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
-  if (!match) return null;
+  if (!match || match[1] === undefined || match[2] === undefined) return null;
   try {
     const frontmatter = parseYaml(match[1]) as Record<string, unknown>;
     return { frontmatter, body: match[2].trim() };
@@ -84,26 +84,26 @@ export function loadCycle(workflowsDir?: string): CycleConfig {
   // Parse ## Sequence
   const seqMatch = body.match(/## Sequence\r?\n([\s\S]*?)(?=\r?\n## |\r?\n*$)/);
   const sequence: AgentRole[] = [];
-  if (seqMatch) {
+  if (seqMatch?.[1]) {
     for (const line of seqMatch[1].split('\n')) {
       const m = line.match(/^\d+\.\s+(\w+)/);
-      if (m) sequence.push(m[1] as AgentRole);
+      if (m?.[1]) sequence.push(m[1] as AgentRole);
     }
   }
 
   // Parse ## On-Demand Agents
   const odMatch = body.match(/## On-Demand Agents\r?\n([\s\S]*?)(?=\r?\n## |\r?\n*$)/);
   const onDemand: AgentRole[] = [];
-  if (odMatch) {
+  if (odMatch?.[1]) {
     for (const line of odMatch[1].split('\n')) {
       const m = line.match(/^-\s+(\w+)/);
-      if (m) onDemand.push(m[1] as AgentRole);
+      if (m?.[1]) onDemand.push(m[1] as AgentRole);
     }
   }
 
   // Parse ## Halt Conditions
   const hcMatch = body.match(/## Halt Conditions\r?\n([\s\S]*?)(?=\r?\n## |\r?\n*$)/);
-  const haltConditions = hcMatch ? hcMatch[1].trim() : '';
+  const haltConditions = hcMatch?.[1]?.trim() ?? '';
 
   return {
     version: (fm.version as number) ?? 1,
