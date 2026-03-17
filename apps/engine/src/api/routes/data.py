@@ -94,8 +94,7 @@ async def ingest_data(request: IngestRequest) -> IngestResponse:
 
     from src.data.ingestion import DataIngestionService
 
-    settings = Settings()
-    polygon = PolygonClient(api_key=settings.polygon_api_key)
+    polygon = _get_polygon()
     service = DataIngestionService(polygon=polygon, db=db)
     result = await service.ingest_batch(tickers=request.tickers, timeframe=request.timeframe)
     return IngestResponse(ingested=result.ingested, errors=result.errors)
