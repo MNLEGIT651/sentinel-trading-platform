@@ -20,8 +20,13 @@ __pycache__/
 .venv/
 .pytest_cache/
 .coverage
+*.egg-info/
+.hypothesis/
 
 # Vercel
 .vercel/
 
 .vercel
+
+# Claude Code local settings
+.claude/settings.local.json
