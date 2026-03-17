@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -9,6 +10,12 @@ from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.api.limiter import limiter
+from src.api.middleware import CorrelationIDMiddleware
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
+)
 from src.api.routes.backtest import router as backtest_router
 from src.api.routes.data import router as data_router
 from src.api.routes.health import router as health_router
@@ -74,6 +81,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(CorrelationIDMiddleware)
 
 app.include_router(health_router)
 app.include_router(data_router, prefix="/api/v1")
