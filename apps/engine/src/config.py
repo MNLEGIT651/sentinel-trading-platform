@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # Engine
     engine_api_key: str = "sentinel-dev-key"
+    environment: str = "development"  # "development" | "staging" | "production"
 
     # Broker
     broker_mode: str = "paper"

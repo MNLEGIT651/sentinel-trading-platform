@@ -4,8 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from src.api.limiter import limiter
 from src.api.routes.backtest import router as backtest_router
 from src.api.routes.data import router as data_router
 from src.api.routes.health import router as health_router
@@ -13,6 +16,8 @@ from src.api.routes.portfolio import router as portfolio_router
 from src.api.routes.risk import router as risk_router
 from src.api.routes.strategies import router as strategies_router
 from src.config import Settings
+
+_settings = Settings()
 
 
 @asynccontextmanager
@@ -22,12 +27,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Shutdown
 
 
+_is_production = _settings.environment == "production"
+
 app = FastAPI(
-    title="Sentinel Engine",
-    description="Quant engine for the Sentinel Trading Platform",
-    version="0.1.0",
+    title="Sentinel Engine API",
+    version="1.0.0",
+    description="Quantitative trading engine — strategies, signals, backtesting, risk",
     lifespan=lifespan,
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 def _status_to_key(status_code: int) -> str:
@@ -54,7 +67,6 @@ async def http_exception_handler(request, exc: StarletteHTTPException) -> JSONRe
     )
 
 
-_settings = Settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_settings.cors_origins.split(","),
