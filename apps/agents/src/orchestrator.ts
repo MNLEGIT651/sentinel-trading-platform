@@ -12,6 +12,7 @@
 import { Agent } from './agent.js';
 import { ToolExecutor } from './tool-executor.js';
 import { EngineClient } from './engine-client.js';
+import { loadCycle } from './wat/workflow-loader.js';
 import type { AgentConfig, AgentResult, AgentRole, OrchestratorState } from './types.js';
 
 const DEFAULT_CONFIGS: AgentConfig[] = [
@@ -57,11 +58,23 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
   },
 ];
 
+const DEFAULT_PROMPTS: Record<string, string> = {
+  market_sentinel:
+    'Scan the current market conditions. Check prices for the watchlist tickers: AAPL, MSFT, GOOGL, AMZN, NVDA, TSLA, META, SPY. Report any significant movements, unusual volume, or market regime changes. Create alerts for anything noteworthy.',
+  strategy_analyst:
+    'Run all available trading strategies against the watchlist tickers. Identify the top signals by conviction. For each signal, explain the setup and expected risk-reward. Only recommend trades with clear edge.',
+  risk_monitor:
+    'Assess the current portfolio risk. Check drawdown levels, position concentrations, and sector exposure. For any proposed trades from the strategy analyst, verify they pass all risk limits. Calculate appropriate position sizes.',
+  execution_monitor:
+    'Check for any open orders. If there are approved trades from this cycle that pass risk checks, prepare them for execution. Report on execution quality for any fills.',
+};
+
 export class Orchestrator {
   private agents: Map<AgentRole, Agent> = new Map();
   private state: OrchestratorState;
   private executor: ToolExecutor;
   private cycleInterval: ReturnType<typeof setInterval> | null = null;
+  private cycleSequence: AgentRole[];
 
   constructor(options?: { apiKey?: string; engineUrl?: string; configs?: AgentConfig[] }) {
     const engine = new EngineClient(options?.engineUrl);
@@ -93,6 +106,19 @@ export class Orchestrator {
       halted: false,
       lastCycleAt: null,
     };
+
+    // Load cycle sequence from workflow — fall back to hardcoded order
+    try {
+      const cycle = loadCycle();
+      this.cycleSequence = cycle.sequence;
+    } catch {
+      this.cycleSequence = [
+        'market_sentinel',
+        'strategy_analyst',
+        'risk_monitor',
+        'execution_monitor',
+      ];
+    }
   }
 
   get currentState(): OrchestratorState {
@@ -114,34 +140,16 @@ export class Orchestrator {
     console.log(`[Orchestrator] Starting cycle #${this.state.cycleCount}`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Phase 1: Market Assessment
-    const marketResult = await this.runAgent(
-      'market_sentinel',
-      'Scan the current market conditions. Check prices for the watchlist tickers: AAPL, MSFT, GOOGL, AMZN, NVDA, TSLA, META, SPY. Report any significant movements, unusual volume, or market regime changes. Create alerts for anything noteworthy.',
-    );
-    results.push(marketResult);
-
-    // Phase 2: Strategy Analysis (depends on market data)
-    const strategyResult = await this.runAgent(
-      'strategy_analyst',
-      'Run all available trading strategies against the watchlist tickers. Identify the top signals by conviction. For each signal, explain the setup and expected risk-reward. Only recommend trades with clear edge.',
-    );
-    results.push(strategyResult);
-
-    // Phase 3: Risk Check
-    const riskResult = await this.runAgent(
-      'risk_monitor',
-      'Assess the current portfolio risk. Check drawdown levels, position concentrations, and sector exposure. For any proposed trades from the strategy analyst, verify they pass all risk limits. Calculate appropriate position sizes.',
-    );
-    results.push(riskResult);
-
-    // Phase 4: Execution (if there are approved trades)
-    if (!this.state.halted) {
-      const execResult = await this.runAgent(
-        'execution_monitor',
-        'Check for any open orders. If there are approved trades from this cycle that pass risk checks, prepare them for execution. Report on execution quality for any fills.',
+    for (const role of this.cycleSequence) {
+      if (this.state.halted && role === 'execution_monitor') {
+        console.log('[Orchestrator] Trading halted — skipping execution');
+        continue;
+      }
+      const result = await this.runAgent(
+        role,
+        DEFAULT_PROMPTS[role] ?? `Execute ${role} workflow.`,
       );
-      results.push(execResult);
+      results.push(result);
     }
 
     console.log(`\n[Orchestrator] Cycle #${this.state.cycleCount} complete`);
