@@ -16,7 +16,7 @@ async def test_circuit_breaker_raises_after_max_retries():
         raise ConnectionError("API down")
 
     with pytest.raises(ConnectionError):
-        await with_circuit_breaker(flaky_call, max_attempts=3)
+        await with_circuit_breaker(flaky_call, max_attempts=3, min_wait=0)
 
     assert call_count == 3, f"Expected 3 attempts, got {call_count}"
 
@@ -33,5 +33,5 @@ async def test_circuit_breaker_succeeds_on_retry():
             raise ConnectionError("Temporary failure")
         return {"data": "ok"}
 
-    result = await with_circuit_breaker(eventually_works, max_attempts=3)
+    result = await with_circuit_breaker(eventually_works, max_attempts=3, min_wait=0)
     assert result == {"data": "ok"}

@@ -158,6 +158,8 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Initialize Supabase config
+        run: supabase init
       - name: Start local Supabase
         run: supabase start
       - name: Apply migrations (supabase db reset replays all migrations from scratch)
