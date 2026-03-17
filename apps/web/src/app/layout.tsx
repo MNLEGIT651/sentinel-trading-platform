@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { JetBrains_Mono, DM_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/layout/app-shell';
+import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -31,7 +32,9 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
-        <AppShell>{children}</AppShell>
+        <ErrorBoundary>
+          <AppShell>{children}</AppShell>
+        </ErrorBoundary>
         <Toaster />
       </body>
     </html>
