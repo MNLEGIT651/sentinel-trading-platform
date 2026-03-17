@@ -116,3 +116,51 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Job 5: Deploy web app to Vercel (main branch only)
+  # Requires GitHub secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+  # Add these in: GitHub repo → Settings → Secrets and variables → Actions
+  # ---------------------------------------------------------------------------
+  deploy-web:
+    name: Deploy Web to Vercel
+    runs-on: ubuntu-latest
+    needs: [test-web, test-engine, test-agents, secrets-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Deploy to Vercel (production)
+        run: |
+          pnpm dlx vercel --token ${{ secrets.VERCEL_TOKEN }} \
+            --prod \
+            --yes \
+            --cwd apps/web
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # ---------------------------------------------------------------------------
+  # Job 6: Validate Supabase migrations against a local Supabase instance
+  # ---------------------------------------------------------------------------
+  validate-migrations:
+    name: Validate DB Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase
+        run: supabase start
+      - name: Apply migrations (supabase db reset replays all migrations from scratch)
+        run: supabase db reset
+      - name: Stop local Supabase
+        run: supabase stop
