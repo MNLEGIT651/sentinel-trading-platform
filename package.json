@@ -29,8 +29,8 @@
       "prettier --write"
     ],
     "*.py": [
-      "apps/engine/.venv/Scripts/ruff.exe check --fix --exit-zero",
-      "apps/engine/.venv/Scripts/ruff.exe format"
+      "uv run --directory apps/engine ruff check --fix --exit-zero",
+      "uv run --directory apps/engine ruff format"
     ]
   },
   "pnpm": {

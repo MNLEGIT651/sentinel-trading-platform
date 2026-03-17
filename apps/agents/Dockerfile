@@ -2,7 +2,7 @@
 # Build context: monorepo root  (docker build -f apps/agents/Dockerfile .)
 FROM node:22-alpine AS base
 
-RUN npm install --global pnpm@9
+RUN npm install --global pnpm@10.32.1
 
 # ─── Dependencies + Runtime ───────────────────────────────────────────────────
 FROM base AS runner
