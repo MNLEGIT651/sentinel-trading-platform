@@ -28,5 +28,8 @@ __pycache__/
 
 .vercel
 
+# WAT agent trace logs
+apps/agents/.tmp/
+
 # Claude Code local settings
 .claude/settings.local.json
