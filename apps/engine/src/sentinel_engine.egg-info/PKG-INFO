@@ -13,6 +13,8 @@ Requires-Dist: pandas>=2
 Requires-Dist: apscheduler>=3.10
 Requires-Dist: python-dotenv>=1
 Requires-Dist: postgrest>=0.19
+Requires-Dist: slowapi>=0.1.9
+Requires-Dist: tenacity>=9.0
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.24; extra == "dev"
