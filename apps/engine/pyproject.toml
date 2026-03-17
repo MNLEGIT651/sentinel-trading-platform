@@ -18,6 +18,7 @@ dependencies = [
     "apscheduler>=3.10",
     "python-dotenv>=1",
     "postgrest>=0.19",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]

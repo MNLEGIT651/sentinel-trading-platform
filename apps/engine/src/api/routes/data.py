@@ -7,8 +7,11 @@ from datetime import date, timedelta
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from starlette.requests import Request
 
+from src.api.limiter import limiter
 from src.config import Settings
+from src.data.ingestion import DataIngestionService
 from src.data.polygon_client import PolygonClient
 from src.db import get_db
 
@@ -83,7 +86,8 @@ def _get_polygon() -> PolygonClient:
 
 
 @router.post("/ingest", response_model=IngestResponse)
-async def ingest_data(request: IngestRequest) -> IngestResponse:
+@limiter.limit("5/minute")
+async def ingest_data(request: Request, body: IngestRequest) -> IngestResponse:
     """Trigger data ingestion for the given tickers (requires Supabase)."""
     db = get_db()
     if db is None:
@@ -92,12 +96,10 @@ async def ingest_data(request: IngestRequest) -> IngestResponse:
             detail="Database not configured. Set SUPABASE_SERVICE_ROLE_KEY in .env.",
         )
 
-    from src.data.ingestion import DataIngestionService
-
     settings = Settings()
     polygon = PolygonClient(api_key=settings.polygon_api_key)
     service = DataIngestionService(polygon=polygon, db=db)
-    result = await service.ingest_batch(tickers=request.tickers, timeframe=request.timeframe)
+    result = await service.ingest_batch(tickers=body.tickers, timeframe=body.timeframe)
     return IngestResponse(ingested=result.ingested, errors=result.errors)
 
 

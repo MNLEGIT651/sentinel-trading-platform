@@ -13,9 +13,11 @@ class TestIngestEndpoint:
         self.client = TestClient(app)
 
     @patch("src.api.routes.data.get_db")
-    @patch("src.data.ingestion.DataIngestionService")
-    def test_ingest_success(self, mock_service_cls, mock_get_db):
+    @patch("src.api.routes.data.PolygonClient")
+    @patch("src.api.routes.data.DataIngestionService")
+    def test_ingest_success(self, mock_service_cls, mock_polygon_cls, mock_get_db):
         mock_get_db.return_value = MagicMock()
+        mock_polygon_cls.return_value = MagicMock()
         mock_service = AsyncMock()
         mock_service.ingest_batch.return_value = IngestionResult(ingested=10, errors=[])
         mock_service_cls.return_value = mock_service
@@ -31,9 +33,11 @@ class TestIngestEndpoint:
         assert data["errors"] == []
 
     @patch("src.api.routes.data.get_db")
-    @patch("src.data.ingestion.DataIngestionService")
-    def test_ingest_with_errors(self, mock_service_cls, mock_get_db):
+    @patch("src.api.routes.data.PolygonClient")
+    @patch("src.api.routes.data.DataIngestionService")
+    def test_ingest_with_errors(self, mock_service_cls, mock_polygon_cls, mock_get_db):
         mock_get_db.return_value = MagicMock()
+        mock_polygon_cls.return_value = MagicMock()
         mock_service = AsyncMock()
         mock_service.ingest_batch.return_value = IngestionResult(
             ingested=5, errors=["Failed to ingest GOOG: timeout"]

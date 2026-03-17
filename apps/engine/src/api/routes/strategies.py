@@ -13,7 +13,9 @@ from datetime import date, timedelta
 import numpy as np
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from starlette.requests import Request
 
+from src.api.limiter import limiter
 from src.config import Settings
 from src.data.polygon_client import PolygonClient
 from src.strategies.base import OHLCVData
@@ -127,7 +129,8 @@ async def get_strategies() -> StrategyListResponse:
 
 
 @router.post("/scan", response_model=ScanResponse)
-async def scan_signals(request: ScanRequest) -> ScanResponse:
+@limiter.limit("5/minute")
+async def scan_signals(request: Request, body: ScanRequest) -> ScanResponse:
     """Run strategy scan against live Polygon data for the given tickers."""
     settings = Settings()
     if not settings.polygon_api_key:
@@ -138,10 +141,10 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
     fetch_errors: list[str] = []
 
     try:
-        tickers = [t.strip().upper() for t in request.tickers]
+        tickers = [t.strip().upper() for t in body.tickers]
         for i, ticker in enumerate(tickers):
             try:
-                ohlcv = await _fetch_ohlcv(polygon, ticker, request.days)
+                ohlcv = await _fetch_ohlcv(polygon, ticker, body.days)
                 if ohlcv:
                     data_map[ticker] = ohlcv
                 else:
@@ -162,8 +165,8 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
             errors=fetch_errors,
         )
 
-    generator = SignalGenerator(min_signal_strength=request.min_strength)
-    if request.use_composite:
+    generator = SignalGenerator(min_signal_strength=body.min_strength)
+    if body.use_composite:
         batch = generator.scan_with_composite(data_map)
     else:
         batch = generator.scan(data_map)
