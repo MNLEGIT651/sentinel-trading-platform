@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono, DM_Sans } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/layout/app-shell';
 import './globals.css';
@@ -33,6 +35,8 @@ export default function RootLayout({
       >
         <AppShell>{children}</AppShell>
         <Toaster />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

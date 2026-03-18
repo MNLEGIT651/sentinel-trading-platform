@@ -4,7 +4,7 @@ Evidence-based systematic trading platform. Monorepo with three apps.
 
 ## Structure
 
-- `apps/web` - Next.js 15 dashboard (port 3000)
+- `apps/web` - Next.js 16 dashboard (port 3000)
 - `apps/engine` - Python FastAPI quant engine (port 8000)
 - `apps/agents` - Claude AI agent orchestrator (Phase 4)
 - `packages/shared` - Shared TypeScript types
@@ -33,7 +33,7 @@ Evidence-based systematic trading platform. Monorepo with three apps.
 
 ## Tech Stack
 
-- Next.js 15, TypeScript 5, Tailwind CSS 4, shadcn/ui
+- Next.js 16, TypeScript 5, Tailwind CSS 4, shadcn/ui
 - Python 3.14, FastAPI, NumPy, Pandas
 - Supabase (PostgreSQL + Realtime)
 - TradingView Lightweight Charts
