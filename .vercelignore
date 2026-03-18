@@ -1,0 +1,22 @@
+# Vercel deployment ignore rules for Sentinel monorepo.
+# Vercel only needs apps/web and packages/shared to build.
+
+# Separate projects / services — not deployed to Vercel
+Codex/
+apps/engine/
+apps/agents/
+
+# Database migrations — not needed at build time
+supabase/
+
+# Documentation
+docs/
+
+# Local dev / CI artifacts
+docker-compose.yml
+*.xlsx
+*.csv
+.dockerignore
+.husky/
+.ruff_cache/
+.pytest_cache/
