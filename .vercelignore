@@ -12,6 +12,13 @@ supabase/
 # Documentation
 docs/
 
+# node_modules at any depth (Vercel CLI may not honor nested .gitignore)
+node_modules/
+**/node_modules/
+
+# Claude Code local config (skills, plans, settings)
+.claude/
+
 # Local dev / CI artifacts
 docker-compose.yml
 *.xlsx
@@ -20,3 +27,4 @@ docker-compose.yml
 .husky/
 .ruff_cache/
 .pytest_cache/
+.turbo/
