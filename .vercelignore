@@ -2,22 +2,22 @@
 # Vercel only needs apps/web and packages/shared to build.
 
 # Separate projects / services — not deployed to Vercel
-Codex/
-apps/engine/
-apps/agents/
+/Codex/
+/apps/engine/
+/apps/agents/
 
-# Database migrations — not needed at build time
-supabase/
+# Database migrations — not needed at build time (leading / anchors to repo root only)
+/supabase/
 
 # Documentation
-docs/
+/docs/
 
 # node_modules at any depth (Vercel CLI may not honor nested .gitignore)
 node_modules/
 **/node_modules/
 
 # Claude Code local config (skills, plans, settings)
-.claude/
+/.claude/
 
 # Local dev / CI artifacts
 docker-compose.yml
