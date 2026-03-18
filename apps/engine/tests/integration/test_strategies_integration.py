@@ -59,14 +59,11 @@ async def test_scan_returns_503_without_polygon_key(client):
 
 async def test_scan_returns_scan_response_shape_with_polygon_key(client, monkeypatch):
     """POST /api/v1/strategies/scan returns proper ScanResponse shape (mocked Polygon)."""
-    monkeypatch.setenv("POLYGON_API_KEY", "fake-polygon-key")
-
-    # When Polygon returns no bars, the scan returns empty signals gracefully
     mock_polygon = AsyncMock()
     mock_polygon.get_bars.return_value = []
     mock_polygon.close = AsyncMock()
 
-    with patch("src.api.routes.strategies.PolygonClient", return_value=mock_polygon):
+    with patch("src.api.routes.strategies._get_polygon", return_value=mock_polygon):
         response = await client.post(
             "/api/v1/strategies/scan",
             json={"tickers": ["AAPL"]},

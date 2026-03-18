@@ -9,14 +9,17 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date, timedelta
+from typing import TYPE_CHECKING
 
 import numpy as np
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from src.config import Settings
-from src.data.polygon_client import PolygonClient
+from src.api.routes.data import _get_polygon
 from src.strategies.base import OHLCVData
+
+if TYPE_CHECKING:
+    from src.data.polygon_client import PolygonClient
 from src.strategies.registry import FAMILY_MAP, list_strategies
 from src.strategies.signal_generator import SignalGenerator
 
@@ -129,11 +132,7 @@ async def get_strategies() -> StrategyListResponse:
 @router.post("/scan", response_model=ScanResponse)
 async def scan_signals(request: ScanRequest) -> ScanResponse:
     """Run strategy scan against live Polygon data for the given tickers."""
-    settings = Settings()
-    if not settings.polygon_api_key:
-        raise HTTPException(status_code=503, detail="POLYGON_API_KEY not set.")
-
-    polygon = PolygonClient(api_key=settings.polygon_api_key)
+    polygon = _get_polygon()
     data_map: dict[str, OHLCVData] = {}
     fetch_errors: list[str] = []
 
