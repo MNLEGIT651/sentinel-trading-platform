@@ -1,45 +1,45 @@
-# Sentinel Trading Platform
+# Sentinel Trading Platform — Claude Code Memory
 
-Evidence-based systematic trading platform. Monorepo with three apps.
+This repository is a multi-app trading platform with shared TypeScript packages and Supabase-backed data flows.
 
-## Structure
+## Project map
 
-- `apps/web` - Next.js 16 dashboard (port 3000)
-- `apps/engine` - Python FastAPI quant engine (port 8000)
-- `apps/agents` - Claude AI agent orchestrator (Phase 4)
-- `packages/shared` - Shared TypeScript types
-- `supabase/` - Database migrations
+- `apps/web` — Next.js 16 trading dashboard and API routes.
+- `apps/engine` — FastAPI quant engine, risk logic, strategies, and execution.
+- `apps/agents` — agent orchestration service and approval workflow.
+- `packages/shared` — shared TypeScript contracts.
+- `supabase/` — schema migrations and seed data.
+- `docs/ai/` — tool-neutral AI collaboration guidance.
 
-## Commands
+Read these first for project-wide norms:
 
-### Web (apps/web)
+1. `docs/ai/working-agreement.md`
+2. `docs/ai/architecture.md`
+3. `docs/ai/commands.md`
+4. `docs/ai/review-checklist.md`
 
-- `pnpm dev` - Start dev server
-- `pnpm test` - Run Vitest unit/component tests
-- `pnpm test:e2e` - Run Playwright E2E tests
-- `pnpm build` - Production build
+## How Claude Code should operate here
 
-### Engine (apps/engine)
+- Prefer planning, debugging, architecture review, and careful refactors.
+- Keep edits narrow and aligned to existing conventions.
+- Do not silently change public API contracts across apps; update both sides and tests together.
+- Treat market-data, brokerage, and secret-handling changes as high-risk.
+- Prefer updating tests whenever behavior changes.
 
-- `.venv/Scripts/python -m uvicorn src.api.main:app --reload --port 8000` - Start dev server
-- `.venv/Scripts/python -m pytest` - Run all tests
-- `.venv/Scripts/python -m pytest --cov=src` - Run tests with coverage
+## Required workflow
 
-### Monorepo
+- Create or follow a clear task scope before editing.
+- Run the smallest relevant verification commands from `docs/ai/commands.md`.
+- Surface blockers early when env vars or external services are required.
+- Leave concise notes in PRs/commit messages about user-visible impact and risks.
 
-- `pnpm dev` - Start all dev servers via Turborepo
-- `pnpm test` - Run all tests
-- `pnpm build` - Build all apps
+## High-risk areas
 
-## Tech Stack
+- `apps/engine/src/api/routes/*`
+- `apps/engine/src/execution/*`
+- `apps/agents/src/server.ts`
+- `apps/agents/src/recommendations-store.ts`
+- `apps/web/src/app/api/*`
+- `supabase/migrations/*`
 
-- Next.js 16, TypeScript 5, Tailwind CSS 4, shadcn/ui
-- Python 3.14, FastAPI, NumPy, Pandas
-- Supabase (PostgreSQL + Realtime)
-- TradingView Lightweight Charts
-- Vitest, pytest, Playwright
-
-## Environment
-
-Copy `.env.example` to `.env` and fill in credentials.
-Required for dev: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+For those areas: avoid broad refactors, preserve response shapes intentionally, and call out security or data-integrity implications explicitly.
