@@ -15,8 +15,7 @@ import { ResultsChart } from '@/components/backtest/results-chart';
 import { TradeLog } from '@/components/backtest/trade-log';
 import { runSyntheticBacktest, type BacktestResult } from '@/components/backtest/synthetic-runner';
 import { type EngineBacktestResponse, parsePct } from '@/components/backtest/engine-types';
-
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
+import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 
 export default function BacktestPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
@@ -33,9 +32,9 @@ export default function BacktestPage() {
     let ran = false;
     try {
       const seed = Math.floor(Math.random() * 100_000);
-      const res = await fetch(`${ENGINE_URL}/api/v1/backtest/run`, {
+      const res = await fetch(engineUrl('/api/v1/backtest/run'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...engineHeaders() },
         body: JSON.stringify({
           strategy_name: strategy,
           bars,

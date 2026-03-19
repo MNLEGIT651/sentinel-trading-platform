@@ -14,11 +14,10 @@ import { Button } from '@/components/ui/button';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
 import type { SignalResult } from '@/lib/engine-client';
+import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import { SignalFilters } from '@/components/signals/signal-filters';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
 import type { SignalRow } from '@/components/signals/signal-card';
-
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
 
 const DEFAULT_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY,QQQ,JPM';
 
@@ -50,9 +49,9 @@ export default function SignalsPage() {
         .filter(Boolean)
         .slice(0, 20);
 
-      const res = await fetch(`${ENGINE_URL}/api/v1/strategies/scan`, {
+      const res = await fetch(engineUrl('/api/v1/strategies/scan'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...engineHeaders() },
         body: JSON.stringify({ tickers, days, min_strength: minStrength }),
         signal: AbortSignal.timeout(60_000),
       });

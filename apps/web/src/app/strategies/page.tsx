@@ -7,8 +7,7 @@ import { cn } from '@/lib/utils';
 import { StrategyCard, type StrategyEntry } from '@/components/strategies/strategy-card';
 import { strategyFamilies, type StrategyFamily } from '@/components/strategies/strategy-data';
 import { familyConfig } from '@/components/strategies/family-config';
-
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
+import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 
 interface EngineStrategyInfo {
   name: string;
@@ -32,7 +31,10 @@ export default function StrategiesPage() {
 
   // Fetch live strategy data from engine
   useEffect(() => {
-    fetch(`${ENGINE_URL}/api/v1/strategies/`, { signal: AbortSignal.timeout(5000) })
+    fetch(engineUrl('/api/v1/strategies/'), {
+      signal: AbortSignal.timeout(5000),
+      headers: engineHeaders(),
+    })
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
         return r.json() as Promise<EngineStrategyListResponse>;

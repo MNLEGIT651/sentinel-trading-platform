@@ -13,8 +13,8 @@ import type { Alert } from '@sentinel/shared';
 import type { MarketQuote, BrokerAccount } from '@/lib/engine-client';
 import type { AgentAlert } from '@/lib/agents-client';
 import { cn } from '@/lib/utils';
+import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
 const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
 
 const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
@@ -50,8 +50,8 @@ export default function DashboardPage() {
   const fetchPrices = useCallback(async () => {
     try {
       const res = await fetch(
-        `${ENGINE_URL}/api/v1/data/quotes?tickers=${TICKER_SYMBOLS.join(',')}`,
-        { signal: AbortSignal.timeout(6000) },
+        engineUrl(`/api/v1/data/quotes?tickers=${TICKER_SYMBOLS.join(',')}`),
+        { signal: AbortSignal.timeout(6000), headers: engineHeaders() },
       );
       if (!res.ok) throw new Error(`${res.status}`);
       const quotes: MarketQuote[] = await res.json();
@@ -74,8 +74,9 @@ export default function DashboardPage() {
 
   const fetchAccount = useCallback(async () => {
     try {
-      const res = await fetch(`${ENGINE_URL}/api/v1/portfolio/account`, {
+      const res = await fetch(engineUrl('/api/v1/portfolio/account'), {
         signal: AbortSignal.timeout(6000),
+        headers: engineHeaders(),
       });
       if (!res.ok) throw new Error(`${res.status}`);
       setAccount(await res.json());

@@ -256,9 +256,11 @@ class TestBacktestAPI:
     def client(self):
         from fastapi.testclient import TestClient
 
-        from src.api.main import app
+        from src.api.main import _settings, app
 
-        return TestClient(app)
+        c = TestClient(app)
+        c.headers["X-API-Key"] = _settings.engine_api_key
+        return c
 
     def test_run_backtest(self, client):
         resp = client.post(

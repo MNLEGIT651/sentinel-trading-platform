@@ -4,13 +4,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from src.api.main import app
+from src.api.main import _settings, app
 from src.data.ingestion import IngestionResult
 
 
 class TestIngestEndpoint:
     def setup_method(self):
         self.client = TestClient(app)
+        self.client.headers["X-API-Key"] = _settings.engine_api_key
 
     @patch("src.api.routes.data.get_db")
     @patch("src.api.routes.data._get_polygon")

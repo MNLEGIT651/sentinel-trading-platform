@@ -24,5 +24,10 @@ def _stub_required_env(monkeypatch):
 @pytest.fixture
 async def client():
     """Async HTTP client bound to the FastAPI app (no network)."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    from src.api.main import _settings
+
+    headers = {"X-API-Key": _settings.engine_api_key}
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=headers
+    ) as ac:
         yield ac

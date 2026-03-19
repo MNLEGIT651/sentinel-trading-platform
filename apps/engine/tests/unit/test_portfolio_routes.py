@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
-from src.api.main import app
+from src.api.main import _settings, app
 from src.execution import get_broker
 from src.execution.paper_broker import PaperBroker
 
@@ -14,6 +14,7 @@ _PATCH_GET_BROKER = "src.api.routes.portfolio.get_broker"
 class TestPortfolioEndpoints:
     def setup_method(self):
         self.client = TestClient(app)
+        self.client.headers["X-API-Key"] = _settings.engine_api_key
         get_broker.cache_clear()
 
     def teardown_method(self):

@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
+import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import type { BrokerAccount, BrokerPosition, MarketQuote } from '@/lib/engine-client';
 import { SnapshotMetrics } from '@/components/portfolio/snapshot-metrics';
 import {
@@ -21,8 +22,6 @@ import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
 import { QuickOrder } from '@/components/portfolio/quick-order';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
-
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
 
 export default function PortfolioPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
@@ -52,8 +51,14 @@ export default function PortfolioPage() {
     if (showRefresh) setRefreshing(true);
     try {
       const [acctRes, posRes] = await Promise.all([
-        fetch(`${ENGINE_URL}/api/v1/portfolio/account`, { signal: AbortSignal.timeout(6000) }),
-        fetch(`${ENGINE_URL}/api/v1/portfolio/positions`, { signal: AbortSignal.timeout(6000) }),
+        fetch(engineUrl('/api/v1/portfolio/account'), {
+          signal: AbortSignal.timeout(6000),
+          headers: engineHeaders(),
+        }),
+        fetch(engineUrl('/api/v1/portfolio/positions'), {
+          signal: AbortSignal.timeout(6000),
+          headers: engineHeaders(),
+        }),
       ]);
       if (!acctRes.ok || !posRes.ok) throw new Error('Engine error');
 
@@ -67,8 +72,8 @@ export default function PortfolioPage() {
         let quotes: MarketQuote[] = [];
         try {
           const quotesRes = await fetch(
-            `${ENGINE_URL}/api/v1/data/quotes?tickers=${tickers.join(',')}`,
-            { signal: AbortSignal.timeout(8000) },
+            engineUrl(`/api/v1/data/quotes?tickers=${tickers.join(',')}`),
+            { signal: AbortSignal.timeout(8000), headers: engineHeaders() },
           );
           if (quotesRes.ok) quotes = await quotesRes.json();
         } catch {
@@ -122,9 +127,9 @@ export default function PortfolioPage() {
     setSubmitting(true);
     setOrderStatus(null);
     try {
-      const res = await fetch(`${ENGINE_URL}/api/v1/portfolio/orders`, {
+      const res = await fetch(engineUrl('/api/v1/portfolio/orders'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...engineHeaders() },
         body: JSON.stringify({
           symbol: orderSymbol.toUpperCase(),
           side: orderSide,
@@ -149,8 +154,9 @@ export default function PortfolioPage() {
         const poll = async () => {
           if (!mountedRef.current) return;
           try {
-            const ordersRes = await fetch(`${ENGINE_URL}/api/v1/portfolio/orders?status=open`, {
+            const ordersRes = await fetch(engineUrl('/api/v1/portfolio/orders?status=open'), {
               signal: AbortSignal.timeout(5000),
+              headers: engineHeaders(),
             });
             if (ordersRes.ok) {
               const orders = (await ordersRes.json()) as Array<{ order_id: string }>;

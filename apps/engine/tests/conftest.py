@@ -19,4 +19,8 @@ def _stub_required_env(monkeypatch):
 @pytest.fixture
 def client() -> TestClient:
     """Create a test client for the FastAPI app."""
-    return TestClient(app)
+    from src.api.main import _settings
+
+    c = TestClient(app)
+    c.headers["X-API-Key"] = _settings.engine_api_key
+    return c

@@ -8,6 +8,7 @@ import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
+import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import type { OHLCV } from '@sentinel/shared';
 import type { MarketQuote } from '@/lib/engine-client';
 
@@ -23,8 +24,6 @@ const WATCHLIST_TICKERS = [
   { ticker: 'V', name: 'Visa Inc.' },
   { ticker: 'SPY', name: 'SPDR S&P 500' },
 ];
-
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
 
 interface WatchlistItem {
   ticker: string;
@@ -77,8 +76,9 @@ export default function MarketsPage() {
     async function fetchQuotes() {
       try {
         const tickers = WATCHLIST_TICKERS.map((w) => w.ticker).join(',');
-        const res = await fetch(`${ENGINE_URL}/api/v1/data/quotes?tickers=${tickers}`, {
+        const res = await fetch(engineUrl(`/api/v1/data/quotes?tickers=${tickers}`), {
           signal: AbortSignal.timeout(8000),
+          headers: engineHeaders(),
         });
         if (!res.ok) throw new Error(`${res.status}`);
         const quotes: MarketQuote[] = await res.json();
@@ -129,8 +129,9 @@ export default function MarketsPage() {
       setChartLoading(true);
 
       try {
-        const res = await fetch(`${ENGINE_URL}/api/v1/data/bars/${ticker}?timeframe=1d&days=90`, {
+        const res = await fetch(engineUrl(`/api/v1/data/bars/${ticker}?timeframe=1d&days=90`), {
           signal: controller.signal,
+          headers: engineHeaders(),
         });
         if (!res.ok) throw new Error(`${res.status}`);
         const bars = await res.json();

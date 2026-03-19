@@ -13,9 +13,6 @@ def test_settings_defaults(monkeypatch):
     assert settings.broker_mode == "paper"
     assert settings.engine_api_key == "sentinel-dev-key"
     assert settings.alpaca_base_url == "https://paper-api.alpaca.markets"
-    assert settings.data_ingestion_interval_minutes == 1440
-    assert settings.signal_generation_interval_minutes == 15
-    assert settings.risk_update_interval_minutes == 5
     assert settings.supabase_url == ""
     assert settings.polygon_api_key == ""
 

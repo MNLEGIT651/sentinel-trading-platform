@@ -29,11 +29,6 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:3000"
 
-    # Scheduling intervals (minutes)
-    data_ingestion_interval_minutes: int = 1440
-    signal_generation_interval_minutes: int = 15
-    risk_update_interval_minutes: int = 5
-
     def validate(self) -> None:
         """Raise ValueError if any required environment variable is missing."""
         import logging
