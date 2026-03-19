@@ -1,45 +1,29 @@
-# Sentinel Trading Platform — Claude Code Memory
+# Sentinel Trading Platform — Claude Code
 
-This repository is a multi-app trading platform with shared TypeScript packages and Supabase-backed data flows.
+> **Read and follow `AGENTS.md` first.** It contains the universal project instructions
+> (architecture, commands, conventions, coding standards) shared with all AI agents.
+> This file adds Claude Code-specific configuration only.
 
-## Project map
+## Claude-Specific Context
 
-- `apps/web` — Next.js 16 trading dashboard and API routes.
-- `apps/engine` — FastAPI quant engine, risk logic, strategies, and execution.
-- `apps/agents` — agent orchestration service and approval workflow.
-- `packages/shared` — shared TypeScript contracts.
-- `supabase/` — schema migrations and seed data.
-- `docs/ai/` — tool-neutral AI collaboration guidance.
+- Health polling: `useServiceHealth` hook in AppShell polls engine + agents every 15s, writes to Zustand
+- Engine auth: All client-side engine calls must use `engineUrl()` / `engineHeaders()` from `lib/engine-fetch.ts`
+- Settings page has no API key form — keys are configured via `.env` only
+- The `EngineClient` class in `lib/engine-client.ts` is the server-side SDK (used by agents app); pages use `engine-fetch.ts`
 
-Read these first for project-wide norms:
+## Commands (Quick Reference)
 
-1. `docs/ai/working-agreement.md`
-2. `docs/ai/architecture.md`
-3. `docs/ai/commands.md`
-4. `docs/ai/review-checklist.md`
+See `AGENTS.md` for full list. Most common:
 
-## How Claude Code should operate here
+```bash
+pnpm test                   # Web tests (94 tests)
+cd apps/engine && .venv/Scripts/python -m pytest   # Engine tests (242 tests)
+```
 
-- Prefer planning, debugging, architecture review, and careful refactors.
-- Keep edits narrow and aligned to existing conventions.
-- Do not silently change public API contracts across apps; update both sides and tests together.
-- Treat market-data, brokerage, and secret-handling changes as high-risk.
-- Prefer updating tests whenever behavior changes.
+## Tech Stack
 
-## Required workflow
+See `AGENTS.md` for full table. Key detail: Python version is 3.12+ (not 3.14).
 
-- Create or follow a clear task scope before editing.
-- Run the smallest relevant verification commands from `docs/ai/commands.md`.
-- Surface blockers early when env vars or external services are required.
-- Leave concise notes in PRs/commit messages about user-visible impact and risks.
+## Environment
 
-## High-risk areas
-
-- `apps/engine/src/api/routes/*`
-- `apps/engine/src/execution/*`
-- `apps/agents/src/server.ts`
-- `apps/agents/src/recommendations-store.ts`
-- `apps/web/src/app/api/*`
-- `supabase/migrations/*`
-
-For those areas: avoid broad refactors, preserve response shapes intentionally, and call out security or data-integrity implications explicitly.
+See `AGENTS.md`. Copy `.env.example` to `.env` and fill in credentials.
