@@ -6,6 +6,9 @@ import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
 import { PriceTicker } from '@/components/dashboard/price-ticker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { SimulatedBadge } from '@/components/ui/simulated-badge';
+import { useAppStore } from '@/stores/app-store';
 import type { Alert } from '@sentinel/shared';
 import type { MarketQuote, BrokerAccount } from '@/lib/engine-client';
 import type { AgentAlert } from '@/lib/agents-client';
@@ -27,56 +30,13 @@ const fallbackTickerData = [
   { ticker: 'SPY', price: 456.38, change: 0.62 },
 ];
 
-const sampleAlerts: Alert[] = [
-  {
-    id: '1',
-    account_id: null,
-    instrument_id: null,
-    severity: 'info',
-    status: 'active',
-    title: 'System Online',
-    message: 'Sentinel trading engine connected and operational.',
-    metadata: null,
-    triggered_at: new Date().toISOString(),
-    acknowledged_at: null,
-    resolved_at: null,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    account_id: null,
-    instrument_id: 'nvda',
-    severity: 'warning',
-    status: 'active',
-    title: 'High Volatility Detected',
-    message: 'NVDA showing unusual volume and price movement.',
-    metadata: null,
-    triggered_at: new Date(Date.now() - 300000).toISOString(),
-    acknowledged_at: null,
-    resolved_at: null,
-    created_at: new Date(Date.now() - 300000).toISOString(),
-  },
-  {
-    id: '3',
-    account_id: null,
-    instrument_id: null,
-    severity: 'critical',
-    status: 'active',
-    title: 'Risk Limit Approaching',
-    message: 'Portfolio drawdown nearing configured threshold.',
-    metadata: null,
-    triggered_at: new Date(Date.now() - 600000).toISOString(),
-    acknowledged_at: null,
-    resolved_at: null,
-    created_at: new Date(Date.now() - 600000).toISOString(),
-  },
-];
-
 export default function DashboardPage() {
+  const engineOnline = useAppStore((s) => s.engineOnline);
+  const agentsOnline = useAppStore((s) => s.agentsOnline);
   const [tickerData, setTickerData] = useState(fallbackTickerData);
   const [isLive, setIsLive] = useState(false);
   const [account, setAccount] = useState<BrokerAccount | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>(sampleAlerts);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recentSignals, setRecentSignals] = useState<
     Array<{
       ticker: string;
@@ -174,7 +134,7 @@ export default function DashboardPage() {
         );
       }
     } catch {
-      // Agents offline — keep sampleAlerts
+      // Agents offline — show empty, not fake alerts
     }
   }, []);
 
@@ -199,6 +159,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 p-4">
+      {!engineOnline && <OfflineBanner service="engine" />}
+      {!agentsOnline && <OfflineBanner service="agents" />}
+
       {/* Row 1: Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
         <MetricCard
@@ -227,12 +190,16 @@ export default function DashboardPage() {
       {/* Row 2: Price Ticker */}
       <div className="relative">
         <PriceTicker items={tickerData} />
-        {isLive && (
-          <span className="absolute -top-1.5 right-2 inline-flex items-center gap-1 rounded-full bg-profit/15 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-profit uppercase">
-            <span className="h-1 w-1 rounded-full bg-profit animate-pulse" />
-            Live
-          </span>
-        )}
+        <span className="absolute -top-1.5 right-2">
+          {isLive ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-profit/15 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-profit uppercase">
+              <span className="h-1 w-1 rounded-full bg-profit animate-pulse" />
+              Live
+            </span>
+          ) : (
+            <SimulatedBadge />
+          )}
+        </span>
       </div>
 
       {/* Row 3: Two columns */}

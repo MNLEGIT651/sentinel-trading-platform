@@ -5,6 +5,8 @@ import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2 } from 'lucide-reac
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { useAppStore } from '@/stores/app-store';
 import { agentsClient, type OrchestratorStatus } from '@/lib/agents-client';
 import { AgentStatusCard } from '@/components/agents/agent-status-card';
 import { RecommendationCard } from '@/components/agents/recommendation-card';
@@ -12,6 +14,7 @@ import { AgentAlertFeed } from '@/components/agents/agent-alert-feed';
 import { agentDefs } from '@/components/agents/agent-defs';
 
 export default function AgentsPage() {
+  const agentsOnline = useAppStore((s) => s.agentsOnline);
   const [status, setStatus] = useState<OrchestratorStatus | null>(null);
   const [recommendations, setRecommendations] = useState<
     Awaited<ReturnType<typeof agentsClient.getRecommendations>>['recommendations']
@@ -62,13 +65,21 @@ export default function AgentsPage() {
   };
 
   const handleHalt = async () => {
-    await agentsClient.halt();
-    await fetchAll();
+    try {
+      await agentsClient.halt();
+      await fetchAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to halt agents');
+    }
   };
 
   const handleResume = async () => {
-    await agentsClient.resume();
-    await fetchAll();
+    try {
+      await agentsClient.resume();
+      await fetchAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to resume agents');
+    }
   };
 
   const handleApprove = async (id: string) => {
@@ -101,6 +112,8 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-4 p-4">
+      {!agentsOnline && <OfflineBanner service="agents" />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

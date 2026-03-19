@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { PriceChart } from '@/components/charts/price-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { SimulatedBadge } from '@/components/ui/simulated-badge';
+import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import type { OHLCV } from '@sentinel/shared';
 import type { MarketQuote } from '@/lib/engine-client';
@@ -57,6 +60,7 @@ function generateSampleData(basePrice: number): OHLCV[] {
 }
 
 export default function MarketsPage() {
+  const engineOnline = useAppStore((s) => s.engineOnline);
   const [selectedTicker, setSelectedTicker] = useState('AAPL');
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() =>
     WATCHLIST_TICKERS.map((w) => ({ ...w, price: 0, change: 0 })),
@@ -169,109 +173,113 @@ export default function MarketsPage() {
   const selectedStock = watchlist.find((w) => w.ticker === selectedTicker);
 
   return (
-    <div className="flex h-full gap-4 p-4">
-      {/* Watchlist panel */}
-      <Card className="w-72 shrink-0 bg-card border-border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Watchlist</CardTitle>
-            {!loading && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase',
-                  isLive ? 'bg-profit/15 text-profit' : 'bg-muted text-muted-foreground',
-                )}
-              >
+    <div className="flex h-full flex-col gap-4 p-4">
+      {!engineOnline && <OfflineBanner service="engine" />}
+      <div className="flex flex-1 gap-4 min-h-0">
+        {/* Watchlist panel */}
+        <Card className="w-72 shrink-0 bg-card border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Watchlist</CardTitle>
+              {!loading && (
                 <span
                   className={cn(
-                    'h-1.5 w-1.5 rounded-full',
-                    isLive ? 'bg-profit animate-pulse' : 'bg-muted-foreground',
-                  )}
-                />
-                {isLive ? 'Live' : 'Offline'}
-              </span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="space-y-0.5 px-2 pb-2">
-              {watchlist.map((stock) => (
-                <button
-                  key={stock.ticker}
-                  onClick={() => setSelectedTicker(stock.ticker)}
-                  className={cn(
-                    'flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors',
-                    selectedTicker === stock.ticker
-                      ? 'bg-accent text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                    'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase',
+                    isLive ? 'bg-profit/15 text-profit' : 'bg-muted text-muted-foreground',
                   )}
                 >
-                  <div>
-                    <p className="text-sm font-medium">{stock.ticker}</p>
-                    <p className="text-[11px] text-muted-foreground">{stock.name}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '--'}
-                    </p>
-                    <p
-                      className={cn(
-                        'text-[11px] font-medium',
-                        stock.change >= 0 ? 'text-profit' : 'text-loss',
-                      )}
-                    >
-                      {stock.price > 0
-                        ? `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%`
-                        : '--'}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-
-      {/* Chart panel */}
-      <Card className="flex-1 bg-card border-border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-bold">{selectedTicker}</CardTitle>
-            {selectedStock && (
-              <>
-                <span className="text-sm text-muted-foreground">{selectedStock.name}</span>
-                <span className="text-lg font-semibold">
-                  {selectedStock.price > 0 ? `$${selectedStock.price.toFixed(2)}` : '--'}
-                </span>
-                {selectedStock.price > 0 && (
                   <span
                     className={cn(
-                      'text-sm font-medium',
-                      selectedStock.change >= 0 ? 'text-profit' : 'text-loss',
+                      'h-1.5 w-1.5 rounded-full',
+                      isLive ? 'bg-profit animate-pulse' : 'bg-muted-foreground',
+                    )}
+                  />
+                  {isLive ? 'Live' : 'Offline'}
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[calc(100vh-12rem)]">
+              <div className="space-y-0.5 px-2 pb-2">
+                {watchlist.map((stock) => (
+                  <button
+                    key={stock.ticker}
+                    onClick={() => setSelectedTicker(stock.ticker)}
+                    className={cn(
+                      'flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors',
+                      selectedTicker === stock.ticker
+                        ? 'bg-accent text-foreground'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
                     )}
                   >
-                    {selectedStock.change >= 0 ? '+' : ''}
-                    {selectedStock.change.toFixed(2)}%
+                    <div>
+                      <p className="text-sm font-medium">{stock.ticker}</p>
+                      <p className="text-[11px] text-muted-foreground">{stock.name}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '--'}
+                      </p>
+                      <p
+                        className={cn(
+                          'text-[11px] font-medium',
+                          stock.change >= 0 ? 'text-profit' : 'text-loss',
+                        )}
+                      >
+                        {stock.price > 0
+                          ? `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%`
+                          : '--'}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Chart panel */}
+        <Card className="flex-1 bg-card border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-lg font-bold">{selectedTicker}</CardTitle>
+              {selectedStock && (
+                <>
+                  <span className="text-sm text-muted-foreground">{selectedStock.name}</span>
+                  <span className="text-lg font-semibold">
+                    {selectedStock.price > 0 ? `$${selectedStock.price.toFixed(2)}` : '--'}
                   </span>
-                )}
-              </>
-            )}
-            {chartLoading && (
-              <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="h-[calc(100vh-14rem)] p-0 px-4 pb-4">
-          {chartData.length > 0 ? (
-            <PriceChart data={chartData} className="rounded-md" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {loading ? 'Connecting to engine...' : 'No chart data available'}
+                  {selectedStock.price > 0 && (
+                    <span
+                      className={cn(
+                        'text-sm font-medium',
+                        selectedStock.change >= 0 ? 'text-profit' : 'text-loss',
+                      )}
+                    >
+                      {selectedStock.change >= 0 ? '+' : ''}
+                      {selectedStock.change.toFixed(2)}%
+                    </span>
+                  )}
+                </>
+              )}
+              {chartLoading && (
+                <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>
+              )}
+              {!isLive && !chartLoading && <SimulatedBadge />}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="h-[calc(100vh-14rem)] p-0 px-4 pb-4">
+            {chartData.length > 0 ? (
+              <PriceChart data={chartData} className="rounded-md" />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {loading ? 'Connecting to engine...' : 'No chart data available'}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -42,7 +42,12 @@ export function AgentStatusCard({
   const isAgentRunning = statusStr === 'running';
 
   return (
-    <Card className="bg-card/50 border-border/50 transition-colors hover:border-border">
+    <Card
+      className={cn(
+        'bg-card/50 border-border/50 transition-colors hover:border-border',
+        isOffline && 'opacity-50 pointer-events-none',
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2.5">

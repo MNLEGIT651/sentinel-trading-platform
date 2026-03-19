@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppStore } from '@/stores/app-store';
 import {
   BacktestForm,
   strategyOptions,
@@ -18,6 +19,7 @@ import { type EngineBacktestResponse, parsePct } from '@/components/backtest/eng
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000';
 
 export default function BacktestPage() {
+  const engineOnline = useAppStore((s) => s.engineOnline);
   const [strategy, setStrategy] = useState(strategyOptions[0]?.id ?? '');
   const [trend, setTrend] = useState<TrendOption>('up');
   const [bars, setBars] = useState(300);
@@ -101,6 +103,7 @@ export default function BacktestPage() {
             <h1 className="text-lg font-bold text-foreground">Backtest</h1>
             <p className="text-xs text-muted-foreground">
               Run strategy backtests on synthetic market data
+              {!engineOnline && ' (engine offline — using client-side simulation)'}
             </p>
           </div>
         </div>

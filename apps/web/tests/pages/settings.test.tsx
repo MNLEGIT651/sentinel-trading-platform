@@ -61,7 +61,6 @@ describe('SettingsPage', () => {
 
   it('shows tab navigation', () => {
     render(<SettingsPage />);
-    expect(screen.getByRole('tab', { name: /API Keys/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Risk/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Notifications/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Trading/i })).toBeInTheDocument();

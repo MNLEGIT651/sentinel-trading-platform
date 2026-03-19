@@ -4,7 +4,7 @@ FROM python:3.12-slim AS base
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u12 \
+  && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir "uv>=0.5"
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir "uv>=0.5"
 # ─── Dependencies layer ───────────────────────────────────────────────────────
 FROM base AS deps
 
-COPY pyproject.toml ./
+COPY apps/engine/pyproject.toml ./
 
 RUN uv venv .venv \
   && uv pip install --python .venv/bin/python --no-cache "."
@@ -23,8 +23,8 @@ FROM base AS runner
 WORKDIR /app
 
 COPY --from=deps /app/.venv ./.venv
-COPY src ./src
-COPY pyproject.toml ./
+COPY apps/engine/src ./src
+COPY apps/engine/pyproject.toml ./
 
 RUN addgroup --system --gid 1001 sentinel \
   && adduser --system --uid 1001 --ingroup sentinel sentinel

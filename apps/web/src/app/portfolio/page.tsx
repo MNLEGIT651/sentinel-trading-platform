@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PieChart, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import type { BrokerAccount, BrokerPosition, MarketQuote } from '@/lib/engine-client';
 import { SnapshotMetrics } from '@/components/portfolio/snapshot-metrics';
@@ -23,6 +25,7 @@ import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
 
 export default function PortfolioPage() {
+  const engineOnline = useAppStore((s) => s.engineOnline);
   const mountedRef = useRef(true);
   useEffect(() => {
     return () => {
@@ -236,6 +239,8 @@ export default function PortfolioPage() {
 
   return (
     <div className="space-y-4 p-4">
+      {!engineOnline && <OfflineBanner service="engine" />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -276,6 +281,7 @@ export default function PortfolioPage() {
         qty={orderQty}
         status={orderStatus}
         submitting={submitting}
+        disabled={!engineOnline}
         onSymbolChange={setOrderSymbol}
         onSideChange={setOrderSide}
         onQtyChange={setOrderQty}

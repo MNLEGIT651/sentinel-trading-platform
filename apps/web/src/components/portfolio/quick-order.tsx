@@ -10,6 +10,7 @@ interface QuickOrderProps {
   qty: string;
   status: string | null;
   submitting: boolean;
+  disabled?: boolean;
   onSymbolChange: (v: string) => void;
   onSideChange: (v: 'buy' | 'sell') => void;
   onQtyChange: (v: string) => void;
@@ -22,17 +23,24 @@ export function QuickOrder({
   qty,
   status,
   submitting,
+  disabled = false,
   onSymbolChange,
   onSideChange,
   onQtyChange,
   onSubmit,
 }: QuickOrderProps) {
+  const qtyNum = Number(qty);
+  const validQty = qty !== '' && Number.isFinite(qtyNum) && qtyNum > 0 && Number.isInteger(qtyNum);
+  const validSymbol = /^[A-Z]{1,5}$/.test(symbol);
+  const canSubmit = !submitting && !disabled && validSymbol && validQty;
+
   return (
-    <Card className="bg-card border-border">
+    <Card className={cn('bg-card border-border', disabled && 'opacity-50')}>
       <CardContent className="py-3 px-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Quick Order
+            {disabled && <span className="ml-1.5 text-amber-400">(Engine offline)</span>}
           </span>
           <div className="flex items-center gap-1.5 rounded-md bg-muted/50 p-0.5">
             <button
@@ -75,7 +83,7 @@ export function QuickOrder({
           />
           <button
             onClick={onSubmit}
-            disabled={submitting || !symbol || !qty}
+            disabled={!canSubmit}
             className="flex items-center gap-1.5 rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
           >
             <SendHorizonal className="h-3.5 w-3.5" />

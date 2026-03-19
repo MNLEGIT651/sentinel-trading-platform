@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { useAppStore } from '@/stores/app-store';
 import type { SignalResult } from '@/lib/engine-client';
 import { SignalFilters } from '@/components/signals/signal-filters';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
@@ -21,6 +23,7 @@ const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8000'
 const DEFAULT_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY,QQQ,JPM';
 
 export default function SignalsPage() {
+  const engineOnline = useAppStore((s) => s.engineOnline);
   const [signals, setSignals] = useState<SignalRow[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanTime, setLastScanTime] = useState<string | null>(null);
@@ -51,6 +54,7 @@ export default function SignalsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tickers, days, min_strength: minStrength }),
+        signal: AbortSignal.timeout(60_000),
       });
 
       if (!res.ok) {
@@ -106,6 +110,8 @@ export default function SignalsPage() {
 
   return (
     <div className="space-y-4 p-4">
+      {!engineOnline && <OfflineBanner service="engine" />}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -128,7 +134,7 @@ export default function SignalsPage() {
               <ChevronDown className="h-3 w-3 ml-1" />
             )}
           </Button>
-          <Button onClick={handleRunScan} disabled={isScanning} size="sm">
+          <Button onClick={handleRunScan} disabled={isScanning || !engineOnline} size="sm">
             {isScanning ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

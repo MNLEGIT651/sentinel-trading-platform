@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, Key, Shield, Bell, Palette, Save, Check } from 'lucide-react';
+import { Settings, Shield, Bell, Activity, Save, Check, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +9,6 @@ import {
   ConnectionStatusPanel,
   type ServiceStatuses,
 } from '@/components/settings/connection-status';
-import { BrokerSettings } from '@/components/settings/broker-settings';
 import { RiskSettings } from '@/components/settings/risk-settings';
 import { ScheduleSettings } from '@/components/settings/schedule-settings';
 import { ToggleField } from '@/components/settings/toggle-field';
@@ -27,14 +26,6 @@ export default function SettingsPage() {
     anthropic: 'checking',
     alpaca: 'checking',
   });
-
-  // API Keys
-  const [polygonKey, setPolygonKey] = useState('');
-  const [alpacaKey, setAlpacaKey] = useState('');
-  const [alpacaSecret, setAlpacaSecret] = useState('');
-  const [anthropicKey, setAnthropicKey] = useState('');
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [supabaseKey, setSupabaseKey] = useState('');
 
   // Risk settings
   const [maxPosition, setMaxPosition] = useState('5');
@@ -78,17 +69,10 @@ export default function SettingsPage() {
 
   // Load persisted settings from localStorage and fetch real service status
   useEffect(() => {
-    // Hydrate fields from localStorage
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const s = JSON.parse(raw) as Record<string, unknown>;
-        if (typeof s.polygonKey === 'string') setPolygonKey(s.polygonKey);
-        if (typeof s.alpacaKey === 'string') setAlpacaKey(s.alpacaKey);
-        if (typeof s.alpacaSecret === 'string') setAlpacaSecret(s.alpacaSecret);
-        if (typeof s.anthropicKey === 'string') setAnthropicKey(s.anthropicKey);
-        if (typeof s.supabaseUrl === 'string') setSupabaseUrl(s.supabaseUrl);
-        if (typeof s.supabaseKey === 'string') setSupabaseKey(s.supabaseKey);
         if (typeof s.maxPosition === 'string') setMaxPosition(s.maxPosition);
         if (typeof s.maxSector === 'string') setMaxSector(s.maxSector);
         if (typeof s.dailyLossLimit === 'string') setDailyLossLimit(s.dailyLossLimit);
@@ -114,14 +98,7 @@ export default function SettingsPage() {
   }, [checkConnections]);
 
   const handleSave = () => {
-    // Persist all settings to localStorage
     const settings = {
-      polygonKey,
-      alpacaKey,
-      alpacaSecret,
-      anthropicKey,
-      supabaseUrl,
-      supabaseKey,
       maxPosition,
       maxSector,
       dailyLossLimit,
@@ -152,7 +129,7 @@ export default function SettingsPage() {
           <div>
             <h1 className="text-lg font-bold text-foreground">Settings</h1>
             <p className="text-xs text-muted-foreground">
-              Configure API keys, risk parameters, and preferences
+              Service connections, risk parameters, and preferences
             </p>
           </div>
         </div>
@@ -177,12 +154,8 @@ export default function SettingsPage() {
         onCheckConnections={checkConnections}
       />
 
-      <Tabs defaultValue="api-keys" className="space-y-3">
+      <Tabs defaultValue="risk" className="space-y-3">
         <TabsList className="bg-muted/50">
-          <TabsTrigger value="api-keys">
-            <Key className="h-3.5 w-3.5 mr-1.5" />
-            API Keys
-          </TabsTrigger>
           <TabsTrigger value="risk">
             <Shield className="h-3.5 w-3.5 mr-1.5" />
             Risk
@@ -192,27 +165,10 @@ export default function SettingsPage() {
             Notifications
           </TabsTrigger>
           <TabsTrigger value="trading">
-            <Palette className="h-3.5 w-3.5 mr-1.5" />
+            <Activity className="h-3.5 w-3.5 mr-1.5" />
             Trading
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="api-keys">
-          <BrokerSettings
-            polygonKey={polygonKey}
-            onPolygonKey={setPolygonKey}
-            alpacaKey={alpacaKey}
-            onAlpacaKey={setAlpacaKey}
-            alpacaSecret={alpacaSecret}
-            onAlpacaSecret={setAlpacaSecret}
-            anthropicKey={anthropicKey}
-            onAnthropicKey={setAnthropicKey}
-            supabaseUrl={supabaseUrl}
-            onSupabaseUrl={setSupabaseUrl}
-            supabaseKey={supabaseKey}
-            onSupabaseKey={setSupabaseKey}
-          />
-        </TabsContent>
 
         <TabsContent value="risk">
           <RiskSettings
@@ -281,7 +237,7 @@ export default function SettingsPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-foreground">Environment</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="rounded-md border border-border/50 overflow-hidden">
                   <div className="bg-muted/30 px-3 py-1.5">
                     <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
@@ -291,8 +247,8 @@ export default function SettingsPage() {
                   <div className="divide-y divide-border/50">
                     {[
                       ['Platform', 'Sentinel Trading v0.1.0'],
-                      ['Engine', 'FastAPI (Python 3.14)'],
-                      ['Dashboard', 'Next.js 15 + React 19'],
+                      ['Engine', 'FastAPI (Python 3.12)'],
+                      ['Dashboard', 'Next.js 16 + React 19'],
                       ['Agents', 'Claude SDK (TypeScript)'],
                       ['Database', 'Supabase (PostgreSQL 15)'],
                       ['Broker', 'Alpaca Markets API'],
@@ -304,6 +260,14 @@ export default function SettingsPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+                <div className="flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-muted-foreground">
+                    API keys are configured via environment variables in{' '}
+                    <code className="font-mono text-foreground">.env</code>. Check the connection
+                    status panel above to verify which services are connected.
+                  </p>
                 </div>
               </CardContent>
             </Card>
