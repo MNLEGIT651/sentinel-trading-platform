@@ -1,56 +1,70 @@
-# Commands for Local Validation
+# AI Commands
 
-Use the smallest relevant command set for the files you change.
+These are the canonical validation commands for this repo.
 
-## Monorepo
+## Setup
 
-- `pnpm dev` — run all app dev servers through Turborepo.
-- `pnpm build` — build all configured workspaces.
-- `pnpm test` — run all workspace tests.
-- `pnpm lint` — run workspace lint tasks.
+1. Copy `.env.example` to `.env`.
+2. Fill in required Supabase, Polygon, Alpaca, engine, and agents values.
+3. Ensure the engine virtualenv exists at `apps/engine/.venv`.
 
-## Web (`apps/web`)
+## Canonical Root Commands
 
-- `pnpm --filter @sentinel/web dev --hostname 127.0.0.1 --port 3000`
-- `pnpm --filter @sentinel/web test`
-- `pnpm --filter @sentinel/web lint`
-- `pnpm --filter @sentinel/web build`
+```bash
+pnpm dev                # Start Node workspaces through Turborepo
+pnpm lint               # Lint/typecheck Node workspaces only
+pnpm test               # Test Node workspaces only
+pnpm build              # Build Node workspaces only
+pnpm test:web           # Web Vitest suite
+pnpm test:web:e2e       # Web Playwright suite
+pnpm test:agents        # Agents Vitest suite
+pnpm lint:engine        # Ruff lint for the Python engine
+pnpm format:check:engine  # Ruff format check for the Python engine
+pnpm test:engine        # Engine pytest suite
+```
 
-## Agents (`apps/agents`)
+Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`.
 
-- `pnpm --filter @sentinel/agents start`
-- `pnpm --filter @sentinel/agents test`
-- `pnpm --filter @sentinel/agents lint`
+## Area-Based Validation
 
-## Engine (`apps/engine`)
+### Docs Only
 
-- `python3 -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000`
-- `python3 -m pytest apps/engine/tests/unit`
-- `python3 -m pytest apps/engine/tests/integration`
-
-## Focused smoke checks
+- `git diff --check`
 
 ### Web
 
-- `curl -I http://127.0.0.1:3000/`
-- `curl http://127.0.0.1:3000/api/health`
-- `curl http://127.0.0.1:3000/api/settings/status`
-
-### Engine
-
-- `curl http://127.0.0.1:8000/health`
-- `curl http://127.0.0.1:8000/api/v1/strategies/`
-- `curl http://127.0.0.1:8000/api/v1/risk/limits`
+- `pnpm lint`
+- `pnpm test:web`
+- `pnpm --filter @sentinel/web build` when routing, data fetching, or config changed
 
 ### Agents
 
-- `curl http://127.0.0.1:3001/health`
-- `curl http://127.0.0.1:3001/status`
-- `curl -X POST http://127.0.0.1:3001/cycle`
+- `pnpm lint`
+- `pnpm test:agents`
 
-## Environment notes
+### Engine
 
-- Engine startup requires Supabase env vars.
-- Market-data features require `POLYGON_API_KEY`.
-- Agent runtime requires engine + Supabase + Anthropic-related env vars to be meaningful.
-- If a check is blocked by missing env or third-party connectivity, document that explicitly in the final report.
+- `pnpm lint:engine`
+- `pnpm format:check:engine`
+- `pnpm test:engine`
+
+### Shared Types Or Cross-App Contracts
+
+- `pnpm lint`
+- `pnpm test`
+- `pnpm test:engine` if the contract is used by the engine-facing flows
+- `pnpm --filter @sentinel/web build` when the web app is affected
+
+### CI Or Workflow Changes
+
+- `git diff --check`
+- Run the closest local command to the workflow steps you changed
+- State clearly what you could not verify locally
+
+## Handoff Format
+
+When reporting validation, always include:
+
+- exact command
+- pass/fail
+- if skipped, why it was skipped

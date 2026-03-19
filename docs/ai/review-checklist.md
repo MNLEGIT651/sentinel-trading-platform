@@ -1,39 +1,30 @@
-# Review Checklist
+# AI Review Checklist
 
-Use this checklist before opening or merging PRs created by Claude Code, Codex, or humans.
+Use this before opening a PR or handing work back to another agent.
 
-## Scope
+## Scope Discipline
 
-- Is the change focused on a single task?
-- Are unrelated edits avoided?
-- Does the title/body explain the user-visible outcome?
+- The diff matches the requested outcome.
+- Files outside the stated scope were not changed without explanation.
+- Shared config, migrations, or contracts were not changed accidentally.
 
-## Cross-app integrity
+## Repo-Specific Correctness
 
-- If an engine route changed, were web and agent callers reviewed?
-- If shared types changed, were runtime contracts verified?
-- If a migration changed, were affected callers and assumptions reviewed?
+- Web client calls to the engine still use `engineUrl()` and `engineHeaders()`.
+- Engine auth expectations around `ApiKeyMiddleware` were preserved unless the task explicitly changed them.
+- Offline states still surface through `OfflineBanner` when needed.
+- Simulated or fallback data still uses `SimulatedBadge`.
+- Settings flows did not introduce API key entry in the UI.
 
-## Safety and security
+## Validation
 
-- Were secrets kept out of source control?
-- Were client-side secret flows avoided?
-- Were approval, execution, and risk-sensitive paths treated carefully?
+- The commands from `docs/ai/commands.md` were run for every changed area.
+- The PR or handoff message lists exact commands and results.
+- CI changes are mirrored by a local validation attempt when practical.
 
-## Tests and checks
+## Review Readiness
 
-- Were the smallest relevant tests run?
-- If checks were skipped, is the reason documented?
-- For UI-affecting changes, was a runtime smoke test performed?
-
-## Maintainability
-
-- Does the code follow existing patterns?
-- Are new abstractions justified?
-- Were docs updated when workflow or architecture changed?
-
-## Merge readiness
-
-- CI passes or blockers are understood.
-- Review comments are addressed.
-- The PR is small enough for a human reviewer to reason about safely.
+- Risky assumptions are called out.
+- New or changed behavior is covered by tests when appropriate.
+- Docs were updated if commands, contracts, or workflow rules changed.
+- No secrets, tokens, or local machine paths leaked into the diff.

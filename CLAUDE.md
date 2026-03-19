@@ -1,8 +1,14 @@
 # Sentinel Trading Platform — Claude Code
 
-> **Read and follow `AGENTS.md` first.** It contains the universal project instructions
-> (architecture, commands, conventions, coding standards) shared with all AI agents.
-> This file adds Claude Code-specific configuration only.
+> Read `AGENTS.md` first, then `docs/ai/working-agreement.md`. This file adds Claude Code-specific
+> context for the Sentinel repo and should stay thin.
+
+## Claude Role
+
+- Prefer Claude for repo understanding, root-cause analysis, architecture discussion, and final review.
+- For implementation, keep scope narrow and follow the branch/worktree rules in `docs/ai/working-agreement.md`.
+- If a task touches shared contracts, migrations, auth, or deployment config, stop and restate the risk
+  before editing.
 
 ## Claude-Specific Context
 
@@ -11,19 +17,26 @@
 - Settings page has no API key form — keys are configured via `.env` only
 - The `EngineClient` class in `lib/engine-client.ts` is the server-side SDK (used by agents app); pages use `engine-fetch.ts`
 
+## Claude Repo Assets
+
+- Reusable project skills live in `.claude/skills/`. Check for an existing Sentinel skill before inventing a new workflow.
+- Permissions live in `.claude/settings.json`. Keep permissions narrow and project-specific.
+
 ## Commands (Quick Reference)
 
-See `AGENTS.md` for full list. Most common:
+See `docs/ai/commands.md` for the full matrix. Most common:
 
 ```bash
-pnpm test                   # Web tests (94 tests)
-cd apps/engine && .venv/Scripts/python -m pytest   # Engine tests (242 tests)
+pnpm lint
+pnpm test
+pnpm test:engine
 ```
 
 ## Tech Stack
 
-See `AGENTS.md` for full table. Key detail: Python version is 3.12+ (not 3.14).
+See `docs/ai/architecture.md` for the repo map. Key detail: Python version is 3.12+.
 
 ## Environment
 
-See `AGENTS.md`. Copy `.env.example` to `.env` and fill in credentials.
+See `docs/ai/commands.md`. Copy `.env.example` to `.env` and fill in credentials before
+running live flows.

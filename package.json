@@ -6,7 +6,13 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
+    "test:web": "pnpm --filter @sentinel/web test",
+    "test:web:e2e": "pnpm --filter @sentinel/web test:e2e",
+    "test:agents": "pnpm --filter @sentinel/agents test",
+    "test:engine": "node scripts/engine-python.mjs -m pytest tests --tb=short",
     "lint": "turbo lint",
+    "lint:engine": "node scripts/engine-python.mjs -m ruff check src tests",
+    "format:check:engine": "node scripts/engine-python.mjs -m ruff format --check src tests",
     "clean": "turbo clean",
     "prepare": "husky"
   },
@@ -28,9 +34,9 @@
     "*.{json,css,md,yaml,yml}": [
       "prettier --write"
     ],
-    "*.py": [
-      "apps/engine/.venv/Scripts/ruff check --fix --exit-zero",
-      "apps/engine/.venv/Scripts/ruff format"
+    "apps/engine/**/*.py": [
+      "node scripts/engine-python.mjs -m ruff check --fix --exit-zero",
+      "node scripts/engine-python.mjs -m ruff format"
     ]
   },
   "pnpm": {

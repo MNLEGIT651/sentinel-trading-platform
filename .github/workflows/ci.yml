@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Run monorepo lint
+        run: pnpm lint
+
       - name: Run web tests
         run: pnpm --filter web test
 
@@ -86,6 +89,14 @@ jobs:
         run: |
           uv venv .venv
           uv pip install --python .venv/bin/python -e ".[dev]"
+
+      - name: Run Ruff lint
+        working-directory: apps/engine
+        run: .venv/bin/python -m ruff check src tests
+
+      - name: Run Ruff format check
+        working-directory: apps/engine
+        run: .venv/bin/python -m ruff format --check src tests
 
       - name: Run engine tests
         working-directory: apps/engine

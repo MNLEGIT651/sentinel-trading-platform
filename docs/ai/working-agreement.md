@@ -1,86 +1,90 @@
 # AI Working Agreement
 
-This document is the shared operating contract for humans, Claude Code, Codex, and any other coding agents in this repository.
+This repo supports both Claude Code and Codex. The goal is not to make them behave identically;
+the goal is to make them converge on the same repo rules, task boundaries, and validation bar.
 
-## Goals
+## Ownership
 
-- Maintain cross-service correctness.
-- Keep changes easy to review.
-- Avoid hidden coupling between web, engine, agents, and database layers.
-- Protect trading, data, and secret-handling flows.
+- Human owner: product intent, security-sensitive approval, schema approval, release judgment.
+- Claude Code: investigation, architecture, debugging, decomposition, review.
+- Codex: isolated implementation, test additions, repetitive edits, branch-based execution.
 
-## Roles
+## Mandatory Task Contract
 
-### Claude Code
+Every AI task should include these fields, whether it starts in chat, an issue, or a PR:
 
-Use primarily for:
+1. Outcome: the user-visible or system-visible result.
+2. Scope: files or modules that may change.
+3. Validation: commands that must run before handoff.
+4. Forbidden changes: paths or behaviors that must stay untouched.
 
-- architecture analysis,
-- debugging and root-cause investigation,
-- refactor planning,
-- writing or refining team conventions,
-- sensitive edits that require careful reasoning.
+If any of those fields are missing, the agent should infer the smallest safe scope and state it.
 
-### Codex
+## Branch And Worktree Rules
 
-Use primarily for:
+- One task, one branch.
+- Use a separate worktree for parallel work when more than one agent is active.
+- Never let two agents edit the same file at the same time.
+- Rebase or merge only after the owning agent finishes and the branch passes validation.
 
-- isolated feature work,
-- bugfix implementation,
-- test creation,
-- repetitive or mechanical refactors,
-- branch-based PR generation.
+Recommended branch names:
 
-## Default collaboration loop
+- `feat/<area>-<outcome>`
+- `fix/<area>-<bug>`
+- `chore/<area>-<maintenance>`
+- `docs/<area>-<topic>`
 
-1. Claude or human defines the task and affected surfaces.
-2. One agent implements on an isolated branch.
-3. Relevant checks are run.
-4. A second reviewer (human or another agent) reviews for contract drift, security, and test coverage.
-5. Merge only after CI and review checklist pass.
+## Stop-And-Ask Changes
 
-## Branching rules
+These changes require explicit human approval or a very clear task scope before editing:
 
-- One issue or task per branch.
-- Do not let two agents write to the same branch concurrently.
-- Avoid long-lived AI branches.
-- Rebase or merge main frequently for contract-heavy work.
+- `supabase/migrations/*`
+- `package.json`
+- `pnpm-lock.yaml`
+- `.env.example`
+- `.github/workflows/*`
+- `vercel.json`
+- shared contracts in `packages/shared/src/*`
+- engine auth or config in `apps/engine/src/api/main.py` and `apps/engine/src/config.py`
 
-## Task prompt template
+## Repo-Specific Guardrails
 
-When delegating work to an agent, include:
+- Web client calls to the engine must use `apps/web/src/lib/engine-fetch.ts`.
+- Server-side engine access in the agents app goes through `apps/agents/src/engine-client.ts`.
+- Do not add API key entry forms to the settings page.
+- Keep offline states visible with `OfflineBanner`.
+- Keep simulated or fallback market data labeled with `SimulatedBadge`.
 
-- objective,
-- files or modules in scope,
-- files explicitly out of scope,
-- required checks,
-- expected behavior change (or “no behavior change”),
-- any security or data-integrity concerns.
+## Collaboration Loops
 
-## Contract-sensitive areas
+Use the lightest loop that fits the task.
 
-Changes in these areas require extra care:
+### Small Fix
 
-- Engine API routes and response shapes,
-- web engine client and app API routes,
-- agent recommendations and approvals,
-- shared package types,
-- Supabase migrations,
-- broker and market-data integrations.
+1. One agent implements on a fresh branch.
+2. Run the targeted validation from `docs/ai/commands.md`.
+3. Open a PR with the required scope and validation details.
 
-## Forbidden shortcuts
+### Bug Or Ambiguous Failure
 
-- Do not fake API compatibility by changing only types.
-- Do not suppress tests instead of fixing breakage.
-- Do not commit generated secrets or `.env` contents.
-- Do not change migrations retroactively once applied; add a new migration instead.
-- Do not make opportunistic refactors during production-facing fixes unless explicitly requested.
+1. Claude reproduces or narrows the root cause.
+2. Codex or Claude implements the fix on an isolated branch.
+3. Claude or the human reviewer checks for contract drift and missing tests.
 
-## Definition of done
+### Large Refactor
 
-A task is done when:
+1. Claude writes the decomposition and identifies shared-risk boundaries first.
+2. Codex handles bounded subtasks on separate branches or worktrees.
+3. Final review checks architecture consistency before merge.
 
-- code and docs are updated as needed,
-- relevant checks were run or blockers were documented,
-- interfaces remain aligned across apps,
-- the change is reviewable in a focused PR.
+## Handoff Standard
+
+Every handoff or PR must include:
+
+- what changed
+- what stayed intentionally unchanged
+- exact commands run
+- pass/fail status
+- unresolved risks or assumptions
+
+Use `docs/ai/task-template.md` when you need a copy-paste prompt skeleton.

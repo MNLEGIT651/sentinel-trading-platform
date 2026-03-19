@@ -1,70 +1,64 @@
-# Architecture Notes for AI Collaborators
+# AI Architecture Guide
 
-## System overview
+Use this file before changing code that crosses app boundaries.
 
-Sentinel is a monorepo trading platform with three primary runtime apps and one shared package:
+## System Map
 
-- `apps/web` — dashboard UI and lightweight status APIs.
-- `apps/engine` — quant engine, market data, strategies, risk, and order execution.
-- `apps/agents` — orchestration layer for AI-assisted recommendations and execution approvals.
-- `packages/shared` — shared TypeScript contracts used by web and agents.
-- `supabase/` — persistent data model and realtime tables.
+```text
+apps/web     -> browser dashboard and Next.js routes
+apps/engine  -> FastAPI quant engine and market/broker integrations
+apps/agents  -> TypeScript agent orchestration service
+packages/shared -> shared TypeScript contracts for web and agents
+supabase     -> schema, RLS, realtime, seed data
+```
 
-## Main cross-app dependencies
+## Dependency Boundaries
 
-### Web -> Engine
+- `apps/web` talks to `apps/engine` over HTTP.
+- `apps/agents` talks to `apps/engine` through its server-side `EngineClient`.
+- `apps/web` and `apps/agents` share TypeScript contracts from `packages/shared`.
+- Supabase is the persistence boundary and must stay aligned with both app behavior and any migrations.
 
-The web app depends on engine endpoints for:
+## High-Risk Contracts
 
-- market quotes and bars,
-- strategy metadata,
-- signal scans,
-- risk limits,
-- portfolio account and order flows.
+### Web <-> Engine
 
-If engine response shapes change, web clients and tests must be updated together.
+- Client-side engine calls must use `apps/web/src/lib/engine-fetch.ts`.
+- Engine auth is enforced by `ApiKeyMiddleware` in `apps/engine/src/api/main.py`.
+- Route handlers belong in `apps/engine/src/api/routes/`; business logic belongs in `apps/engine/src/`.
 
-### Agents -> Engine
+### Web UX Integrity
 
-The agents service depends on the engine for:
+- Service status is driven by `apps/web/src/hooks/use-service-health.ts`.
+- Global status state lives in `apps/web/src/stores/app-store.ts`.
+- Outage states should keep `apps/web/src/components/ui/offline-banner.tsx` behavior intact.
+- Simulated or fallback data should continue to use `apps/web/src/components/ui/simulated-badge.tsx`.
 
-- market data,
-- strategy scanning,
-- risk checks,
-- order submission,
-- account/position state.
+### Shared Contracts
 
-Engine failures can cascade into orchestrator failures.
+- Shared types live in `packages/shared/src/`.
+- Any change there can break both `apps/web` and `apps/agents`, so validate both sides.
 
-### Agents/Web -> Supabase
+### Persistence
 
-Supabase backs:
+- Migrations live in `supabase/migrations/`.
+- Schema changes should be reviewed with the affected application flow in mind, not treated as isolated SQL edits.
 
-- recommendation storage,
-- alert storage,
-- historical market data,
-- portfolio and domain data.
+## Change Heuristics
 
-Migration changes must be additive and coordinated.
+- If a change only touches `apps/web`, validate web lint/tests and usually a build.
+- If a change touches `apps/engine`, validate Ruff plus pytest.
+- If a change touches `packages/shared`, validate web and agents together.
+- If a change touches `.github/workflows/ci.yml`, `package.json`, or `pnpm-lock.yaml`, assume it affects every collaborator.
 
-## Architectural rules
+## Sensitive Files
 
-- Shared types are useful, but they are not a substitute for verifying runtime API contracts.
-- Prefer explicit translation layers when web or agents need UI-specific or workflow-specific shapes.
-- Keep engine route behavior explicit and stable.
-- Treat order execution and approval flows as integrity-critical.
-
-## Common failure modes
-
-- response-shape drift between engine and web,
-- agent assumptions about engine availability,
-- missing env vars causing startup/runtime failures,
-- secret persistence in client-side code,
-- database changes not reflected in callers/tests.
-
-## Safe change patterns
-
-- Change one boundary at a time.
-- Update tests in the same commit as interface changes.
-- Add docs when conventions or workflows change.
-- Prefer adapters over sweeping rewrites when integrating services.
+- `apps/web/src/lib/engine-fetch.ts`
+- `apps/web/src/lib/engine-client.ts`
+- `apps/web/src/hooks/use-service-health.ts`
+- `apps/web/src/components/layout/app-shell.tsx`
+- `apps/agents/src/engine-client.ts`
+- `apps/engine/src/api/main.py`
+- `apps/engine/src/config.py`
+- `packages/shared/src/index.ts`
+- `supabase/migrations/*`
