@@ -1,17 +1,15 @@
 """Tests for the data ingestion service."""
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
-from src.data.ingestion import DataIngestionService, IngestionResult
+from src.data.ingestion import DataIngestionService
 from src.data.polygon_client import PolygonBar
 
 
 def _make_bar(close: float = 150.0) -> PolygonBar:
     return PolygonBar(
-        timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        timestamp=datetime(2024, 1, 1, tzinfo=UTC),
         open=149.0,
         high=151.0,
         low=148.0,

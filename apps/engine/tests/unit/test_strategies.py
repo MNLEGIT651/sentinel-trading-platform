@@ -85,7 +85,7 @@ def make_crossover_data(direction: str = "golden") -> OHLCVData:
             ]
         ).astype(np.float64)
 
-    rng = np.random.default_rng(99)
+    np.random.default_rng(99)
     high = (close + 1).astype(np.float64)
     low = (close - 1).astype(np.float64)
     open_ = close.copy()

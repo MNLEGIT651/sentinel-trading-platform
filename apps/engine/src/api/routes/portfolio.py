@@ -1,7 +1,7 @@
 """Portfolio & trading API routes — account, positions, orders."""
 
 import logging
-from enum import Enum
+from enum import StrEnum
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -17,12 +17,12 @@ router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 # ── Request models ───────────────────────────────────────
 
 
-class OrderSide(str, Enum):
+class OrderSide(StrEnum):
     buy = "buy"
     sell = "sell"
 
 
-class OrderType(str, Enum):
+class OrderType(StrEnum):
     market = "market"
     limit = "limit"
     stop = "stop"
@@ -78,8 +78,8 @@ async def submit_order(body: SubmitOrderBody) -> dict:
             # Alpaca will provide the fill price; use a rough estimate for risk check
             pass
         else:
-            from src.data.polygon_client import PolygonClient
             from src.config import Settings
+            from src.data.polygon_client import PolygonClient
 
             settings = Settings()
             polygon = PolygonClient(settings.polygon_api_key)

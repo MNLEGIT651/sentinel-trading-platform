@@ -8,12 +8,12 @@ Implements the Layer B concept: risk parity and drawdown controls.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 import numpy as np
 
 
-class SizingMethod(str, Enum):
+class SizingMethod(StrEnum):
     """Position sizing method."""
 
     FIXED_FRACTION = "fixed_fraction"

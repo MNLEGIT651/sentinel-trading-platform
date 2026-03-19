@@ -68,7 +68,11 @@ class BollingerReversion(Strategy):
                     direction=SignalDirection.LONG,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Price below lower BB (${price:.2f} < ${lower[i]:.2f}), RSI={current_rsi:.1f}",
+                    reason=(
+                        f"Price below lower BB "
+                        f"(${price:.2f} < ${lower[i]:.2f}), "
+                        f"RSI={current_rsi:.1f}"
+                    ),
                     metadata={
                         "price": price,
                         "lower_band": lower[i],
@@ -89,7 +93,11 @@ class BollingerReversion(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Price above upper BB (${price:.2f} > ${upper[i]:.2f}), RSI={current_rsi:.1f}",
+                    reason=(
+                        f"Price above upper BB "
+                        f"(${price:.2f} > ${upper[i]:.2f}), "
+                        f"RSI={current_rsi:.1f}"
+                    ),
                     metadata={
                         "price": price,
                         "lower_band": lower[i],
@@ -218,7 +226,11 @@ class RSIMeanReversion(Strategy):
                     direction=SignalDirection.LONG,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Double RSI extreme oversold (fast={fast_rsi[i]:.1f}, slow={slow_rsi[i]:.1f})",
+                    reason=(
+                        f"Double RSI extreme oversold "
+                        f"(fast={fast_rsi[i]:.1f}, "
+                        f"slow={slow_rsi[i]:.1f})"
+                    ),
                     metadata={"fast_rsi": fast_rsi[i], "slow_rsi": slow_rsi[i]},
                 )
             )
@@ -236,7 +248,11 @@ class RSIMeanReversion(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Double RSI extreme overbought (fast={fast_rsi[i]:.1f}, slow={slow_rsi[i]:.1f})",
+                    reason=(
+                        f"Double RSI extreme overbought "
+                        f"(fast={fast_rsi[i]:.1f}, "
+                        f"slow={slow_rsi[i]:.1f})"
+                    ),
                     metadata={"fast_rsi": fast_rsi[i], "slow_rsi": slow_rsi[i]},
                 )
             )

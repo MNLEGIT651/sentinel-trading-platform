@@ -66,7 +66,12 @@ class SMACrossover(Strategy):
                     direction=SignalDirection.LONG,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"SMA golden cross (fast={self.params['fast_period']}, slow={self.params['slow_period']}), ADX={curr_adx:.1f}",
+                    reason=(
+                        f"SMA golden cross "
+                        f"(fast={self.params['fast_period']}, "
+                        f"slow={self.params['slow_period']}), "
+                        f"ADX={curr_adx:.1f}"
+                    ),
                     metadata={"fast_sma": fast[i], "slow_sma": slow[i], "adx": curr_adx},
                 )
             )
@@ -79,7 +84,12 @@ class SMACrossover(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"SMA death cross (fast={self.params['fast_period']}, slow={self.params['slow_period']}), ADX={curr_adx:.1f}",
+                    reason=(
+                        f"SMA death cross "
+                        f"(fast={self.params['fast_period']}, "
+                        f"slow={self.params['slow_period']}), "
+                        f"ADX={curr_adx:.1f}"
+                    ),
                     metadata={"fast_sma": fast[i], "slow_sma": slow[i], "adx": curr_adx},
                 )
             )

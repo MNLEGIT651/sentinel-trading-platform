@@ -1,7 +1,8 @@
 """Tests for the Alpaca broker adapter."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.execution.alpaca_broker import AlpacaBroker
 from src.execution.broker_interface import OrderRequest

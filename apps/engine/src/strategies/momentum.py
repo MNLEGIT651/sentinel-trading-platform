@@ -145,7 +145,11 @@ class RateOfChangeMomentum(Strategy):
                     direction=SignalDirection.LONG,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Strong upward momentum: ROC={current_roc:.2f}%, vol={volume_ratio:.1f}×avg",
+                    reason=(
+                        f"Strong upward momentum: "
+                        f"ROC={current_roc:.2f}%, "
+                        f"vol={volume_ratio:.1f}×avg"
+                    ),
                     metadata={"roc": current_roc, "volume_ratio": volume_ratio},
                 )
             )
@@ -157,7 +161,11 @@ class RateOfChangeMomentum(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Strong downward momentum: ROC={current_roc:.2f}%, vol={volume_ratio:.1f}×avg",
+                    reason=(
+                        f"Strong downward momentum: "
+                        f"ROC={current_roc:.2f}%, "
+                        f"vol={volume_ratio:.1f}×avg"
+                    ),
                     metadata={"roc": current_roc, "volume_ratio": volume_ratio},
                 )
             )

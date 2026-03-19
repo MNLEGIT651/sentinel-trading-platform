@@ -115,7 +115,10 @@ class CompositeStrategy(Strategy):
                     direction=SignalDirection.LONG,
                     strength=min(long_strength, 1.0),
                     strategy_name=self.name,
-                    reason=f"Composite LONG consensus: {len(long_sigs)} strategies agree ({', '.join(contributing)})",
+                    reason=(
+                        f"Composite LONG consensus: {len(long_sigs)} "
+                        f"strategies agree ({', '.join(contributing)})"
+                    ),
                     metadata={
                         "contributing_strategies": contributing,
                         "long_strength": long_strength,
@@ -138,7 +141,10 @@ class CompositeStrategy(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=min(short_strength, 1.0),
                     strategy_name=self.name,
-                    reason=f"Composite SHORT consensus: {len(short_sigs)} strategies agree ({', '.join(contributing)})",
+                    reason=(
+                        f"Composite SHORT consensus: {len(short_sigs)} "
+                        f"strategies agree ({', '.join(contributing)})"
+                    ),
                     metadata={
                         "contributing_strategies": contributing,
                         "long_strength": long_strength,

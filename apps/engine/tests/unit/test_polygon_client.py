@@ -1,10 +1,10 @@
 """Tests for the Polygon.io API client."""
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 
-from src.data.polygon_client import PolygonClient, TIMEFRAME_MAP
+from src.data.polygon_client import TIMEFRAME_MAP, PolygonClient
 
 
 class TestPolygonClientInit:
@@ -73,7 +73,7 @@ class TestParseBars:
         bars = client._parse_bars(data)
         assert len(bars) == 2
 
-        assert bars[0].timestamp == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert bars[0].timestamp == datetime(2024, 1, 1, tzinfo=UTC)
         assert bars[0].open == 150.0
         assert bars[0].high == 155.0
         assert bars[0].low == 149.0

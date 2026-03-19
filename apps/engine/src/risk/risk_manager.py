@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from src.risk.position_sizer import RiskLimits
@@ -20,7 +20,7 @@ from src.risk.position_sizer import RiskLimits
 logger = logging.getLogger(__name__)
 
 
-class RiskAction(str, Enum):
+class RiskAction(StrEnum):
     """Action taken by risk manager."""
 
     ALLOW = "allow"
@@ -30,7 +30,7 @@ class RiskAction(str, Enum):
     HALT = "halt"
 
 
-class AlertSeverity(str, Enum):
+class AlertSeverity(StrEnum):
     """Risk alert severity level."""
 
     INFO = "info"
@@ -109,7 +109,11 @@ class RiskManager:
             alert = RiskAlert(
                 severity=AlertSeverity.CRITICAL,
                 rule="drawdown_hard_limit",
-                message=f"CIRCUIT BREAKER: Drawdown {drawdown:.1%} exceeds hard limit {self.limits.max_drawdown_hard:.0%}. All trading halted.",
+                message=(
+                    f"CIRCUIT BREAKER: Drawdown {drawdown:.1%} exceeds "
+                    f"hard limit {self.limits.max_drawdown_hard:.0%}. "
+                    f"All trading halted."
+                ),
                 action=RiskAction.HALT,
                 metadata={"drawdown": drawdown, "peak": state.peak_equity, "current": state.equity},
             )
@@ -121,7 +125,11 @@ class RiskManager:
             alert = RiskAlert(
                 severity=AlertSeverity.WARNING,
                 rule="drawdown_soft_limit",
-                message=f"Drawdown warning: {drawdown:.1%} exceeds soft limit {self.limits.max_drawdown_soft:.0%}. Reducing position sizes.",
+                message=(
+                    f"Drawdown warning: {drawdown:.1%} exceeds "
+                    f"soft limit {self.limits.max_drawdown_soft:.0%}. "
+                    f"Reducing position sizes."
+                ),
                 action=RiskAction.REDUCE,
                 metadata={"drawdown": drawdown, "peak": state.peak_equity, "current": state.equity},
             )
@@ -208,7 +216,11 @@ class RiskManager:
                 return PreTradeCheck(
                     allowed=False,
                     action=RiskAction.REJECT,
-                    reason=f"Position {ticker} would exceed {self.limits.max_position_pct:.0%} limit ({position_pct:.1%})",
+                    reason=(
+                        f"Position {ticker} would exceed "
+                        f"{self.limits.max_position_pct:.0%} limit "
+                        f"({position_pct:.1%})"
+                    ),
                 )
             return PreTradeCheck(
                 allowed=True,
@@ -227,7 +239,11 @@ class RiskManager:
             return PreTradeCheck(
                 allowed=False,
                 action=RiskAction.REJECT,
-                reason=f"Sector '{sector}' would exceed {self.limits.max_sector_pct:.0%} limit ({sector_pct:.1%})",
+                reason=(
+                    f"Sector '{sector}' would exceed "
+                    f"{self.limits.max_sector_pct:.0%} limit "
+                    f"({sector_pct:.1%})"
+                ),
             )
 
         # 3. Max open positions
@@ -316,7 +332,11 @@ class RiskManager:
                     RiskAlert(
                         severity=AlertSeverity.WARNING,
                         rule="position_concentration",
-                        message=f"{ticker} exceeds position limit: {pct:.1%} > {self.limits.max_position_pct:.0%}",
+                        message=(
+                            f"{ticker} exceeds position limit: "
+                            f"{pct:.1%} > "
+                            f"{self.limits.max_position_pct:.0%}"
+                        ),
                         action=RiskAction.REDUCE,
                         metadata={"ticker": ticker, "concentration": pct},
                     )

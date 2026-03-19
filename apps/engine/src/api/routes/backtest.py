@@ -110,7 +110,10 @@ async def run_backtest(req: BacktestRequest) -> BacktestResponse:
     if req.strategy_name not in STRATEGY_CLASSES:
         raise HTTPException(
             status_code=404,
-            detail=f"Unknown strategy: {req.strategy_name}. Available: {sorted(STRATEGY_CLASSES.keys())}",
+            detail=(
+                f"Unknown strategy: {req.strategy_name}. "
+                f"Available: {sorted(STRATEGY_CLASSES.keys())}"
+            ),
         )
 
     strategy = create_strategy(req.strategy_name)

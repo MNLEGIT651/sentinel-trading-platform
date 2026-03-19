@@ -59,7 +59,11 @@ class PriceToMAValue(Strategy):
                     direction=SignalDirection.LONG,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Price {deviation:.1%} below {self.params['ma_period']}-day MA (${ma[i]:.2f})",
+                    reason=(
+                        f"Price {deviation:.1%} below "
+                        f"{self.params['ma_period']}-day MA "
+                        f"(${ma[i]:.2f})"
+                    ),
                     metadata={"deviation": deviation, "ma": ma[i], "price": data.close[i]},
                 )
             )
@@ -73,7 +77,11 @@ class PriceToMAValue(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=strength,
                     strategy_name=self.name,
-                    reason=f"Price {deviation:.1%} above {self.params['ma_period']}-day MA (${ma[i]:.2f})",
+                    reason=(
+                        f"Price {deviation:.1%} above "
+                        f"{self.params['ma_period']}-day MA "
+                        f"(${ma[i]:.2f})"
+                    ),
                     metadata={"deviation": deviation, "ma": ma[i], "price": data.close[i]},
                 )
             )
@@ -150,7 +158,10 @@ class RelativeValue(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=max(strength, 0.2),
                     strategy_name=self.name,
-                    reason=f"Relative value short: short-term spike in downtrend (div={divergence:.3f})",
+                    reason=(
+                        f"Relative value short: short-term spike "
+                        f"in downtrend (div={divergence:.3f})"
+                    ),
                     metadata={
                         "short_dev": short_dev,
                         "long_dev": long_dev,
