@@ -15,11 +15,13 @@ import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
 import type { SignalResult } from '@/lib/engine-client';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
-import { SignalFilters } from '@/components/signals/signal-filters';
+import {
+  DEFAULT_SIGNAL_TICKERS,
+  MAX_LIVE_SCAN_TICKERS,
+  SignalFilters,
+} from '@/components/signals/signal-filters';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
 import type { SignalRow } from '@/components/signals/signal-card';
-
-const DEFAULT_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY,QQQ,JPM';
 
 export default function SignalsPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
@@ -32,22 +34,31 @@ export default function SignalsPage() {
     errors: string[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('strength');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [showConfig, setShowConfig] = useState(false);
-  const [tickerInput, setTickerInput] = useState(DEFAULT_TICKERS);
+  const [tickerInput, setTickerInput] = useState(DEFAULT_SIGNAL_TICKERS);
   const [minStrength, setMinStrength] = useState(0.2);
   const [days, setDays] = useState(90);
 
   const handleRunScan = async () => {
     setIsScanning(true);
     setError(null);
+    setWarning(null);
     try {
-      const tickers = tickerInput
+      const requestedTickers = tickerInput
         .split(',')
         .map((t) => t.trim().toUpperCase())
         .filter(Boolean)
         .slice(0, 20);
+      const tickers = requestedTickers.slice(0, MAX_LIVE_SCAN_TICKERS);
+
+      if (requestedTickers.length > MAX_LIVE_SCAN_TICKERS) {
+        setWarning(
+          `Only the first ${MAX_LIVE_SCAN_TICKERS} tickers were scanned. Large live scans exceed the current Polygon rate limit.`,
+        );
+      }
 
       const res = await fetch(engineUrl('/api/v1/strategies/scan'), {
         method: 'POST',
@@ -74,7 +85,12 @@ export default function SignalsPage() {
       });
       setLastScanTime(new Date().toLocaleTimeString());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Scan failed');
+      const message = err instanceof Error ? err.message : 'Scan failed';
+      setError(
+        message.includes('timed out')
+          ? `Signal scan exceeded the live data time budget. Limit scans to ${MAX_LIVE_SCAN_TICKERS} tickers or wait for cached data to refresh.`
+          : message,
+      );
       setSignals([]);
       setScanMeta(null);
     } finally {
@@ -164,6 +180,15 @@ export default function SignalsPage() {
           <CardContent className="flex items-center gap-2 py-3 px-4">
             <AlertTriangle className="h-4 w-4 text-loss flex-shrink-0" />
             <span className="text-sm text-loss">{error}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {warning && !error && (
+        <Card className="bg-amber-500/10 border-amber-500/30">
+          <CardContent className="flex items-center gap-2 py-3 px-4">
+            <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+            <span className="text-sm text-amber-300">{warning}</span>
           </CardContent>
         </Card>
       )}

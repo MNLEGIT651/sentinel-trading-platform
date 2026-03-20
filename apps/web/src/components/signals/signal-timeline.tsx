@@ -22,7 +22,8 @@ export function SignalTimeline({ signals, onToggleSort }: SignalTimelineProps) {
             No signals yet. Configure tickers above and run a scan.
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1 text-center max-w-xs">
-            Free-tier Polygon processes ~1 ticker per 12s — scans over 5 tickers may take a minute.
+            Live scans are optimized for up to 5 tickers. Larger universes should be ingested to
+            cache first.
           </p>
         </CardContent>
       </Card>

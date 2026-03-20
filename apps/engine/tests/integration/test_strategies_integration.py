@@ -1,10 +1,12 @@
 """Integration tests for the strategies routes.
 
 GET /api/v1/strategies/ requires no external services and should always succeed.
-POST /api/v1/strategies/scan requires POLYGON_API_KEY and returns 503 without it.
+POST /api/v1/strategies/scan returns 503 when neither cached data nor Polygon is available.
 """
 
 from unittest.mock import AsyncMock, patch
+
+from fastapi import HTTPException
 
 
 async def test_list_strategies_returns_200(client):
@@ -47,12 +49,19 @@ async def test_get_unknown_family_returns_404(client):
 
 
 async def test_scan_returns_503_without_polygon_key(client, monkeypatch):
-    """POST /api/v1/strategies/scan returns 503 when POLYGON_API_KEY is not set."""
+    """POST /api/v1/strategies/scan returns 503 when no live or cached history exists."""
     monkeypatch.setenv("POLYGON_API_KEY", "")
-    response = await client.post(
-        "/api/v1/strategies/scan",
-        json={"tickers": ["AAPL"]},
-    )
+    with (
+        patch("src.api.routes.strategies.get_db", return_value=None),
+        patch(
+            "src.api.routes.strategies._get_polygon",
+            side_effect=HTTPException(status_code=503, detail="POLYGON_API_KEY not set."),
+        ),
+    ):
+        response = await client.post(
+            "/api/v1/strategies/scan",
+            json={"tickers": ["AAPL"]},
+        )
     assert response.status_code == 503
     body = response.json()
     assert "detail" in body

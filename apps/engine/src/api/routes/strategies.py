@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -16,6 +16,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from src.api.routes.data import _get_polygon
+from src.db import get_db
 from src.strategies.base import OHLCVData
 
 if TYPE_CHECKING:
@@ -104,6 +105,55 @@ async def _fetch_ohlcv(polygon: PolygonClient, ticker: str, days: int) -> OHLCVD
     )
 
 
+def _parse_db_timestamp(value: str) -> datetime:
+    normalized = value.replace("Z", "+00:00")
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _fetch_cached_ohlcv(ticker: str, days: int) -> OHLCVData | None:
+    """Load historical OHLCV data from Supabase when available."""
+    db = get_db()
+    if db is None:
+        return None
+
+    instrument = db.table("instruments").select("id").eq("ticker", ticker).maybe_single().execute()
+    instrument_row = instrument.data
+    if not instrument_row:
+        return None
+
+    end = date.today()
+    start = end - timedelta(days=days)
+    rows = (
+        db.table("market_data")
+        .select("timestamp,open,high,low,close,volume")
+        .eq("instrument_id", instrument_row["id"])
+        .eq("timeframe", "1d")
+        .gte("timestamp", start.isoformat())
+        .lte("timestamp", end.isoformat())
+        .order("timestamp")
+        .execute()
+    )
+
+    if len(rows.data) < 20:
+        return None
+
+    return OHLCVData(
+        ticker=ticker,
+        timestamps=np.array(
+            [_parse_db_timestamp(row["timestamp"]).timestamp() for row in rows.data],
+            dtype=np.float64,
+        ),
+        open=np.array([float(row["open"]) for row in rows.data], dtype=np.float64),
+        high=np.array([float(row["high"]) for row in rows.data], dtype=np.float64),
+        low=np.array([float(row["low"]) for row in rows.data], dtype=np.float64),
+        close=np.array([float(row["close"]) for row in rows.data], dtype=np.float64),
+        volume=np.array([int(row["volume"]) for row in rows.data], dtype=np.float64),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -132,25 +182,48 @@ async def get_strategies() -> StrategyListResponse:
 @router.post("/scan", response_model=ScanResponse)
 async def scan_signals(request: ScanRequest) -> ScanResponse:
     """Run strategy scan against live Polygon data for the given tickers."""
-    polygon = _get_polygon()
     data_map: dict[str, OHLCVData] = {}
     fetch_errors: list[str] = []
+    polygon: PolygonClient | None = None
+    polygon_error: HTTPException | None = None
 
     try:
         tickers = [t.strip().upper() for t in request.tickers]
         for i, ticker in enumerate(tickers):
             try:
+                cached_ohlcv = _fetch_cached_ohlcv(ticker, request.days)
+                if cached_ohlcv:
+                    data_map[ticker] = cached_ohlcv
+                    continue
+
+                if polygon is None and polygon_error is None:
+                    try:
+                        polygon = _get_polygon()
+                    except HTTPException as exc:
+                        polygon_error = exc
+
+                if polygon is None:
+                    if polygon_error and not data_map:
+                        raise polygon_error
+                    fetch_errors.append(f"{ticker}: historical data unavailable in cache")
+                    continue
+
                 ohlcv = await _fetch_ohlcv(polygon, ticker, request.days)
                 if ohlcv:
                     data_map[ticker] = ohlcv
                 else:
                     fetch_errors.append(f"{ticker}: insufficient data (< 20 bars)")
+            except HTTPException:
+                if not data_map:
+                    raise
+                fetch_errors.append(f"{ticker}: historical data unavailable")
             except Exception as exc:
                 fetch_errors.append(f"{ticker}: {exc}")
-            if i < len(tickers) - 1:
+            if polygon is not None and i < len(tickers) - 1:
                 await asyncio.sleep(0.3)
     finally:
-        await polygon.close()
+        if polygon is not None:
+            await polygon.close()
 
     if not data_map:
         return ScanResponse(
