@@ -10,6 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { AgentConfig, AgentResult, AgentRole } from './types.js';
 import { getToolsForAgent } from './tools.js';
 import { ToolExecutor } from './tool-executor.js';
+import { loadWorkflow } from './wat/workflow-loader.js';
 
 const SYSTEM_PROMPTS: Record<AgentRole, string> = {
   market_sentinel: `You are the Market Sentinel agent for the Sentinel Trading Platform.
@@ -106,7 +107,8 @@ export class Agent {
   async run(userPrompt: string, maxTurns = 10): Promise<AgentResult> {
     const startTime = Date.now();
     const tools = getToolsForAgent(this.config.role);
-    const systemPrompt = SYSTEM_PROMPTS[this.config.role];
+    const workflow = loadWorkflow(this.config.role);
+    const systemPrompt = workflow?.systemPrompt ?? SYSTEM_PROMPTS[this.config.role];
 
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userPrompt }];
 

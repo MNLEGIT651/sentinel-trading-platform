@@ -46,8 +46,9 @@ async def test_get_unknown_family_returns_404(client):
     assert "detail" in body
 
 
-async def test_scan_returns_503_without_polygon_key(client):
+async def test_scan_returns_503_without_polygon_key(client, monkeypatch):
     """POST /api/v1/strategies/scan returns 503 when POLYGON_API_KEY is not set."""
+    monkeypatch.setenv("POLYGON_API_KEY", "")
     response = await client.post(
         "/api/v1/strategies/scan",
         json={"tickers": ["AAPL"]},

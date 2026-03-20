@@ -8,25 +8,27 @@ the endpoints return 503 Service Unavailable.
 from unittest.mock import AsyncMock, patch
 
 
-async def test_quote_endpoint_returns_503_without_polygon_key(client):
+async def test_quote_endpoint_returns_503_without_polygon_key(client, monkeypatch):
     """GET /api/v1/data/quote/{ticker} returns 503 when POLYGON_API_KEY is unset."""
-    # POLYGON_API_KEY is not set in the test env (only Supabase vars are stubbed)
+    monkeypatch.setenv("POLYGON_API_KEY", "")
     response = await client.get("/api/v1/data/quote/AAPL")
     assert response.status_code == 503
     body = response.json()
     assert "detail" in body
 
 
-async def test_quotes_endpoint_returns_503_without_polygon_key(client):
+async def test_quotes_endpoint_returns_503_without_polygon_key(client, monkeypatch):
     """GET /api/v1/data/quotes returns 503 when POLYGON_API_KEY is unset."""
+    monkeypatch.setenv("POLYGON_API_KEY", "")
     response = await client.get("/api/v1/data/quotes")
     assert response.status_code == 503
     body = response.json()
     assert "detail" in body
 
 
-async def test_bars_endpoint_returns_503_without_polygon_key(client):
+async def test_bars_endpoint_returns_503_without_polygon_key(client, monkeypatch):
     """GET /api/v1/data/bars/{ticker} returns 503 when POLYGON_API_KEY is unset."""
+    monkeypatch.setenv("POLYGON_API_KEY", "")
     response = await client.get("/api/v1/data/bars/AAPL")
     assert response.status_code == 503
     body = response.json()
