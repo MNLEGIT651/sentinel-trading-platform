@@ -13,7 +13,9 @@ and a Python engine that is validated separately from the Node workspaces.
 2. `docs/ai/architecture.md`
 3. `docs/ai/commands.md`
 4. `docs/ai/review-checklist.md`
-5. `CLAUDE.md` when using Claude Code
+5. `docs/ai/state/project-state.md`
+6. `docs/ai/agent-ops.md`
+7. `CLAUDE.md` when using Claude Code
 
 ## Repository Map
 
@@ -56,6 +58,12 @@ supabase/        PostgreSQL migrations and seed data
 - `packages/shared/src/*`
 - `supabase/migrations/*`
 - `.github/workflows/ci.yml`
+
+## Execution State
+
+- Before editing files, read `docs/ai/state/project-state.md` and claim one ticket or explicitly note you are performing an untracked audit.
+- Use `docs/ai/agent-ops.md` for the startup checklist, claim protocol, handoff format, and session priority order.
+- Treat `docs/ai/state/project-state.md` as the live source of truth for task status. Do not create a competing status tracker in another file.
 
 ## Collaboration Defaults
 
