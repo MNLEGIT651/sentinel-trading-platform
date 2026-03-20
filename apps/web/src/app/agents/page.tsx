@@ -112,7 +112,7 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-4 p-4">
-      {!agentsOnline && <OfflineBanner service="agents" />}
+      {agentsOnline === false && <OfflineBanner service="agents" />}
 
       {/* Header */}
       <div className="flex items-center justify-between">

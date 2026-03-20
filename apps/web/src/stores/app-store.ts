@@ -5,12 +5,13 @@ interface AppState {
   sidebarOpen: boolean;
   marketStatus: 'open' | 'closed' | 'pre' | 'post';
   engineOnline: boolean;
-  agentsOnline: boolean;
+  /** null = agents URL not configured (skip banner) */
+  agentsOnline: boolean | null;
   setSelectedTicker: (ticker: string | null) => void;
   toggleSidebar: () => void;
   setMarketStatus: (status: AppState['marketStatus']) => void;
   setEngineOnline: (online: boolean) => void;
-  setAgentsOnline: (online: boolean) => void;
+  setAgentsOnline: (online: boolean | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -18,7 +19,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarOpen: true,
   marketStatus: 'closed',
   engineOnline: false,
-  agentsOnline: false,
+  agentsOnline: null,
   setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setMarketStatus: (status) => set({ marketStatus: status }),

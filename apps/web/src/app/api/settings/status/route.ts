@@ -65,39 +65,64 @@ export async function GET(): Promise<NextResponse<StatusResponse>> {
         });
 
   // ── Anthropic ────────────────────────────────────────────────────────
+  // Check directly if key is available, otherwise try agents health endpoint.
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const anthropic: ServiceStatus = !anthropicKey
-    ? 'not_configured'
-    : await probe(async () => {
-        const r = await fetch('https://api.anthropic.com/v1/models', {
-          headers: {
-            'x-api-key': anthropicKey,
-            'anthropic-version': '2023-06-01',
-          },
-          signal,
-          cache: 'no-store',
-        });
-        if (!r.ok) throw new Error(`${r.status}`);
+  let anthropic: ServiceStatus;
+  if (anthropicKey) {
+    anthropic = await probe(async () => {
+      const r = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        signal,
+        cache: 'no-store',
       });
-
-  // ── Alpaca ───────────────────────────────────────────────────────────
-  const alpacaKey = process.env.ALPACA_API_KEY;
-  const alpacaSecret = process.env.ALPACA_SECRET_KEY;
-  const alpacaBase = process.env.ALPACA_BASE_URL ?? 'https://paper-api.alpaca.markets/v2';
-  const alpaca: ServiceStatus =
-    !alpacaKey || !alpacaSecret
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  } else {
+    // Key not on web server — check through agents service health
+    const agentsUrl = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
+    anthropic = agentsUrl.includes('localhost')
       ? 'not_configured'
       : await probe(async () => {
-          const r = await fetch(`${alpacaBase}/account`, {
-            headers: {
-              'APCA-API-KEY-ID': alpacaKey,
-              'APCA-API-SECRET-KEY': alpacaSecret,
-            },
-            signal,
-            cache: 'no-store',
-          });
+          const r = await fetch(`${agentsUrl}/health`, { signal, cache: 'no-store' });
           if (!r.ok) throw new Error(`${r.status}`);
         });
+  }
+
+  // ── Alpaca ───────────────────────────────────────────────────────────
+  // Check directly if keys are available, otherwise probe through the engine
+  // (the engine already holds broker credentials).
+  const alpacaKey = process.env.ALPACA_API_KEY;
+  const alpacaSecret = process.env.ALPACA_SECRET_KEY;
+  let alpaca: ServiceStatus;
+  if (alpacaKey && alpacaSecret) {
+    const alpacaBase = process.env.ALPACA_BASE_URL ?? 'https://paper-api.alpaca.markets/v2';
+    alpaca = await probe(async () => {
+      const r = await fetch(`${alpacaBase}/account`, {
+        headers: {
+          'APCA-API-KEY-ID': alpacaKey,
+          'APCA-API-SECRET-KEY': alpacaSecret,
+        },
+        signal,
+        cache: 'no-store',
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  } else if (engine === 'connected') {
+    // Proxy through engine — it already has broker credentials
+    alpaca = await probe(async () => {
+      const r = await fetch(`${engineUrl}/api/v1/portfolio/account`, {
+        headers: { Authorization: `Bearer ${engineKey}` },
+        signal,
+        cache: 'no-store',
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  } else {
+    alpaca = 'not_configured';
+  }
 
   return NextResponse.json({ engine, polygon, supabase, anthropic, alpaca });
 }
