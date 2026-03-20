@@ -21,6 +21,9 @@ import {
 import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
 import { QuickOrder } from '@/components/portfolio/quick-order';
+import { useOrderPolling } from '@/hooks/use-order-polling';
+import { useOrderHistory } from '@/hooks/use-order-history';
+import { RecentOrders } from '@/components/portfolio/recent-orders';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
 
 export default function PortfolioPage() {
@@ -46,6 +49,7 @@ export default function PortfolioPage() {
   const [orderQty, setOrderQty] = useState('');
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pollingOrderId, setPollingOrderId] = useState<string | null>(null);
 
   const fetchPortfolio = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
@@ -112,6 +116,16 @@ export default function PortfolioPage() {
     }
   }, []);
 
+  const { orders: recentOrders, refresh: refreshOrders } = useOrderHistory();
+  const { isPolling } = useOrderPolling({
+    orderId: pollingOrderId,
+    onSettled: () => {
+      setPollingOrderId(null);
+      fetchPortfolio();
+      refreshOrders();
+    },
+  });
+
   useEffect(() => {
     fetchPortfolio();
   }, [fetchPortfolio]);
@@ -145,36 +159,15 @@ export default function PortfolioPage() {
       );
       setOrderSymbol('');
       setOrderQty('');
-      // Poll for order fill — Alpaca paper fills asynchronously
-      const orderId = (result as { order_id?: string }).order_id;
-      if (orderId) {
-        const POLL_INTERVAL = 2000;
-        const MAX_POLLS = 10;
-        let polls = 0;
-        const poll = async () => {
-          if (!mountedRef.current) return;
-          try {
-            const ordersRes = await fetch(engineUrl('/api/v1/portfolio/orders?status=open'), {
-              signal: AbortSignal.timeout(5000),
-              headers: engineHeaders(),
-            });
-            if (ordersRes.ok) {
-              const orders = (await ordersRes.json()) as Array<{ order_id: string }>;
-              const isStillOpen = orders.some((o) => o.order_id === orderId);
-              if (!isStillOpen || polls >= MAX_POLLS) {
-                await fetchPortfolio();
-                return;
-              }
-            }
-          } catch {
-            /* ignore */
-          }
-          polls++;
-          setTimeout(poll, POLL_INTERVAL);
-        };
-        setTimeout(poll, POLL_INTERVAL);
+      refreshOrders();
+
+      // Start polling if order isn't already terminal
+      const orderId = result.order_id as string | undefined;
+      if (orderId && result.status !== 'filled' && result.status !== 'rejected') {
+        setPollingOrderId(orderId);
       } else {
-        setTimeout(() => fetchPortfolio(), 500);
+        // Already terminal — just refresh positions
+        fetchPortfolio();
       }
     } catch {
       if (mountedRef.current) setOrderStatus('Order failed — check engine');
@@ -293,6 +286,16 @@ export default function PortfolioPage() {
         onQtyChange={setOrderQty}
         onSubmit={handleSubmitOrder}
       />
+
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Recent Orders
+            {isPolling && <span className="ml-1.5 text-amber-400 animate-pulse">polling...</span>}
+          </span>
+        </div>
+        <RecentOrders orders={recentOrders} pollingOrderId={pollingOrderId} />
+      </div>
 
       <Tabs defaultValue="positions" className="space-y-3">
         <TabsList className="bg-muted/50">

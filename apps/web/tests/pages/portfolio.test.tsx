@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import PortfolioPage from '@/app/portfolio/page';
+import { useAppStore } from '@/stores/app-store';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -50,6 +51,7 @@ const mockQuotes = [
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  useAppStore.setState({ engineOnline: true });
   global.fetch = vi.fn((url: string | URL | Request) => {
     const urlStr = typeof url === 'string' ? url : url.toString();
     if (urlStr.includes('/portfolio/account')) {
@@ -61,8 +63,15 @@ beforeEach(() => {
     if (urlStr.includes('/data/quotes')) {
       return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
     }
+    if (urlStr.includes('/portfolio/orders/history')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+    }
     return Promise.resolve({ ok: false } as Response);
   }) as typeof fetch;
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('PortfolioPage', () => {
@@ -129,6 +138,96 @@ describe('PortfolioPage', () => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
   });
+
+  it('polls an accepted order until it is filled', async () => {
+    const filledOrder = {
+      order_id: 'ord-123',
+      symbol: 'AAPL',
+      side: 'buy',
+      order_type: 'market',
+      qty: 3,
+      filled_qty: 3,
+      status: 'filled',
+      fill_price: 251.23,
+      submitted_at: '2026-03-15T10:00:00Z',
+      filled_at: '2026-03-15T10:00:02Z',
+      risk_note: null,
+    };
+
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([filledOrder]),
+        } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              order_id: 'ord-123',
+              status: 'accepted',
+              fill_price: null,
+              fill_quantity: null,
+              commission: 0,
+              slippage: null,
+            }),
+        } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/ord-123')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              order_id: 'ord-123',
+              symbol: 'AAPL',
+              side: 'buy',
+              status: 'filled',
+              fill_price: 251.23,
+              filled_qty: 3,
+              submitted_at: '2026-03-15T10:00:00Z',
+            }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    render(<PortfolioPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'aapl' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Order accepted')).toBeInTheDocument();
+    });
+
+    // After polling completes, the filled order appears in the RecentOrders table
+    await waitFor(
+      () => {
+        expect(screen.getByText('$251.23')).toBeInTheDocument();
+      },
+      { timeout: 4_000 },
+    );
+  }, 10_000);
 
   it('shows empty state when no positions from engine', async () => {
     global.fetch = vi.fn((url: string | URL | Request) => {
