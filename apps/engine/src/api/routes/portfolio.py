@@ -1,5 +1,6 @@
 """Portfolio & trading API routes — account, positions, orders."""
 
+import dataclasses
 import logging
 from enum import StrEnum
 
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 
 from src.execution import get_broker
 from src.execution.broker_interface import OrderRequest
+from src.execution.order_store import TERMINAL_STATUSES, get_order_store
 from src.risk.risk_manager import PortfolioState, RiskManager
 
 logger = logging.getLogger(__name__)
@@ -151,17 +153,42 @@ async def submit_order(body: SubmitOrderBody) -> dict:
 
 @router.get("/orders")
 async def get_orders(status: str = "open") -> list[dict]:
-    """Get orders (Alpaca only — returns empty for PaperBroker)."""
-    broker = get_broker()
-    from src.execution.alpaca_broker import AlpacaBroker
+    """Get orders filtered by status."""
+    try:
+        broker = get_broker()
+        return await broker.get_orders(status=status)
+    except Exception as exc:
+        logger.error("Failed to fetch orders: %s", exc)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    if isinstance(broker, AlpacaBroker):
-        try:
-            return await broker.get_orders(status=status)
-        except Exception as exc:
-            logger.error("Failed to fetch orders: %s", exc)
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return []
+
+@router.get("/orders/history")
+async def get_order_history(limit: int = 20) -> list[dict]:
+    """Get recent order history from the in-memory store."""
+    capped = min(max(limit, 1), 100)
+    store = get_order_store()
+    return [dataclasses.asdict(o) for o in store.recent(limit=capped)]
+
+
+@router.get("/orders/{order_id}")
+async def get_order_by_id(order_id: str) -> dict:
+    """Get a single order by ID. Refreshes from Alpaca if non-terminal."""
+    store = get_order_store()
+    order = store.get(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail=f"Order not found: {order_id}")
+
+    # If the order is non-terminal and broker is Alpaca, refresh from API
+    if order.status not in TERMINAL_STATUSES:
+        broker = get_broker()
+        from src.execution.alpaca_broker import AlpacaBroker
+
+        if isinstance(broker, AlpacaBroker):
+            refreshed = await broker.refresh_order(order_id)
+            if refreshed is not None:
+                order = refreshed
+
+    return dataclasses.asdict(order)
 
 
 @router.delete("/orders/{order_id}")
