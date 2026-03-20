@@ -109,17 +109,26 @@ async function fetchUpstream(
   upstreamPath: string,
 ): Promise<Response> {
   const config = getServiceConfig(service);
+  const method = request.method.toUpperCase();
 
   if (!config.configured || !config.baseUrl) {
-    throw new ServiceError(`${config.label} is not configured for this deployment.`, {
+    const error = new ServiceError(`${config.label} is not configured for this deployment.`, {
       code: 'not_configured',
       service,
       retryable: false,
       status: 503,
     });
+    logProxyFailure(error, {
+      action: 'failed',
+      attempt: 0,
+      attempts: 0,
+      durationMs: 0,
+      method,
+      upstreamPath,
+    });
+    throw error;
   }
 
-  const method = request.method.toUpperCase();
   const url = new URL(request.url);
   const timeoutMs = getServiceTimeoutMs(service, upstreamPath, method);
   const attempts = getServiceAttempts(service, upstreamPath, method);

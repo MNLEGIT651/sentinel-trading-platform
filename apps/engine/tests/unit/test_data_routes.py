@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 from fastapi.testclient import TestClient
 
 from src.api.main import _settings, app
@@ -72,3 +73,37 @@ class TestIngestEndpoint:
             json={"tickers": []},
         )
         assert response.status_code == 422
+
+    @patch("src.api.routes.data._get_polygon")
+    def test_quotes_returns_partial_results_when_polygon_rate_limits(self, mock_get_polygon):
+        first_bar = MagicMock()
+        first_bar.open = 100.0
+        first_bar.high = 101.0
+        first_bar.low = 99.0
+        first_bar.close = 100.5
+        first_bar.volume = 1000
+        first_bar.vwap = 100.2
+        first_bar.timestamp = __import__("datetime").datetime(
+            2024, 1, 15, tzinfo=__import__("datetime").timezone.utc
+        )
+
+        rate_limit_error = httpx.HTTPStatusError(
+            "429",
+            request=httpx.Request("GET", "https://api.polygon.io/v2/aggs/ticker/MSFT/prev"),
+            response=httpx.Response(
+                429,
+                request=httpx.Request("GET", "https://api.polygon.io/v2/aggs/ticker/MSFT/prev"),
+            ),
+        )
+
+        mock_polygon = MagicMock()
+        mock_polygon.get_latest_price = AsyncMock(side_effect=[first_bar, rate_limit_error])
+        mock_polygon.close = AsyncMock()
+        mock_get_polygon.return_value = mock_polygon
+
+        response = self.client.get("/api/v1/data/quotes?tickers=AAPL,MSFT")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body) == 1
+        assert body[0]["ticker"] == "AAPL"

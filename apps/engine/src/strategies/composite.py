@@ -86,11 +86,12 @@ class CompositeStrategy(Strategy):
         result: list[Signal] = []
 
         # Calculate weighted strength for each direction
+        fallback_weight = 1.0 / len(self._normalized) if self._normalized else 0.0
         long_strength = sum(
-            s.strength * weight_map.get(s.strategy_name, 1.0 / len(signals)) for s in long_sigs
+            s.strength * weight_map.get(s.strategy_name, fallback_weight) for s in long_sigs
         )
         short_strength = sum(
-            s.strength * weight_map.get(s.strategy_name, 1.0 / len(signals)) for s in short_sigs
+            s.strength * weight_map.get(s.strategy_name, fallback_weight) for s in short_sigs
         )
 
         # Apply conflict penalty

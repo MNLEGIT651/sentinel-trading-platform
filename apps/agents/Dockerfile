@@ -2,7 +2,7 @@
 # Build context: monorepo root  (docker build -f apps/agents/Dockerfile .)
 FROM node:22-alpine AS base
 
-RUN npm install --global pnpm@9
+RUN npm install --global pnpm@10.32.1
 
 # ─── Dependencies + Runtime ───────────────────────────────────────────────────
 FROM base AS runner
@@ -26,6 +26,6 @@ USER sentinel
 EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:3001/health || exit 1
+  CMD sh -c "wget -qO- http://localhost:${PORT:-3001}/health || exit 1"
 
-CMD ["node_modules/.bin/tsx", "apps/agents/src/index.ts"]
+CMD ["pnpm", "--filter", "@sentinel/agents", "start"]

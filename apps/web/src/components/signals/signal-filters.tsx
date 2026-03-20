@@ -2,7 +2,8 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 
-const DEFAULT_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY,QQQ,JPM';
+export const MAX_LIVE_SCAN_TICKERS = 5;
+export const DEFAULT_SIGNAL_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA';
 
 interface SignalFiltersProps {
   tickerInput: string;
@@ -26,14 +27,18 @@ export function SignalFilters({
       <CardContent className="pt-4 pb-3 px-4 space-y-3">
         <div>
           <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground block mb-1">
-            Tickers (comma-separated, max 20)
+            Tickers (comma-separated, max {MAX_LIVE_SCAN_TICKERS} live)
           </label>
           <input
             value={tickerInput}
             onChange={(e) => onTickerInput(e.target.value)}
             className="w-full bg-background border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder={DEFAULT_TICKERS}
+            placeholder={DEFAULT_SIGNAL_TICKERS}
           />
+          <p className="mt-1 text-[11px] text-muted-foreground/70">
+            Live Polygon scans are capped to {MAX_LIVE_SCAN_TICKERS} tickers per run to avoid proxy
+            timeouts.
+          </p>
         </div>
         <div className="flex items-center gap-6">
           <div>

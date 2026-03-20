@@ -1,10 +1,14 @@
 """Tests for the Polygon.io API client."""
 
 from datetime import UTC, date, datetime
+from time import monotonic
+from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 
-from src.data.polygon_client import TIMEFRAME_MAP, PolygonClient
+from src.data import polygon_client as polygon_client_module
+from src.data.polygon_client import TIMEFRAME_MAP, PolygonBar, PolygonClient
 
 
 class TestPolygonClientInit:
@@ -93,3 +97,48 @@ class TestParseBars:
         client = PolygonClient(api_key="test-key")
         bars = client._parse_bars({"status": "OK"})
         assert bars == []
+
+
+class TestInteractiveRequests:
+    @pytest.mark.asyncio
+    async def test_interactive_quote_does_not_retry_rate_limits(self):
+        client = PolygonClient(api_key="test-key")
+        client._http.request = AsyncMock(
+            return_value=httpx.Response(
+                429,
+                request=httpx.Request("GET", "https://api.polygon.io/v2/aggs/ticker/NORETRY/prev"),
+            )
+        )
+
+        with patch("src.data.polygon_client.asyncio.sleep", new=AsyncMock()) as sleep_mock:
+            with pytest.raises(httpx.HTTPStatusError):
+                await client.get_latest_price("NORETRY", interactive=True)
+
+        sleep_mock.assert_not_awaited()
+        assert client._http.request.await_count == 1
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_interactive_quote_serves_stale_cache_when_live_fetch_fails(self):
+        client = PolygonClient(api_key="test-key")
+        cached_bar = PolygonBar(
+            timestamp=datetime(2024, 1, 2, tzinfo=UTC),
+            open=100.0,
+            high=101.0,
+            low=99.0,
+            close=100.5,
+            volume=1234,
+        )
+        polygon_client_module._quote_cache["STALEQ"] = (monotonic() - 1, cached_bar)
+        client._http.request = AsyncMock(
+            side_effect=httpx.ReadTimeout(
+                "timeout",
+                request=httpx.Request("GET", "https://api.polygon.io/v2/aggs/ticker/STALEQ/prev"),
+            )
+        )
+
+        quote = await client.get_latest_price("STALEQ", interactive=True)
+
+        assert quote == cached_bar
+        assert client._http.request.await_count == 1
+        await client.close()

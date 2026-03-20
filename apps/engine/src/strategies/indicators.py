@@ -6,14 +6,78 @@ NaN is used for the warm-up period where insufficient data exists.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
+from functools import wraps
+from typing import Any
+
 import numpy as np
 from numpy.typing import NDArray
+
+# ---------------------------------------------------------------------------
+# Indicator cache — eliminates redundant computation when multiple strategies
+# evaluate the same indicator on the same data within a single scan.
+# Only active inside an `indicator_cache()` context manager.
+# ---------------------------------------------------------------------------
+
+_indicator_cache: dict[tuple[Any, ...], Any] = {}
+_cache_active: bool = False
+
+
+def cached_indicator(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Cache indicator results keyed on (function, array identity, params).
+
+    Only caches when inside an ``indicator_cache()`` context. Direct calls
+    outside that context always compute fresh results.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if not _cache_active:
+            return func(*args, **kwargs)
+        key: tuple[Any, ...] = (
+            (func.__name__,)
+            + tuple(id(a) if isinstance(a, np.ndarray) else a for a in args)
+            + tuple(sorted(kwargs.items()))
+        )
+        cached = _indicator_cache.get(key)
+        if cached is not None:
+            return cached
+        result = func(*args, **kwargs)
+        _indicator_cache[key] = result
+        return result
+
+    return wrapper
+
+
+@contextmanager
+def indicator_cache() -> Generator[None, None, None]:
+    """Enable indicator caching for the duration of a scan.
+
+    Within this context, repeated calls to the same indicator with the
+    same array and parameters return cached results. The cache is cleared
+    on exit and between ``clear_indicator_cache()`` calls.
+    """
+    global _cache_active  # noqa: PLW0603
+    _cache_active = True
+    try:
+        yield
+    finally:
+        _indicator_cache.clear()
+        _cache_active = False
+
+
+def clear_indicator_cache() -> None:
+    """Clear the indicator result cache. Call between tickers within a scan."""
+    _indicator_cache.clear()
+
 
 # ---------------------------------------------------------------------------
 # Moving Averages
 # ---------------------------------------------------------------------------
 
 
+@cached_indicator
 def sma(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
     """Simple Moving Average.
 
@@ -29,6 +93,7 @@ def sma(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
     return out
 
 
+@cached_indicator
 def ema(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
     """Exponential Moving Average.
 
@@ -57,8 +122,9 @@ def wma(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
         return out
     weights = np.arange(1, period + 1, dtype=np.float64)
     weight_sum = weights.sum()
-    for i in range(period - 1, len(close)):
-        out[i] = np.dot(close[i - period + 1 : i + 1], weights) / weight_sum
+    # Vectorized via convolution (reversed weights for correlation mode)
+    conv = np.convolve(close, weights[::-1], mode="valid")
+    out[period - 1 :] = conv / weight_sum
     return out
 
 
@@ -67,6 +133,7 @@ def wma(close: NDArray[np.float64], period: int) -> NDArray[np.float64]:
 # ---------------------------------------------------------------------------
 
 
+@cached_indicator
 def rsi(close: NDArray[np.float64], period: int = 14) -> NDArray[np.float64]:
     """Relative Strength Index (Wilder's smoothing).
 
@@ -119,13 +186,17 @@ def stochastic(
     n = len(close)
     percent_k = np.full(n, np.nan, dtype=np.float64)
 
-    for i in range(k_period - 1, n):
-        highest = np.max(high[i - k_period + 1 : i + 1])
-        lowest = np.min(low[i - k_period + 1 : i + 1])
-        if highest == lowest:
-            percent_k[i] = 50.0
-        else:
-            percent_k[i] = 100.0 * (close[i] - lowest) / (highest - lowest)
+    if n >= k_period:
+        # Vectorized rolling max/min via sliding_window_view
+        from numpy.lib.stride_tricks import sliding_window_view
+
+        h_windows = sliding_window_view(high, k_period)
+        l_windows = sliding_window_view(low, k_period)
+        highest = np.max(h_windows, axis=1)
+        lowest = np.min(l_windows, axis=1)
+        c = close[k_period - 1 :]
+        denom = highest - lowest
+        percent_k[k_period - 1 :] = np.where(denom == 0, 50.0, 100.0 * (c - lowest) / denom)
 
     percent_d = sma(percent_k, d_period)
     return percent_k, percent_d
@@ -162,6 +233,7 @@ def macd(
     return macd_line, signal_line, histogram
 
 
+@cached_indicator
 def adx(
     high: NDArray[np.float64],
     low: NDArray[np.float64],
@@ -225,6 +297,7 @@ def adx(
 # ---------------------------------------------------------------------------
 
 
+@cached_indicator
 def bollinger_bands(
     close: NDArray[np.float64],
     period: int = 20,
@@ -235,9 +308,18 @@ def bollinger_bands(
     Returns (upper_band, middle_band, lower_band).
     """
     middle = sma(close, period)
+    # Vectorized rolling population std via cumsum trick
+    cumsum = np.cumsum(close)
+    cumsum2 = np.cumsum(close**2)
+    prefix = np.concatenate([[0], cumsum[:-period]])
+    prefix2 = np.concatenate([[0], cumsum2[:-period]])
+    window_sum = cumsum[period - 1 :] - prefix
+    window_sum2 = cumsum2[period - 1 :] - prefix2
+    variance = window_sum2 / period - (window_sum / period) ** 2
+    # Clamp tiny negatives from floating-point arithmetic
+    np.maximum(variance, 0.0, out=variance)
     std = np.full_like(close, np.nan, dtype=np.float64)
-    for i in range(period - 1, len(close)):
-        std[i] = np.std(close[i - period + 1 : i + 1], ddof=0)
+    std[period - 1 :] = np.sqrt(variance)
     upper = middle + num_std * std
     lower = middle - num_std * std
     return upper, middle, lower
@@ -273,14 +355,13 @@ def true_range(
 ) -> NDArray[np.float64]:
     """True Range — max of (H-L, |H-prev_C|, |L-prev_C|)."""
     n = len(close)
-    tr = np.full(n, np.nan, dtype=np.float64)
+    tr = np.empty(n, dtype=np.float64)
     tr[0] = high[0] - low[0]
-    for i in range(1, n):
-        tr[i] = max(
-            high[i] - low[i],
-            abs(high[i] - close[i - 1]),
-            abs(low[i] - close[i - 1]),
-        )
+    if n > 1:
+        hl = high[1:] - low[1:]
+        hc = np.abs(high[1:] - close[:-1])
+        lc = np.abs(low[1:] - close[:-1])
+        tr[1:] = np.maximum(hl, np.maximum(hc, lc))
     return tr
 
 
@@ -327,16 +408,13 @@ def obv(
 ) -> NDArray[np.float64]:
     """On Balance Volume."""
     n = len(close)
-    out = np.zeros(n, dtype=np.float64)
-    out[0] = volume[0]
-    for i in range(1, n):
-        if close[i] > close[i - 1]:
-            out[i] = out[i - 1] + volume[i]
-        elif close[i] < close[i - 1]:
-            out[i] = out[i - 1] - volume[i]
-        else:
-            out[i] = out[i - 1]
-    return out
+    if n == 0:
+        return np.array([], dtype=np.float64)
+    direction = np.sign(np.diff(close))
+    signed_vol = np.empty(n, dtype=np.float64)
+    signed_vol[0] = volume[0]
+    signed_vol[1:] = direction * volume[1:]
+    return np.cumsum(signed_vol)
 
 
 def money_flow_index(
@@ -357,19 +435,22 @@ def money_flow_index(
     typical = (high + low + close) / 3.0
     raw_mf = typical * volume
 
-    for i in range(period, n):
-        pos_flow = 0.0
-        neg_flow = 0.0
-        for j in range(i - period + 1, i + 1):
-            if typical[j] > typical[j - 1]:
-                pos_flow += raw_mf[j]
-            elif typical[j] < typical[j - 1]:
-                neg_flow += raw_mf[j]
-        if neg_flow == 0:
-            out[i] = 100.0
-        else:
-            mf_ratio = pos_flow / neg_flow
-            out[i] = 100.0 - (100.0 / (1.0 + mf_ratio))
+    # Classify each bar's flow direction (bar 0 has no predecessor, skip)
+    tp_diff = np.diff(typical)
+    pos_mf = np.zeros(n, dtype=np.float64)
+    neg_mf = np.zeros(n, dtype=np.float64)
+    pos_mf[1:] = np.where(tp_diff > 0, raw_mf[1:], 0.0)
+    neg_mf[1:] = np.where(tp_diff < 0, raw_mf[1:], 0.0)
+
+    # Rolling sums via cumsum difference
+    cum_pos = np.cumsum(pos_mf)
+    cum_neg = np.cumsum(neg_mf)
+    pos_flow = cum_pos[period:] - cum_pos[: n - period]
+    neg_flow = cum_neg[period:] - cum_neg[: n - period]
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mf_ratio = np.where(neg_flow == 0, np.inf, pos_flow / neg_flow)
+        out[period:] = np.where(neg_flow == 0, 100.0, 100.0 - (100.0 / (1.0 + mf_ratio)))
 
     return out
 
@@ -401,11 +482,14 @@ def williams_r(
         raise ValueError("period must be >= 1")
     n = len(close)
     out = np.full(n, np.nan, dtype=np.float64)
-    for i in range(period - 1, n):
-        hh = np.max(high[i - period + 1 : i + 1])
-        ll = np.min(low[i - period + 1 : i + 1])
-        if hh == ll:
-            out[i] = -50.0
-        else:
-            out[i] = -100.0 * (hh - close[i]) / (hh - ll)
+    if n >= period:
+        from numpy.lib.stride_tricks import sliding_window_view
+
+        h_windows = sliding_window_view(high, period)
+        l_windows = sliding_window_view(low, period)
+        hh = np.max(h_windows, axis=1)
+        ll = np.min(l_windows, axis=1)
+        c = close[period - 1 :]
+        denom = hh - ll
+        out[period - 1 :] = np.where(denom == 0, -50.0, -100.0 * (hh - c) / denom)
     return out

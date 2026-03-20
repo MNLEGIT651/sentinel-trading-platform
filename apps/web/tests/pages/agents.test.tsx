@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import AgentsPage from '@/app/agents/page';
+import { useAppStore } from '@/stores/app-store';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/agents',
@@ -53,6 +54,7 @@ const mockRec = {
 describe('AgentsPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    useAppStore.setState({ agentsOnline: null });
     const { agentsClient } = await import('@/lib/agents-client');
     vi.mocked(agentsClient.getStatus).mockResolvedValue(mockStatus);
     vi.mocked(agentsClient.getRecommendations).mockResolvedValue({ recommendations: [mockRec] });

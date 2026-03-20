@@ -41,10 +41,14 @@ export function isRunning(): boolean {
 
 export function createApp(orchestrator: Orchestrator): Express {
   const app = express();
+  const webOrigins = (process.env.WEB_URL ?? 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   app.use(
     cors({
-      origin: process.env.WEB_URL ?? 'http://localhost:3000',
+      origin: webOrigins,
       methods: ['GET', 'POST', 'OPTIONS'],
     }),
   );
@@ -58,6 +62,11 @@ export function createApp(orchestrator: Orchestrator): Express {
       uptime: Math.round(process.uptime()),
       cycleCount: orchestrator.currentState.cycleCount,
       halted: orchestrator.currentState.halted,
+      dependencies: {
+        engine: Boolean(process.env.ENGINE_URL),
+        anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+        supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+      },
     });
   });
 

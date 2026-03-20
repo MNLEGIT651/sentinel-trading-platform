@@ -4,6 +4,8 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from time import monotonic
+from typing import Any
 
 import httpx
 
@@ -35,6 +37,38 @@ TIMEFRAME_MAP: dict[str, tuple[str, str]] = {
 # Free-tier: 5 req/min.  We retry up to 3 times with progressive backoff.
 _MAX_RETRIES = 3
 _INITIAL_BACKOFF = 12.0  # seconds
+_INTERACTIVE_TIMEOUT = 8.0
+_QUOTE_CACHE_TTL = 300.0
+_BARS_CACHE_TTL = 3600.0
+
+_quote_cache: dict[str, tuple[float, PolygonBar]] = {}
+_bars_cache: dict[tuple[str, str, str, str, int], tuple[float, list[PolygonBar]]] = {}
+
+
+def _read_cache(
+    cache: dict[Any, tuple[float, Any]],
+    key: Any,
+    *,
+    allow_stale: bool = False,
+) -> Any | None:
+    entry = cache.get(key)
+    if entry is None:
+        return None
+
+    expires_at, value = entry
+    if allow_stale or expires_at > monotonic():
+        return value
+
+    return None
+
+
+def _write_cache(
+    cache: dict[Any, tuple[float, Any]],
+    key: Any,
+    value: Any,
+    ttl_seconds: float,
+) -> None:
+    cache[key] = (monotonic() + ttl_seconds, value)
 
 
 class PolygonClient:
@@ -90,6 +124,8 @@ class PolygonClient:
         self,
         method: str,
         url: str,
+        *,
+        retry_on_rate_limit: bool = True,
         **kwargs,
     ) -> httpx.Response:
         """Execute an HTTP request with automatic 429 retry + backoff."""
@@ -98,6 +134,8 @@ class PolygonClient:
             try:
                 response = await self._http.request(method, url, **kwargs)
                 if response.status_code == 429:
+                    if not retry_on_rate_limit:
+                        response.raise_for_status()
                     wait = _INITIAL_BACKOFF * (2**attempt)
                     logger.warning(
                         "Polygon 429 rate-limited on %s (attempt %d/%d), retrying in %.1fs",
@@ -112,6 +150,8 @@ class PolygonClient:
                 return response
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code == 429:
+                    if not retry_on_rate_limit:
+                        raise
                     last_exc = exc
                     wait = _INITIAL_BACKOFF * (2**attempt)
                     logger.warning(
@@ -140,23 +180,84 @@ class PolygonClient:
         start: date | None = None,
         end: date | None = None,
         limit: int = 5000,
+        *,
+        interactive: bool = False,
     ) -> list[PolygonBar]:
         """Fetch OHLCV bars for a ticker from Polygon.io."""
+        ticker = ticker.upper()
         if start is None:
             start = date(2020, 1, 1)
         if end is None:
             end = date.today()
-        url = self._build_bars_url(ticker, timeframe, start, end)
-        response = await self._request_with_retry(
-            "GET", url, params={"limit": limit, "adjusted": "true"}
-        )
-        return self._parse_bars(response.json())
+        cache_key = (ticker, timeframe, start.isoformat(), end.isoformat(), limit)
+        if interactive:
+            cached = _read_cache(_bars_cache, cache_key)
+            if cached is not None:
+                return cached
 
-    async def get_latest_price(self, ticker: str) -> PolygonBar | None:
+        url = self._build_bars_url(ticker, timeframe, start, end)
+        request_kwargs: dict[str, object] = {"params": {"limit": limit, "adjusted": "true"}}
+        if interactive:
+            request_kwargs["timeout"] = _INTERACTIVE_TIMEOUT
+
+        try:
+            response = await self._request_with_retry(
+                "GET",
+                url,
+                retry_on_rate_limit=not interactive,
+                **request_kwargs,
+            )
+            bars = self._parse_bars(response.json())
+            if interactive and bars:
+                _write_cache(_bars_cache, cache_key, bars, _BARS_CACHE_TTL)
+            return bars
+        except httpx.HTTPError as exc:
+            if interactive:
+                stale = _read_cache(_bars_cache, cache_key, allow_stale=True)
+                if stale is not None:
+                    logger.warning(
+                        "Serving stale Polygon bars for %s after live fetch failed: %s", ticker, exc
+                    )
+                    return stale
+            raise
+
+    async def get_latest_price(
+        self, ticker: str, *, interactive: bool = False
+    ) -> PolygonBar | None:
         """Fetch the previous day's bar for a ticker."""
-        response = await self._request_with_retry("GET", f"/v2/aggs/ticker/{ticker}/prev")
-        bars = self._parse_bars(response.json())
-        return bars[0] if bars else None
+        ticker = ticker.upper()
+        if interactive:
+            cached = _read_cache(_quote_cache, ticker)
+            if cached is not None:
+                return cached
+
+        request_kwargs: dict[str, object] = {}
+        if interactive:
+            request_kwargs["timeout"] = _INTERACTIVE_TIMEOUT
+
+        try:
+            response = await self._request_with_retry(
+                "GET",
+                f"/v2/aggs/ticker/{ticker}/prev",
+                retry_on_rate_limit=not interactive,
+                **request_kwargs,
+            )
+            bars = self._parse_bars(response.json())
+            bar = bars[0] if bars else None
+            if interactive and bar is not None:
+                _write_cache(_quote_cache, ticker, bar, _QUOTE_CACHE_TTL)
+            return bar
+        except httpx.HTTPError as exc:
+            if interactive:
+                stale = _read_cache(_quote_cache, ticker, allow_stale=True)
+                if stale is not None:
+                    logger.warning(
+                        "Serving stale Polygon quote for %s after live fetch failed: %s",
+                        ticker,
+                        exc,
+                    )
+                    return stale
+            raise
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""

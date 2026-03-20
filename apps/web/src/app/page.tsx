@@ -15,7 +15,7 @@ import type { AgentAlert } from '@/lib/agents-client';
 import { cn } from '@/lib/utils';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 
-const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
+const AGENTS_PROXY_BASE = '/api/agents';
 
 const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
 
@@ -88,8 +88,10 @@ export default function DashboardPage() {
   const fetchAlerts = useCallback(async () => {
     try {
       const [alertsRes, recsRes] = await Promise.allSettled([
-        fetch(`${AGENTS_URL}/alerts`, { signal: AbortSignal.timeout(3000) }),
-        fetch(`${AGENTS_URL}/recommendations?status=filled`, { signal: AbortSignal.timeout(3000) }),
+        fetch(`${AGENTS_PROXY_BASE}/alerts`, { signal: AbortSignal.timeout(3000) }),
+        fetch(`${AGENTS_PROXY_BASE}/recommendations?status=filled`, {
+          signal: AbortSignal.timeout(3000),
+        }),
       ]);
 
       if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {

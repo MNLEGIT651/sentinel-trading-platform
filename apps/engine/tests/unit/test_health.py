@@ -11,3 +11,5 @@ def test_health_endpoint():
     data = response.json()
     assert data["status"] == "ok"
     assert data["service"] == "sentinel-engine"
+    assert "dependencies" in data
+    assert set(data["dependencies"]) == {"polygon", "alpaca", "supabase"}

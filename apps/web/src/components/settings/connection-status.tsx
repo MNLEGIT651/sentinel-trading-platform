@@ -1,6 +1,6 @@
 'use client';
 
-import { Server, Globe, Database, Bot, Shield, RefreshCw, Loader2 } from 'lucide-react';
+import { Server, Globe, Database, Bot, Brain, Shield, RefreshCw, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ export type ServiceStatus = 'connected' | 'disconnected' | 'not_configured' | 'c
 
 export interface ServiceStatuses {
   engine: ServiceStatus;
+  agents: ServiceStatus;
   polygon: ServiceStatus;
   supabase: ServiceStatus;
   anthropic: ServiceStatus;
@@ -98,6 +99,7 @@ export function ConnectionStatusPanel({
           label="Quant Engine (FastAPI)"
           status={serviceStatus.engine}
         />
+        <ConnectionStatusRow icon={Bot} label="Agents Orchestrator" status={serviceStatus.agents} />
         <ConnectionStatusRow
           icon={Globe}
           label="Polygon.io Market Data"
@@ -109,7 +111,7 @@ export function ConnectionStatusPanel({
           status={serviceStatus.supabase}
         />
         <ConnectionStatusRow
-          icon={Bot}
+          icon={Brain}
           label="Claude AI (Anthropic)"
           status={serviceStatus.anthropic}
         />
