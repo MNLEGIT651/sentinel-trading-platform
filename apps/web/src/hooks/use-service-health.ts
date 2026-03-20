@@ -3,16 +3,13 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/stores/app-store';
 
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
-const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
+const ENGINE_HEALTH_URL = '/api/engine/health';
+const AGENTS_HEALTH_URL = '/api/agents/health';
 const POLL_INTERVAL = 15_000;
-
-/** True when the agents URL has been explicitly set (not the localhost default). */
-const AGENTS_CONFIGURED = !AGENTS_URL.includes('localhost');
 
 async function checkEngine(): Promise<boolean> {
   try {
-    const res = await fetch(`${ENGINE_URL}/health`, {
+    const res = await fetch(ENGINE_HEALTH_URL, {
       signal: AbortSignal.timeout(4000),
     });
     return res.ok;
@@ -22,19 +19,18 @@ async function checkEngine(): Promise<boolean> {
 }
 
 async function checkAgents(): Promise<boolean | null> {
-  // When agents URL is the localhost default, skip the check in production
-  // to avoid a misleading "Agents Offline" banner.
-  if (
-    !AGENTS_CONFIGURED &&
-    typeof window !== 'undefined' &&
-    window.location.hostname !== 'localhost'
-  ) {
-    return null;
-  }
   try {
-    const res = await fetch(`${AGENTS_URL}/health`, {
+    const res = await fetch(AGENTS_HEALTH_URL, {
       signal: AbortSignal.timeout(4000),
     });
+    if (res.status === 503) {
+      const body = (await res.json().catch(() => null)) as { code?: string } | null;
+      if (body?.code === 'not_configured') {
+        return typeof window !== 'undefined' && window.location.hostname === 'localhost'
+          ? null
+          : false;
+      }
+    }
     return res.ok;
   } catch {
     return false;
@@ -54,7 +50,7 @@ export function useServiceHealth() {
     async function probe() {
       const [engine, agents] = await Promise.all([checkEngine(), checkAgents()]);
       setEngineOnline(engine);
-      // null = not configured → store keeps null so the banner is hidden
+      // null = intentionally unconfigured in local development → hide the banner
       setAgentsOnline(agents);
     }
 

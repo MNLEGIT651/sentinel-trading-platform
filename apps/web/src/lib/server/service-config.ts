@@ -29,12 +29,11 @@ function normalizeBaseUrl(url: string | null | undefined): string | null {
 export function getServiceConfig(service: ServiceName): ServiceConfig {
   if (service === 'engine') {
     const baseUrl = normalizeBaseUrl(
-      process.env.ENGINE_URL ??
-        process.env.NEXT_PUBLIC_ENGINE_URL ??
-        (isProductionRuntime() ? null : 'http://localhost:8000'),
+      process.env.ENGINE_URL ?? (isProductionRuntime() ? null : 'http://localhost:8000'),
     );
-    const apiKey = process.env.ENGINE_API_KEY ?? process.env.NEXT_PUBLIC_ENGINE_API_KEY ?? '';
-    const configured = baseUrl !== null && !(isProductionRuntime() && isLocalOnlyUrl(baseUrl));
+    const apiKey = process.env.ENGINE_API_KEY ?? (isProductionRuntime() ? '' : 'sentinel-dev-key');
+    const configured =
+      baseUrl !== null && apiKey.length > 0 && !(isProductionRuntime() && isLocalOnlyUrl(baseUrl));
 
     return {
       service,
@@ -51,9 +50,7 @@ export function getServiceConfig(service: ServiceName): ServiceConfig {
   }
 
   const baseUrl = normalizeBaseUrl(
-    process.env.AGENTS_URL ??
-      process.env.NEXT_PUBLIC_AGENTS_URL ??
-      (isProductionRuntime() ? null : 'http://localhost:3001'),
+    process.env.AGENTS_URL ?? (isProductionRuntime() ? null : 'http://localhost:3001'),
   );
   const configured = baseUrl !== null && !(isProductionRuntime() && isLocalOnlyUrl(baseUrl));
 

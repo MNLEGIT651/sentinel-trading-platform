@@ -41,10 +41,14 @@ export function isRunning(): boolean {
 
 export function createApp(orchestrator: Orchestrator): Express {
   const app = express();
+  const webOrigins = (process.env.WEB_URL ?? 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   app.use(
     cors({
-      origin: process.env.WEB_URL ?? 'http://localhost:3000',
+      origin: webOrigins,
       methods: ['GET', 'POST', 'OPTIONS'],
     }),
   );

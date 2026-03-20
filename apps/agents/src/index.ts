@@ -2,7 +2,7 @@
  * Sentinel Agent Orchestrator — Entry point.
  *
  * Boots:
- *  1. Express HTTP server on AGENTS_PORT (default 3001)
+ *  1. Express HTTP server on PORT or AGENTS_PORT (default 3001)
  *  2. Market-hours cron scheduler (every 15 min, NYSE hours only)
  *  3. Graceful SIGTERM / SIGINT shutdown
  *
@@ -28,7 +28,7 @@ export * from './types.js';
 
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const port = parseInt(process.env.AGENTS_PORT ?? '3001', 10);
+  const port = parseInt(process.env.PORT ?? process.env.AGENTS_PORT ?? '3001', 10);
 
   console.log('╔═══════════════════════════════════════════════════╗');
   console.log('║        SENTINEL AGENT ORCHESTRATOR v1.0.0        ║');

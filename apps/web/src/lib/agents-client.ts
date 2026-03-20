@@ -1,9 +1,9 @@
 /**
- * Typed HTTP client for the Sentinel Agent Server (port 3001).
- * Used by the Next.js web app to interact with the agent orchestrator.
+ * Typed HTTP client for the same-origin Next.js agents proxy.
+ * Used by the web app to interact with the agent orchestrator.
  */
 
-const AGENTS_URL = process.env.NEXT_PUBLIC_AGENTS_URL ?? 'http://localhost:3001';
+const AGENTS_PROXY_BASE = '/api/agents';
 
 // ── Response types ─────────────────────────────────────────────────
 
@@ -69,7 +69,8 @@ export class AgentsApiError extends Error {
 // ── Internal fetch wrapper ─────────────────────────────────────────
 
 async function agentsFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${AGENTS_URL}${path}`, {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const res = await fetch(`${AGENTS_PROXY_BASE}${normalizedPath}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

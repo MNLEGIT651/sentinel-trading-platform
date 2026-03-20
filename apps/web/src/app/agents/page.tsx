@@ -109,6 +109,7 @@ export default function AgentsPage() {
   const isRunning = status?.isRunning ?? false;
   const isHalted = status?.halted ?? false;
   const cycleCount = status?.cycleCount ?? 0;
+  const controlsDisabled = agentsOnline === false || isOffline;
 
   return (
     <div className="space-y-4 p-4">
@@ -153,7 +154,7 @@ export default function AgentsPage() {
           )}
           <Button
             onClick={isHalted ? handleResume : handleRunCycle}
-            disabled={isRunning || cycleTriggering}
+            disabled={controlsDisabled || isRunning || cycleTriggering}
             variant="default"
             size="sm"
           >
@@ -174,7 +175,12 @@ export default function AgentsPage() {
               </>
             )}
           </Button>
-          <Button onClick={handleHalt} disabled={isHalted || isRunning} variant="outline" size="sm">
+          <Button
+            onClick={handleHalt}
+            disabled={controlsDisabled || isHalted || isRunning}
+            variant="outline"
+            size="sm"
+          >
             <Pause className="h-4 w-4" />
             <span className="ml-1.5">Halt</span>
           </Button>

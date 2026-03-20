@@ -5,7 +5,7 @@ interface AppState {
   sidebarOpen: boolean;
   marketStatus: 'open' | 'closed' | 'pre' | 'post';
   engineOnline: boolean;
-  /** null = agents URL not configured (skip banner) */
+  /** null = agents intentionally unconfigured in local development (skip banner) */
   agentsOnline: boolean | null;
   setSelectedTicker: (ticker: string | null) => void;
   toggleSidebar: () => void;

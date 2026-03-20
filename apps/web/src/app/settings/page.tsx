@@ -21,6 +21,7 @@ export default function SettingsPage() {
 
   const [serviceStatus, setServiceStatus] = useState<ServiceStatuses>({
     engine: 'checking',
+    agents: 'checking',
     polygon: 'checking',
     supabase: 'checking',
     anthropic: 'checking',
@@ -57,6 +58,7 @@ export default function SettingsPage() {
     } catch {
       setServiceStatus({
         engine: 'disconnected',
+        agents: 'disconnected',
         polygon: 'not_configured',
         supabase: 'not_configured',
         anthropic: 'not_configured',
