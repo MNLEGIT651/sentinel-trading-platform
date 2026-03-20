@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import SettingsPage from '@/app/settings/page';
 
@@ -22,6 +22,7 @@ const localStorageMock = (() => {
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 beforeEach(() => {
+  vi.useFakeTimers();
   localStorageMock.clear();
   vi.stubGlobal(
     'fetch',
@@ -29,6 +30,7 @@ beforeEach(() => {
       ok: true,
       json: async () => ({
         engine: 'connected',
+        agents: 'connected',
         polygon: 'connected',
         supabase: 'connected',
         anthropic: 'connected',
@@ -36,6 +38,11 @@ beforeEach(() => {
       }),
     }),
   );
+});
+
+afterEach(() => {
+  vi.runOnlyPendingTimers();
+  vi.useRealTimers();
 });
 
 describe('SettingsPage', () => {
