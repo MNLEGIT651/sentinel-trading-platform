@@ -46,6 +46,7 @@ async function main() {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     ENGINE_URL: process.env.ENGINE_URL,
+    ENGINE_API_KEY: process.env.ENGINE_API_KEY,
   };
   const missing = Object.entries(required)
     .filter(([, v]) => !v)
