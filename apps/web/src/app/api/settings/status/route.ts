@@ -12,69 +12,139 @@ interface StatusResponse {
   alpaca: ServiceStatus;
 }
 
-interface EngineHealthResponse {
-  dependencies?: {
-    polygon?: boolean;
-    alpaca?: boolean;
-    supabase?: boolean;
-  };
-}
-
-interface AgentsHealthResponse {
-  dependencies?: {
-    engine?: boolean;
-    anthropic?: boolean;
-    supabase?: boolean;
-  };
-}
-
-function dependencyStatus(ownerStatus: ServiceStatus, configured?: boolean): ServiceStatus {
-  if (ownerStatus === 'not_configured') return 'not_configured';
-  if (ownerStatus === 'disconnected') return 'disconnected';
-  if (configured === true) return 'connected';
-  if (configured === false) return 'not_configured';
-  return 'disconnected';
-}
-
-async function fetchConfiguredServiceJson<T>(
-  config: ReturnType<typeof getServiceConfig>,
-  path = '/health',
+async function probe(
+  fn: (signal: AbortSignal) => Promise<void>,
   timeoutMs = 4_000,
-): Promise<{ status: ServiceStatus; data: T | null }> {
-  if (!config.configured || !config.baseUrl) {
-    return { status: 'not_configured', data: null };
-  }
-
+): Promise<'connected' | 'disconnected'> {
   try {
-    const response = await fetch(`${config.baseUrl}${path}`, {
-      headers: config.headers,
-      signal: AbortSignal.timeout(timeoutMs),
-      cache: 'no-store',
-    });
-    if (!response.ok) throw new Error(`${response.status}`);
-    return { status: 'connected', data: (await response.json()) as T };
+    await fn(AbortSignal.timeout(timeoutMs));
+    return 'connected';
   } catch {
-    return { status: 'disconnected', data: null };
+    return 'disconnected';
   }
 }
 
 export async function GET(): Promise<NextResponse<StatusResponse>> {
   const engineConfig = getServiceConfig('engine');
+  const engine: ServiceStatus =
+    !engineConfig.configured || !engineConfig.baseUrl
+      ? 'not_configured'
+      : await probe(async (signal) => {
+          const r = await fetch(`${engineConfig.baseUrl}/health`, {
+            headers: engineConfig.headers,
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
+        });
+
   const agentsConfig = getServiceConfig('agents');
+  const agents: ServiceStatus =
+    !agentsConfig.configured || !agentsConfig.baseUrl
+      ? 'not_configured'
+      : await probe(async (signal) => {
+          const r = await fetch(`${agentsConfig.baseUrl}/health`, {
+            headers: agentsConfig.headers,
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
+        });
 
-  const [engineResult, agentsResult] = await Promise.all([
-    fetchConfiguredServiceJson<EngineHealthResponse>(engineConfig),
-    fetchConfiguredServiceJson<AgentsHealthResponse>(agentsConfig),
-  ]);
-  const engine = engineResult.status;
-  const agents = agentsResult.status;
-  const engineDependencies = engineResult.data?.dependencies;
-  const agentsDependencies = agentsResult.data?.dependencies;
+  const polygonKey = process.env.POLYGON_API_KEY;
+  let polygon: ServiceStatus;
+  if (engine === 'connected' && engineConfig.baseUrl) {
+    polygon = await probe(async (signal) => {
+      const r = await fetch(`${engineConfig.baseUrl}/api/v1/data/quotes?tickers=AAPL`, {
+        headers: engineConfig.headers,
+        signal,
+        cache: 'no-store',
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    }, 8_000);
+  } else if (!polygonKey) {
+    polygon = 'not_configured';
+  } else {
+    polygon = await probe(async (signal) => {
+      const r = await fetch(
+        `https://api.polygon.io/v2/aggs/ticker/AAPL/prev?adjusted=true&apiKey=${polygonKey}`,
+        { signal, cache: 'no-store' },
+      );
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  }
 
-  const polygon = dependencyStatus(engine, engineDependencies?.polygon);
-  const supabase = dependencyStatus(engine, engineDependencies?.supabase);
-  const anthropic = dependencyStatus(agents, agentsDependencies?.anthropic);
-  const alpaca = dependencyStatus(engine, engineDependencies?.alpaca);
+  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabase: ServiceStatus =
+    !supabaseUrl || !supabaseKey
+      ? 'not_configured'
+      : await probe(async (signal) => {
+          const r = await fetch(`${supabaseUrl}/rest/v1/`, {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            signal,
+            cache: 'no-store',
+          });
+          if (!r.ok) throw new Error(`${r.status}`);
+        });
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  let anthropic: ServiceStatus;
+  if (anthropicKey) {
+    anthropic = await probe(async (signal) => {
+      const r = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        signal,
+        cache: 'no-store',
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  } else if (agentsConfig.baseUrl) {
+    anthropic =
+      agents === 'not_configured'
+        ? 'not_configured'
+        : await probe(async (signal) => {
+            const r = await fetch(`${agentsConfig.baseUrl}/health`, { signal, cache: 'no-store' });
+            if (!r.ok) throw new Error(`${r.status}`);
+          });
+  } else {
+    anthropic = 'not_configured';
+  }
+
+  const alpacaKey = process.env.ALPACA_API_KEY;
+  const alpacaSecret = process.env.ALPACA_SECRET_KEY;
+  let alpaca: ServiceStatus;
+  if (alpacaKey && alpacaSecret) {
+    const alpacaBase = process.env.ALPACA_BASE_URL ?? 'https://paper-api.alpaca.markets/v2';
+    alpaca = await probe(async (signal) => {
+      const r = await fetch(`${alpacaBase}/account`, {
+        headers: {
+          'APCA-API-KEY-ID': alpacaKey,
+          'APCA-API-SECRET-KEY': alpacaSecret,
+        },
+        signal,
+        cache: 'no-store',
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  } else if (engine === 'connected' && engineConfig.baseUrl) {
+    alpaca = await probe(async (signal) => {
+      const r = await fetch(`${engineConfig.baseUrl}/api/v1/portfolio/account`, {
+        headers: engineConfig.headers,
+        signal,
+        cache: 'no-store',
+      });
+      if (!r.ok) throw new Error(`${r.status}`);
+    });
+  } else {
+    alpaca = 'not_configured';
+  }
 
   return NextResponse.json({ engine, agents, polygon, supabase, anthropic, alpaca });
 }
