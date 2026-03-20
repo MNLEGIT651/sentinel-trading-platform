@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass, field
 
 from src.strategies.base import OHLCVData, Signal, SignalDirection, Strategy
+from src.strategies.indicators import clear_indicator_cache, indicator_cache
 from src.strategies.registry import create_composite, create_strategy
 
 logger = logging.getLogger(__name__)
@@ -87,24 +88,26 @@ class SignalGenerator:
         batch = SignalBatch()
         batch.tickers_scanned = len(data_map)
 
-        for ticker, data in data_map.items():
-            ticker_signals: list[Signal] = []
+        with indicator_cache():
+            for ticker, data in data_map.items():
+                clear_indicator_cache()
+                ticker_signals: list[Signal] = []
 
-            for strategy in self.strategies:
-                batch.strategies_run += 1
-                try:
-                    signals = strategy.generate_signals(data)
-                    # Filter by minimum strength
-                    filtered = [s for s in signals if s.strength >= self.min_signal_strength]
-                    ticker_signals.extend(filtered)
-                except Exception as e:
-                    error_msg = f"{strategy.name} failed on {ticker}: {e}"
-                    logger.warning(error_msg)
-                    batch.errors.append(error_msg)
+                for strategy in self.strategies:
+                    batch.strategies_run += 1
+                    try:
+                        signals = strategy.generate_signals(data)
+                        # Filter by minimum strength
+                        filtered = [s for s in signals if s.strength >= self.min_signal_strength]
+                        ticker_signals.extend(filtered)
+                    except Exception as e:
+                        error_msg = f"{strategy.name} failed on {ticker}: {e}"
+                        logger.warning(error_msg)
+                        batch.errors.append(error_msg)
 
-            # Limit signals per ticker (keep strongest)
-            ticker_signals.sort(key=lambda s: s.strength, reverse=True)
-            batch.signals.extend(ticker_signals[: self.max_signals_per_ticker])
+                # Limit signals per ticker (keep strongest)
+                ticker_signals.sort(key=lambda s: s.strength, reverse=True)
+                batch.signals.extend(ticker_signals[: self.max_signals_per_ticker])
 
         return batch
 
@@ -126,15 +129,17 @@ class SignalGenerator:
         batch = SignalBatch()
         batch.tickers_scanned = len(data_map)
 
-        for ticker, data in data_map.items():
-            batch.strategies_run += 1
-            try:
-                signals = composite.generate_signals(data)
-                filtered = [s for s in signals if s.strength >= self.min_signal_strength]
-                batch.signals.extend(filtered)
-            except Exception as e:
-                error_msg = f"Composite failed on {ticker}: {e}"
-                logger.warning(error_msg)
-                batch.errors.append(error_msg)
+        with indicator_cache():
+            for ticker, data in data_map.items():
+                clear_indicator_cache()
+                batch.strategies_run += 1
+                try:
+                    signals = composite.generate_signals(data)
+                    filtered = [s for s in signals if s.strength >= self.min_signal_strength]
+                    batch.signals.extend(filtered)
+                except Exception as e:
+                    error_msg = f"Composite failed on {ticker}: {e}"
+                    logger.warning(error_msg)
+                    batch.errors.append(error_msg)
 
         return batch

@@ -13,3 +13,5 @@ async def test_health_includes_service_name(client):
     body = response.json()
     assert "service" in body
     assert body["service"] == "sentinel-engine"
+    assert "dependencies" in body
+    assert set(body["dependencies"]) == {"polygon", "alpaca", "supabase"}

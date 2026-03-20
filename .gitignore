@@ -25,7 +25,6 @@ __pycache__/
 
 # Vercel
 .vercel/
-
 .vercel
 
 # WAT agent trace logs
@@ -33,3 +32,22 @@ apps/agents/.tmp/
 
 # Claude Code local settings
 .claude/settings.local.json
+.claude/agents/
+
+# Temporary / scratch directories
+tmp/
+Screenshots/
+CODEX.WEB.AUDIT/
+
+# MCP local config
+.mcp.json
+
+# Supabase local state
+supabase/.branches/
+
+# Editor settings
+.vscode/
+
+# Office lock files
+~$*.docx
+~$*.xlsx

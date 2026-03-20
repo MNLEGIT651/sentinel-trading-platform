@@ -128,29 +128,33 @@ class EMAMomentumTrend(Strategy):
         slow = ema(data.close, self.params["slow_period"])
 
         i = len(data) - 1
-        if any(np.isnan(x[i]) for x in [fast, medium, slow]):
+        if any(np.isnan(x[j]) for x in [fast, medium, slow] for j in (i, i - 1)):
             return []
 
         signals: list[Signal] = []
 
-        # Calculate trend alignment strength
-        if fast[i] > medium[i] > slow[i]:
-            # All aligned bullish
+        # Current and previous alignment state
+        curr_bullish = fast[i] > medium[i] > slow[i]
+        prev_bullish = fast[i - 1] > medium[i - 1] > slow[i - 1]
+        curr_bearish = fast[i] < medium[i] < slow[i]
+        prev_bearish = fast[i - 1] < medium[i - 1] < slow[i - 1]
+
+        # Only signal on alignment onset (transition from unaligned to aligned)
+        if curr_bullish and not prev_bullish:
             spread = (fast[i] - slow[i]) / slow[i]
-            strength = min(spread * 20, 1.0)  # Normalize
+            strength = min(spread * 20, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
                     direction=SignalDirection.LONG,
                     strength=max(strength, 0.1),
                     strategy_name=self.name,
-                    reason=f"Triple EMA bullish alignment (spread={spread:.4f})",
+                    reason=f"Triple EMA bullish alignment onset (spread={spread:.4f})",
                     metadata={"fast": fast[i], "medium": medium[i], "slow": slow[i]},
                 )
             )
 
-        elif fast[i] < medium[i] < slow[i]:
-            # All aligned bearish
+        elif curr_bearish and not prev_bearish:
             spread = (slow[i] - fast[i]) / slow[i]
             strength = min(spread * 20, 1.0)
             signals.append(
@@ -159,7 +163,7 @@ class EMAMomentumTrend(Strategy):
                     direction=SignalDirection.SHORT,
                     strength=max(strength, 0.1),
                     strategy_name=self.name,
-                    reason=f"Triple EMA bearish alignment (spread={spread:.4f})",
+                    reason=f"Triple EMA bearish alignment onset (spread={spread:.4f})",
                     metadata={"fast": fast[i], "medium": medium[i], "slow": slow[i]},
                 )
             )

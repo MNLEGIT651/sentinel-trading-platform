@@ -9,11 +9,13 @@ This is the live status board for Claude Code, Codex, and human collaborators.
 Deployment simplification + root README + agent coordination system.
 
 Canonical roadmap:
+
 - `docs/ai/roadmaps/2026-03-20-deployment-readme-roadmap.md`
 
 ## Session startup checklist
 
 Before editing files:
+
 - [ ] Read `AGENTS.md`
 - [ ] Read `docs/ai/working-agreement.md`
 - [ ] Read `docs/ai/architecture.md`
@@ -27,54 +29,58 @@ Before editing files:
 
 ## Queue
 
-| Ticket | Status | Owner | Branch/Worktree | Scope | Validation | Last Updated | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| T1.1 | done | Codex | `work` | `docs/ai/state/project-state.md` | `git diff --check` | 2026-03-20 | Created the canonical live task ledger for queued, active, blocked, and completed work. |
-| T1.2 | done | Codex | `work` | `docs/ai/agent-ops.md` | `git diff --check` | 2026-03-20 | Added the shared startup, claim, validation, and handoff guide for Claude + Codex. |
-| T1.3 | done | Codex | `work` | `AGENTS.md` | `git diff --check` | 2026-03-20 | Linked the project-state and agent-ops docs from the repo-level instructions. |
-| T2.1 | done | Codex | `work` | `docs/deployment.md` | `git diff --check` | 2026-03-20 | Added the canonical deployment guide with topology, service exposure, asset inventory, and env ownership matrix. |
-| T2.2 | queued | Human | _n/a_ | `docs/deployment.md`, this file | human decision review | 2026-03-20 | Decide whether `agents` is required or optional for first production deployment. |
-| T2.3 | queued | unassigned | _n/a_ | `docs/deployment.md`, `.env.example` | `git diff --check` | 2026-03-20 | Add environment ownership and exposure matrix. |
-| T3.1 | queued | unassigned | _n/a_ | analysis artifact or this file | `git diff --check` | 2026-03-20 | Inventory browser calls that still hit engine or agents directly. |
-| T3.2 | queued | unassigned | _n/a_ | `apps/web/src/app/api/**`, `apps/web/src/app/page.tsx`, tests | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-03-20 | Route engine-backed dashboard calls through same-origin web endpoints. |
-| T3.3 | queued | unassigned | _n/a_ | `apps/web/src/app/api/**`, `apps/web/src/hooks/use-service-health.ts`, `apps/web/src/app/page.tsx`, tests | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-03-20 | Route agents-backed flows through same-origin endpoints or disable for first production. |
-| T3.4 | queued | unassigned | _n/a_ | `apps/web/src/lib/server/service-config.ts`, callers, tests | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-03-20 | Centralize service URL/auth/timeout logic. |
-| T4.1 | queued | unassigned | _n/a_ | Dockerfiles, `docs/deployment.md` | Docker build checks if touched | 2026-03-20 | Audit and normalize container assets against the canonical topology. |
-| T4.2 | done | Codex | `work` | `docs/deployment.md`, `README.md` | `git diff --check` | 2026-03-20 | Aligned Vercel, Railway, Compose, and the recommended production model in one set of docs. |
-| T4.3 | queued | unassigned | _n/a_ | `docs/runbooks/*.md` | `git diff --check` | 2026-03-20 | Add local, production, and troubleshooting runbooks. |
-| T5.1 | done | Codex | `work` | `README.md` | `git diff --check` | 2026-03-20 | Added a root README as the main human-facing entry point. |
-| T5.2 | done | Codex | `work` | `README.md` | `git diff --check` | 2026-03-20 | Added architecture, repo map, commands, and validation guidance to the root README. |
-| T5.3 | done | Codex | `work` | `README.md`, `docs/deployment.md` | `git diff --check` | 2026-03-20 | Added deployment and environment sections with links to the canonical deployment guide. |
-| T5.4 | done | Codex | `work` | `README.md` | `git diff --check` | 2026-03-20 | Added maturity notes, known gaps, and pointers to the project roadmap/state. |
+| Ticket | Status | Owner      | Branch/Worktree                    | Scope                                                                                                                                | Validation                                                        | Last Updated | Notes                                                                                                                                   |
+| ------ | ------ | ---------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| T1.1   | done   | Codex      | `work`                             | `docs/ai/state/project-state.md`                                                                                                     | `git diff --check`                                                | 2026-03-20   | Created the canonical live task ledger for queued, active, blocked, and completed work.                                                 |
+| T1.2   | done   | Codex      | `work`                             | `docs/ai/agent-ops.md`                                                                                                               | `git diff --check`                                                | 2026-03-20   | Added the shared startup, claim, validation, and handoff guide for Claude + Codex.                                                      |
+| T1.3   | done   | Codex      | `work`                             | `AGENTS.md`                                                                                                                          | `git diff --check`                                                | 2026-03-20   | Linked the project-state and agent-ops docs from the repo-level instructions.                                                           |
+| T2.1   | done   | Codex      | `work`                             | `docs/deployment.md`                                                                                                                 | `git diff --check`                                                | 2026-03-20   | Added the canonical deployment guide with topology, service exposure, asset inventory, and env ownership matrix.                        |
+| T2.2   | done   | Human      | _n/a_                              | `docs/deployment.md`, this file                                                                                                      | human decision review                                             | 2026-03-20   | User chose the canonical production pair: Vercel web + Railway engine/agents, with agents required in production.                       |
+| T2.3   | done   | Codex      | `feat/deployment-canonicalization` | `docs/deployment.md`, `.env.example`, `README.md`                                                                                    | `git diff --check`                                                | 2026-03-20   | Finalized the canonical env contract and removed deprecated browser-facing backend envs from docs/examples.                             |
+| T3.1   | queued | unassigned | _n/a_                              | analysis artifact or this file                                                                                                       | `git diff --check`                                                | 2026-03-20   | Inventory browser calls that still hit engine or agents directly.                                                                       |
+| T3.2   | queued | unassigned | _n/a_                              | `apps/web/src/app/api/**`, `apps/web/src/app/page.tsx`, tests                                                                        | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-03-20   | Route engine-backed dashboard calls through same-origin web endpoints.                                                                  |
+| T3.3   | done   | Codex      | `feat/deployment-canonicalization` | `apps/web/src/app/api/**`, `apps/web/src/hooks/use-service-health.ts`, `apps/web/src/app/page.tsx`, related tests                    | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-03-20   | Routed agents-backed web flows through same-origin handlers and failed closed when agents is not configured.                            |
+| T3.4   | done   | Codex      | `feat/deployment-canonicalization` | `apps/web/src/lib/server/service-config.ts`, `apps/web/src/lib/engine-fetch.ts`, `apps/web/src/lib/agents-client.ts`, callers, tests | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-03-20   | Removed public backend env fallbacks and made server-side service config the canonical production path.                                 |
+| T4.1   | done   | Codex      | `feat/deployment-canonicalization` | `apps/engine/Dockerfile`, `apps/agents/Dockerfile`, `apps/agents/src/index.ts`, `docker-compose.yml`                                 | Docker asset audit; service smoke checks after deploy             | 2026-03-20   | Normalized container and local Compose assets to the Vercel web plus Railway backend topology, then validated the new Railway services. |
+| T4.2   | done   | Codex      | `work`                             | `docs/deployment.md`, `README.md`                                                                                                    | `git diff --check`                                                | 2026-03-20   | Aligned Vercel, Railway, Compose, and the recommended production model in one set of docs.                                              |
+| T4.3   | done   | Codex      | `feat/deployment-canonicalization` | `docs/runbooks/*.md`                                                                                                                 | `git diff --check`                                                | 2026-03-20   | Added local, preview, production, troubleshooting, and release-checklist runbooks for the canonical deployment model.                   |
+| T5.1   | done   | Codex      | `work`                             | `README.md`                                                                                                                          | `git diff --check`                                                | 2026-03-20   | Added a root README as the main human-facing entry point.                                                                               |
+| T5.2   | done   | Codex      | `work`                             | `README.md`                                                                                                                          | `git diff --check`                                                | 2026-03-20   | Added architecture, repo map, commands, and validation guidance to the root README.                                                     |
+| T5.3   | done   | Codex      | `work`                             | `README.md`, `docs/deployment.md`                                                                                                    | `git diff --check`                                                | 2026-03-20   | Added deployment and environment sections with links to the canonical deployment guide.                                                 |
+| T5.4   | done   | Codex      | `work`                             | `README.md`                                                                                                                          | `git diff --check`                                                | 2026-03-20   | Added maturity notes, known gaps, and pointers to the project roadmap/state.                                                            |
 
 ---
 
 ## Active work log
 
-| Ticket | Status | Owner | Branch/Worktree | Scope | Validation | Last Updated | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| T0 | done | Codex | `work` | `docs/ai/roadmaps/2026-03-20-deployment-readme-roadmap.md`, `docs/ai/agent-ops.md`, `docs/ai/state/project-state.md` | `git diff --check` | 2026-03-20 | Seeded roadmap, operating guide, and state ledger requested by user. |
-| T2.1/T4.2/T5.1-T5.4 | done | Codex | `work` | `docs/deployment.md`, `README.md`, `docs/ai/state/project-state.md` | `git diff --check` | 2026-03-20 | Added the canonical deployment guide and root README, then reflected completion in the state ledger. |
+| Ticket                   | Status | Owner | Branch/Worktree                    | Scope                                                                                                                         | Validation                                                                                                                                                                              | Last Updated | Notes                                                                                                                                                                                                           |
+| ------------------------ | ------ | ----- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T0                       | done   | Codex | `work`                             | `docs/ai/roadmaps/2026-03-20-deployment-readme-roadmap.md`, `docs/ai/agent-ops.md`, `docs/ai/state/project-state.md`          | `git diff --check`                                                                                                                                                                      | 2026-03-20   | Seeded roadmap, operating guide, and state ledger requested by user.                                                                                                                                            |
+| T2.1/T4.2/T5.1-T5.4      | done   | Codex | `work`                             | `docs/deployment.md`, `README.md`, `docs/ai/state/project-state.md`                                                           | `git diff --check`                                                                                                                                                                      | 2026-03-20   | Added the canonical deployment guide and root README, then reflected completion in the state ledger.                                                                                                            |
+| T2.3/T3.3/T3.4/T4.1/T4.3 | done   | Codex | `feat/deployment-canonicalization` | `.env.example`, runtime proxy callers, Docker assets, Compose, runbooks                                                       | `pnpm lint`; `pnpm test:web`; `pnpm test:agents`; `pnpm --filter @sentinel/web build`; `pnpm lint:engine`; `pnpm format:check:engine`; `pnpm test:engine`; preview smoke + runtime logs | 2026-03-20   | Canonicalized env contracts, removed public backend assumptions, aligned Railway/Vercel topology, deployed a healthy preview, and completed the operator runbooks.                                              |
+| T6.1                     | done   | Codex | `deploy/railway-vercel-proxy`      | `apps/engine/src/data/polygon_client.py`, `apps/engine/src/api/routes/*.py`, targeted tests, `docs/ai/state/project-state.md` | `pnpm lint:engine`; `pnpm test:engine`; `pnpm test`; `pnpm build`; runtime log re-check                                                                                                 | 2026-03-20   | Hardened interactive Polygon reads with fast-fail throttling behavior and stale cache fallback, deployed the engine to Railway production, and verified proxy quotes/scan requests complete without fresh 504s. |
 
 ---
 
 ## Blockers / decisions needed
 
-| ID | Owner | Decision | Impact | Last Updated |
-| --- | --- | --- | --- | --- |
-| D1 | Human | Should first production require `agents`, or should `agents` be optional? | Determines T2.2, T3.3, deployment docs, and README wording. | 2026-03-20 |
-| D2 | Human | Preferred production hosting pair: Vercel + Railway, Vercel + Docker host, or full container host? | Determines deployment doc recommendations and runbook examples. | 2026-03-20 |
+| ID  | Owner    | Decision                                                                                       | Impact                                                              | Last Updated |
+| --- | -------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------ |
+| D1  | Resolved | `agents` is required in production.                                                            | Reflected in deployment docs, env contract, and preview validation. | 2026-03-20   |
+| D2  | Resolved | Canonical hosting pair is Vercel for `apps/web` and Railway for `apps/engine` + `apps/agents`. | Reflected in runbooks, Railway services, and Vercel env cleanup.    | 2026-03-20   |
 
 ---
 
 ## Update rules
 
 When you claim a ticket:
+
 1. Move it from `queued` to `active`.
 2. Fill in owner, branch/worktree, exact scope, and last updated date.
 3. Do not start editing until the claim is written here.
 
 When you finish a ticket:
+
 1. Mark it `done`.
 2. Add a one-line summary of what changed.
 3. Record exact validation commands and status in the handoff/PR.

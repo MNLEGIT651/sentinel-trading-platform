@@ -1,0 +1,8 @@
+# Normalize line endings to LF on commit, auto-detect on checkout
+* text=auto eol=lf
+
+# Force binary for known binary types
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
