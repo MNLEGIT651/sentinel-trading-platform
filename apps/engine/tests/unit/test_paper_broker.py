@@ -108,6 +108,107 @@ class TestCancelOrder:
             await broker.cancel_order("nonexistent-id")
 
 
+class TestOrderStore:
+    def setup_method(self):
+        from src.execution.order_store import get_order_store
+
+        get_order_store.cache_clear()
+        self.broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
+        self.buy_order = OrderRequest(
+            instrument_id="AAPL",
+            side="buy",
+            order_type="market",
+            quantity=10,
+        )
+
+    @pytest.mark.asyncio
+    async def test_submit_order_writes_to_store(self):
+        """Submitted orders should be recorded in the order store."""
+        from src.execution.order_store import get_order_store
+
+        get_order_store.cache_clear()
+        store = get_order_store()
+
+        result = await self.broker.submit_order(self.buy_order, current_price=150.0)
+
+        stored = store.get(result.order_id)
+        assert stored is not None
+        assert stored.symbol == "AAPL"
+        assert stored.status == "filled"
+        assert stored.fill_price is not None
+        get_order_store.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_rejected_order_written_to_store(self):
+        """Rejected orders should be recorded in the order store."""
+        from src.execution.order_store import get_order_store
+
+        get_order_store.cache_clear()
+        store = get_order_store()
+
+        broker = PaperBroker(initial_capital=100.0)
+        expensive_order = OrderRequest(
+            instrument_id="AAPL",
+            side="buy",
+            order_type="market",
+            quantity=1000,
+        )
+        result = await broker.submit_order(expensive_order, current_price=150.0)
+
+        stored = store.get(result.order_id)
+        assert stored is not None
+        assert stored.status == "rejected"
+        get_order_store.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_get_orders_returns_stored_orders(self):
+        """get_orders() should return orders from the store."""
+        from src.execution.order_store import get_order_store
+
+        get_order_store.cache_clear()
+
+        await self.broker.submit_order(self.buy_order, current_price=150.0)
+        orders = await self.broker.get_orders(status="filled")
+
+        assert len(orders) >= 1
+        assert orders[0]["symbol"] == "AAPL"
+        get_order_store.cache_clear()
+
+    @pytest.mark.asyncio
+    async def test_cancel_order_updates_store(self):
+        """cancel_order() should update the store entry to cancelled."""
+        from src.execution.order_store import StoredOrder, get_order_store
+
+        get_order_store.cache_clear()
+        store = get_order_store()
+
+        # Seed an order directly into both the broker's _orders dict and the store
+        # so cancel_order() can find it (PaperBroker fills instantly, so we bypass submit)
+        order_id = "cancel-test-1"
+        self.broker._orders[order_id] = {"id": order_id, "status": "accepted"}
+        store.add(
+            StoredOrder(
+                order_id=order_id,
+                symbol="AAPL",
+                side="buy",
+                order_type="market",
+                qty=5,
+                filled_qty=0,
+                status="accepted",
+                fill_price=None,
+                submitted_at="2026-01-01T00:00:00Z",
+                filled_at=None,
+                risk_note=None,
+            )
+        )
+
+        await self.broker.cancel_order(order_id)
+        stored = store.get(order_id)
+        assert stored is not None
+        assert stored.status == "cancelled"
+        get_order_store.cache_clear()
+
+
 class TestSlippageModel:
     async def test_slippage_applied_buy(self):
         """Buy fill price should always be >= the current price."""

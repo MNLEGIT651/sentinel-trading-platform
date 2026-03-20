@@ -2,8 +2,10 @@
 
 import random
 import uuid
+from datetime import UTC, datetime
 
 from src.execution.broker_interface import BrokerAdapter, OrderRequest, OrderResult
+from src.execution.order_store import StoredOrder, get_order_store
 
 
 class PaperBroker(BrokerAdapter):
@@ -41,6 +43,21 @@ class PaperBroker(BrokerAdapter):
 
         if order.side == "buy":
             if cost > self.cash:
+                get_order_store().add(
+                    StoredOrder(
+                        order_id=order_id,
+                        symbol=order.instrument_id,
+                        side=order.side,
+                        order_type=order.order_type,
+                        qty=order.quantity,
+                        filled_qty=0,
+                        status="rejected",
+                        fill_price=None,
+                        submitted_at=datetime.now(UTC).isoformat(),
+                        filled_at=None,
+                        risk_note="Insufficient cash",
+                    )
+                )
                 return OrderResult(
                     order_id=order_id,
                     status="rejected",
@@ -79,6 +96,22 @@ class PaperBroker(BrokerAdapter):
             self.cash += cost
 
         self._orders[order_id] = order
+        now = datetime.now(UTC).isoformat()
+        get_order_store().add(
+            StoredOrder(
+                order_id=order_id,
+                symbol=order.instrument_id,
+                side=order.side,
+                order_type=order.order_type,
+                qty=order.quantity,
+                filled_qty=order.quantity,
+                status="filled",
+                fill_price=fill_price,
+                submitted_at=now,
+                filled_at=now,
+                risk_note=None,
+            )
+        )
         return OrderResult(
             order_id=order_id,
             status="filled",
@@ -92,6 +125,27 @@ class PaperBroker(BrokerAdapter):
         if order_id not in self._orders:
             raise ValueError(f"Order not found: {order_id}")
         del self._orders[order_id]
+        get_order_store().update(order_id, status="cancelled")
+
+    async def get_orders(self, status: str = "open") -> list[dict]:
+        """Get orders from the order store."""
+        store = get_order_store()
+        status_filter = None if status == "all" else status
+        orders = store.list_orders(status=status_filter)
+        return [
+            {
+                "order_id": o.order_id,
+                "symbol": o.symbol,
+                "side": o.side,
+                "type": o.order_type,
+                "qty": o.qty,
+                "filled_qty": o.filled_qty,
+                "status": o.status,
+                "submitted_at": o.submitted_at,
+                "filled_avg_price": o.fill_price,
+            }
+            for o in orders
+        ]
 
     async def get_positions(self) -> list[dict]:
         """Return all open positions as a list of dicts."""
