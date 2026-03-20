@@ -1,6 +1,5 @@
 """Data ingestion and live market data API routes."""
 
-import asyncio
 import logging
 from datetime import date, timedelta
 
@@ -105,7 +104,7 @@ async def get_quote(ticker: str) -> MarketQuote:
     """Fetch the latest price for a ticker from Polygon.io."""
     polygon = _get_polygon()
     try:
-        bar = await polygon.get_latest_price(ticker.upper())
+        bar = await polygon.get_latest_price(ticker.upper(), interactive=True)
         if not bar:
             raise HTTPException(status_code=404, detail=f"No data for {ticker}")
         return _bar_to_quote(ticker.upper(), bar)
@@ -123,16 +122,16 @@ async def get_quote(ticker: str) -> MarketQuote:
 async def get_quotes(tickers: str = "AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY") -> list[MarketQuote]:
     """Fetch latest prices for multiple tickers (comma-separated).
 
-    Uses a small inter-request delay to stay within free-tier rate limits.
-    Skips tickers that fail rather than aborting the whole batch.
+    Uses fast-fail interactive requests and cached fallbacks so browser traffic
+    does not stall behind long provider backoff cycles.
     """
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     polygon = _get_polygon()
     quotes: list[MarketQuote] = []
     try:
-        for i, ticker in enumerate(ticker_list):
+        for ticker in ticker_list:
             try:
-                bar = await polygon.get_latest_price(ticker)
+                bar = await polygon.get_latest_price(ticker, interactive=True)
                 if bar:
                     quotes.append(_bar_to_quote(ticker, bar))
             except httpx.HTTPStatusError as exc:
@@ -140,9 +139,6 @@ async def get_quotes(tickers: str = "AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY") -
                     logger.warning("Rate limited fetching %s, skipping remaining tickers", ticker)
                     break
                 logger.warning("Failed to fetch %s: %s", ticker, exc)
-            # Stagger requests to avoid 429s on free tier (5 req/min)
-            if i < len(ticker_list) - 1:
-                await asyncio.sleep(0.5)
     finally:
         await polygon.close()
 
@@ -161,7 +157,11 @@ async def get_bars(
         end = date.today()
         start = end - timedelta(days=days)
         bars = await polygon.get_bars(
-            ticker=ticker.upper(), timeframe=timeframe, start=start, end=end
+            ticker=ticker.upper(),
+            timeframe=timeframe,
+            start=start,
+            end=end,
+            interactive=True,
         )
         return [
             MarketBar(

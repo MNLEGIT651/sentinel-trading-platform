@@ -86,7 +86,7 @@ async def submit_order(body: SubmitOrderBody) -> dict:
             settings = Settings()
             polygon = PolygonClient(settings.polygon_api_key)
             try:
-                bar = await polygon.get_latest_price(body.symbol.upper())
+                bar = await polygon.get_latest_price(body.symbol.upper(), interactive=True)
                 price = bar.close if bar else 100.0
             finally:
                 await polygon.close()

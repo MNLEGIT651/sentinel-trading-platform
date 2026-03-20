@@ -91,7 +91,13 @@ async def _fetch_ohlcv(polygon: PolygonClient, ticker: str, days: int) -> OHLCVD
     """Fetch bars from Polygon and convert to OHLCVData."""
     end = date.today()
     start = end - timedelta(days=days)
-    bars = await polygon.get_bars(ticker=ticker, timeframe="1d", start=start, end=end)
+    bars = await polygon.get_bars(
+        ticker=ticker,
+        timeframe="1d",
+        start=start,
+        end=end,
+        interactive=True,
+    )
     if len(bars) < 20:
         return None
     return OHLCVData(
