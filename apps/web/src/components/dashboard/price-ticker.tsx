@@ -14,7 +14,7 @@ interface PriceTickerProps {
 
 export function PriceTicker({ items }: PriceTickerProps) {
   return (
-    <div className="flex items-center gap-6 overflow-x-auto rounded-lg border border-border bg-card px-4 py-2 scrollbar-none">
+    <div className="flex items-center gap-4 overflow-x-auto rounded-lg border border-border bg-card pl-4 pr-14 py-2 scrollbar-none">
       {items.map((item) => (
         <div key={item.ticker} className="flex items-center gap-2 shrink-0">
           <span className="text-xs font-semibold text-foreground">{item.ticker}</span>

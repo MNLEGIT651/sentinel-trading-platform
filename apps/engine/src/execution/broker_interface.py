@@ -50,3 +50,8 @@ class BrokerAdapter(ABC):
     async def get_account(self) -> dict:
         """Get account summary (cash, equity, etc.)."""
         ...
+
+    @abstractmethod
+    async def get_orders(self, status: str = "open") -> list[dict]:
+        """Get orders filtered by status."""
+        ...

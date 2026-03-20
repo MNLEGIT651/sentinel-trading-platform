@@ -161,7 +161,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 p-4">
       {!engineOnline && <OfflineBanner service="engine" />}
-      {!agentsOnline && <OfflineBanner service="agents" />}
+      {agentsOnline === false && <OfflineBanner service="agents" />}
 
       {/* Row 1: Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">

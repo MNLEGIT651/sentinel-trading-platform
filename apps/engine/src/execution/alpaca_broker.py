@@ -1,10 +1,12 @@
 """Alpaca Markets broker adapter for paper and live trading."""
 
 import logging
+from datetime import UTC, datetime
 
 import httpx
 
 from src.execution.broker_interface import BrokerAdapter, OrderRequest, OrderResult
+from src.execution.order_store import StoredOrder, get_order_store
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +90,24 @@ class AlpacaBroker(BrokerAdapter):
         res.raise_for_status()
         data = res.json()
 
+        get_order_store().add(
+            StoredOrder(
+                order_id=data["id"],
+                symbol=order.instrument_id,
+                side=order.side,
+                order_type=order.order_type,
+                qty=order.quantity,
+                filled_qty=float(data["filled_qty"]) if data.get("filled_qty") else 0,
+                status=data["status"],
+                fill_price=float(data["filled_avg_price"])
+                if data.get("filled_avg_price")
+                else None,
+                submitted_at=data.get("submitted_at", datetime.now(UTC).isoformat()),
+                filled_at=data.get("filled_at"),
+                risk_note=None,
+            )
+        )
+
         return OrderResult(
             order_id=data["id"],
             status=data["status"],
@@ -120,6 +140,24 @@ class AlpacaBroker(BrokerAdapter):
             }
             for o in res.json()
         ]
+
+    async def refresh_order(self, order_id: str) -> StoredOrder | None:
+        """Fetch a single order from Alpaca and update the store."""
+        try:
+            res = await self._http.get(f"/v2/orders/{order_id}")
+            res.raise_for_status()
+        except httpx.HTTPStatusError:
+            return None
+        o = res.json()
+        store = get_order_store()
+        updated = store.update(
+            order_id,
+            status=o["status"],
+            filled_qty=float(o["filled_qty"]) if o.get("filled_qty") else 0,
+            fill_price=(float(o["filled_avg_price"]) if o.get("filled_avg_price") else None),
+            filled_at=o.get("filled_at"),
+        )
+        return updated
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""

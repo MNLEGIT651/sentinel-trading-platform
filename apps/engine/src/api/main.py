@@ -84,9 +84,14 @@ async def http_exception_handler(request, exc: StarletteHTTPException) -> JSONRe
 
 _settings = Settings()
 app.add_middleware(ApiKeyMiddleware, api_key=_settings.engine_api_key)
+
+_cors_origins = [o.strip() for o in _settings.cors_origins.split(",") if o.strip()]
+# Build a regex that also matches Vercel preview deploy URLs
+_origin_regex = r"https://sentinel-trading-platform(-agents)?(-[\w-]+)?\.vercel\.app"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_settings.cors_origins.split(","),
+    allow_origins=_cors_origins,
+    allow_origin_regex=_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
