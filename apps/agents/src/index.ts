@@ -14,7 +14,6 @@
  *  ⚡  Execution Monitor  — Trade recommendations
  */
 
-import 'dotenv/config';
 import { Orchestrator } from './orchestrator.js';
 import { createApp, isRunning } from './server.js';
 import { startScheduler } from './scheduler.js';
