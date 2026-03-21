@@ -20,7 +20,12 @@ _PUBLIC_PATHS = frozenset({"/health", "/docs", "/openapi.json", "/redoc"})
 
 
 class ApiKeyMiddleware(BaseHTTPMiddleware):
-    """Reject requests missing a valid X-API-Key header."""
+    """Reject requests missing a valid API key.
+
+    Preferred: ``Authorization: Bearer <key>`` (standard HTTP auth header).
+    Fallback:  ``X-API-Key: <key>`` (retained for backward compatibility with
+               direct API consumers not using the Next.js proxy).
+    """
 
     def __init__(self, app, *, api_key: str) -> None:
         super().__init__(app)
@@ -29,12 +34,13 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.path in _PUBLIC_PATHS or request.method == "OPTIONS":
             return await call_next(request)
-        # Accept either X-API-Key or Authorization: Bearer <key>
-        provided = request.headers.get("X-API-Key", "")
+        # Prefer standard Bearer token; fall back to proprietary X-API-Key header.
+        provided = ""
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            provided = auth[7:]
         if not provided:
-            auth = request.headers.get("Authorization", "")
-            if auth.startswith("Bearer "):
-                provided = auth[7:]
+            provided = request.headers.get("X-API-Key", "")
         if provided != self._api_key:
             return JSONResponse(
                 status_code=401,

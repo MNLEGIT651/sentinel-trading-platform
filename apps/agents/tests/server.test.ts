@@ -51,6 +51,11 @@ vi.mock('../src/engine-client.js', () => ({
   })),
 }));
 
+// Route behavior is tested here; auth middleware behavior is covered separately.
+vi.mock('../src/auth-middleware.js', () => ({
+  authMiddleware: (_req: unknown, _res: unknown, next: () => void) => next(),
+}));
+
 const { createApp } = await import('../src/server.js');
 const app = createApp(mockOrchestrator as any);
 

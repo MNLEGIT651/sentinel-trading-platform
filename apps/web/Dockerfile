@@ -35,6 +35,14 @@ ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
+# Warn if build args contain placeholders (real values required for production)
+ARG VALIDATE_BUILD_ARGS=false
+RUN if [ "$VALIDATE_BUILD_ARGS" = "true" ] && echo "$NEXT_PUBLIC_SUPABASE_URL" | grep -q "placeholder"; then \
+      echo "ERROR: NEXT_PUBLIC_SUPABASE_URL still contains placeholder value." && \
+      echo "Pass real build args: --build-arg NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co" && \
+      exit 1; \
+    fi
+
 RUN pnpm --filter web build
 
 # ─── Runtime image ────────────────────────────────────────────────────────────

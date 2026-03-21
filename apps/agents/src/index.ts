@@ -18,6 +18,12 @@ import 'dotenv/config';
 import { Orchestrator } from './orchestrator.js';
 import { createApp, isRunning } from './server.js';
 import { startScheduler } from './scheduler.js';
+import {
+  AGENTS_ENV_GUIDANCE,
+  REQUIRED_AGENT_ENV_VARS,
+  getMissingAgentEnvVars,
+} from './env.js';
+import { logger } from './logger.js';
 
 // Re-export public API for consumers that import this package
 export { Agent } from './agent.js';
@@ -26,45 +32,50 @@ export { ToolExecutor } from './tool-executor.js';
 export { EngineClient } from './engine-client.js';
 export * from './types.js';
 
-async function main() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const port = parseInt(process.env.PORT ?? process.env.AGENTS_PORT ?? '3001', 10);
+// ─── Required environment variables ──────────────────────────────────────────
+//
+// All six must be present before the service starts. The check runs before
+// any network connections are attempted so misconfigurations fail fast on
+// deploy rather than during the first agent cycle.
 
-  console.log('╔═══════════════════════════════════════════════════╗');
-  console.log('║        SENTINEL AGENT ORCHESTRATOR v1.0.0        ║');
-  console.log('╠═══════════════════════════════════════════════════╣');
-  console.log('║  Agents:                                          ║');
-  console.log('║   🛰  Market Sentinel    — Market monitoring      ║');
-  console.log('║   📊  Strategy Analyst   — Signal generation      ║');
-  console.log('║   🛡  Risk Monitor       — Risk enforcement       ║');
-  console.log('║   🔬  Research           — Deep analysis          ║');
-  console.log('║   ⚡  Execution Monitor  — Trade recommendations  ║');
-  console.log('╚═══════════════════════════════════════════════════╝');
-
-  const required: Record<string, string | undefined> = {
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    ENGINE_URL: process.env.ENGINE_URL,
-    ENGINE_API_KEY: process.env.ENGINE_API_KEY,
-  };
-  const missing = Object.entries(required)
-    .filter(([, v]) => !v)
-    .map(([k]) => k);
+function validateEnv(): void {
+  const missing = getMissingAgentEnvVars();
   if (missing.length > 0) {
-    console.error(`Missing required env vars: ${missing.join(', ')}. See .env.example.`);
+    logger.error('boot.env.missing', {
+      missing,
+      hint: AGENTS_ENV_GUIDANCE,
+    });
     process.exit(1);
   }
+  logger.info('boot.env.valid', { vars: REQUIRED_AGENT_ENV_VARS.length });
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+
+async function main() {
+  logger.info('boot.start', { service: 'sentinel-agents', version: '1.0.0' });
+
+  validateEnv();
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const port = parseInt(process.env.PORT ?? process.env.AGENTS_PORT ?? '3001', 10);
 
   const orchestrator = new Orchestrator(apiKey !== undefined ? { apiKey } : {});
 
   // ── HTTP server ────────────────────────────────────────────────
   const app = createApp(orchestrator);
   const server = app.listen(port, () => {
-    console.log(`\n[Server] Agents server running → http://localhost:${port}`);
-    console.log(`[Server] Endpoints: GET /health /status /recommendations /alerts`);
-    console.log(`[Server]            POST /cycle /halt /resume`);
-    console.log(`[Server]            POST /recommendations/:id/approve|reject\n`);
+    logger.info('boot.server.ready', { port, endpoints: [
+      'GET  /health',
+      'GET  /status',
+      'GET  /recommendations',
+      'GET  /alerts',
+      'POST /cycle',
+      'POST /halt',
+      'POST /resume',
+      'POST /recommendations/:id/approve',
+      'POST /recommendations/:id/reject',
+    ]});
   });
 
   // ── Scheduler ──────────────────────────────────────────────────
@@ -72,27 +83,33 @@ async function main() {
     isRunning,
     isHalted: () => orchestrator.currentState.halted,
   });
+  logger.info('boot.scheduler.ready');
 
   // ── Graceful shutdown ──────────────────────────────────────────
   const shutdown = (signal: string) => {
-    console.log(`\n[Boot] ${signal} received — shutting down gracefully`);
+    logger.info('boot.shutdown.start', { signal });
     schedulerTask.stop();
     server.close(() => {
-      console.log('[Boot] HTTP server closed. Goodbye.');
+      logger.info('boot.shutdown.complete');
       process.exit(0);
     });
     // Force-exit after 60s in case an in-flight cycle does not finish
     setTimeout(() => {
-      console.warn('[Boot] Force-exit after 60s shutdown timeout');
+      logger.error('boot.shutdown.timeout', { timeoutMs: 60_000 });
       process.exit(1);
     }, 60_000).unref();
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+
+  logger.info('boot.ready', { port });
 }
 
-main().catch((err) => {
-  console.error('[Boot] Fatal startup error:', err);
+main().catch((err: unknown) => {
+  logger.error('boot.fatal', {
+    error: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
   process.exit(1);
 });

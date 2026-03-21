@@ -9,6 +9,7 @@ import {
   type RecommendationCreate,
 } from './recommendations-store.js';
 import type { MarketSentiment, RiskAssessment } from './types.js';
+import { WATCHLIST_TICKERS } from './config.js';
 
 export class ToolExecutor {
   private engine: EngineClient;
@@ -117,10 +118,7 @@ export class ToolExecutor {
     const tickers = (input.tickers as string[] | undefined) ?? [];
     const strategies = (input.strategies as string[] | undefined) ?? [];
 
-    const scanTickers =
-      tickers.length > 0
-        ? tickers
-        : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
+    const scanTickers = tickers.length > 0 ? tickers : [...WATCHLIST_TICKERS];
 
     const result = await this.engine.scanStrategies({
       tickers: scanTickers,

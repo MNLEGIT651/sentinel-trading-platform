@@ -14,6 +14,16 @@ import { ToolExecutor } from './tool-executor.js';
 import { EngineClient } from './engine-client.js';
 import { loadCycle } from './wat/workflow-loader.js';
 import type { AgentConfig, AgentResult, AgentRole, OrchestratorState } from './types.js';
+import {
+  DEFAULT_AGENT_PROMPTS,
+  DEFAULT_CYCLE_INTERVAL_MS,
+  EXECUTION_MONITOR_COOLDOWN_MS,
+  MARKET_SENTINEL_COOLDOWN_MS,
+  RESEARCH_COOLDOWN_MS,
+  RISK_MONITOR_COOLDOWN_MS,
+  STRATEGY_ANALYST_COOLDOWN_MS,
+} from './config.js';
+import { logger } from './logger.js';
 
 const DEFAULT_CONFIGS: AgentConfig[] = [
   {
@@ -22,7 +32,7 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
     description: 'Monitors market conditions and detects significant events',
     schedule: 'every 5 minutes during market hours',
     enabled: true,
-    cooldownMs: 5 * 60 * 1000,
+    cooldownMs: MARKET_SENTINEL_COOLDOWN_MS,
   },
   {
     role: 'strategy_analyst',
@@ -30,7 +40,7 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
     description: 'Runs trading strategies and recommends trades',
     schedule: 'every 15 minutes during market hours',
     enabled: true,
-    cooldownMs: 15 * 60 * 1000,
+    cooldownMs: STRATEGY_ANALYST_COOLDOWN_MS,
   },
   {
     role: 'risk_monitor',
@@ -38,7 +48,7 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
     description: 'Monitors portfolio risk and enforces limits',
     schedule: 'every 1 minute during market hours',
     enabled: true,
-    cooldownMs: 60 * 1000,
+    cooldownMs: RISK_MONITOR_COOLDOWN_MS,
   },
   {
     role: 'research',
@@ -46,7 +56,7 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
     description: 'Performs deep analysis on specific tickers',
     schedule: 'on demand',
     enabled: true,
-    cooldownMs: 30 * 60 * 1000,
+    cooldownMs: RESEARCH_COOLDOWN_MS,
   },
   {
     role: 'execution_monitor',
@@ -54,20 +64,9 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
     description: 'Manages trade execution and monitors order status',
     schedule: 'on demand',
     enabled: true,
-    cooldownMs: 10 * 1000,
+    cooldownMs: EXECUTION_MONITOR_COOLDOWN_MS,
   },
 ];
-
-const DEFAULT_PROMPTS: Record<string, string> = {
-  market_sentinel:
-    'Scan the current market conditions. Check prices for the watchlist tickers: AAPL, MSFT, GOOGL, AMZN, NVDA, TSLA, META, SPY. Report any significant movements, unusual volume, or market regime changes. Create alerts for anything noteworthy.',
-  strategy_analyst:
-    'Run all available trading strategies against the watchlist tickers. Identify the top signals by conviction. For each signal, explain the setup and expected risk-reward. Only recommend trades with clear edge.',
-  risk_monitor:
-    'Assess the current portfolio risk. Check drawdown levels, position concentrations, and sector exposure. For any proposed trades from the strategy analyst, verify they pass all risk limits. Calculate appropriate position sizes.',
-  execution_monitor:
-    'Check for any open orders. If there are approved trades from this cycle that pass risk checks, prepare them for execution. Report on execution quality for any fills.',
-};
 
 export class Orchestrator {
   private agents: Map<AgentRole, Agent> = new Map();
@@ -76,9 +75,15 @@ export class Orchestrator {
   private cycleInterval: ReturnType<typeof setInterval> | null = null;
   private cycleSequence: AgentRole[];
 
-  constructor(options?: { apiKey?: string; engineUrl?: string; configs?: AgentConfig[] }) {
-    const engine = new EngineClient(options?.engineUrl);
-    this.executor = new ToolExecutor(engine);
+  constructor(options?: {
+    apiKey?: string;
+    engineUrl?: string;
+    configs?: AgentConfig[];
+    /** Inject a pre-built ToolExecutor — used in tests to supply a mock executor. */
+    executor?: ToolExecutor;
+  }) {
+    this.executor =
+      options?.executor ?? new ToolExecutor(new EngineClient(options?.engineUrl));
 
     const configs = options?.configs ?? DEFAULT_CONFIGS;
 
@@ -130,32 +135,32 @@ export class Orchestrator {
    */
   async runCycle(): Promise<AgentResult[]> {
     if (this.state.halted) {
-      console.log('[Orchestrator] Trading halted — skipping cycle');
+      logger.warn('orchestrator.cycle.skipped', { reason: 'halted' });
       return [];
     }
 
     this.state.cycleCount++;
     const results: AgentResult[] = [];
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`[Orchestrator] Starting cycle #${this.state.cycleCount}`);
-    console.log(`${'='.repeat(60)}\n`);
+    logger.info('orchestrator.cycle.start', { cycleCount: this.state.cycleCount });
 
     for (const role of this.cycleSequence) {
       if (this.state.halted && role === 'execution_monitor') {
-        console.log('[Orchestrator] Trading halted — skipping execution');
+        logger.warn('orchestrator.agent.skipped', { role, reason: 'halted' });
         continue;
       }
       const result = await this.runAgent(
         role,
-        DEFAULT_PROMPTS[role] ?? `Execute ${role} workflow.`,
+        DEFAULT_AGENT_PROMPTS[role] ?? `Execute ${role} workflow.`,
       );
       results.push(result);
     }
 
-    console.log(`\n[Orchestrator] Cycle #${this.state.cycleCount} complete`);
-    console.log(
-      `  Results: ${results.filter((r) => r.success).length}/${results.length} successful`,
-    );
+    const successCount = results.filter((r) => r.success).length;
+    logger.info('orchestrator.cycle.complete', {
+      cycleCount: this.state.cycleCount,
+      successCount,
+      totalCount: results.length,
+    });
     this.state.lastCycleAt = new Date().toISOString();
     return results;
   }
@@ -176,7 +181,7 @@ export class Orchestrator {
       };
     }
 
-    console.log(`[${agent.config.name}] Starting...`);
+    logger.info('agent.start', { role, name: agent.config.name });
     this.state.agents[role] = 'running';
 
     const result = await agent.run(prompt);
@@ -185,9 +190,9 @@ export class Orchestrator {
     this.state.lastRun[role] = result.timestamp;
 
     if (result.success) {
-      console.log(`[${agent.config.name}] Completed in ${result.durationMs}ms`);
+      logger.info('agent.complete', { role, name: agent.config.name, durationMs: result.durationMs });
     } else {
-      console.log(`[${agent.config.name}] Failed: ${result.error}`);
+      logger.error('agent.failed', { role, name: agent.config.name, error: result.error });
     }
 
     return result;
@@ -206,13 +211,13 @@ export class Orchestrator {
   /**
    * Start automated trading cycles.
    */
-  start(intervalMs = 15 * 60 * 1000): void {
+  start(intervalMs = DEFAULT_CYCLE_INTERVAL_MS): void {
     if (this.cycleInterval) {
-      console.log('[Orchestrator] Already running');
+      logger.warn('orchestrator.start.noop', { reason: 'already running' });
       return;
     }
 
-    console.log(`[Orchestrator] Starting automated cycles every ${intervalMs / 1000}s`);
+    logger.info('orchestrator.start', { intervalMs });
     this.runCycle().catch(console.error);
     this.cycleInterval = setInterval(() => {
       this.runCycle().catch(console.error);
@@ -226,7 +231,7 @@ export class Orchestrator {
     if (this.cycleInterval) {
       clearInterval(this.cycleInterval);
       this.cycleInterval = null;
-      console.log('[Orchestrator] Stopped automated cycles');
+      logger.info('orchestrator.stop');
     }
   }
 
@@ -236,7 +241,7 @@ export class Orchestrator {
   halt(reason: string): void {
     this.state.halted = true;
     this.stop();
-    console.log(`[Orchestrator] HALTED: ${reason}`);
+    logger.error('orchestrator.halt', { reason });
   }
 
   /**
@@ -244,7 +249,7 @@ export class Orchestrator {
    */
   resume(): void {
     this.state.halted = false;
-    console.log('[Orchestrator] Resumed — halt cleared');
+    logger.info('orchestrator.resume');
   }
 
   /**
