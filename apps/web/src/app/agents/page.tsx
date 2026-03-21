@@ -45,12 +45,25 @@ export default function AgentsPage() {
   }, []);
 
   useEffect(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+
+    if (agentsOnline !== true) {
+      setStatus(null);
+      setRecommendations([]);
+      setAlerts([]);
+      setIsOffline(agentsOnline === false);
+      return;
+    }
+
     fetchAll();
     pollRef.current = setInterval(fetchAll, 5_000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [fetchAll]);
+  }, [agentsOnline, fetchAll]);
 
   const handleRunCycle = async () => {
     setCycleTriggering(true);
@@ -109,7 +122,7 @@ export default function AgentsPage() {
   const isRunning = status?.isRunning ?? false;
   const isHalted = status?.halted ?? false;
   const cycleCount = status?.cycleCount ?? 0;
-  const controlsDisabled = agentsOnline === false || isOffline;
+  const controlsDisabled = agentsOnline !== true || isOffline;
 
   return (
     <div className="space-y-4 p-4">

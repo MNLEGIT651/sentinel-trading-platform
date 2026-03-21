@@ -125,7 +125,7 @@ export default function SignalsPage() {
 
   return (
     <div className="space-y-4 p-4">
-      {!engineOnline && <OfflineBanner service="engine" />}
+      {engineOnline === false && <OfflineBanner service="engine" />}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -149,7 +149,7 @@ export default function SignalsPage() {
               <ChevronDown className="h-3 w-3 ml-1" />
             )}
           </Button>
-          <Button onClick={handleRunScan} disabled={isScanning || !engineOnline} size="sm">
+          <Button onClick={handleRunScan} disabled={isScanning || engineOnline !== true} size="sm">
             {isScanning ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

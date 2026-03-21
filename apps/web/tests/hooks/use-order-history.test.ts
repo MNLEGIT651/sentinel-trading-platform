@@ -58,4 +58,13 @@ describe('useOrderHistory', () => {
     });
     expect(result.current.orders).toHaveLength(0);
   });
+
+  it('skips fetching when disabled', async () => {
+    const { result } = renderHook(() => useOrderHistory(false));
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    expect(result.current.orders).toHaveLength(0);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 });

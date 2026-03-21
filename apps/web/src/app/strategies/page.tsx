@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Brain, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/stores/app-store';
 import { StrategyCard, type StrategyEntry } from '@/components/strategies/strategy-card';
 import { strategyFamilies, type StrategyFamily } from '@/components/strategies/strategy-data';
 import { familyConfig } from '@/components/strategies/family-config';
@@ -23,14 +24,17 @@ interface EngineStrategyListResponse {
 }
 
 export default function StrategiesPage() {
+  const engineOnline = useAppStore((s) => s.engineOnline);
   const [liveData, setLiveData] = useState<StrategyFamily[] | null>(null);
-  const [loadingStrategies, setLoadingStrategies] = useState(true);
+  const [strategyFetchState, setStrategyFetchState] = useState<'idle' | 'ready' | 'failed'>('idle');
   const [expandedFamilies, setExpandedFamilies] = useState<Record<string, boolean>>(
     Object.fromEntries(strategyFamilies.map((f) => [f.family, true])),
   );
 
   // Fetch live strategy data from engine
   useEffect(() => {
+    if (engineOnline !== true) return;
+
     fetch(engineUrl('/api/v1/strategies/'), {
       signal: AbortSignal.timeout(5000),
       headers: engineHeaders(),
@@ -63,14 +67,17 @@ export default function StrategiesPage() {
         })) as StrategyFamily[];
         setLiveData(families);
         setExpandedFamilies(Object.fromEntries(families.map((f) => [f.family, true])));
+        setStrategyFetchState('ready');
       })
       .catch(() => {
         // Engine offline — fall back to hardcoded data silently
         setLiveData(null);
-      })
-      .finally(() => setLoadingStrategies(false));
-  }, []);
+        setStrategyFetchState('failed');
+      });
+  }, [engineOnline]);
 
+  const loadingStrategies =
+    engineOnline === null || (engineOnline === true && strategyFetchState === 'idle');
   const displayFamilies: StrategyFamily[] = liveData ?? strategyFamilies;
 
   const toggleFamily = (family: string) => {

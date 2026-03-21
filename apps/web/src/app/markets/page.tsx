@@ -32,6 +32,19 @@ interface WatchlistItem {
   change: number;
 }
 
+const FALLBACK_PRICES = [
+  178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38,
+];
+const FALLBACK_CHANGES = [1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62];
+
+function buildFallbackWatchlist(): WatchlistItem[] {
+  return WATCHLIST_TICKERS.map((w, i) => ({
+    ...w,
+    price: FALLBACK_PRICES[i] ?? 0,
+    change: FALLBACK_CHANGES[i] ?? 0,
+  }));
+}
+
 // Generate synthetic OHLCV (fallback when engine is offline)
 function generateSampleData(basePrice: number): OHLCV[] {
   const data: OHLCV[] = [];
@@ -72,8 +85,18 @@ export default function MarketsPage() {
 
   // Fetch all watchlist quotes from the engine
   useEffect(() => {
+    if (engineOnline !== true) {
+      if (engineOnline === false) {
+        setWatchlist(buildFallbackWatchlist());
+        setIsLive(false);
+        setLoading(false);
+      }
+      return;
+    }
+
     let cancelled = false;
     async function fetchQuotes() {
+      setLoading(true);
       try {
         const tickers = WATCHLIST_TICKERS.map((w) => w.ticker).join(',');
         const res = await fetch(engineUrl(`/api/v1/data/quotes?tickers=${tickers}`), {
@@ -97,18 +120,7 @@ export default function MarketsPage() {
         setIsLive(true);
       } catch {
         if (cancelled) return;
-        // Fallback: use static placeholder prices
-        const staticPrices = [
-          178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38,
-        ];
-        const staticChanges = [1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62];
-        setWatchlist(
-          WATCHLIST_TICKERS.map((w, i) => ({
-            ...w,
-            price: staticPrices[i] ?? 0,
-            change: staticChanges[i] ?? 0,
-          })),
-        );
+        setWatchlist(buildFallbackWatchlist());
         setIsLive(false);
       } finally {
         if (!cancelled) setLoading(false);
@@ -118,11 +130,18 @@ export default function MarketsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [engineOnline]);
 
   // Fetch bars when ticker changes
   const fetchBars = useCallback(
     async (ticker: string) => {
+      if (engineOnline !== true) {
+        const fallback = buildFallbackWatchlist().find((stock) => stock.ticker === ticker);
+        setChartData(generateSampleData(fallback?.price ?? 150));
+        setChartLoading(false);
+        return;
+      }
+
       if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -164,18 +183,18 @@ export default function MarketsPage() {
         if (!controller.signal.aborted) setChartLoading(false);
       }
     },
-    [watchlist],
+    [engineOnline, watchlist],
   );
 
   useEffect(() => {
     fetchBars(selectedTicker);
-  }, [selectedTicker, fetchBars]);
+  }, [engineOnline, selectedTicker, fetchBars]);
 
   const selectedStock = watchlist.find((w) => w.ticker === selectedTicker);
 
   return (
     <div className="flex h-full flex-col gap-4 p-4">
-      {!engineOnline && <OfflineBanner service="engine" />}
+      {engineOnline === false && <OfflineBanner service="engine" />}
       <div className="flex flex-1 gap-4 min-h-0">
         {/* Watchlist panel */}
         <Card className="w-72 shrink-0 bg-card border-border">
