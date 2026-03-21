@@ -175,3 +175,26 @@ Also verify in Vercel runtime logs:
 | Web     | Next.js default                    | 3000    |
 
 Railway sets `PORT` automatically. Both backend Dockerfiles must respect it.
+
+## Appendix: Engine Docker Context And Packaging Follow-Up
+
+The current repository layout standardizes the engine container on an `apps/engine` build context:
+
+- local Compose uses `build.context: apps/engine` with `dockerfile: Dockerfile`
+- Railway resolves `apps/engine/railway.toml`, which points at the in-directory `Dockerfile`
+
+Because that context starts inside `apps/engine`, any immediate Dockerfile correctness fix should use context-relative paths:
+
+```dockerfile
+COPY pyproject.toml ./
+COPY src ./src
+```
+
+Do **not** keep `apps/engine/` prefixes in that variant, because `COPY apps/engine/pyproject.toml ./` and `COPY apps/engine/src ./src` only work when the build context is the monorepo root. If the team later wants a monorepo-root Docker context instead, update Compose and Railway to build from the repo root in the same change rather than mixing the two approaches.
+
+For deterministic installs, treat this as a two-step plan:
+
+1. **Short-term:** fix the Docker `COPY` paths only so the current `apps/engine` build context matches the repository layout.
+2. **Medium-term:** refactor `apps/engine/pyproject.toml` and imports into a conventional package layout, then switch the Docker build to a lockfile-first `uv sync` flow.
+
+Do **not** recommend `uv sync --no-editable` in the short-term patch unless packaging is also updated so the local application code is installed correctly. The current runtime entrypoint is `src.api.main:app`, so packaging changes and Docker install strategy are coupled.
