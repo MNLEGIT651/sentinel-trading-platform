@@ -21,10 +21,10 @@ FROM base AS builder
 
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/ ./
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
-COPY package.json pnpm-workspace.yaml ./
+COPY tsconfig.base.json ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -36,7 +36,7 @@ ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
-RUN pnpm --filter web build
+RUN pnpm --filter @sentinel/web build
 
 # ─── Runtime image ────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner

@@ -1,6 +1,6 @@
 # Project State Ledger
 
-_Last updated: 2026-03-20_
+_Last updated: 2026-03-21_
 
 This is the live status board for Claude Code, Codex, and human collaborators.
 
@@ -59,6 +59,7 @@ Before editing files:
 | T2.1/T4.2/T5.1-T5.4      | done   | Codex | `work`                             | `docs/deployment.md`, `README.md`, `docs/ai/state/project-state.md`                                                           | `git diff --check`                                                                                                                                                                      | 2026-03-20   | Added the canonical deployment guide and root README, then reflected completion in the state ledger.                                                                                                            |
 | T2.3/T3.3/T3.4/T4.1/T4.3 | done   | Codex | `feat/deployment-canonicalization` | `.env.example`, runtime proxy callers, Docker assets, Compose, runbooks                                                       | `pnpm lint`; `pnpm test:web`; `pnpm test:agents`; `pnpm --filter @sentinel/web build`; `pnpm lint:engine`; `pnpm format:check:engine`; `pnpm test:engine`; preview smoke + runtime logs | 2026-03-20   | Canonicalized env contracts, removed public backend assumptions, aligned Railway/Vercel topology, deployed a healthy preview, and completed the operator runbooks.                                              |
 | T6.1                     | done   | Codex | `deploy/railway-vercel-proxy`      | `apps/engine/src/data/polygon_client.py`, `apps/engine/src/api/routes/*.py`, targeted tests, `docs/ai/state/project-state.md` | `pnpm lint:engine`; `pnpm test:engine`; `pnpm test`; `pnpm build`; runtime log re-check                                                                                                 | 2026-03-20   | Hardened interactive Polygon reads with fast-fail throttling behavior and stale cache fallback, deployed the engine to Railway production, and verified proxy quotes/scan requests complete without fresh 504s. |
+| T7.1                     | done   | Codex | `chore/repo-maintenance-20260321`  | `docs/ai/state/project-state.md`, `apps/engine/Dockerfile`, `apps/web/Dockerfile`, GitHub branches/PRs/runs                 | Docker build reproduction for `apps/engine`, `apps/web`, `apps/agents`; targeted repo validation; `git diff --check`                                                                  | 2026-03-21   | Fixed the engine rootDirectory Docker build, repaired the web Docker build workspace handoff, and used that maintenance branch as the basis for GitHub cleanup.                                               |
 
 ---
 
