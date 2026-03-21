@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir "uv>=0.5"
 # ─── Dependencies layer ───────────────────────────────────────────────────────
 FROM base AS deps
 
-COPY apps/engine/pyproject.toml ./
+COPY pyproject.toml ./
 
 RUN uv venv .venv \
   && uv pip install --python .venv/bin/python --no-cache "."
@@ -23,7 +23,7 @@ FROM base AS runner
 WORKDIR /app
 
 COPY --from=deps /app/.venv ./.venv
-COPY apps/engine/src ./src
+COPY src ./src
 
 RUN addgroup --system --gid 1001 sentinel \
   && adduser --system --uid 1001 --ingroup sentinel sentinel
