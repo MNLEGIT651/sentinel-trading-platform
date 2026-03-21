@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\risk.py
-# hypothesis_version: 6.151.9
-
-[0.01, 100000.0, '/assess', '/limits', '/position-size', '/pre-trade-check', '/risk', 'action', 'adjusted_shares', 'allowed', 'fixed_fraction', 'kelly_criterion', 'max_drawdown_hard', 'max_drawdown_soft', 'max_open_positions', 'max_position_pct', 'max_sector_pct', 'reason', 'risk', 'unknown', 'volatility_target']

@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\backtest.py
-# hypothesis_version: 6.151.9
-
-[0.001, 0.005, 0.02, 0.1, 0.5, 0.8, 1.5, 3.0, 10.0, 100000.0, 1000000.0, 5000000.0, 100, 150, 252, 404, 5000, '/backtest', '/run', '/strategies', 'SYNTHETIC', 'backtest', 'down', 'random', 'strategies', 'trends', 'up', 'volatile']

@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\health.py
-# hypothesis_version: 6.151.9
-
-['/health', 'ok', 'sentinel-engine', 'service', 'status']

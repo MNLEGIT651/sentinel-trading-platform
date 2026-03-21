@@ -1,9 +1,0 @@
-{
-  "name": "assess_risk_py",
-  "description": "Portfolio risk assessment using Python. Returns drawdown, concentration, and limit status.",
-  "input_schema": {
-    "type": "object",
-    "properties": {},
-    "required": []
-  }
-}

@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\trend_following.py
-# hypothesis_version: 6.151.9
-
-[0.0, 0.1, 1.0, 20.0, 50.0, 100, 'adx', 'adx_period', 'adx_threshold', 'ema_momentum_trend', 'fast', 'fast_period', 'fast_sma', 'histogram', 'histogram_threshold', 'macd', 'macd_trend', 'medium', 'medium_period', 'signal', 'signal_period', 'slow', 'slow_period', 'slow_sma', 'sma_crossover']

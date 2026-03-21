@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\portfolio.py
-# hypothesis_version: 6.151.9
-
-[100.0, 404, 502, '/account', '/orders', '/orders/{order_id}', '/portfolio', '/positions', 'buy', 'cancelled', 'commission', 'day', 'fill_price', 'fill_quantity', 'limit', 'market', 'open', 'order_id', 'portfolio', 'sell', 'slippage', 'status', 'stop', 'stop_limit']

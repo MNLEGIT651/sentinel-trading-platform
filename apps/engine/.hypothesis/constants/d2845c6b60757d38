@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\indicators.py
-# hypothesis_version: 6.151.9
-
-[-100.0, -50.0, 0.0, 1.0, 1.5, 2.0, 3.0, 50.0, 100.0, 'ignore', 'period must be >= 1', 'periods must be >= 1']

@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\execution\paper_broker.py
-# hypothesis_version: 6.151.9
-
-[5.0, 100000.0, 10000, 'avg_price', 'buy', 'cash', 'current_price', 'equity', 'filled', 'initial_capital', 'instrument_id', 'positions_value', 'quantity', 'rejected', 'sell']

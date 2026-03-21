@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\mean_reversion.py
-# hypothesis_version: 6.151.9
-
-[0.4, 0.5, 1.0, 2.0, 4.0, 20.0, 35.0, 65.0, 80.0, 'bb_period', 'bb_std', 'bollinger_reversion', 'entry_z', 'exit_z', 'extreme_overbought', 'extreme_oversold', 'fast_rsi', 'fast_rsi_period', 'lookback', 'lower_band', 'mean', 'middle_band', 'price', 'rsi', 'rsi_mean_reversion', 'rsi_overbought', 'rsi_oversold', 'rsi_period', 'slow_rsi', 'slow_rsi_period', 'std', 'upper_band', 'z_score', 'zscore_reversion']

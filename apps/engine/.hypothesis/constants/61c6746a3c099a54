@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\execution\alpaca_broker.py
-# hypothesis_version: 6.151.9
-
-[15.0, 100, '/v2/account', '/v2/orders', '/v2/positions', 'APCA-API-KEY-ID', 'APCA-API-SECRET-KEY', 'USD', 'account_id', 'avg_entry_price', 'avg_price', 'buying_power', 'cash', 'currency', 'current_price', 'day', 'day_trade_count', 'daytrade_count', 'equity', 'filled_avg_price', 'filled_qty', 'id', 'initial_capital', 'instrument_id', 'last_equity', 'limit', 'limit_price', 'long_market_value', 'market_value', 'open', 'order_id', 'pattern_day_trader', 'positions_value', 'qty', 'quantity', 'short_market_value', 'side', 'status', 'stop_price', 'submitted_at', 'symbol', 'time_in_force', 'type', 'unrealized_pl', 'unrealized_plpc']

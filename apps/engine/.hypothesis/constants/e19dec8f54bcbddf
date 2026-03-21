@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\strategies\value.py
-# hypothesis_version: 6.151.9
-
-[-0.25, -0.1, 0.0, 0.05, 0.2, 1.0, 100, 200, 'deviation', 'divergence', 'divergence_threshold', 'entry_deviation', 'exit_deviation', 'long_dev', 'long_period', 'ma', 'ma_period', 'max_long_deviation', 'price', 'price_to_ma_value', 'relative_value', 'short_dev', 'short_period']

@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\strategies.py
-# hypothesis_version: 6.151.9
-
-[404, '/', '/families/{family}', '/strategies', '/{strategy_name}', 'default_params', 'description', 'family', 'name', 'strategies']

@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\api\routes\data.py
-# hypothesis_version: 6.151.9
-
-[0.0, 0.5, 100, 404, 429, 503, ',', '/bars/{ticker}', '/data', '/ingest', '/quote/{ticker}', '/quotes', '1d', 'data']

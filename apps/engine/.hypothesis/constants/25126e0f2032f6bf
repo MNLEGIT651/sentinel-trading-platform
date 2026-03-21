@@ -1,4 +1,0 @@
-# file: C:\Users\steve\Projects\personal\Stock Trading App\apps\engine\src\risk\portfolio_optimizer.py
-# hypothesis_version: 6.151.9
-
-[0.0, 0.01, 0.05, 0.2, 1.0, 5.0, 100, 252, 'buy', 'max_sharpe', 'minimum_variance', 'risk_parity', 'sell']
