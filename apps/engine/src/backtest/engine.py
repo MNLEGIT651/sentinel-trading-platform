@@ -344,9 +344,9 @@ class BacktestEngine:
         if len(valid_equity) > 1:
             daily_returns = np.diff(valid_equity) / valid_equity[:-1]
             mean_return = np.mean(daily_returns)
-            std_return = np.std(daily_returns, ddof=1)
+            std_return = np.std(daily_returns, ddof=1) if len(daily_returns) > 1 else 0.0
             downside_returns = daily_returns[daily_returns < 0]
-            downside_std = np.std(downside_returns, ddof=1) if len(downside_returns) > 0 else 1.0
+            downside_std = np.std(downside_returns, ddof=1) if len(downside_returns) > 1 else 0.0
 
             sharpe = (mean_return / std_return * np.sqrt(252)) if std_return > 0 else 0.0
             sortino = (mean_return / downside_std * np.sqrt(252)) if downside_std > 0 else 0.0

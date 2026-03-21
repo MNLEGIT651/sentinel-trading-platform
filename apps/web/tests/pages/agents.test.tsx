@@ -54,7 +54,7 @@ const mockRec = {
 describe('AgentsPage', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    useAppStore.setState({ agentsOnline: null });
+    useAppStore.setState({ agentsOnline: true });
     const { agentsClient } = await import('@/lib/agents-client');
     vi.mocked(agentsClient.getStatus).mockResolvedValue(mockStatus);
     vi.mocked(agentsClient.getRecommendations).mockResolvedValue({ recommendations: [mockRec] });
@@ -72,7 +72,7 @@ describe('AgentsPage', () => {
 
   it('renders page header', async () => {
     render(<AgentsPage />);
-    expect(screen.getByText('AI Agents')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('AI Agents')).toBeInTheDocument());
   });
 
   it('renders all 5 agent cards', async () => {

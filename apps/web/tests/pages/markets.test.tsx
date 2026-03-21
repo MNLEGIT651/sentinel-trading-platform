@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MarketsPage from '@/app/markets/page';
+import { useAppStore } from '@/stores/app-store';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/markets',
@@ -11,6 +12,12 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/components/charts/price-chart', () => ({
   PriceChart: ({ data }: { data: unknown[] }) => (
     <div data-testid="price-chart">Chart: {data.length} bars</div>
+  ),
+}));
+
+vi.mock('@/components/ui/scroll-area', () => ({
+  ScrollArea: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+    <div className={className}>{children}</div>
   ),
 }));
 
@@ -170,6 +177,7 @@ const mockBars = [
 
 describe('MarketsPage', () => {
   beforeEach(() => {
+    useAppStore.setState({ engineOnline: false });
     vi.stubGlobal('fetch', vi.fn());
   });
 
@@ -178,19 +186,11 @@ describe('MarketsPage', () => {
   });
 
   it('renders the watchlist panel', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 503,
-    });
     render(<MarketsPage />);
     expect(screen.getByText('Watchlist')).toBeInTheDocument();
   });
 
   it('shows all 10 tickers', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 503,
-    });
     render(<MarketsPage />);
     // AAPL appears in watchlist + chart header, so use getAllByText
     expect(screen.getAllByText('AAPL').length).toBeGreaterThanOrEqual(1);
@@ -206,10 +206,6 @@ describe('MarketsPage', () => {
   });
 
   it('displays company names', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 503,
-    });
     render(<MarketsPage />);
     // Apple Inc. appears in watchlist + chart header (AAPL selected by default)
     expect(screen.getAllByText('Apple Inc.').length).toBeGreaterThanOrEqual(1);
@@ -218,10 +214,6 @@ describe('MarketsPage', () => {
   });
 
   it('shows the selected ticker in the chart header', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 503,
-    });
     render(<MarketsPage />);
     // AAPL is selected by default — appears in both watchlist and chart header
     const aaplElements = screen.getAllByText('AAPL');
@@ -229,10 +221,6 @@ describe('MarketsPage', () => {
   });
 
   it('switches ticker when watchlist item is clicked', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: false,
-      status: 503,
-    });
     render(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByText('NVDA')).toBeInTheDocument();
@@ -244,7 +232,6 @@ describe('MarketsPage', () => {
   });
 
   it('shows Offline badge when engine is unavailable', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
     render(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByText('Offline')).toBeInTheDocument();
@@ -252,6 +239,7 @@ describe('MarketsPage', () => {
   });
 
   it('shows Live badge when engine returns quotes', async () => {
+    useAppStore.setState({ engineOnline: true });
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,
@@ -269,6 +257,7 @@ describe('MarketsPage', () => {
   });
 
   it('shows real prices when engine returns quotes', async () => {
+    useAppStore.setState({ engineOnline: true });
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,
@@ -288,15 +277,14 @@ describe('MarketsPage', () => {
   });
 
   it('shows fallback prices when engine is offline', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('offline'));
     render(<MarketsPage />);
-    // Fallback prices should appear after fetch failure
     await waitFor(() => {
       expect(screen.getAllByText('$178.72').length).toBeGreaterThanOrEqual(1);
     });
   });
 
   it('renders the PriceChart component with bar data', async () => {
+    useAppStore.setState({ engineOnline: true });
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
         ok: true,

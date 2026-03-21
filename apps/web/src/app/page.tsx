@@ -142,19 +142,35 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (engineOnline !== true) {
+      setIsLive(false);
+      return;
+    }
+
     fetchPrices();
     fetchAccount();
+  }, [engineOnline, fetchPrices, fetchAccount]);
+
+  useEffect(() => {
+    if (agentsOnline !== true) {
+      setAlerts([]);
+      setRecentSignals([]);
+      return;
+    }
+
     fetchAlerts();
-  }, [fetchPrices, fetchAccount, fetchAlerts]);
+  }, [agentsOnline, fetchAlerts]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
+    if (engineOnline !== true) return;
+
     const interval = setInterval(() => {
       fetchPrices();
       fetchAccount();
     }, 30_000);
     return () => clearInterval(interval);
-  }, [fetchPrices, fetchAccount]);
+  }, [engineOnline, fetchPrices, fetchAccount]);
 
   const equity = account?.equity ?? 100_000;
   const pnl = equity - (account?.initial_capital ?? 100_000);
@@ -162,7 +178,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 p-4">
-      {!engineOnline && <OfflineBanner service="engine" />}
+      {engineOnline === false && <OfflineBanner service="engine" />}
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
       {/* Row 1: Metric Cards */}

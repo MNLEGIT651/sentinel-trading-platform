@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import StrategiesPage from '@/app/strategies/page';
+import { useAppStore } from '@/stores/app-store';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/strategies',
@@ -28,6 +29,7 @@ const mockEngineResponse = {
 
 describe('StrategiesPage — live data', () => {
   beforeEach(() => {
+    useAppStore.setState({ engineOnline: true });
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -37,9 +39,9 @@ describe('StrategiesPage — live data', () => {
     );
   });
 
-  it('renders page header', () => {
+  it('renders page header', async () => {
     render(<StrategiesPage />);
-    expect(screen.getByText('Strategies')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Strategies')).toBeInTheDocument());
   });
 
   it('shows live strategy names after fetch', async () => {
@@ -55,6 +57,7 @@ describe('StrategiesPage — live data', () => {
 
 describe('StrategiesPage — engine offline fallback', () => {
   beforeEach(() => {
+    useAppStore.setState({ engineOnline: false });
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
   });
 
