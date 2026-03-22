@@ -1,0 +1,4 @@
+{
+  "installCommand": "corepack enable pnpm && cd ../.. && pnpm install",
+  "buildCommand": "cd ../.. && pnpm --filter @sentinel/web run build"
+}
