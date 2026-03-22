@@ -1,7 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
+import { Agent } from '../src/agent.js';
 import { Orchestrator } from '../src/orchestrator.js';
 
 describe('Orchestrator', () => {
+  beforeEach(() => {
+    vi.spyOn(Agent.prototype, 'run').mockImplementation(async function () {
+      return {
+        role: this.config.role,
+        success: true,
+        timestamp: new Date().toISOString(),
+        durationMs: 0,
+        data: null,
+      };
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should initialize with all 5 agents', () => {
     const orchestrator = new Orchestrator({ apiKey: 'test-key' });
     const agents = orchestrator.getAgentInfo();

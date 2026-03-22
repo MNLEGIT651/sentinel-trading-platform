@@ -63,7 +63,7 @@ export function createApp(orchestrator: Orchestrator): Express {
       cycleCount: orchestrator.currentState.cycleCount,
       halted: orchestrator.currentState.halted,
       dependencies: {
-        engine: Boolean(process.env.ENGINE_URL),
+        engine: Boolean(process.env.ENGINE_URL && process.env.ENGINE_API_KEY),
         anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
         supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
       },

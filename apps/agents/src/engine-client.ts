@@ -58,7 +58,7 @@ export class EngineClient {
 
   constructor(
     baseUrl: string = process.env.ENGINE_URL ?? 'http://localhost:8000',
-    apiKey: string = process.env.ENGINE_API_KEY ?? 'sentinel-dev-key',
+    apiKey: string = process.env.ENGINE_API_KEY ?? '',
   ) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;

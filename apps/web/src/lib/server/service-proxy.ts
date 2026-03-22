@@ -9,6 +9,18 @@ import { getServiceAttempts, getServiceConfig, getServiceTimeoutMs } from './ser
 
 const RETRYABLE_UPSTREAM_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
+/**
+ * Maximum allowed request body size forwarded through the proxy.
+ * Rejects bodies larger than this with a 413 to prevent:
+ *  - Accidentally forwarding huge payloads to downstream services
+ *  - Memory pressure from buffering uncapped bodies in Node
+ *
+ * 1 MiB covers all legitimate API payloads (strategy scans, backtest params,
+ * order submissions). Adjust upward only if a specific endpoint demonstrably
+ * needs a larger body, and document the reason in a comment at the call site.
+ */
+const MAX_BODY_BYTES = 1_048_576; // 1 MiB
+
 function combineSignals(signals: Array<AbortSignal | null | undefined>): AbortSignal | undefined {
   const activeSignals = signals.filter(
     (signal): signal is AbortSignal => signal !== undefined && signal !== null,
@@ -34,7 +46,10 @@ function isRetryableNetworkError(error: unknown): boolean {
 function mapUpstreamStatus(status: number): number {
   if (status === 404) return 404;
   if (status === 429) return 503;
-  if (status === 401 || status === 403) return 502;
+  // Pass through auth errors so the client can distinguish upstream auth
+  // failures from gateway issues (previously masked as 502)
+  if (status === 401) return 401;
+  if (status === 403) return 403;
   if (status >= 500) return 502;
   return status;
 }
@@ -58,13 +73,23 @@ function buildUpstreamUrl(baseUrl: string, upstreamPath: string, search: string)
   return url.toString();
 }
 
-function toForwardedHeaders(request: Request, serviceHeaders: Record<string, string>): Headers {
+function toForwardedHeaders(
+  request: Request,
+  serviceHeaders: Record<string, string>,
+  extraHeaders?: Record<string, string>,
+): Headers {
   const headers = new Headers(serviceHeaders);
   const contentType = request.headers.get('content-type');
   const accept = request.headers.get('accept');
 
   if (contentType) headers.set('content-type', contentType);
   if (accept) headers.set('accept', accept);
+
+  if (extraHeaders) {
+    for (const [key, value] of Object.entries(extraHeaders)) {
+      headers.set(key, value);
+    }
+  }
 
   return headers;
 }
@@ -87,6 +112,16 @@ function waitWithJitter(attempt: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, base + jitter));
 }
 
+function logProxySuccess(meta: Record<string, unknown>): void {
+  console.log(
+    JSON.stringify({
+      scope: 'service-proxy',
+      level: 'info',
+      ...meta,
+    }),
+  );
+}
+
 function logProxyFailure(error: ServiceError, meta: Record<string, unknown>): void {
   console.error(
     JSON.stringify({
@@ -107,6 +142,7 @@ async function fetchUpstream(
   service: ServiceName,
   request: Request,
   upstreamPath: string,
+  extraHeaders?: Record<string, string>,
 ): Promise<Response> {
   const config = getServiceConfig(service);
   const method = request.method.toUpperCase();
@@ -132,8 +168,21 @@ async function fetchUpstream(
   const url = new URL(request.url);
   const timeoutMs = getServiceTimeoutMs(service, upstreamPath, method);
   const attempts = getServiceAttempts(service, upstreamPath, method);
-  const body: BodyInit | null =
-    method === 'GET' || method === 'HEAD' ? null : await request.arrayBuffer();
+
+  // Buffer the request body (once, before the retry loop) and enforce the size cap.
+  // Checking Content-Length alone is insufficient — clients can omit or forge it —
+  // so we always verify the actual buffer size after reading.
+  let body: BodyInit | null = null;
+  if (method !== 'GET' && method !== 'HEAD') {
+    const buffer = await request.arrayBuffer();
+    if (buffer.byteLength > MAX_BODY_BYTES) {
+      throw new ServiceError(
+        `Request body exceeds the ${MAX_BODY_BYTES / 1024}KiB limit.`,
+        { code: 'upstream', service, retryable: false, status: 413 },
+      );
+    }
+    body = buffer;
+  }
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const startedAt = Date.now();
@@ -142,7 +191,7 @@ async function fetchUpstream(
       const signal = combineSignals([request.signal, AbortSignal.timeout(timeoutMs)]);
       const response = await fetch(buildUpstreamUrl(config.baseUrl, upstreamPath, url.search), {
         method,
-        headers: toForwardedHeaders(request, config.headers),
+        headers: toForwardedHeaders(request, config.headers, extraHeaders),
         body,
         cache: 'no-store',
         ...(signal != null && { signal }),
@@ -161,6 +210,15 @@ async function fetchUpstream(
         });
       }
 
+      logProxySuccess({
+        action: 'success',
+        service,
+        method,
+        upstreamPath,
+        upstreamStatus: response.status,
+        durationMs: Date.now() - startedAt,
+        attempt,
+      });
       return response;
     } catch (error) {
       const serviceError =
@@ -225,11 +283,12 @@ export async function proxyServiceRequest(
   service: ServiceName,
   request: Request,
   pathSegments: string[] | undefined,
+  extraHeaders?: Record<string, string>,
 ): Promise<Response> {
   const upstreamPath = `/${(pathSegments ?? []).join('/')}`;
 
   try {
-    const response = await fetchUpstream(service, request, upstreamPath);
+    const response = await fetchUpstream(service, request, upstreamPath, extraHeaders);
     return new Response(response.body, {
       status: response.status,
       headers: filterResponseHeaders(response.headers),

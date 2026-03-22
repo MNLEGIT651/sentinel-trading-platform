@@ -253,9 +253,28 @@ export class EngineClient {
   }
 }
 
+/**
+ * Server-side factory for the engine SDK client.
+ *
+ * Reads credentials from environment variables and throws in production
+ * when `ENGINE_URL` or `ENGINE_API_KEY` are absent, rather than silently
+ * falling back to insecure dev defaults.
+ *
+ * @throws {Error} In production when `ENGINE_URL` or `ENGINE_API_KEY` are unset.
+ */
 export function getEngineClient(): EngineClient {
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
+  const url = process.env.ENGINE_URL;
+  const key = process.env.ENGINE_API_KEY;
+
+  if (isProduction) {
+    if (!url) throw new Error('[getEngineClient] ENGINE_URL is not set in production.');
+    if (!key) throw new Error('[getEngineClient] ENGINE_API_KEY is not set in production.');
+  }
+
   return new EngineClient(
-    process.env.ENGINE_URL || 'http://localhost:8000',
-    process.env.ENGINE_API_KEY || 'sentinel-dev-key',
+    url ?? 'http://localhost:8000',
+    key ?? 'sentinel-dev-key',
   );
 }

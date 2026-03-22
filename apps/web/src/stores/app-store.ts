@@ -6,7 +6,7 @@ interface AppState {
   marketStatus: 'open' | 'closed' | 'pre' | 'post';
   /** null = health has not been probed yet */
   engineOnline: boolean | null;
-  /** null = health has not been probed yet or agents are intentionally unconfigured locally */
+  /** null = agents intentionally unconfigured in local development (skip banner) */
   agentsOnline: boolean | null;
   setSelectedTicker: (ticker: string | null) => void;
   toggleSidebar: () => void;
