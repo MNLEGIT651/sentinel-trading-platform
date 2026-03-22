@@ -1,4 +1,8 @@
+import logging
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -31,8 +35,6 @@ class Settings(BaseSettings):
 
     def validate(self) -> None:
         """Raise ValueError if any required environment variable is missing."""
-        import logging
-
         required = {
             "SUPABASE_URL": self.supabase_url,
             "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
@@ -43,10 +45,13 @@ class Settings(BaseSettings):
                 f"Missing required environment variables: {', '.join(missing)}. "
                 "See .env.example for guidance."
             )
-        optional_warnings = {
-            "POLYGON_API_KEY": self.polygon_api_key,
-            "ALPACA_API_KEY": self.alpaca_api_key,
-        }
-        for name, value in optional_warnings.items():
-            if not value:
-                logging.warning("Optional env var %s is not set — related features disabled.", name)
+        if not self.polygon_api_key:
+            logger.warning(
+                "Polygon-backed market data features are disabled because "
+                "optional configuration is missing."
+            )
+        if not self.alpaca_api_key or not self.alpaca_secret_key:
+            logger.warning(
+                "Broker-backed trading features are disabled because broker "
+                "configuration is incomplete."
+            )

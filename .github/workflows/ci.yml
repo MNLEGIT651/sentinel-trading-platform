@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -203,19 +206,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Audit npm dependencies (high/critical)
-        run: pnpm audit --prod --audit-level=high
-
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Audit Python dependencies (high/critical)
+      - name: Install uv
+        run: pip install uv
+
+      - name: Create venv and install engine audit dependencies
         working-directory: apps/engine
         run: |
-          pip install uv pip-audit
           uv venv .venv
           uv pip install --python .venv/bin/python -e ".[dev]"
-          uv pip freeze --python .venv/bin/python > /tmp/requirements.txt
-          pip-audit -r /tmp/requirements.txt --desc --fix-dry-run
+          uv pip install --python .venv/bin/python pip-audit
+
+      - name: Run repository security audit
+        run: node scripts/security-audit.mjs

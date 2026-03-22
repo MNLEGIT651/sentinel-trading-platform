@@ -1,0 +1,73 @@
+name: Security Safety Audit
+
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-safety-${{ github.workflow }}-${{ github.event.schedule || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  security-safety:
+    name: Security Safety Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache uv / pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.cache/pip
+          key: uv-${{ runner.os }}-py3.12-${{ hashFiles('apps/engine/pyproject.toml') }}
+          restore-keys: |
+            uv-${{ runner.os }}-py3.12-
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Create venv and install engine audit dependencies
+        working-directory: apps/engine
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ".[dev]"
+          uv pip install --python .venv/bin/python pip-audit
+
+      - name: Run repository security audit
+        run: node scripts/security-audit.mjs

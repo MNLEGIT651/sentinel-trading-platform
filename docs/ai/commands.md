@@ -15,6 +15,7 @@ pnpm dev                # Start Node workspaces through Turborepo
 pnpm lint               # Lint/typecheck Node workspaces only
 pnpm test               # Test Node workspaces only
 pnpm build              # Build Node workspaces only
+node scripts/security-audit.mjs  # Workflow permissions + dependency audit; requires apps/engine/.venv with pip-audit
 pnpm test:web           # Web Vitest suite
 pnpm test:web:e2e       # Web Playwright suite
 pnpm test:agents        # Agents Vitest suite
@@ -59,6 +60,7 @@ Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`
 
 - `git diff --check`
 - Run the closest local command to the workflow steps you changed
+- `node scripts/security-audit.mjs` when workflow permissions or dependency-audit automation changes
 - State clearly what you could not verify locally
 
 ## Handoff Format
