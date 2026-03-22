@@ -51,3 +51,5 @@ supabase/.branches/
 # Office lock files
 ~$*.docx
 ~$*.xlsx
+
+.vercel
