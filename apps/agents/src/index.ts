@@ -14,15 +14,10 @@
  *  ⚡  Execution Monitor  — Trade recommendations
  */
 
-import 'dotenv/config';
 import { Orchestrator } from './orchestrator.js';
 import { createApp, isRunning } from './server.js';
 import { startScheduler } from './scheduler.js';
-import {
-  AGENTS_ENV_GUIDANCE,
-  REQUIRED_AGENT_ENV_VARS,
-  getMissingAgentEnvVars,
-} from './env.js';
+import { AGENTS_ENV_GUIDANCE, REQUIRED_AGENT_ENV_VARS, getMissingAgentEnvVars } from './env.js';
 import { logger } from './logger.js';
 
 // Re-export public API for consumers that import this package
@@ -65,17 +60,20 @@ async function main() {
   // ── HTTP server ────────────────────────────────────────────────
   const app = createApp(orchestrator);
   const server = app.listen(port, () => {
-    logger.info('boot.server.ready', { port, endpoints: [
-      'GET  /health',
-      'GET  /status',
-      'GET  /recommendations',
-      'GET  /alerts',
-      'POST /cycle',
-      'POST /halt',
-      'POST /resume',
-      'POST /recommendations/:id/approve',
-      'POST /recommendations/:id/reject',
-    ]});
+    logger.info('boot.server.ready', {
+      port,
+      endpoints: [
+        'GET  /health',
+        'GET  /status',
+        'GET  /recommendations',
+        'GET  /alerts',
+        'POST /cycle',
+        'POST /halt',
+        'POST /resume',
+        'POST /recommendations/:id/approve',
+        'POST /recommendations/:id/reject',
+      ],
+    });
   });
 
   // ── Scheduler ──────────────────────────────────────────────────

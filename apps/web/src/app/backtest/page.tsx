@@ -102,7 +102,7 @@ export default function BacktestPage() {
             <h1 className="text-lg font-bold text-foreground">Backtest</h1>
             <p className="text-xs text-muted-foreground">
               Run strategy backtests on synthetic market data
-              {!engineOnline && ' (engine offline — using client-side simulation)'}
+              {engineOnline === false && ' (engine offline — using client-side simulation)'}
             </p>
           </div>
         </div>

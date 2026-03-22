@@ -4,13 +4,14 @@ interface AppState {
   selectedTicker: string | null;
   sidebarOpen: boolean;
   marketStatus: 'open' | 'closed' | 'pre' | 'post';
-  engineOnline: boolean;
+  /** null = health has not been probed yet */
+  engineOnline: boolean | null;
   /** null = agents intentionally unconfigured in local development (skip banner) */
   agentsOnline: boolean | null;
   setSelectedTicker: (ticker: string | null) => void;
   toggleSidebar: () => void;
   setMarketStatus: (status: AppState['marketStatus']) => void;
-  setEngineOnline: (online: boolean) => void;
+  setEngineOnline: (online: boolean | null) => void;
   setAgentsOnline: (online: boolean | null) => void;
 }
 
@@ -18,7 +19,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedTicker: null,
   sidebarOpen: true,
   marketStatus: 'closed',
-  engineOnline: false,
+  engineOnline: null,
   agentsOnline: null,
   setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),

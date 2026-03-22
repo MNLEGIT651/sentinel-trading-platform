@@ -15,11 +15,17 @@ export interface OrderHistoryEntry {
   risk_note: string | null;
 }
 
-export function useOrderHistory() {
+export function useOrderHistory(enabled = true) {
   const [orders, setOrders] = useState<OrderHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchHistory = useCallback(async () => {
+    if (!enabled) {
+      setOrders([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(engineUrl('/api/v1/portfolio/orders/history?limit=20'), {
         signal: AbortSignal.timeout(6000),
@@ -33,11 +39,17 @@ export function useOrderHistory() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) {
+      setOrders([]);
+      setIsLoading(false);
+      return;
+    }
+
     fetchHistory();
-  }, [fetchHistory]);
+  }, [enabled, fetchHistory]);
 
   return { orders, isLoading, refresh: fetchHistory };
 }

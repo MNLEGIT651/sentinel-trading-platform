@@ -22,6 +22,7 @@ async function checkAgents(): Promise<boolean | null> {
   try {
     const res = await fetch(AGENTS_HEALTH_URL, {
       signal: AbortSignal.timeout(4000),
+      cache: 'no-store',
     });
     if (res.status === 503) {
       const body = (await res.json().catch(() => null)) as { code?: string } | null;
@@ -37,6 +38,15 @@ async function checkAgents(): Promise<boolean | null> {
   }
 }
 
+async function readHealth(): Promise<{ engine: boolean | null; agents: boolean | null }> {
+  try {
+    const [engine, agents] = await Promise.all([checkEngine(), checkAgents()]);
+    return { engine, agents };
+  } catch {
+    return { engine: false, agents: false };
+  }
+}
+
 /**
  * Polls engine and agents health every 15s and writes to Zustand.
  * Mount once in the app shell — all pages read from the store.
@@ -48,9 +58,9 @@ export function useServiceHealth() {
 
   useEffect(() => {
     async function probe() {
-      const [engine, agents] = await Promise.all([checkEngine(), checkAgents()]);
+      const { engine, agents } = await readHealth();
       setEngineOnline(engine);
-      // null = intentionally unconfigured in local development → hide the banner
+      // null = intentionally unconfigured in local development — hide the banner
       setAgentsOnline(agents);
     }
 

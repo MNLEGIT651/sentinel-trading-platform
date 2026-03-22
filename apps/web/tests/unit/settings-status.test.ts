@@ -125,4 +125,61 @@ describe('/api/settings/status', () => {
       alpaca: 'connected',
     });
   });
+
+  it('keeps provider status disconnected when health checks fail behind healthy services', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENGINE_URL = 'https://engine.example';
+    process.env.ENGINE_API_KEY = 'secret-key';
+    process.env.AGENTS_URL = 'https://agents.example';
+    process.env.SUPABASE_URL = 'https://supabase.example';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'supabase-secret';
+    process.env.ANTHROPIC_API_KEY = 'anthropic-secret';
+    delete process.env.POLYGON_API_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.ALPACA_API_KEY;
+    delete process.env.ALPACA_SECRET_KEY;
+    delete process.env.ALPACA_BASE_URL;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === 'https://engine.example/health') {
+        return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+      }
+
+      if (url === 'https://agents.example/health') {
+        return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+      }
+
+      if (url === 'https://engine.example/api/v1/data/quotes?tickers=AAPL') {
+        return new Response(JSON.stringify({ detail: 'polygon unavailable' }), { status: 503 });
+      }
+
+      if (url === 'https://supabase.example/rest/v1/') {
+        return new Response('{}', { status: 200 });
+      }
+
+      if (url === 'https://api.anthropic.com/v1/models') {
+        return new Response(JSON.stringify({ error: 'anthropic unavailable' }), { status: 503 });
+      }
+
+      if (url === 'https://engine.example/api/v1/portfolio/account') {
+        return new Response(JSON.stringify({ detail: 'alpaca unavailable' }), { status: 503 });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      engine: 'connected',
+      agents: 'connected',
+      polygon: 'disconnected',
+      supabase: 'connected',
+      anthropic: 'disconnected',
+      alpaca: 'disconnected',
+    });
+  });
 });

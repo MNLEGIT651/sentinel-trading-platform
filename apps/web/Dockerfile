@@ -12,6 +12,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
+COPY apps/agents/package.json apps/agents/
 
 RUN pnpm install --frozen-lockfile
 
@@ -20,10 +21,10 @@ FROM base AS builder
 
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/ ./
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
-COPY package.json pnpm-workspace.yaml ./
+COPY tsconfig.base.json ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -43,7 +44,7 @@ RUN if [ "$VALIDATE_BUILD_ARGS" = "true" ] && echo "$NEXT_PUBLIC_SUPABASE_URL" |
       exit 1; \
     fi
 
-RUN pnpm --filter web build
+RUN pnpm --filter @sentinel/web build
 
 # ─── Runtime image ────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
