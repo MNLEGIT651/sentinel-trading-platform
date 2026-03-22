@@ -41,7 +41,7 @@ describe('Orchestrator constructor — executor injection', () => {
     // executor is provided — no network connection is attempted.
     const executor = makeMockExecutor();
     const orchestrator = new Orchestrator({ executor });
-    expect(orchestrator.getAgentInfo()).toHaveLength(5);
+    expect(orchestrator.getAgentInfo()).toHaveLength(7);
   });
 
   it('creates a real EngineClient when no executor is injected', () => {
@@ -58,7 +58,7 @@ describe('Orchestrator constructor — executor injection', () => {
     });
     // If the EngineClient were used, construction might fail; the fact that
     // getAgentInfo() works confirms the executor path was taken.
-    expect(orchestrator.getAgentInfo()).toHaveLength(5);
+    expect(orchestrator.getAgentInfo()).toHaveLength(7);
   });
 });
 
@@ -83,12 +83,14 @@ describe('Orchestrator — config constants', () => {
     expect(DEFAULT_CYCLE_INTERVAL_MS).toBe(STRATEGY_ANALYST_COOLDOWN_MS);
   });
 
-  it('DEFAULT_AGENT_PROMPTS contains all 4 cycle-sequence roles', async () => {
+  it('DEFAULT_AGENT_PROMPTS contains all cycle-sequence and on-demand roles', async () => {
     const { DEFAULT_AGENT_PROMPTS } = await import('../src/config.js');
     expect(DEFAULT_AGENT_PROMPTS).toHaveProperty('market_sentinel');
     expect(DEFAULT_AGENT_PROMPTS).toHaveProperty('strategy_analyst');
     expect(DEFAULT_AGENT_PROMPTS).toHaveProperty('risk_monitor');
     expect(DEFAULT_AGENT_PROMPTS).toHaveProperty('execution_monitor');
+    expect(DEFAULT_AGENT_PROMPTS).toHaveProperty('pr_manager');
+    expect(DEFAULT_AGENT_PROMPTS).toHaveProperty('workflow_manager');
   });
 
   it('WATCHLIST_TICKERS is non-empty and contains expected symbols', async () => {

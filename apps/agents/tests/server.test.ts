@@ -11,6 +11,8 @@ const mockOrchestrator = {
       risk_monitor: 'idle',
       research: 'idle',
       execution_monitor: 'idle',
+      pr_manager: 'idle',
+      workflow_manager: 'idle',
     },
     lastRun: {
       market_sentinel: null,
@@ -18,11 +20,20 @@ const mockOrchestrator = {
       risk_monitor: null,
       research: null,
       execution_monitor: null,
+      pr_manager: null,
+      workflow_manager: null,
     },
     cycleCount: 3,
     halted: false,
   },
   runCycle: vi.fn().mockResolvedValue([]),
+  runAgent: vi.fn().mockResolvedValue({
+    role: 'pr_manager',
+    success: true,
+    timestamp: new Date().toISOString(),
+    durationMs: 100,
+    data: null,
+  }),
   halt: vi.fn(),
   resume: vi.fn(),
 };
@@ -162,5 +173,32 @@ describe('POST /recommendations/:id/reject', () => {
     vi.mocked(getRecommendation).mockResolvedValue(null as any);
     const res = await request(app).post('/recommendations/nonexistent/reject');
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /pr-audit', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns 200 and invokes pr_manager agent', async () => {
+    const res = await request(app).post('/pr-audit');
+    expect(res.status).toBe(200);
+    expect(mockOrchestrator.runAgent).toHaveBeenCalledWith('pr_manager', expect.any(String));
+  });
+});
+
+describe('POST /workflow-audit', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns 200 and invokes workflow_manager agent', async () => {
+    mockOrchestrator.runAgent.mockResolvedValue({
+      role: 'workflow_manager',
+      success: true,
+      timestamp: new Date().toISOString(),
+      durationMs: 80,
+      data: null,
+    });
+    const res = await request(app).post('/workflow-audit');
+    expect(res.status).toBe(200);
+    expect(mockOrchestrator.runAgent).toHaveBeenCalledWith('workflow_manager', expect.any(String));
   });
 });

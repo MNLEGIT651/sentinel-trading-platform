@@ -50,6 +50,12 @@ export const RESEARCH_COOLDOWN_MS = 30 * 60 * 1_000;
 /** How often the Execution Monitor may run (10 seconds). */
 export const EXECUTION_MONITOR_COOLDOWN_MS = 10 * 1_000;
 
+/** How often the PR Manager may run (30 minutes). */
+export const PR_MANAGER_COOLDOWN_MS = 30 * 60 * 1_000;
+
+/** How often the Workflow Manager may run (15 minutes). */
+export const WORKFLOW_MANAGER_COOLDOWN_MS = 15 * 60 * 1_000;
+
 // ─── Agent Prompts ───────────────────────────────────────────────────────────
 
 /**
@@ -68,6 +74,12 @@ export const DEFAULT_AGENT_PROMPTS: Readonly<Record<string, string>> = {
 
   execution_monitor:
     'Check for any open orders. If there are approved trades from this cycle that pass risk checks, prepare them for execution. Report on execution quality for any fills.',
+
+  pr_manager:
+    'Audit all open pull requests. For each PR, check its age, review status, CI check results, and mergeable state. Flag stale PRs that have not been reviewed. Identify PRs with failing checks. Produce a concise health report with actionable recommendations. Create alerts for any critical issues.',
+
+  workflow_manager:
+    'Audit GitHub Actions workflow health. List all workflows and recent runs. Identify failing runs, especially on the main branch. Calculate the overall failure rate. Investigate logs for any recent failures. Produce a concise CI health report with actionable recommendations. Create alerts for any critical issues.',
 };
 
 // ─── GitHub Ops Commander ────────────────────────────────────────────────────

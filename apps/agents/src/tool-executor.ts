@@ -10,6 +10,16 @@ import {
 } from './recommendations-store.js';
 import type { MarketSentiment, RiskAssessment } from './types.js';
 import { WATCHLIST_TICKERS } from './config.js';
+import {
+  listOpenPRs,
+  getPRDetails,
+  getPRChecks,
+  auditPRs,
+  listWorkflows,
+  listWorkflowRuns,
+  getWorkflowRunLogs,
+  auditCI,
+} from './github-client.js';
 
 export class ToolExecutor {
   private engine: EngineClient;
@@ -52,6 +62,25 @@ export class ToolExecutor {
         return this.analyzeTicker(input);
       case 'create_alert':
         return this.createAlert(input);
+
+      // ── GitHub Ops ──────────────────────────────────────────────
+      case 'list_open_prs':
+        return listOpenPRs();
+      case 'get_pr_details':
+        return getPRDetails(input.pr_number as number);
+      case 'get_pr_checks':
+        return getPRChecks(input.pr_number as number);
+      case 'audit_prs':
+        return auditPRs();
+      case 'list_workflows':
+        return listWorkflows();
+      case 'list_workflow_runs':
+        return listWorkflowRuns((input.limit as number | undefined) ?? 20);
+      case 'get_workflow_run_logs':
+        return getWorkflowRunLogs(input.run_id as number);
+      case 'audit_ci':
+        return auditCI();
+
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }

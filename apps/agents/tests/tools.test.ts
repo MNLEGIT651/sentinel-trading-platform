@@ -21,24 +21,54 @@ describe('Tool Definitions', () => {
     }
   });
 
-  it('should have at least 10 tools', () => {
-    expect(TOOL_DEFINITIONS.length).toBeGreaterThanOrEqual(10);
+  it('should have at least 18 tools', () => {
+    expect(TOOL_DEFINITIONS.length).toBeGreaterThanOrEqual(18);
+  });
+
+  it('should include GitHub tools', () => {
+    const toolNames = TOOL_DEFINITIONS.map((t) => t.name);
+    expect(toolNames).toContain('list_open_prs');
+    expect(toolNames).toContain('get_pr_details');
+    expect(toolNames).toContain('get_pr_checks');
+    expect(toolNames).toContain('audit_prs');
+    expect(toolNames).toContain('list_workflows');
+    expect(toolNames).toContain('list_workflow_runs');
+    expect(toolNames).toContain('get_workflow_run_logs');
+    expect(toolNames).toContain('audit_ci');
   });
 });
 
 describe('Agent Tool Mapping', () => {
-  it('should define tools for all 5 agent roles', () => {
+  it('should define tools for all 7 agent roles', () => {
     const roles = [
       'market_sentinel',
       'strategy_analyst',
       'risk_monitor',
       'research',
       'execution_monitor',
+      'pr_manager',
+      'workflow_manager',
     ];
     for (const role of roles) {
       expect(AGENT_TOOLS[role]).toBeDefined();
       expect(AGENT_TOOLS[role].length).toBeGreaterThan(0);
     }
+  });
+
+  it('pr_manager should have PR tools', () => {
+    expect(AGENT_TOOLS.pr_manager).toContain('list_open_prs');
+    expect(AGENT_TOOLS.pr_manager).toContain('get_pr_details');
+    expect(AGENT_TOOLS.pr_manager).toContain('get_pr_checks');
+    expect(AGENT_TOOLS.pr_manager).toContain('audit_prs');
+    expect(AGENT_TOOLS.pr_manager).toContain('create_alert');
+  });
+
+  it('workflow_manager should have workflow tools', () => {
+    expect(AGENT_TOOLS.workflow_manager).toContain('list_workflows');
+    expect(AGENT_TOOLS.workflow_manager).toContain('list_workflow_runs');
+    expect(AGENT_TOOLS.workflow_manager).toContain('get_workflow_run_logs');
+    expect(AGENT_TOOLS.workflow_manager).toContain('audit_ci');
+    expect(AGENT_TOOLS.workflow_manager).toContain('create_alert');
   });
 
   it('market_sentinel should have market tools', () => {

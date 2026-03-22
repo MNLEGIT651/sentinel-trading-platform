@@ -121,6 +121,8 @@ export function loadAllWorkflows(workflowsDir?: string): Map<AgentRole, Workflow
     'risk_monitor',
     'research',
     'execution_monitor',
+    'pr_manager',
+    'workflow_manager',
   ];
   const map = new Map<AgentRole, WorkflowConfig>();
   for (const role of roles) {

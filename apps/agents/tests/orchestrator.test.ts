@@ -19,10 +19,10 @@ describe('Orchestrator', () => {
     vi.restoreAllMocks();
   });
 
-  it('should initialize with all 5 agents', () => {
+  it('should initialize with all 7 agents', () => {
     const orchestrator = new Orchestrator({ apiKey: 'test-key' });
     const agents = orchestrator.getAgentInfo();
-    expect(agents).toHaveLength(5);
+    expect(agents).toHaveLength(7);
   });
 
   it('should have all roles represented', () => {
@@ -33,6 +33,8 @@ describe('Orchestrator', () => {
     expect(roles).toContain('risk_monitor');
     expect(roles).toContain('research');
     expect(roles).toContain('execution_monitor');
+    expect(roles).toContain('pr_manager');
+    expect(roles).toContain('workflow_manager');
   });
 
   it('should start with all agents idle', () => {

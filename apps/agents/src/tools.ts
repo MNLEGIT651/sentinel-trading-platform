@@ -6,7 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 // Tool parameter schemas using Anthropic's format
-export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
+const TRADING_TOOL_DEFINITIONS: Anthropic.Tool[] = [
   // Market Data Tools
   {
     name: 'get_market_data',
@@ -186,6 +186,107 @@ export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
 ];
 
+// GitHub Ops Tools — used by pr_manager and workflow_manager agents
+const GITHUB_TOOL_DEFINITIONS: Anthropic.Tool[] = [
+  {
+    name: 'list_open_prs',
+    description:
+      'List all open pull requests in the repository. Returns number, title, author, age, review status, and draft flag for each PR.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'get_pr_details',
+    description:
+      'Get detailed information about a specific pull request including body, review status, mergeable state, check results, and diff stats.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        pr_number: { type: 'number', description: 'Pull request number' },
+      },
+      required: ['pr_number'],
+    },
+  },
+  {
+    name: 'get_pr_checks',
+    description:
+      'Get the CI/CD check status for a specific pull request. Returns name, state, and description of each check.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        pr_number: { type: 'number', description: 'Pull request number' },
+      },
+      required: ['pr_number'],
+    },
+  },
+  {
+    name: 'audit_prs',
+    description:
+      'Run a full PR health audit. Identifies stale PRs (no review after threshold days), critical-age PRs, and produces a PASS/WARN/FAIL rating.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'list_workflows',
+    description:
+      'List all GitHub Actions workflows defined in the repository. Returns workflow id, name, file path, and active/disabled state.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'list_workflow_runs',
+    description:
+      'List recent GitHub Actions workflow runs. Returns run id, workflow name, status, conclusion, branch, and age.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum number of runs to return (default: 20)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_workflow_run_logs',
+    description:
+      'Get the failed-job logs for a specific workflow run. Useful for diagnosing CI failures.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        run_id: { type: 'number', description: 'Workflow run ID' },
+      },
+      required: ['run_id'],
+    },
+  },
+  {
+    name: 'audit_ci',
+    description:
+      'Run a full CI health audit. Checks recent workflow run failure rates, main-branch failures, and produces a PASS/WARN/FAIL rating.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+];
+
+// Combine all tool definitions
+export const TOOL_DEFINITIONS: Anthropic.Tool[] = [
+  ...TRADING_TOOL_DEFINITIONS,
+  ...GITHUB_TOOL_DEFINITIONS,
+];
+
 // Map agent roles to their available tools
 export const AGENT_TOOLS: Record<string, string[]> = {
   market_sentinel: ['get_market_data', 'get_market_sentiment', 'create_alert'],
@@ -208,6 +309,14 @@ export const AGENT_TOOLS: Record<string, string[]> = {
     'get_open_orders',
     'check_risk_limits',
     'calculate_position_size',
+    'create_alert',
+  ],
+  pr_manager: ['list_open_prs', 'get_pr_details', 'get_pr_checks', 'audit_prs', 'create_alert'],
+  workflow_manager: [
+    'list_workflows',
+    'list_workflow_runs',
+    'get_workflow_run_logs',
+    'audit_ci',
     'create_alert',
   ],
 };

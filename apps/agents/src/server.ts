@@ -1,5 +1,5 @@
 /**
- * Sentinel Agent HTTP Server — Express app exposing 9 REST endpoints.
+ * Sentinel Agent HTTP Server — Express app exposing 11 REST endpoints.
  *
  * Endpoints:
  *   GET  /health
@@ -7,6 +7,8 @@
  *   POST /cycle
  *   POST /halt
  *   POST /resume
+ *   POST /pr-audit
+ *   POST /workflow-audit
  *   GET  /recommendations[?status=pending|all|approved|filled|rejected|risk_blocked]
  *   POST /recommendations/:id/approve
  *   POST /recommendations/:id/reject
@@ -27,6 +29,7 @@ import {
 } from './recommendations-store.js';
 import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
+import { DEFAULT_AGENT_PROMPTS } from './config.js';
 
 // ── Cycle-in-progress flag ─────────────────────────────────────────
 // Module-level so the scheduler can also check it.
@@ -132,6 +135,31 @@ export function createApp(orchestrator: Orchestrator): Express {
   app.post('/resume', (_req: Request, res: Response) => {
     orchestrator.resume();
     res.json({ halted: false, message: 'Trading resumed' });
+  });
+
+  // ── GitHub Ops (on-demand) ──────────────────────────────────────
+
+  app.post('/pr-audit', (_req: Request, res: Response) => {
+    orchestrator
+      .runAgent('pr_manager', DEFAULT_AGENT_PROMPTS['pr_manager'] ?? 'Audit open pull requests.')
+      .then((result) => res.json(result))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'pr_audit_failed', detail: msg });
+      });
+  });
+
+  app.post('/workflow-audit', (_req: Request, res: Response) => {
+    orchestrator
+      .runAgent(
+        'workflow_manager',
+        DEFAULT_AGENT_PROMPTS['workflow_manager'] ?? 'Audit GitHub Actions workflow health.',
+      )
+      .then((result) => res.json(result))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'workflow_audit_failed', detail: msg });
+      });
   });
 
   // ── Recommendations ─────────────────────────────────────────────

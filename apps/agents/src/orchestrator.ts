@@ -1,12 +1,16 @@
 /**
- * Agent Orchestrator — coordinates the 5-agent trading system.
+ * Agent Orchestrator — coordinates the 7-agent system.
  *
- * Runs agents in a defined sequence with dependency management:
+ * Trading cycle (runs in sequence with dependency management):
  * 1. Market Sentinel → assess market conditions
  * 2. Strategy Analyst → generate signals (depends on market data)
  * 3. Risk Monitor → check portfolio risk (depends on positions)
  * 4. Research → deep dive on top signals (depends on strategy output)
  * 5. Execution Monitor → execute approved trades (depends on risk approval)
+ *
+ * On-demand agents (invoked independently):
+ * 6. PR Manager → audit and manage pull requests
+ * 7. Workflow Manager → audit GitHub Actions workflows and runs
  */
 
 import { Agent } from './agent.js';
@@ -19,9 +23,11 @@ import {
   DEFAULT_CYCLE_INTERVAL_MS,
   EXECUTION_MONITOR_COOLDOWN_MS,
   MARKET_SENTINEL_COOLDOWN_MS,
+  PR_MANAGER_COOLDOWN_MS,
   RESEARCH_COOLDOWN_MS,
   RISK_MONITOR_COOLDOWN_MS,
   STRATEGY_ANALYST_COOLDOWN_MS,
+  WORKFLOW_MANAGER_COOLDOWN_MS,
 } from './config.js';
 import { logger } from './logger.js';
 
@@ -66,6 +72,22 @@ const DEFAULT_CONFIGS: AgentConfig[] = [
     enabled: true,
     cooldownMs: EXECUTION_MONITOR_COOLDOWN_MS,
   },
+  {
+    role: 'pr_manager',
+    name: 'PR Manager',
+    description: 'Audits open pull requests, checks review status and CI health',
+    schedule: 'on demand',
+    enabled: true,
+    cooldownMs: PR_MANAGER_COOLDOWN_MS,
+  },
+  {
+    role: 'workflow_manager',
+    name: 'Workflow Manager',
+    description: 'Monitors GitHub Actions workflows, identifies failures, and reports CI health',
+    schedule: 'on demand',
+    enabled: true,
+    cooldownMs: WORKFLOW_MANAGER_COOLDOWN_MS,
+  },
 ];
 
 export class Orchestrator {
@@ -82,8 +104,7 @@ export class Orchestrator {
     /** Inject a pre-built ToolExecutor — used in tests to supply a mock executor. */
     executor?: ToolExecutor;
   }) {
-    this.executor =
-      options?.executor ?? new ToolExecutor(new EngineClient(options?.engineUrl));
+    this.executor = options?.executor ?? new ToolExecutor(new EngineClient(options?.engineUrl));
 
     const configs = options?.configs ?? DEFAULT_CONFIGS;
 
@@ -190,7 +211,11 @@ export class Orchestrator {
     this.state.lastRun[role] = result.timestamp;
 
     if (result.success) {
-      logger.info('agent.complete', { role, name: agent.config.name, durationMs: result.durationMs });
+      logger.info('agent.complete', {
+        role,
+        name: agent.config.name,
+        durationMs: result.durationMs,
+      });
     } else {
       logger.error('agent.failed', { role, name: agent.config.name, error: result.error });
     }
