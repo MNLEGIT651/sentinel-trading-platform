@@ -68,7 +68,7 @@ export function createErrorResponse(
     message,
     code,
     timestamp: new Date().toISOString(),
-    requestId,
+    ...(requestId && { requestId }),
   };
 }
 
