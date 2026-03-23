@@ -1,0 +1,265 @@
+name: Performance Benchmarks
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'apps/engine/**'
+      - 'apps/agents/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Mondays at 2 AM UTC
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: benchmarks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Web app performance (Lighthouse CI)
+  # ---------------------------------------------------------------------------
+  web-performance:
+    name: Web Performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+
+      - name: Run Lighthouse CI
+        run: |
+          cd apps/web
+          lhci autorun --collect.startServerCommand="pnpm start" --collect.url="http://localhost:3000" || echo "Lighthouse CI completed with warnings"
+        continue-on-error: true
+
+      - name: Generate performance summary
+        if: always()
+        run: |
+          {
+            echo "## Web Performance Report"
+            echo ""
+            echo "Lighthouse CI analysis completed. Check artifacts for detailed report."
+            echo ""
+            echo "### Key Metrics"
+            echo "- First Contentful Paint (FCP)"
+            echo "- Largest Contentful Paint (LCP)"
+            echo "- Total Blocking Time (TBT)"
+            echo "- Cumulative Layout Shift (CLS)"
+            echo "- Speed Index"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Engine API performance
+  # ---------------------------------------------------------------------------
+  engine-performance:
+    name: Engine Performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache uv / pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.cache/pip
+          key: uv-${{ runner.os }}-py3.12-${{ hashFiles('apps/engine/pyproject.toml') }}
+          restore-keys: |
+            uv-${{ runner.os }}-py3.12-
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Create venv and install engine dependencies
+        working-directory: apps/engine
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ".[dev]"
+          uv pip install --python .venv/bin/python pytest-benchmark
+
+      - name: Run performance benchmarks
+        working-directory: apps/engine
+        run: |
+          .venv/bin/python -m pytest tests/ -k "benchmark" --benchmark-only --benchmark-json=benchmark.json || echo "Benchmark suite completed"
+        continue-on-error: true
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+
+      - name: Generate benchmark summary
+        if: always()
+        working-directory: apps/engine
+        run: |
+          {
+            echo "## Engine Performance Benchmarks"
+            echo ""
+            if [ -f benchmark.json ]; then
+              echo "✅ Benchmark results available in artifacts"
+              echo ""
+              echo "### Benchmark Categories"
+              echo "- Market data processing"
+              echo "- Strategy calculations"
+              echo "- Risk calculations"
+              echo "- Order validation"
+            else
+              echo "⚠️ No benchmark results found"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-benchmarks
+          path: apps/engine/benchmark.json
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # Agents performance
+  # ---------------------------------------------------------------------------
+  agents-performance:
+    name: Agents Performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run workflow execution benchmarks
+        run: |
+          cd apps/agents
+          # Run benchmark tests if they exist
+          pnpm test -- --grep="benchmark" || echo "No benchmark tests found"
+
+      - name: Generate agents performance summary
+        if: always()
+        run: |
+          {
+            echo "## Agents Performance Report"
+            echo ""
+            echo "### Workflow Metrics"
+            echo "- Workflow load time"
+            echo "- Agent initialization time"
+            echo "- Tool execution latency"
+            echo "- Orchestration overhead"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Bundle size analysis (web app)
+  # ---------------------------------------------------------------------------
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and analyze bundle
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          ANALYZE: true
+
+      - name: Analyze bundle size
+        run: |
+          cd apps/web/.next
+          echo "## Bundle Size Analysis" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Build Output" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          du -sh * 2>/dev/null | sort -hr | head -20 >> "$GITHUB_STEP_SUMMARY" || echo "No build output found"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

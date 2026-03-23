@@ -1,0 +1,184 @@
+name: PR Auto-Label and Assignment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: auto-label-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  auto-label:
+    name: Auto Label PRs and Issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Label PRs by size
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const changes = files.data.reduce((sum, file) => sum + file.additions + file.deletions, 0);
+
+            let sizeLabel;
+            if (changes < 50) sizeLabel = 'size/XS';
+            else if (changes < 200) sizeLabel = 'size/S';
+            else if (changes < 500) sizeLabel = 'size/M';
+            else if (changes < 1000) sizeLabel = 'size/L';
+            else sizeLabel = 'size/XL';
+
+            // Remove existing size labels
+            const currentLabels = pr.labels.map(l => l.name);
+            const sizeLabels = currentLabels.filter(l => l.startsWith('size/'));
+
+            if (sizeLabels.length > 0) {
+              for (const label of sizeLabels) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: label
+                });
+              }
+            }
+
+            // Add new size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: [sizeLabel]
+            });
+
+      - name: Label PRs by changed files
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const labels = new Set();
+            const paths = files.data.map(f => f.filename);
+
+            // Area labels based on changed paths
+            if (paths.some(p => p.startsWith('apps/web/'))) labels.add('area/web');
+            if (paths.some(p => p.startsWith('apps/engine/'))) labels.add('area/engine');
+            if (paths.some(p => p.startsWith('apps/agents/'))) labels.add('area/agents');
+            if (paths.some(p => p.startsWith('packages/shared/'))) labels.add('area/shared');
+            if (paths.some(p => p.startsWith('.github/workflows/'))) labels.add('area/ci');
+            if (paths.some(p => p.startsWith('supabase/'))) labels.add('area/database');
+            if (paths.some(p => p.startsWith('docs/'))) labels.add('documentation');
+
+            // Type labels based on changed paths
+            if (paths.some(p => p.includes('.test.') || p.includes('.spec.'))) labels.add('tests');
+            if (paths.some(p => p.endsWith('.md'))) labels.add('documentation');
+            if (paths.some(p => p.startsWith('.github/'))) labels.add('infrastructure');
+
+            // Sensitive path detection
+            const sensitivePaths = [
+              '.github/workflows/',
+              'supabase/migrations/',
+              'packages/shared/',
+              'apps/web/src/lib/engine-fetch.ts',
+              'apps/engine/src/api/main.py',
+              'apps/engine/src/config.py',
+              'package.json',
+              'pnpm-lock.yaml',
+              '.env.example'
+            ];
+
+            if (paths.some(p => sensitivePaths.some(sp => p.startsWith(sp) || p.includes(sp)))) {
+              labels.add('needs-review');
+              labels.add('high-priority');
+            }
+
+            if (labels.size > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: Array.from(labels)
+              });
+            }
+
+      - name: Check PR description completeness
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            const hasOutcome = body.toLowerCase().includes('outcome') || body.includes('## ');
+            const hasScope = body.toLowerCase().includes('scope') || body.includes('- [');
+            const hasValidation = body.toLowerCase().includes('validation') || body.toLowerCase().includes('test');
+
+            if (!hasOutcome || !hasScope || !hasValidation) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['needs-description']
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ **PR Description Incomplete**
+
+Please update your PR description to include:
+
+1. **Outcome**: What user-visible or system-visible result does this PR provide?
+2. **Scope**: What files or modules are changed?
+3. **Validation**: What commands were run? Did they pass?
+4. **Forbidden changes**: What was intentionally NOT changed?
+
+See [docs/ai/working-agreement.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
+              });
+            }
+
+      - name: Auto-assign based on area
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Don't auto-assign if already assigned or if PR author should remain the assignee
+            if (pr.assignees.length > 0) return;
+
+            // Auto-assign to PR author as default
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              assignees: [pr.user.login]
+            });
