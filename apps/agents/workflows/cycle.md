@@ -20,3 +20,5 @@ version: 1
 ## On-Demand Agents
 
 - research — triggered by specific ticker requests, not part of regular cycle
+- pr_manager — triggered by PR events, manages code review quality
+- workflow_manager — continuous monitoring of agent orchestration health
