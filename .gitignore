@@ -39,11 +39,16 @@ tmp/
 Screenshots/
 CODEX.WEB.AUDIT/
 
+# Downloaded tool binaries
+actionlint
+actionlint.exe
+
 # MCP local config
 .mcp.json
 
 # Supabase local state
 supabase/.branches/
+supabase/[0-9a-f]*/
 
 # Editor settings
 .vscode/
@@ -51,5 +56,3 @@ supabase/.branches/
 # Office lock files
 ~$*.docx
 ~$*.xlsx
-
-.vercel

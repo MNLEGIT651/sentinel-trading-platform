@@ -5,7 +5,7 @@
  * Uses the Intl.DateTimeFormat API for correct DST handling.
  */
 
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CycleRunner = () => Promise<any>;
@@ -61,7 +61,7 @@ export function startScheduler(
     isRunning?: () => boolean;
     isHalted?: () => boolean;
   },
-): cron.ScheduledTask {
+): ScheduledTask {
   // Tick every 15 minutes, all hours — we gate on isMarketOpen() internally
   const task = cron.schedule('*/15 * * * *', async () => {
     if (!isMarketOpen()) return;

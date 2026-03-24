@@ -2,14 +2,16 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'cycle test' }],
-        stop_reason: 'end_turn',
-      }),
-    },
-  })),
+  default: vi.fn().mockImplementation(function () {
+    return {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          content: [{ type: 'text', text: 'cycle test' }],
+          stop_reason: 'end_turn',
+        }),
+      },
+    };
+  }),
 }));
 
 vi.mock('../src/wat/workflow-loader.js', () => ({
@@ -23,13 +25,15 @@ vi.mock('../src/wat/workflow-loader.js', () => ({
 }));
 
 vi.mock('../src/engine-client.js', () => ({
-  EngineClient: vi.fn().mockImplementation(() => ({})),
+  EngineClient: vi.fn().mockImplementation(function () {
+    return {};
+  }),
 }));
 
 vi.mock('../src/tool-executor.js', () => ({
-  ToolExecutor: vi.fn().mockImplementation(() => ({
-    execute: vi.fn().mockResolvedValue('{}'),
-  })),
+  ToolExecutor: vi.fn().mockImplementation(function () {
+    return { execute: vi.fn().mockResolvedValue('{}') };
+  }),
 }));
 
 vi.mock('../src/tools.js', () => ({

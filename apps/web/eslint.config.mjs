@@ -1,10 +1,19 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import { createRequire } from "module";
+
+// eslint-plugin-react@7.x is incompatible with ESLint v10 — disable all its rules
+const require = createRequire(import.meta.url);
+const reactPlugin = require("eslint-plugin-react");
+const disableReactRules = Object.fromEntries(
+  Object.keys(reactPlugin.rules).map((name) => [`react/${name}`, "off"]),
+);
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  { rules: disableReactRules },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
