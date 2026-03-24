@@ -21,6 +21,26 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
+  // ── Machine Requirements ─────────────────────────────────────────────────
+  // Recommend 4-core / 16 GB for this monorepo with three services
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+
+  // ── Non-Root User ────────────────────────────────────────────────────────
+  // Run as the default non-root user for security (mirrors production)
+  "remoteUser": "vscode",
+
+  // ── Environment Variables ────────────────────────────────────────────────
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
+
   // ── Forwarded Ports ──────────────────────────────────────────────────────
   // Codespaces auto-forwards these ports and provides public/private URLs
   "forwardPorts": [3000, 3001, 8000],
@@ -30,14 +50,21 @@
     "8000": { "label": "Quant Engine (FastAPI)", "onAutoForward": "silent" }
   },
 
-  // ── Lifecycle Scripts ────────────────────────────────────────────────────
-  // postCreateCommand runs once after the container is created (on first start)
+  // ── Lifecycle Commands ───────────────────────────────────────────────────
+  // postCreateCommand: runs once after the container is created (first start)
+  // updateContentCommand: runs when repo content changes (e.g., git pull in prebuild)
   "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "updateContentCommand": "pnpm install --frozen-lockfile",
+  "waitFor": "updateContentCommand",
 
   // ── VS Code Customizations ──────────────────────────────────────────────
   "customizations": {
     "vscode": {
       "extensions": [
+        // AI coding assistants
+        "anthropic.claude-code",
+        "github.copilot",
+
         // TypeScript / JavaScript
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
@@ -66,11 +93,36 @@
         "mtxr.sqltools",
 
         // Testing
-        "vitest.explorer"
+        "vitest.explorer",
+
+        // Error highlighting
+        "usernamehw.errorlens"
       ],
       "settings": {
+        // ── Editor ──────────────────────────────────────────────────────
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.bracketPairColorization.enabled": true,
+        "editor.guides.bracketPairs": "active",
+        "editor.stickyScroll.enabled": true,
+        "editor.minimap.enabled": false,
+        "editor.linkedEditing": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+
+        // ── Files ───────────────────────────────────────────────────────
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        "files.exclude": {
+          "**/.turbo": true,
+          "**/node_modules": true,
+          "**/__pycache__": true,
+          "**/.pytest_cache": true
+        },
+
+        // ── Python ──────────────────────────────────────────────────────
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.codeActionsOnSave": {
@@ -79,9 +131,29 @@
           }
         },
         "python.defaultInterpreterPath": "./apps/engine/.venv/bin/python",
+
+        // ── TypeScript ──────────────────────────────────────────────────
         "typescript.tsdk": "node_modules/typescript/lib",
-        "files.trimTrailingWhitespace": true,
-        "files.insertFinalNewline": true
+        "typescript.preferences.importModuleSpecifier": "relative",
+
+        // ── Terminal ────────────────────────────────────────────────────
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          }
+        },
+
+        // ── Search ──────────────────────────────────────────────────────
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/.next": true,
+          "**/dist": true,
+          "**/.turbo": true,
+          "**/pnpm-lock.yaml": true,
+          "**/uv.lock": true
+        }
       }
     }
   }

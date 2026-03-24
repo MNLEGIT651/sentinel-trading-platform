@@ -77,6 +77,8 @@ the notification or check the **Ports** tab in VS Code.
 
 Automatically installed in every Codespace:
 
+- **Claude Code** — AI coding assistant from Anthropic (inline chat, code generation)
+- **GitHub Copilot** — AI pair programming
 - **ESLint** + **Prettier** — TypeScript linting & formatting
 - **Python** + **Pylance** — Python IntelliSense
 - **Ruff** — Python linting & formatting (matches CI)
@@ -87,6 +89,7 @@ Automatically installed in every Codespace:
 - **DotEnv** — `.env` file syntax highlighting
 - **SQLTools** — database queries
 - **Vitest Explorer** — test runner UI
+- **Error Lens** — inline error/warning highlighting
 
 ---
 
