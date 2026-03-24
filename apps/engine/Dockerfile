@@ -1,12 +1,22 @@
 # ─── Sentinel Engine — Python FastAPI ────────────────────────────────────────
+# Multi-stage production-optimized Dockerfile following 2026 best practices
+# - Uses Python 3.12 for performance and modern features
+# - Leverages uv for fast dependency installation
+# - Runs with Gunicorn + Uvicorn workers for production-grade async serving
+# - Includes uvloop and httptools for 2-4x performance improvement
+# - Non-root user for security
+# - Health checks for orchestration platforms
+
 FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# Install system dependencies
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
 
+# Install uv package manager
 RUN pip install --no-cache-dir "uv>=0.5"
 
 # ─── Dependencies layer ───────────────────────────────────────────────────────
@@ -14,24 +24,39 @@ FROM base AS deps
 
 COPY pyproject.toml ./
 
+# Create venv and install all dependencies including Gunicorn
 RUN uv venv .venv \
-  && uv pip install --python .venv/bin/python --no-cache "."
+  && uv pip install --python .venv/bin/python --no-cache ".[dev]"
 
 # ─── Runtime image ────────────────────────────────────────────────────────────
 FROM base AS runner
 
 WORKDIR /app
 
+# Copy virtual environment from deps stage
 COPY --from=deps /app/.venv ./.venv
-COPY src ./src
 
+# Copy application code
+COPY src ./src
+COPY gunicorn_conf.py ./
+
+# Create non-root user for security
 RUN addgroup --system --gid 1001 sentinel \
   && adduser --system --uid 1001 --ingroup sentinel sentinel
+
+# Set ownership
+RUN chown -R sentinel:sentinel /app
+
 USER sentinel
 
 EXPOSE 8000
 
+# Health check for container orchestration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD sh -c "curl -f http://localhost:${PORT:-8000}/health || exit 1"
 
-CMD ["sh", "-c", ".venv/bin/uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Production command: Gunicorn with Uvicorn workers
+# This automatically uses uvloop and httptools (installed via uvicorn[standard])
+# Workers are auto-calculated in gunicorn_conf.py based on CPU count
+CMD ["sh", "-c", ".venv/bin/gunicorn src.api.main:app -c gunicorn_conf.py"]
+

@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -14,6 +15,9 @@ from src.api.routes.portfolio import router as portfolio_router
 from src.api.routes.risk import router as risk_router
 from src.api.routes.strategies import router as strategies_router
 from src.config import Settings
+from src.logging_config import configure_logging
+from src.middleware.rate_limit import RateLimitMiddleware
+from src.middleware.tracing import CorrelationIDMiddleware
 
 # Paths that don't require an API key (health checks, OpenAPI docs)
 _PUBLIC_PATHS = frozenset({"/health", "/docs", "/openapi.json", "/redoc"})
@@ -51,6 +55,10 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    # Initialize structured logging
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+    configure_logging(level=log_level)
+
     _settings.validate()
     yield
     # Shutdown
@@ -89,8 +97,19 @@ async def http_exception_handler(request, exc: StarletteHTTPException) -> JSONRe
 
 
 _settings = Settings()
+
+# Add correlation ID middleware for distributed tracing (first, so it applies to all requests)
+app.add_middleware(CorrelationIDMiddleware)
+
+# Add rate limiting middleware (before auth, to protect against brute force)
+# In production with multiple instances, replace with Redis-based rate limiting
+rate_limit_per_min = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
+app.add_middleware(RateLimitMiddleware, requests_per_minute=rate_limit_per_min)
+
+# Add API key middleware for authentication
 app.add_middleware(ApiKeyMiddleware, api_key=_settings.engine_api_key)
 
+# Configure CORS
 _cors_origins = [o.strip() for o in _settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
