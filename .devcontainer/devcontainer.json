@@ -1,0 +1,88 @@
+// Sentinel Trading Platform — Dev Container / GitHub Codespaces configuration
+// Docs: https://containers.dev/implementors/json_reference/
+{
+  "name": "Sentinel Trading Platform",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+  // ── Dev Container Features ───────────────────────────────────────────────
+  "features": {
+    // Node.js 22 (matches .nvmrc)
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "nodeGypDependencies": false
+    },
+    // Python 3.12 (matches pyproject.toml requires-python >=3.12)
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    // Docker-in-Docker for docker compose workflows
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    // GitHub CLI for PR/issue management
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // ── Forwarded Ports ──────────────────────────────────────────────────────
+  // Codespaces auto-forwards these ports and provides public/private URLs
+  "forwardPorts": [3000, 3001, 8000],
+  "portsAttributes": {
+    "3000": { "label": "Web Dashboard (Next.js)", "onAutoForward": "notify" },
+    "3001": { "label": "Agent Orchestrator (Express)", "onAutoForward": "silent" },
+    "8000": { "label": "Quant Engine (FastAPI)", "onAutoForward": "silent" }
+  },
+
+  // ── Lifecycle Scripts ────────────────────────────────────────────────────
+  // postCreateCommand runs once after the container is created (on first start)
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // ── VS Code Customizations ──────────────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // TypeScript / JavaScript
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // Tailwind CSS
+        "bradlc.vscode-tailwindcss",
+
+        // Docker & containers
+        "ms-azuretools.vscode-docker",
+
+        // Git
+        "eamodio.gitlens",
+
+        // Monorepo / Turborepo
+        "vercel.turbo-vsc",
+
+        // DotEnv
+        "mikestead.dotenv",
+
+        // Database / SQL
+        "mtxr.sqltools",
+
+        // Testing
+        "vitest.explorer"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "python.defaultInterpreterPath": "./apps/engine/.venv/bin/python",
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+      }
+    }
+  }
+}
