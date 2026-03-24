@@ -3,7 +3,7 @@ name: Bug report
 about: Report a defect in the Sentinel Trading Platform
 title: 'bug: '
 labels: bug
-assignees: ''
+assignees: Copilot, Claude, Codex
 
 ---
 

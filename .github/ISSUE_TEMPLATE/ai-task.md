@@ -3,7 +3,7 @@ name: AI task
 about: Structured implementation request for Claude, Codex, or a human contributor
 title: "<area>: <outcome>"
 labels: ''
-assignees: Copilot, Claude, Codex
+assignees: ''
 
 ---
 
