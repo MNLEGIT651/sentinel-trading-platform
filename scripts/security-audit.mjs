@@ -16,9 +16,19 @@ runCheck("pnpm audit (prod)", () => {
   });
 });
 runCheck("pip-audit (engine)", () => {
+  // CVE-2026-4539: regex DoS in pygments AdlLexer — no fix available yet
+  // (pip-audit reports Fix Versions as empty). Remove the ignore flag once
+  // pygments ships a patched release.
   runCommand(
     process.execPath,
-    [path.join("scripts", "engine-python.mjs"), "-m", "pip_audit", "--desc"],
+    [
+      path.join("scripts", "engine-python.mjs"),
+      "-m",
+      "pip_audit",
+      "--desc",
+      "--ignore-vuln",
+      "CVE-2026-4539",
+    ],
     {
       cwd: repoRoot,
       failureHint:
