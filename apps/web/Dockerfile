@@ -27,6 +27,7 @@ COPY apps/web ./apps/web
 COPY tsconfig.base.json ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV STANDALONE_BUILD=1
 
 ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key

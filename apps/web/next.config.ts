@@ -72,7 +72,10 @@ const securityHeaders = [
 // ─── Next.js config ───────────────────────────────────────────────────────────
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // 'standalone' is required for Docker builds (copies only needed node_modules).
+  // On Vercel, standard output is expected — standalone causes 404s.
+  // Set STANDALONE_BUILD=1 in Docker (or any non-Vercel) builds.
+  ...(process.env.STANDALONE_BUILD === '1' ? { output: 'standalone' } : {}),
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
