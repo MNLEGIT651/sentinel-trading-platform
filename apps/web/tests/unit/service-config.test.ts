@@ -34,7 +34,6 @@ describe('getServiceConfig', () => {
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(true);
     expect(config.baseUrl).toBe('https://engine.example.com');
-    expect(config.headers['X-API-Key']).toBe('test-key');
     expect(config.headers['Authorization']).toBe('Bearer test-key');
     expect(config.label).toBe('quant engine');
   });

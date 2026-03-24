@@ -143,11 +143,20 @@ describe('/api/settings/status', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === 'https://engine.example/health') {
-        return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+        return new Response(
+          JSON.stringify({
+            status: 'ok',
+            dependencies: { polygon: false, alpaca: false, supabase: true },
+          }),
+          { status: 200 },
+        );
       }
 
       if (url === 'https://agents.example/health') {
-        return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+        return new Response(
+          JSON.stringify({ status: 'ok', dependencies: { anthropic: false, supabase: true } }),
+          { status: 200 },
+        );
       }
 
       if (url === 'https://engine.example/api/v1/data/quotes?tickers=AAPL') {
@@ -176,10 +185,10 @@ describe('/api/settings/status', () => {
     expect(body).toMatchObject({
       engine: 'connected',
       agents: 'connected',
-      polygon: 'disconnected',
+      polygon: 'not_configured',
       supabase: 'connected',
-      anthropic: 'disconnected',
-      alpaca: 'disconnected',
+      anthropic: 'not_configured',
+      alpaca: 'not_configured',
     });
   });
 });

@@ -24,11 +24,15 @@ vi.mock('@/lib/server/service-proxy', () => ({
 
 // ─── Mock Supabase server client ───────────────────────────────────────────
 
+const mockGetUser = vi.fn<[], Promise<{ data: { user: { id: string } | null } }>>();
 const mockGetSession = vi.fn<[], Promise<{ data: { session: { access_token: string } | null } }>>();
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerSupabaseClient: () => ({
-    auth: { getSession: mockGetSession },
+    auth: {
+      getUser: mockGetUser,
+      getSession: mockGetSession,
+    },
   }),
 }));
 
@@ -126,12 +130,7 @@ describe('/api/agents/[...path] route handler', () => {
 
     // Should not call getSession for public paths
     expect(mockGetSession).not.toHaveBeenCalled();
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
-      'agents',
-      request,
-      ['health'],
-      {},
-    );
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith('agents', request, ['health'], {});
     expect(response).toBe(upstream);
   });
 
@@ -149,7 +148,7 @@ describe('/api/agents/[...path] route handler', () => {
   });
 
   it('returns 401 when no Supabase session exists for a protected path', async () => {
-    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
 
     const request = new Request('https://sentinel.example/api/agents/cycles');
     const ctx = { params: Promise.resolve({ path: ['cycles'] }) };
@@ -164,6 +163,7 @@ describe('/api/agents/[...path] route handler', () => {
   });
 
   it('injects Authorization header for authenticated protected paths', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-123' } } });
     mockGetSession.mockResolvedValueOnce({
       data: { session: { access_token: 'supabase-jwt-token-abc' } },
     });
@@ -182,7 +182,7 @@ describe('/api/agents/[...path] route handler', () => {
   });
 
   it('returns 401 when getSession throws', async () => {
-    mockGetSession.mockRejectedValueOnce(new Error('Supabase connection error'));
+    mockGetUser.mockRejectedValueOnce(new Error('Supabase connection error'));
 
     const request = new Request('https://sentinel.example/api/agents/run');
     const ctx = { params: Promise.resolve({ path: ['run'] }) };
@@ -194,6 +194,7 @@ describe('/api/agents/[...path] route handler', () => {
   });
 
   it('supports POST method via the same handler', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-456' } } });
     mockGetSession.mockResolvedValueOnce({
       data: { session: { access_token: 'jwt-xyz' } },
     });
@@ -212,12 +213,9 @@ describe('/api/agents/[...path] route handler', () => {
 
     const response = await POST(request, ctx);
 
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
-      'agents',
-      request,
-      ['cycles', 'run'],
-      { Authorization: 'Bearer jwt-xyz' },
-    );
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith('agents', request, ['cycles', 'run'], {
+      Authorization: 'Bearer jwt-xyz',
+    });
     expect(response).toBe(upstream);
   });
 });

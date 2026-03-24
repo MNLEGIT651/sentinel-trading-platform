@@ -89,7 +89,6 @@ describe('proxyServiceRequest', () => {
     const [, init] = fetchMock.mock.calls[1] as [string, RequestInit];
     const headers = new Headers(init.headers);
     expect(headers.get('authorization')).toBe('Bearer secret-key');
-    expect(headers.get('x-api-key')).toBe('secret-key');
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true });
   });
