@@ -153,14 +153,14 @@ jobs:
                 issue_number: pr.number,
                 body: `⚠️ **PR Description Incomplete**
 
-Please update your PR description to include:
+                Please update your PR description to include:
 
-1. **Outcome**: What user-visible or system-visible result does this PR provide?
-2. **Scope**: What files or modules are changed?
-3. **Validation**: What commands were run? Did they pass?
-4. **Forbidden changes**: What was intentionally NOT changed?
+                1. **Outcome**: What user-visible or system-visible result does this PR provide?
+                2. **Scope**: What files or modules are changed?
+                3. **Validation**: What commands were run? Did they pass?
+                4. **Forbidden changes**: What was intentionally NOT changed?
 
-See [docs/ai/working-agreement.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
+                See [docs/ai/working-agreement.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
               });
             }
 
