@@ -1,0 +1,160 @@
+// Sentinel Trading Platform — Dev Container / GitHub Codespaces configuration
+// Docs: https://containers.dev/implementors/json_reference/
+{
+  "name": "Sentinel Trading Platform",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+  // ── Dev Container Features ───────────────────────────────────────────────
+  "features": {
+    // Node.js 22 (matches .nvmrc)
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "nodeGypDependencies": false
+    },
+    // Python 3.12 (matches pyproject.toml requires-python >=3.12)
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    // Docker-in-Docker for docker compose workflows
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    // GitHub CLI for PR/issue management
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // ── Machine Requirements ─────────────────────────────────────────────────
+  // Minimum: 4-core / 8 GB. Recommended: 4-core / 16 GB for running all services
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  },
+
+  // ── Non-Root User ────────────────────────────────────────────────────────
+  // Run as the default non-root user for security (mirrors production)
+  "remoteUser": "vscode",
+
+  // ── Environment Variables ────────────────────────────────────────────────
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
+
+  // ── Forwarded Ports ──────────────────────────────────────────────────────
+  // Codespaces auto-forwards these ports and provides public/private URLs
+  "forwardPorts": [3000, 3001, 8000],
+  "portsAttributes": {
+    "3000": { "label": "Web Dashboard (Next.js)", "onAutoForward": "notify" },
+    "3001": { "label": "Agent Orchestrator (Express)", "onAutoForward": "silent" },
+    "8000": { "label": "Quant Engine (FastAPI)", "onAutoForward": "silent" }
+  },
+
+  // ── Lifecycle Commands ───────────────────────────────────────────────────
+  // postCreateCommand: runs once after the container is created (first start)
+  // updateContentCommand: runs when repo content changes (e.g., git pull in prebuild)
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "updateContentCommand": "pnpm install --frozen-lockfile",
+  "waitFor": "updateContentCommand",
+
+  // ── VS Code Customizations ──────────────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // AI coding assistants
+        "anthropic.claude-code",
+        "github.copilot",
+
+        // TypeScript / JavaScript
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // Tailwind CSS
+        "bradlc.vscode-tailwindcss",
+
+        // Docker & containers
+        "ms-azuretools.vscode-docker",
+
+        // Git
+        "eamodio.gitlens",
+
+        // Monorepo / Turborepo
+        "vercel.turbo-vsc",
+
+        // DotEnv
+        "mikestead.dotenv",
+
+        // Database / SQL
+        "mtxr.sqltools",
+
+        // Testing
+        "vitest.explorer",
+
+        // Error highlighting
+        "usernamehw.errorlens"
+      ],
+      "settings": {
+        // ── Editor ──────────────────────────────────────────────────────
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.bracketPairColorization.enabled": true,
+        "editor.guides.bracketPairs": "active",
+        "editor.stickyScroll.enabled": true,
+        "editor.minimap.enabled": false,
+        "editor.linkedEditing": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+
+        // ── Files ───────────────────────────────────────────────────────
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        "files.exclude": {
+          "**/.turbo": true,
+          "**/node_modules": true,
+          "**/__pycache__": true,
+          "**/.pytest_cache": true
+        },
+
+        // ── Python ──────────────────────────────────────────────────────
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+          }
+        },
+        "python.defaultInterpreterPath": "./apps/engine/.venv/bin/python",
+
+        // ── TypeScript ──────────────────────────────────────────────────
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.preferences.importModuleSpecifier": "relative",
+
+        // ── Terminal ────────────────────────────────────────────────────
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          }
+        },
+
+        // ── Search ──────────────────────────────────────────────────────
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/.next": true,
+          "**/dist": true,
+          "**/.turbo": true,
+          "**/pnpm-lock.yaml": true,
+          "**/uv.lock": true
+        }
+      }
+    }
+  }
+}
