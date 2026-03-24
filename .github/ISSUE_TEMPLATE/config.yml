@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/stevenschling13/sentinel-trading-platform/tree/main/docs
+    about: Check the docs before opening an issue
+  - name: Security Vulnerability
+    url: https://github.com/stevenschling13/sentinel-trading-platform/security/advisories/new
+    about: Report security issues privately (do NOT open a public issue)

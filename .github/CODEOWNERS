@@ -1,0 +1,36 @@
+# Sentinel Trading Platform — CODEOWNERS
+#
+# GitHub Pro feature: when branch protection requires code-owner review,
+# PRs that touch these paths automatically request the listed owners.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ── Global fallback ──────────────────────────────────────────────────
+*                            @stevenschling13
+
+# ── Web dashboard (Next.js) ──────────────────────────────────────────
+apps/web/                    @stevenschling13
+
+# ── Quant engine (Python / FastAPI) ──────────────────────────────────
+apps/engine/                 @stevenschling13
+
+# ── Agent orchestrator (TypeScript) ──────────────────────────────────
+apps/agents/                 @stevenschling13
+
+# ── Shared contracts ─────────────────────────────────────────────────
+packages/shared/             @stevenschling13
+
+# ── Database migrations ──────────────────────────────────────────────
+supabase/migrations/         @stevenschling13
+
+# ── CI / CD & workflows ─────────────────────────────────────────────
+.github/                     @stevenschling13
+
+# ── Deployment config ────────────────────────────────────────────────
+vercel.json                  @stevenschling13
+docker-compose.yml           @stevenschling13
+
+# ── Root config (breaking-change potential) ──────────────────────────
+package.json                 @stevenschling13
+pnpm-lock.yaml               @stevenschling13
+turbo.json                   @stevenschling13
+.env.example                 @stevenschling13

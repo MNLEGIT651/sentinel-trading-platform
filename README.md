@@ -1,5 +1,9 @@
 # Sentinel Trading Platform
 
+[![CI](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/ci.yml)
+[![Security](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/security-safety.yml/badge.svg)](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/security-safety.yml)
+[![Performance](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/performance-benchmarks.yml/badge.svg)](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/performance-benchmarks.yml)
+
 Systematic trading control plane built as a Turborepo monorepo: Next.js dashboard, Python quant engine, TypeScript agent orchestrator, and Supabase-backed state.
 
 ## Production Topology
