@@ -28,14 +28,18 @@ vi.mock('@/lib/supabase/server', () => ({
 
 const mockCheck = vi.fn<[string], { allowed: boolean; remaining: number; resetAtMs: number }>();
 
-vi.mock('@/lib/server/rate-limiter', () => ({
-  proxyRateLimiter: { check: (key: string) => mockCheck(key) },
-  rateLimitResponse: (resetAtMs: number) =>
-    new Response(JSON.stringify({ error: 'rate_limited' }), {
-      status: 429,
-      headers: { 'Retry-After': '60' },
-    }),
-}));
+vi.mock('@/lib/server/rate-limiter', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/server/rate-limiter')>();
+  return {
+    ...actual,
+    proxyRateLimiter: { check: (key: string) => mockCheck(key) },
+    rateLimitResponse: () =>
+      new Response(JSON.stringify({ error: 'rate_limited' }), {
+        status: 429,
+        headers: { 'Retry-After': '60' },
+      }),
+  };
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
