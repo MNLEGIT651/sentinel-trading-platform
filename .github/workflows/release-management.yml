@@ -154,6 +154,7 @@ jobs:
 
           cat changelog.md
 
+      # softprops/action-gh-release replaces the deprecated actions/create-release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
