@@ -40,9 +40,11 @@ export default defineConfig({
     },
   ],
 
-  /* Start the Next.js dev server automatically if not already running */
+  /* Start a Next.js server automatically if not already running.
+   * CI uses the production build (`pnpm start`) for faster, more reliable startup.
+   * Locally we fall back to `pnpm dev` for hot-reload convenience. */
   webServer: {
-    command: 'pnpm dev',
+    command: process.env.CI ? 'pnpm start' : 'pnpm dev',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

@@ -147,20 +147,23 @@ jobs:
                 labels: ['needs-description']
               });
 
+              const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: pr.number,
-                body: `⚠️ **PR Description Incomplete**
-
-                Please update your PR description to include:
-
-                1. **Outcome**: What user-visible or system-visible result does this PR provide?
-                2. **Scope**: What files or modules are changed?
-                3. **Validation**: What commands were run? Did they pass?
-                4. **Forbidden changes**: What was intentionally NOT changed?
-
-                See [docs/ai/working-agreement.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
+                body: [
+                  '⚠️ **PR Description Incomplete**',
+                  '',
+                  'Please update your PR description to include:',
+                  '',
+                  '1. **Outcome**: What user-visible or system-visible result does this PR provide?',
+                  '2. **Scope**: What files or modules are changed?',
+                  '3. **Validation**: What commands were run? Did they pass?',
+                  '4. **Forbidden changes**: What was intentionally NOT changed?',
+                  '',
+                  `See [docs/ai/working-agreement.md](${repoUrl}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
+                ].join('\n')
               });
             }
 
