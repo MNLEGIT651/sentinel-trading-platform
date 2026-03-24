@@ -64,11 +64,11 @@ The result is a fully configured workspace identical for every contributor — n
 
 ### Forwarded Ports
 
-| Port | Service              | Auto-Forward |
-| ---- | -------------------- | ------------ |
-| 3000 | Web Dashboard (Next.js)   | Notify  |
-| 3001 | Agent Orchestrator (Express) | Silent |
-| 8000 | Quant Engine (FastAPI)    | Silent  |
+| Port | Service                      | Auto-Forward |
+| ---- | ---------------------------- | ------------ |
+| 3000 | Web Dashboard (Next.js)      | Notify       |
+| 3001 | Agent Orchestrator (Express) | Silent       |
+| 8000 | Quant Engine (FastAPI)       | Silent       |
 
 When you run `pnpm dev`, Codespaces detects these ports and provides URLs. Click
 the notification or check the **Ports** tab in VS Code.
@@ -176,7 +176,7 @@ Codespaces automatically applies your shell config, aliases, and Git settings.
 | Issue                        | Fix                                                    |
 | ---------------------------- | ------------------------------------------------------ |
 | Port not forwarding          | Check the **Ports** tab; click the globe icon to open  |
-| `pnpm: command not found`    | Run `corepack enable && corepack prepare pnpm@10.32.1 --activate` |
+| `pnpm: command not found`    | Run `corepack enable && corepack prepare pnpm --activate` |
 | Python venv not found        | Run `cd apps/engine && uv venv .venv && uv pip install --python .venv/bin/python ".[dev]"` |
 | Secrets not available        | Verify secrets are scoped to this repository in GitHub Settings |
 | Slow rebuilds                | Enable prebuilds (see above) or use `Rebuild Without Cache` |
