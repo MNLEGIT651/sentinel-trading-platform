@@ -1,9 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/web packages/shared",
-  "installCommand": "corepack enable pnpm && pnpm install",
-  "buildCommand": "pnpm --filter @sentinel/web run build",
-  "env": {
-    "PNPM_HOME": ".pnpm"
-  }
+  "framework": "nextjs",
+  "ignoreCommand": "npx turbo-ignore",
+  "buildCommand": "turbo run build --filter=@sentinel/web"
 }

@@ -2,31 +2,37 @@ import type { NextConfig } from 'next';
 
 // ─── Content-Security-Policy ──────────────────────────────────────────────────
 //
-// The CSP is intentionally strict. Loosen individual directives only when you
-// have a concrete, reviewed reason and update this comment to document it.
+// The CSP is strict but allows Next.js to function on Vercel.
 //
 // Directives summary:
-//  default-src   'self'            — block everything by default
-//  script-src    'self' + nonces   — no inline scripts; Next.js injects a nonce at runtime
-//  style-src     'self' 'unsafe-inline' — Tailwind injects styles at runtime (nonce not yet supported)
-//  img-src       'self' data:      — allow base64 data URIs (chart canvases, avatars)
-//  connect-src   'self' wss: *.supabase.co — allow WebSocket (Supabase Realtime) and Supabase REST
-//  font-src      'self'            — no external font CDNs
-//  frame-src     'none'            — no iframes at all (mirrors X-Frame-Options: DENY)
-//  object-src    'none'            — no plugins
-//  base-uri      'self'            — prevent base-tag injection
-//  form-action   'self'            — forms may only POST to the same origin
-//  upgrade-insecure-requests       — silently upgrade any http: sub-resource to https:
+//  default-src   'self'                          — block everything by default
+//  script-src    'self' 'unsafe-inline'          — Next.js requires inline scripts for hydration;
+//                https://va.vercel-scripts.com     Vercel Analytics loader
+//  style-src     'self' 'unsafe-inline'          — Tailwind injects styles at runtime
+//  img-src       'self' data: blob:              — base64 data URIs (charts), blob (canvas exports)
+//  connect-src   'self' wss: https://*.supabase.co — Supabase REST + Realtime WebSocket
+//                https://vitals.vercel-insights.com  — Vercel Analytics beacon
+//                https://va.vercel-scripts.com       — Vercel Analytics script
+//  font-src      'self'                          — no external font CDNs (next/font serves locally)
+//  frame-src     'none'                          — no iframes (mirrors X-Frame-Options: DENY)
+//  object-src    'none'                          — no plugins
+//  base-uri      'self'                          — prevent base-tag injection
+//  form-action   'self'                          — forms may only POST to the same origin
+//  upgrade-insecure-requests                     — upgrade http: sub-resources to https:
 //
-// IMPORTANT: When adding a new third-party integration (analytics, maps, etc.) update
-// connect-src and/or script-src here rather than using 'unsafe-inline' or 'unsafe-eval'.
+// NOTE: 'unsafe-inline' in script-src is required because Next.js injects inline
+// <script> tags for hydration and chunk loading. To harden further, implement
+// nonce-based CSP via a Next.js Proxy file (see Next.js docs on CSP with nonces).
+//
+// IMPORTANT: When adding a new third-party integration (analytics, maps, etc.)
+// update connect-src and/or script-src here with the specific domain.
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "connect-src 'self' wss: https://*.supabase.co",
+  "img-src 'self' data: blob:",
+  "connect-src 'self' wss: https://*.supabase.co https://vitals.vercel-insights.com https://va.vercel-scripts.com",
   "font-src 'self'",
   "frame-src 'none'",
   "object-src 'none'",
