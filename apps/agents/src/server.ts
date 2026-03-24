@@ -154,7 +154,7 @@ export function createApp(orchestrator: Orchestrator): Express {
    */
   app.post(
     '/recommendations/:id/approve',
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       try {
         const id = req.params['id'];
         if (!id) return res.status(400).json({ error: 'missing_id' });
@@ -217,7 +217,7 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   app.post(
     '/recommendations/:id/reject',
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       try {
         const id = req.params['id'];
         if (!id) return res.status(400).json({ error: 'missing_id' });

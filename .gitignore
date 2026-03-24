@@ -48,6 +48,13 @@ supabase/.branches/
 # Editor settings
 .vscode/
 
+# Binary / Office documents (should not be committed to source control)
+*.docx
+*.xlsx
+*.xls
+*.pptx
+*.doc
+
 # Office lock files
 ~$*.docx
 ~$*.xlsx

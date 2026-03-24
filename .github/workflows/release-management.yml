@@ -135,7 +135,6 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
           if [ -z "$PREVIOUS_TAG" ]; then
@@ -143,14 +142,16 @@ jobs:
             git log --pretty=format:"- %s (%h)" >> changelog.md
           else
             echo "## Changes since ${PREVIOUS_TAG}" > changelog.md
-            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" >> changelog.md
+            git log "${PREVIOUS_TAG}..HEAD" --pretty=format:"- %s (%h)" >> changelog.md
           fi
 
-          echo "" >> changelog.md
-          echo "## Validation" >> changelog.md
-          echo "- ✅ All tests passing" >> changelog.md
-          echo "- ✅ All linters passing" >> changelog.md
-          echo "- ✅ All builds successful" >> changelog.md
+          {
+            echo ""
+            echo "## Validation"
+            echo "- ✅ All tests passing"
+            echo "- ✅ All linters passing"
+            echo "- ✅ All builds successful"
+          } >> changelog.md
 
           cat changelog.md
 

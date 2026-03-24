@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // eslint-plugin-react@7.x uses context.getFilename() which was removed in
+  // ESLint v10. Disable until eslint-plugin-react ships full ESLint v10 support.
+  {
+    rules: {
+      "react/display-name": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

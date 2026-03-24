@@ -61,37 +61,43 @@ jobs:
       - name: Generate coverage summary
         if: always()
         run: |
-          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Test Coverage Report"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
           if [ -f apps/web/coverage/coverage-summary.json ]; then
-            echo "### Web App Coverage" >> $GITHUB_STEP_SUMMARY
-            node -e "
-              const coverage = require('./apps/web/coverage/coverage-summary.json');
-              const total = coverage.total;
-              console.log('| Metric | Coverage |');
-              console.log('|--------|----------|');
-              console.log(\`| Lines | \${total.lines.pct}% |\`);
-              console.log(\`| Statements | \${total.statements.pct}% |\`);
-              console.log(\`| Functions | \${total.functions.pct}% |\`);
-              console.log(\`| Branches | \${total.branches.pct}% |\`);
-            " >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "### Web App Coverage"
+              node -e "
+                const coverage = require('./apps/web/coverage/coverage-summary.json');
+                const total = coverage.total;
+                console.log('| Metric | Coverage |');
+                console.log('|--------|----------|');
+                console.log(\`| Lines | \${total.lines.pct}% |\`);
+                console.log(\`| Statements | \${total.statements.pct}% |\`);
+                console.log(\`| Functions | \${total.functions.pct}% |\`);
+                console.log(\`| Branches | \${total.branches.pct}% |\`);
+              "
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
           if [ -f apps/agents/coverage/coverage-summary.json ]; then
-            echo "### Agents App Coverage" >> $GITHUB_STEP_SUMMARY
-            node -e "
-              const coverage = require('./apps/agents/coverage/coverage-summary.json');
-              const total = coverage.total;
-              console.log('| Metric | Coverage |');
-              console.log('|--------|----------|');
-              console.log(\`| Lines | \${total.lines.pct}% |\`);
-              console.log(\`| Statements | \${total.statements.pct}% |\`);
-              console.log(\`| Functions | \${total.functions.pct}% |\`);
-              console.log(\`| Branches | \${total.branches.pct}% |\`);
-            " >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "### Agents App Coverage"
+              node -e "
+                const coverage = require('./apps/agents/coverage/coverage-summary.json');
+                const total = coverage.total;
+                console.log('| Metric | Coverage |');
+                console.log('|--------|----------|');
+                console.log(\`| Lines | \${total.lines.pct}% |\`);
+                console.log(\`| Statements | \${total.statements.pct}% |\`);
+                console.log(\`| Functions | \${total.functions.pct}% |\`);
+                console.log(\`| Branches | \${total.branches.pct}% |\`);
+              "
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ---------------------------------------------------------------------------
@@ -148,17 +154,8 @@ jobs:
         working-directory: apps/engine
         run: |
           if [ -f coverage.json ]; then
-            echo "### Engine Coverage" >> $GITHUB_STEP_SUMMARY
-            .venv/bin/python -c "
-import json
-with open('coverage.json') as f:
-    data = json.load(f)
-    total = data['totals']
-    print('| Metric | Coverage |')
-    print('|--------|----------|')
-    print(f\"| Lines | {total['percent_covered']:.1f}% |\")
-    print(f\"| Statements | {total['covered_lines']}/{total['num_statements']} |\")
-            " >> $GITHUB_STEP_SUMMARY
+            echo "### Engine Coverage" >> "$GITHUB_STEP_SUMMARY"
+            .venv/bin/python -c "import json; data=json.load(open('coverage.json')); t=data['totals']; print('| Metric | Coverage |'); print('|--------|----------|'); print(f'| Lines | {t[\"percent_covered\"]:.1f}% |'); print(f'| Statements | {t[\"covered_lines\"]}/{t[\"num_statements\"]} |')" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload coverage artifacts
