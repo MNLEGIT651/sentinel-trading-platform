@@ -8,7 +8,7 @@ from fastapi import HTTPException
 logger = logging.getLogger(__name__)
 
 
-class SentinelAPIException(Exception):
+class SentinelAPIError(Exception):
     """Base exception for Sentinel API errors."""
 
     def __init__(self, message: str, code: str, status_code: int = 500):
@@ -18,14 +18,14 @@ class SentinelAPIException(Exception):
         super().__init__(message)
 
 
-class ValidationError(SentinelAPIException):
+class ValidationError(SentinelAPIError):
     """Validation error (400)."""
 
     def __init__(self, message: str, code: str = "validation_error"):
         super().__init__(message, code, 400)
 
 
-class AuthenticationError(SentinelAPIException):
+class AuthenticationError(SentinelAPIError):
     """Authentication error (401)."""
 
     def __init__(
@@ -34,28 +34,28 @@ class AuthenticationError(SentinelAPIException):
         super().__init__(message, code, 401)
 
 
-class ForbiddenError(SentinelAPIException):
+class ForbiddenError(SentinelAPIError):
     """Forbidden error (403)."""
 
     def __init__(self, message: str = "Access denied", code: str = "forbidden"):
         super().__init__(message, code, 403)
 
 
-class NotFoundError(SentinelAPIException):
+class NotFoundError(SentinelAPIError):
     """Not found error (404)."""
 
     def __init__(self, message: str, code: str = "not_found"):
         super().__init__(message, code, 404)
 
 
-class ConflictError(SentinelAPIException):
+class ConflictError(SentinelAPIError):
     """Conflict error (409)."""
 
     def __init__(self, message: str, code: str = "conflict"):
         super().__init__(message, code, 409)
 
 
-class RateLimitError(SentinelAPIException):
+class RateLimitError(SentinelAPIError):
     """Rate limit error (429)."""
 
     def __init__(
@@ -66,7 +66,7 @@ class RateLimitError(SentinelAPIException):
         super().__init__(message, code, 429)
 
 
-class ServiceUnavailableError(SentinelAPIException):
+class ServiceUnavailableError(SentinelAPIError):
     """Service unavailable (503)."""
 
     def __init__(
@@ -78,8 +78,8 @@ class ServiceUnavailableError(SentinelAPIException):
 
 
 def to_http_exception(exc: Exception) -> HTTPException:
-    """Convert SentinelAPIException to HTTPException."""
-    if isinstance(exc, SentinelAPIException):
+    """Convert SentinelAPIError to HTTPException."""
+    if isinstance(exc, SentinelAPIError):
         return HTTPException(
             status_code=exc.status_code,
             detail={"error": exc.code, "message": exc.message},
