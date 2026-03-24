@@ -80,6 +80,7 @@ describe('/api/engine/[...path] route handler', () => {
   });
 
   it('passes undefined path when the catch-all is empty', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-123' } } });
     const upstream = okResponse();
     mockProxyServiceRequest.mockResolvedValueOnce(upstream);
 
