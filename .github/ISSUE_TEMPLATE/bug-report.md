@@ -3,6 +3,8 @@ name: Bug report
 about: Report a defect in the Sentinel Trading Platform
 title: 'bug: '
 labels: bug
+assignees: ''
+
 ---
 
 ## Describe the Bug
