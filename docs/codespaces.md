@@ -154,8 +154,9 @@ docker compose up --build   # Run all services in containers
 ### Machine Type
 
 For this monorepo with three services, a **4-core / 16 GB** machine is
-recommended. You can change this when creating a Codespace or in the Codespace
-settings afterward.
+recommended. The devcontainer requires at minimum 4 CPUs and 8 GB RAM. You can
+change the machine type when creating a Codespace or in the Codespace settings
+afterward.
 
 ### Prebuilds
 

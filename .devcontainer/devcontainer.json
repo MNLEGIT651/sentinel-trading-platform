@@ -22,7 +22,7 @@
   },
 
   // ── Machine Requirements ─────────────────────────────────────────────────
-  // Recommend 4-core / 16 GB for this monorepo with three services
+  // Minimum: 4-core / 8 GB. Recommended: 4-core / 16 GB for running all services
   "hostRequirements": {
     "cpus": 4,
     "memory": "8gb",
