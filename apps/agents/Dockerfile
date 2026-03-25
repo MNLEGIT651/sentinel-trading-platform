@@ -7,6 +7,9 @@ RUN npm install --global pnpm@10.32.1
 # ─── Dependencies + Runtime ───────────────────────────────────────────────────
 FROM base AS runner
 
+LABEL maintainer="sentinel-trading-platform"
+LABEL service="sentinel-agents"
+
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

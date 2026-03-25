@@ -31,6 +31,9 @@ RUN uv venv .venv \
 # ─── Runtime image ────────────────────────────────────────────────────────────
 FROM base AS runner
 
+LABEL maintainer="sentinel-trading-platform"
+LABEL service="sentinel-engine"
+
 WORKDIR /app
 
 # Copy virtual environment from deps stage
