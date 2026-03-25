@@ -1,6 +1,6 @@
 [build]
 dockerfilePath = "Dockerfile"
-watchPatterns = ["apps/agents/**", "packages/shared/**", "pnpm-lock.yaml"]
+watchPatterns = ["apps/agents/**", "packages/shared/**", "pnpm-lock.yaml", "package.json", "pnpm-workspace.yaml", "apps/web/package.json"]
 
 [deploy]
 healthcheckPath = "/health"

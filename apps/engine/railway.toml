@@ -1,10 +1,10 @@
 [build]
 dockerfilePath = "Dockerfile"
-watchPatterns = ["apps/engine/**", "pyproject.toml"]
+watchPatterns = ["apps/engine/**"]
 
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
-startCommand = "sh -c '.venv/bin/gunicorn src.api.main:app -c gunicorn_conf.py'"
+startCommand = "sh -c 'exec .venv/bin/gunicorn src.api.main:app -c gunicorn_conf.py'"
