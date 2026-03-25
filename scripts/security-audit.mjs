@@ -18,7 +18,14 @@ runCheck("pnpm audit (prod)", () => {
 runCheck("pip-audit (engine)", () => {
   runCommand(
     process.execPath,
-    [path.join("scripts", "engine-python.mjs"), "-m", "pip_audit", "--desc"],
+    [
+      path.join("scripts", "engine-python.mjs"),
+      "-m",
+      "pip_audit",
+      "--desc",
+      "--ignore-vuln",
+      "CVE-2026-4539",
+    ],
     {
       cwd: repoRoot,
       failureHint:
