@@ -15,8 +15,6 @@ export default defineConfig({
     },
     // Cap fork workers to avoid resource exhaustion on Windows
     pool: 'forks',
-    poolOptions: {
-      forks: { maxForks: 4 },
-    },
+    maxForks: 4,
   },
 });

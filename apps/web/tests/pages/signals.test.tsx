@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import SignalsPage from '@/app/signals/page';
+import SignalsPage from '@/app/(dashboard)/signals/page';
 import { useAppStore } from '@/stores/app-store';
 
 vi.mock('next/navigation', () => ({

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import BacktestPage from '@/app/backtest/page';
+import BacktestPage from '@/app/(dashboard)/backtest/page';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/backtest',

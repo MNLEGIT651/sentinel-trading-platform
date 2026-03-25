@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import PortfolioPage from '@/app/portfolio/page';
+import PortfolioPage from '@/app/(dashboard)/portfolio/page';
 import { useAppStore } from '@/stores/app-store';
 
 // Mock next/navigation
