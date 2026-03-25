@@ -2,6 +2,13 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/server';
 import { proxyRateLimiter, rateLimitResponse } from '@/lib/server/rate-limiter';
 
+// ─── Matcher ──────────────────────────────────────────────────────────────
+// Skip static assets and internal Next.js paths — they must never be
+// redirected to /login or rate-limited.  Only run on page and API routes.
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)'],
+};
+
 // ─── Route classification ──────────────────────────────────────────────────
 
 /** Page routes that are accessible without authentication. */
@@ -46,8 +53,7 @@ export async function proxy(request: NextRequest) {
   // Use the forwarded IP (set by Vercel/load-balancer) as the client key;
   // fall back to a constant so local dev is never accidentally blocked.
   if (isApiRoute(pathname) && !isPublicRoute(pathname)) {
-    const clientKey =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'localhost';
+    const clientKey = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'localhost';
     const rl = proxyRateLimiter.check(clientKey);
     if (!rl.allowed) {
       return rateLimitResponse(rl.resetAtMs);
