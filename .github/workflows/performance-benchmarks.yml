@@ -257,9 +257,11 @@ jobs:
       - name: Analyze bundle size
         run: |
           cd apps/web/.next
-          echo "## Bundle Size Analysis" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Build Output" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          du -sh * 2>/dev/null | sort -hr | head -20 >> "$GITHUB_STEP_SUMMARY" || echo "No build output found"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Bundle Size Analysis"
+            echo ""
+            echo "### Build Output"
+            echo '```'
+            du -sh ./* 2>/dev/null | sort -hr | head -20 || echo "No build output found"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
