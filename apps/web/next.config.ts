@@ -1,3 +1,4 @@
+import { join } from 'path';
 import type { NextConfig } from 'next';
 
 // ─── Content-Security-Policy ──────────────────────────────────────────────────
@@ -85,6 +86,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
+  turbopack: {
+    root: join(__dirname, '..', '..'),
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
