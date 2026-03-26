@@ -180,6 +180,12 @@ class RiskManager:
         Returns a PreTradeCheck indicating whether the trade is allowed,
         should be reduced, or must be rejected.
         """
+        # Sells are always allowed, even when halted (exiting risk is good)
+        if side == "sell":
+            return PreTradeCheck(
+                allowed=True, action=RiskAction.ALLOW, reason="Sells are always allowed"
+            )
+
         if self._halted:
             return PreTradeCheck(
                 allowed=False,
@@ -187,11 +193,7 @@ class RiskManager:
                 reason="Trading halted — circuit breaker active",
             )
 
-        if side == "buy":
-            return self._check_buy(ticker, shares, price, state, sector)
-        return PreTradeCheck(
-            allowed=True, action=RiskAction.ALLOW, reason="Sells are always allowed"
-        )
+        return self._check_buy(ticker, shares, price, state, sector)
 
     def _check_buy(
         self,
@@ -204,6 +206,7 @@ class RiskManager:
         """Check buy-side risk limits."""
         trade_value = shares * price
         new_position_value = state.positions.get(ticker, 0.0) + trade_value
+        reduced_reason: str | None = None
 
         # 1. Position concentration limit
         position_pct = new_position_value / state.equity if state.equity > 0 else 1.0
@@ -222,12 +225,9 @@ class RiskManager:
                         f"({position_pct:.1%})"
                     ),
                 )
-            return PreTradeCheck(
-                allowed=True,
-                action=RiskAction.REDUCE,
-                reason=f"Position reduced from {shares} to {adjusted} shares (position limit)",
-                adjusted_shares=adjusted,
-            )
+            shares = adjusted
+            trade_value = shares * price
+            reduced_reason = f"Position reduced from {shares} to {adjusted} shares (position limit)"
 
         # 2. Sector concentration limit
         sector_value = sum(
@@ -278,6 +278,15 @@ class RiskManager:
                 allowed=False,
                 action=RiskAction.REJECT,
                 reason="Daily loss limit reached — no new positions today",
+            )
+
+        # If position was reduced by limit but passed cash check, return reduction
+        if reduced_reason is not None:
+            return PreTradeCheck(
+                allowed=True,
+                action=RiskAction.REDUCE,
+                reason=reduced_reason,
+                adjusted_shares=shares,
             )
 
         return PreTradeCheck(

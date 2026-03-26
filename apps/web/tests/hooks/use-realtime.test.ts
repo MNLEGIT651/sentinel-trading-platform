@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useRealtime } from '@/hooks/use-realtime';
 
 // Mock types
@@ -242,7 +242,9 @@ describe('useRealtime', () => {
       );
 
       // Get the INSERT event handler
-      const insertHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'INSERT')?.[2];
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
 
       const newItem: TestEntity = { id: '2', name: 'Item 2', value: 200 };
 
@@ -262,7 +264,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const insertHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'INSERT')?.[2];
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
       const newItem: TestEntity = { id: '1', name: 'First Item', value: 50 };
 
       act(() => {
@@ -280,7 +284,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const insertHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'INSERT')?.[2];
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
 
       const item1: TestEntity = { id: '1', name: 'Item 1', value: 100 };
       const item2: TestEntity = { id: '2', name: 'Item 2', value: 200 };
@@ -315,7 +321,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const updateHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'UPDATE')?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
       const updatedItem: TestEntity = { id: '2', name: 'Updated Item 2', value: 250 };
 
       act(() => {
@@ -342,10 +350,16 @@ describe('useRealtime', () => {
         }),
       );
 
-      const updateHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'UPDATE')?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
 
       act(() => {
-        updateHandler?.({ eventType: 'UPDATE', new: { id: '1', name: 'A_updated', value: 10 }, old: { id: '1' } });
+        updateHandler?.({
+          eventType: 'UPDATE',
+          new: { id: '1', name: 'A_updated', value: 10 },
+          old: { id: '1' },
+        });
       });
 
       expect(result.current.data[0].id).toBe('1');
@@ -363,10 +377,16 @@ describe('useRealtime', () => {
         }),
       );
 
-      const updateHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'UPDATE')?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
 
       act(() => {
-        updateHandler?.({ eventType: 'UPDATE', new: { id: '999', name: 'Not Found', value: 0 }, old: { id: '999' } });
+        updateHandler?.({
+          eventType: 'UPDATE',
+          new: { id: '999', name: 'Not Found', value: 0 },
+          old: { id: '999' },
+        });
       });
 
       expect(result.current.data).toEqual(initialData);
@@ -385,11 +405,21 @@ describe('useRealtime', () => {
         }),
       );
 
-      const updateHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'UPDATE')?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
 
       act(() => {
-        updateHandler?.({ eventType: 'UPDATE', new: { id: '1', name: 'A_v2', value: 10 }, old: { id: '1' } });
-        updateHandler?.({ eventType: 'UPDATE', new: { id: '2', name: 'B_v2', value: 20 }, old: { id: '2' } });
+        updateHandler?.({
+          eventType: 'UPDATE',
+          new: { id: '1', name: 'A_v2', value: 10 },
+          old: { id: '1' },
+        });
+        updateHandler?.({
+          eventType: 'UPDATE',
+          new: { id: '2', name: 'B_v2', value: 20 },
+          old: { id: '2' },
+        });
       });
 
       expect(result.current.data[0]).toEqual({ id: '1', name: 'A_v2', value: 10 });
@@ -412,7 +442,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const deleteHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'DELETE')?.[2];
+      const deleteHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'DELETE',
+      )?.[2];
 
       act(() => {
         deleteHandler?.({ eventType: 'DELETE', new: {}, old: { id: '2' } });
@@ -434,7 +466,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const deleteHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'DELETE')?.[2];
+      const deleteHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'DELETE',
+      )?.[2];
 
       act(() => {
         deleteHandler?.({ eventType: 'DELETE', new: {}, old: { id: '999' } });
@@ -453,7 +487,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const deleteHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'DELETE')?.[2];
+      const deleteHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'DELETE',
+      )?.[2];
 
       act(() => {
         deleteHandler?.({ eventType: 'DELETE', new: {}, old: { id: '1' } });
@@ -476,7 +512,9 @@ describe('useRealtime', () => {
         }),
       );
 
-      const deleteHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'DELETE')?.[2];
+      const deleteHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'DELETE',
+      )?.[2];
 
       act(() => {
         deleteHandler?.({ eventType: 'DELETE', new: {}, old: { id: '1' } });
@@ -497,20 +535,34 @@ describe('useRealtime', () => {
         }),
       );
 
-      const insertHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'INSERT')?.[2];
-      const updateHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'UPDATE')?.[2];
-      const deleteHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'DELETE')?.[2];
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
+      const deleteHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'DELETE',
+      )?.[2];
 
       // INSERT
       act(() => {
-        insertHandler?.({ eventType: 'INSERT', new: { id: '2', name: 'New', value: 200 }, old: {} });
+        insertHandler?.({
+          eventType: 'INSERT',
+          new: { id: '2', name: 'New', value: 200 },
+          old: {},
+        });
       });
 
       expect(result.current.data).toHaveLength(2);
 
       // UPDATE
       act(() => {
-        updateHandler?.({ eventType: 'UPDATE', new: { id: '1', name: 'Updated', value: 150 }, old: { id: '1' } });
+        updateHandler?.({
+          eventType: 'UPDATE',
+          new: { id: '1', name: 'Updated', value: 150 },
+          old: { id: '1' },
+        });
       });
 
       expect(result.current.data.find((item) => item.id === '1')?.name).toBe('Updated');
@@ -595,10 +647,16 @@ describe('useRealtime', () => {
       expect(result.current.data).toHaveLength(1);
 
       // Real-time INSERT
-      const insertHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'INSERT')?.[2];
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
 
       act(() => {
-        insertHandler?.({ eventType: 'INSERT', new: { id: '2', name: 'Realtime', value: 200 }, old: {} });
+        insertHandler?.({
+          eventType: 'INSERT',
+          new: { id: '2', name: 'Realtime', value: 200 },
+          old: {},
+        });
       });
 
       expect(result.current.data).toHaveLength(2);
@@ -718,11 +776,17 @@ describe('useRealtime', () => {
         }),
       );
 
-      const updateHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'UPDATE')?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
 
       // Malformed payload (missing new.id)
       act(() => {
-        updateHandler?.({ eventType: 'UPDATE', new: { name: 'Bad', value: 0 } as any, old: { id: '1' } });
+        updateHandler?.({
+          eventType: 'UPDATE',
+          new: { name: 'Bad', value: 0 } as TestEntity,
+          old: { id: '1' },
+        });
       });
 
       // Should not crash, original data preserved
@@ -765,12 +829,18 @@ describe('useRealtime', () => {
         }),
       );
 
-      const insertHandler = mockChannel.on.mock.calls.find((call) => call[1].event === 'INSERT')?.[2];
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
 
       // Simulate 100 rapid inserts
       act(() => {
         for (let i = 0; i < 100; i++) {
-          insertHandler?.({ eventType: 'INSERT', new: { id: String(i), name: `Item ${i}`, value: i }, old: {} });
+          insertHandler?.({
+            eventType: 'INSERT',
+            new: { id: String(i), name: `Item ${i}`, value: i },
+            old: {},
+          });
         }
       });
 
@@ -799,7 +869,11 @@ describe('useRealtime', () => {
 
       // UPDATE and DELETE should not be subscribed
       act(() => {
-        insertHandler({ eventType: 'UPDATE', new: { id: '1', name: 'Updated', value: 150 }, old: { id: '1' } });
+        insertHandler({
+          eventType: 'UPDATE',
+          new: { id: '1', name: 'Updated', value: 150 },
+          old: { id: '1' },
+        });
       });
 
       // Update should not fire (no handler registered)

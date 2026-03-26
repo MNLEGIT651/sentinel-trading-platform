@@ -41,9 +41,6 @@ describe('NotificationCenter', () => {
 
     // Mock fetch
     global.fetch = vi.fn();
-
-    // Mock timers
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
@@ -77,7 +74,7 @@ describe('NotificationCenter', () => {
 
   describe('Notification Polling', () => {
     it('fetches alerts on mount', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -90,7 +87,9 @@ describe('NotificationCenter', () => {
     });
 
     it('polls alerts every 30 seconds', async () => {
-      (global.fetch as any).mockResolvedValue({
+      vi.useFakeTimers();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -98,27 +97,20 @@ describe('NotificationCenter', () => {
       render(<NotificationCenter />);
 
       // Initial fetch
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(1);
-      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
       // Fast-forward 30 seconds
-      vi.advanceTimersByTime(30_000);
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(2);
-      });
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
 
       // Fast-forward another 30 seconds
-      vi.advanceTimersByTime(30_000);
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(3);
-      });
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
     it('handles fetch errors gracefully', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
 
       render(<NotificationCenter />);
 
@@ -132,7 +124,7 @@ describe('NotificationCenter', () => {
     });
 
     it('handles non-ok response gracefully', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: false,
         status: 500,
       });
@@ -148,28 +140,29 @@ describe('NotificationCenter', () => {
     });
 
     it('stops polling on unmount', async () => {
-      (global.fetch as any).mockResolvedValue({
+      vi.useFakeTimers();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: async () => ({ alerts: [] }),
       });
 
       const { unmount } = render(<NotificationCenter />);
 
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledTimes(1);
-      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
       unmount();
 
       // Fast-forward 30 seconds after unmount
-      vi.advanceTimersByTime(30_000);
+      await vi.advanceTimersByTimeAsync(30_000);
 
       // Should not poll again
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('handles alerts in array format', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockAlerts,
       });
@@ -188,7 +181,7 @@ describe('NotificationCenter', () => {
     });
 
     it('handles alerts in { alerts: [] } format', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -215,7 +208,7 @@ describe('NotificationCenter', () => {
         created_at: new Date().toISOString(),
       }));
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: manyAlerts }),
       });
@@ -229,14 +222,16 @@ describe('NotificationCenter', () => {
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
 
       // Should only show 20 notifications
-      const notifications = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('Alert'));
+      const notifications = screen
+        .getAllByRole('button')
+        .filter((btn) => btn.textContent?.includes('Alert'));
       expect(notifications.length).toBeLessThanOrEqual(20);
     });
   });
 
   describe('Notification Display', () => {
     beforeEach(async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -296,7 +291,7 @@ describe('NotificationCenter', () => {
     });
 
     it('shows empty state when no notifications', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [] }),
       });
@@ -315,7 +310,7 @@ describe('NotificationCenter', () => {
 
   describe('Unread Count Badge', () => {
     it('shows unread count badge when there are unread notifications', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -337,7 +332,7 @@ describe('NotificationCenter', () => {
         created_at: new Date().toISOString(),
       }));
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: manyAlerts }),
       });
@@ -350,7 +345,7 @@ describe('NotificationCenter', () => {
     });
 
     it('updates badge count when notifications are marked as read', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -373,7 +368,7 @@ describe('NotificationCenter', () => {
     });
 
     it('hides badge when all notifications are read', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
@@ -395,7 +390,7 @@ describe('NotificationCenter', () => {
     });
 
     it('includes unread count in aria-label', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -410,7 +405,7 @@ describe('NotificationCenter', () => {
 
   describe('Read/Unread State', () => {
     it('marks new notifications as unread', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -424,12 +419,14 @@ describe('NotificationCenter', () => {
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
 
       // All should have unread indicator (visual dot)
-      const notifications = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('Alert'));
+      const notifications = screen
+        .getAllByRole('button')
+        .filter((btn) => btn.textContent?.includes('Alert'));
       expect(notifications.length).toBeGreaterThan(0);
     });
 
     it('marks notification as read when clicked', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -451,7 +448,7 @@ describe('NotificationCenter', () => {
     });
 
     it('marks all notifications as read when button clicked', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -477,7 +474,7 @@ describe('NotificationCenter', () => {
       // Pre-mark all as read in localStorage
       localStorage.setItem('sentinel-read-notifications', JSON.stringify(['1', '2', '3']));
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -496,7 +493,7 @@ describe('NotificationCenter', () => {
 
   describe('LocalStorage Persistence', () => {
     it('persists read status to localStorage', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
@@ -521,7 +518,7 @@ describe('NotificationCenter', () => {
     it('loads read status from localStorage on mount', async () => {
       localStorage.setItem('sentinel-read-notifications', JSON.stringify(['1']));
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -541,7 +538,7 @@ describe('NotificationCenter', () => {
     it('handles corrupted localStorage gracefully', async () => {
       localStorage.setItem('sentinel-read-notifications', 'invalid json');
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -564,7 +561,7 @@ describe('NotificationCenter', () => {
         throw new Error('QuotaExceededError');
       });
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
@@ -586,7 +583,7 @@ describe('NotificationCenter', () => {
     });
 
     it('accumulates read IDs over time', async () => {
-      (global.fetch as any).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -622,7 +619,7 @@ describe('NotificationCenter', () => {
 
   describe('Severity Icons', () => {
     it('shows info icon for info severity', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           alerts: [{ ...mockAlerts[0], severity: 'info' }],
@@ -642,7 +639,7 @@ describe('NotificationCenter', () => {
     });
 
     it('shows warning icon for warning severity', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           alerts: [{ ...mockAlerts[1], severity: 'warning' }],
@@ -661,7 +658,7 @@ describe('NotificationCenter', () => {
     });
 
     it('shows critical icon for critical severity', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           alerts: [{ ...mockAlerts[2], severity: 'critical' }],
@@ -680,7 +677,7 @@ describe('NotificationCenter', () => {
     });
 
     it('defaults to info icon for unknown severity', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           alerts: [{ ...mockAlerts[0], severity: 'unknown' }],
@@ -701,7 +698,7 @@ describe('NotificationCenter', () => {
 
   describe('Panel Interactions', () => {
     beforeEach(async () => {
-      (global.fetch as any).mockResolvedValue({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true,
         json: async () => ({ alerts: mockAlerts }),
       });
@@ -784,9 +781,9 @@ describe('NotificationCenter', () => {
         },
       ];
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ alerts: malformedAlerts as any }),
+        json: async () => ({ alerts: malformedAlerts as unknown[] }),
       });
 
       render(<NotificationCenter />);
@@ -812,9 +809,9 @@ describe('NotificationCenter', () => {
         },
       ];
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ alerts: alertsWithoutId as any }),
+        json: async () => ({ alerts: alertsWithoutId as unknown[] }),
       });
 
       render(<NotificationCenter />);
@@ -830,18 +827,22 @@ describe('NotificationCenter', () => {
     });
 
     it('preserves existing read state when new alerts arrive', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      vi.useFakeTimers();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
 
-      const { rerender } = render(<NotificationCenter />);
+      render(<NotificationCenter />);
 
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
+      await vi.advanceTimersByTimeAsync(0);
 
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Price Alert')).toBeInTheDocument();
+      });
 
       // Mark as read
       const notification = screen.getByText('Price Alert').closest('button')!;
@@ -851,12 +852,12 @@ describe('NotificationCenter', () => {
       fireEvent.click(screen.getByRole('button', { name: /close notifications/i }));
 
       // Simulate new alert arriving
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [...mockAlerts] }),
       });
 
-      vi.advanceTimersByTime(30_000);
+      await vi.advanceTimersByTimeAsync(30_000);
 
       await waitFor(() => {
         expect(screen.getByText('2')).toBeInTheDocument();
@@ -864,12 +865,12 @@ describe('NotificationCenter', () => {
     });
 
     it('handles unmount during fetch', async () => {
-      let resolvePromise: (value: any) => void;
+      let resolvePromise: (value: unknown) => void;
       const promise = new Promise((resolve) => {
         resolvePromise = resolve;
       });
 
-      (global.fetch as any).mockReturnValueOnce(promise);
+      (global.fetch as ReturnType<typeof vi.fn>).mockReturnValueOnce(promise);
 
       const { unmount } = render(<NotificationCenter />);
 
@@ -889,7 +890,7 @@ describe('NotificationCenter', () => {
     });
 
     it('handles empty response object', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
       });
@@ -906,7 +907,7 @@ describe('NotificationCenter', () => {
     });
 
     it('handles null alert values', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: null }),
       });
@@ -926,12 +927,15 @@ describe('NotificationCenter', () => {
       const longMessageAlert = {
         id: '1',
         title: 'Long Message',
-        message: 'This is a very long message that should be truncated with ellipsis after two lines '.repeat(5),
+        message:
+          'This is a very long message that should be truncated with ellipsis after two lines '.repeat(
+            5,
+          ),
         severity: 'info',
         created_at: new Date().toISOString(),
       };
 
-      (global.fetch as any).mockResolvedValueOnce({
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [longMessageAlert] }),
       });

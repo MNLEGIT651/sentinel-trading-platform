@@ -9,13 +9,10 @@ CRITICAL: RiskManager prevents catastrophic losses through:
 All edge cases and failure modes must be tested to prevent financial losses.
 """
 
-import pytest
-
 from src.risk.position_sizer import RiskLimits
 from src.risk.risk_manager import (
     AlertSeverity,
     PortfolioState,
-    PreTradeCheck,
     RiskAction,
     RiskAlert,
     RiskManager,
@@ -212,8 +209,9 @@ class TestRiskManagerPreTradeChecksBuy:
             position_sectors={},
         )
 
+        # 3 shares @ $150 = $450 = 0.45% of equity (within 5% limit)
         result = manager.pre_trade_check(
-            ticker="AAPL", shares=100, price=150.0, side="buy", state=state, sector="tech"
+            ticker="AAPL", shares=3, price=150.0, side="buy", state=state, sector="tech"
         )
 
         assert result.allowed is True
@@ -591,7 +589,7 @@ class TestRiskManagerPortfolioAssessment:
         )
 
         assessment1 = manager.assess_portfolio_risk(state1)
-        alert_count1 = len(assessment1["alerts"])
+        assert len(assessment1["alerts"]) > 0
 
         # Second assessment with no issues
         state2 = PortfolioState(
@@ -699,7 +697,11 @@ class TestRiskManagerCustomLimits:
 
         # Buy 10% position (should be allowed with custom limit)
         result = manager.pre_trade_check(
-            ticker="AAPL", shares=66, price=150.0, side="buy", state=state  # ~$10k = 10%
+            ticker="AAPL",
+            shares=66,
+            price=150.0,
+            side="buy",
+            state=state,  # ~$10k = 10%
         )
 
         assert result.allowed is True
