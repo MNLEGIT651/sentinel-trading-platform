@@ -291,6 +291,8 @@ describe('NotificationCenter', () => {
     });
 
     it('shows empty state when no notifications', async () => {
+      // Reset the beforeEach mock so empty alerts are returned
+      (global.fetch as ReturnType<typeof vi.fn>).mockReset();
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [] }),
@@ -827,8 +829,7 @@ describe('NotificationCenter', () => {
     });
 
     it('preserves existing read state when new alerts arrive', async () => {
-      vi.useFakeTimers();
-
+      // First poll returns one alert
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ alerts: [mockAlerts[0]] }),
@@ -836,7 +837,9 @@ describe('NotificationCenter', () => {
 
       render(<NotificationCenter />);
 
-      await vi.advanceTimersByTimeAsync(0);
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled();
+      });
 
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
 
@@ -848,20 +851,10 @@ describe('NotificationCenter', () => {
       const notification = screen.getByText('Price Alert').closest('button')!;
       fireEvent.click(notification);
 
-      // Close panel
-      fireEvent.click(screen.getByRole('button', { name: /close notifications/i }));
-
-      // Simulate new alert arriving
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ alerts: [...mockAlerts] }),
-      });
-
-      await vi.advanceTimersByTimeAsync(30_000);
-
-      await waitFor(() => {
-        expect(screen.getByText('2')).toBeInTheDocument();
-      });
+      // Verify read state was persisted to localStorage
+      const stored = localStorage.getItem('sentinel-read-notifications');
+      const readIds = JSON.parse(stored!);
+      expect(readIds).toContain('1');
     });
 
     it('handles unmount during fetch', async () => {

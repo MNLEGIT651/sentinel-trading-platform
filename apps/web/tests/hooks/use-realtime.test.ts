@@ -583,28 +583,36 @@ describe('useRealtime', () => {
         }),
       );
 
-      // Get the generic postgres_changes handler (all events go through same callback)
-      const eventHandler = mockChannel.on.mock.calls[0][2];
+      // Each event type registers its own handler
+      const insertHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'INSERT',
+      )?.[2];
+      const updateHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'UPDATE',
+      )?.[2];
+      const deleteHandler = mockChannel.on.mock.calls.find(
+        (call) => call[1].event === 'DELETE',
+      )?.[2];
 
       const insertItem: TestEntity = { id: '1', name: 'Insert', value: 1 };
       const updateItem: TestEntity = { id: '1', name: 'Update', value: 2 };
 
       act(() => {
-        eventHandler({ eventType: 'INSERT', new: insertItem, old: {} });
+        insertHandler?.({ eventType: 'INSERT', new: insertItem, old: {} });
       });
 
       expect(result.current.data).toHaveLength(1);
       expect(result.current.data[0].name).toBe('Insert');
 
       act(() => {
-        eventHandler({ eventType: 'UPDATE', new: updateItem, old: { id: '1' } });
+        updateHandler?.({ eventType: 'UPDATE', new: updateItem, old: { id: '1' } });
       });
 
       expect(result.current.data).toHaveLength(1);
       expect(result.current.data[0].name).toBe('Update');
 
       act(() => {
-        eventHandler({ eventType: 'DELETE', new: {}, old: { id: '1' } });
+        deleteHandler?.({ eventType: 'DELETE', new: {}, old: { id: '1' } });
       });
 
       expect(result.current.data).toHaveLength(0);
