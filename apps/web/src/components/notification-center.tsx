@@ -34,12 +34,17 @@ function saveReadIds(ids: Set<string>): void {
   }
 }
 
-function extractAlerts(json: unknown): unknown[] {
+function extractAlerts(json: unknown): Record<string, unknown>[] {
+  const isRecord = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v);
+
+  let raw: unknown[] = [];
   if (json && typeof json === 'object' && Array.isArray((json as { alerts?: unknown }).alerts)) {
-    return (json as { alerts: unknown[] }).alerts;
+    raw = (json as { alerts: unknown[] }).alerts;
+  } else if (Array.isArray(json)) {
+    raw = json;
   }
-  if (Array.isArray(json)) return json;
-  return [];
+  return raw.filter(isRecord);
 }
 
 export function NotificationCenter() {
@@ -64,7 +69,7 @@ export function NotificationCenter() {
 
         setNotifications((prev) => {
           const prevById = new Map(prev.map((n) => [n.id, n]));
-          return alerts.slice(0, 20).map((a: Record<string, unknown>) => {
+          return alerts.slice(0, 20).map((a) => {
             const id = String(a.id ?? crypto.randomUUID());
             const existing = prevById.get(id);
             return {
