@@ -41,6 +41,12 @@ vi.mock('@/lib/server/rate-limiter', async (importOriginal) => {
   };
 });
 
+// ─── Env vars (auth configured) ──────────────────────────────────────────
+// Proxy skips auth enforcement when Supabase env vars are absent.
+// Set them so the auth-related tests actually exercise the auth gate.
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 const ORIGIN = 'https://sentinel.example';
@@ -144,12 +150,24 @@ describe('proxy middleware', () => {
 
   // ── API route: JSON 401 (not HTML redirect) ───────────────────────────
 
-  it('returns JSON 401 for unauthenticated /api/engine/* request', async () => {
+  it('returns JSON 401 for unauthenticated /api/engine/* request (non-public path)', async () => {
     mockUpdateSession.mockResolvedValueOnce(unauthenticatedSession);
-    const response = await proxy(makeRequest('/api/engine/health'));
+    const response = await proxy(makeRequest('/api/engine/orders'));
     expect(response.status).toBe(401);
     const body = await response.json();
     expect(body).toMatchObject({ error: 'unauthorized' });
+  });
+
+  it('allows /api/engine/health through without auth (public health path)', async () => {
+    mockUpdateSession.mockResolvedValueOnce(unauthenticatedSession);
+    const response = await proxy(makeRequest('/api/engine/health'));
+    expect(response.status).toBe(200);
+  });
+
+  it('allows /api/agents/health through without auth (public health path)', async () => {
+    mockUpdateSession.mockResolvedValueOnce(unauthenticatedSession);
+    const response = await proxy(makeRequest('/api/agents/health'));
+    expect(response.status).toBe(200);
   });
 
   it('returns JSON 401 for unauthenticated /api/agents/* request', async () => {
@@ -162,13 +180,13 @@ describe('proxy middleware', () => {
 
   it('does NOT redirect /api/* to /login even when unauthenticated', async () => {
     mockUpdateSession.mockResolvedValueOnce(unauthenticatedSession);
-    const response = await proxy(makeRequest('/api/engine/health'));
+    const response = await proxy(makeRequest('/api/engine/orders'));
     expect(response.status).not.toBe(307);
     expect(response.headers.get('location')).toBeNull();
   });
 
   it('passes authenticated /api/engine/* request through', async () => {
-    const response = await proxy(makeRequest('/api/engine/health'));
+    const response = await proxy(makeRequest('/api/engine/orders'));
     expect(response.status).toBe(200);
   });
 
@@ -176,14 +194,20 @@ describe('proxy middleware', () => {
 
   it('returns 429 when the rate limiter denies an /api/* request', async () => {
     mockCheck.mockReturnValueOnce({ allowed: false, remaining: 0, resetAtMs: Date.now() + 60_000 });
-    const response = await proxy(makeRequest('/api/engine/health'));
+    const response = await proxy(makeRequest('/api/engine/orders'));
     expect(response.status).toBe(429);
   });
 
   it('uses x-forwarded-for as the rate-limit key', async () => {
     mockCheck.mockReturnValue(allowedRl());
-    await proxy(makeRequest('/api/engine/health', '10.0.0.1'));
+    await proxy(makeRequest('/api/engine/orders', '10.0.0.1'));
     expect(mockCheck).toHaveBeenCalledWith('10.0.0.1');
+  });
+
+  it('does NOT rate-limit public health endpoints', async () => {
+    mockUpdateSession.mockResolvedValueOnce(unauthenticatedSession);
+    await proxy(makeRequest('/api/engine/health'));
+    expect(mockCheck).not.toHaveBeenCalled();
   });
 
   it('does NOT rate-limit page routes', async () => {
@@ -195,6 +219,50 @@ describe('proxy middleware', () => {
     mockUpdateSession.mockResolvedValueOnce(unauthenticatedSession);
     await proxy(makeRequest('/api/health'));
     expect(mockCheck).not.toHaveBeenCalled();
+  });
+});
+
+// ─── Auth bypass when Supabase is not configured ─────────────────────────
+
+describe('proxy middleware — Supabase not configured', () => {
+  const savedUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const savedKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    vi.clearAllMocks();
+    mockCheck.mockReturnValue({ allowed: true, remaining: 119, resetAtMs: Date.now() + 60_000 });
+  });
+
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = savedUrl;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = savedKey;
+    vi.resetModules();
+  });
+
+  it('passes page routes through when Supabase is not configured', async () => {
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(makeRequest('/'));
+    expect(response.status).toBe(200);
+    // updateSession should NOT be called
+    expect(mockUpdateSession).not.toHaveBeenCalled();
+  });
+
+  it('passes API routes through when Supabase is not configured', async () => {
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(makeRequest('/api/engine/orders'));
+    expect(response.status).toBe(200);
+    expect(mockUpdateSession).not.toHaveBeenCalled();
+  });
+
+  it('treats placeholder Supabase values as unconfigured', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://placeholder.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'placeholder-anon-key';
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(makeRequest('/'));
+    expect(response.status).toBe(200);
+    expect(mockUpdateSession).not.toHaveBeenCalled();
   });
 });
 
