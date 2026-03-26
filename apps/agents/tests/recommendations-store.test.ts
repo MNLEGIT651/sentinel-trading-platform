@@ -296,4 +296,411 @@ describe('listAlerts', () => {
     const result = await listAlerts();
     expect(result).toEqual([]);
   });
+
+  it('uses custom limit parameter', async () => {
+    const rows = [{ id: 'alt-1', severity: 'info', title: 'Test', message: 'msg', acknowledged: false, created_at: '' }];
+    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    await listAlerts(100);
+    expect(limitMock).toHaveBeenCalledWith(100);
+  });
+
+  it('uses default limit of 50', async () => {
+    const rows = [];
+    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    await listAlerts();
+    expect(limitMock).toHaveBeenCalledWith(50);
+  });
+
+  it('throws on Supabase error', async () => {
+    const limitMock = vi.fn().mockResolvedValue({ data: null, error: { message: 'query failed' } });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    await expect(listAlerts()).rejects.toThrow('query failed');
+  });
+});
+
+describe('rejectRecommendation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('atomically rejects a pending recommendation', async () => {
+    const rejected = { id: 'uuid-1', status: 'rejected', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: rejected, error: null }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result = await rejectRecommendation('uuid-1');
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe('rejected');
+  });
+
+  it('returns null when recommendation was not pending', async () => {
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result = await rejectRecommendation('uuid-1');
+    expect(result).toBeNull();
+  });
+
+  it('throws on non-PGRST116 Supabase error', async () => {
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'reject failed' } }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    await expect(rejectRecommendation('uuid-1')).rejects.toThrow('reject failed');
+  });
+});
+
+describe('Edge Cases and Data Integrity', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('createRecommendation handles all optional fields', async () => {
+    const rec = {
+      agent_role: 'strategy_analyst',
+      ticker: 'TSLA',
+      side: 'sell' as const,
+      quantity: 10,
+      order_type: 'limit' as const,
+      limit_price: 250.5,
+      reason: 'Technical resistance',
+      strategy_name: 'breakout',
+      signal_strength: 0.92,
+      metadata: { rsi: 75, volume: 'high' },
+    };
+    const inserted = { id: 'uuid-2', status: 'pending', created_at: '2026-03-26T10:00:00Z', ...rec };
+    mockFrom.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: inserted, error: null }),
+        }),
+      }),
+    });
+
+    const result = await createRecommendation(rec);
+    expect(result.limit_price).toBe(250.5);
+    expect(result.signal_strength).toBe(0.92);
+    expect(result.metadata).toEqual({ rsi: 75, volume: 'high' });
+  });
+
+  it('createRecommendation handles minimal required fields', async () => {
+    const rec = {
+      agent_role: 'risk_monitor',
+      ticker: 'NVDA',
+      side: 'buy' as const,
+      quantity: 1,
+      order_type: 'market' as const,
+    };
+    const inserted = { id: 'uuid-3', status: 'pending', created_at: '2026-03-26T11:00:00Z', ...rec };
+    mockFrom.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: inserted, error: null }),
+        }),
+      }),
+    });
+
+    const result = await createRecommendation(rec);
+    expect(result.ticker).toBe('NVDA');
+    expect(result.status).toBe('pending');
+  });
+
+  it('listRecommendations handles "all" status filter', async () => {
+    const rows = [
+      { id: 'uuid-1', status: 'pending', ticker: 'AAPL' },
+      { id: 'uuid-2', status: 'approved', ticker: 'MSFT' },
+      { id: 'uuid-3', status: 'rejected', ticker: 'TSLA' },
+    ];
+    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
+    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
+    mockFrom.mockReturnValue({ select: selectMock });
+
+    const result = await listRecommendations('all');
+    expect(result).toHaveLength(3);
+  });
+
+  it('getRecommendation throws on non-PGRST116 error', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'permission denied' } }),
+        }),
+      }),
+    });
+
+    await expect(getRecommendation('uuid-1')).rejects.toThrow('permission denied');
+  });
+
+  it('atomicApprove throws on non-PGRST116 error', async () => {
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'constraint violation' } }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    await expect(atomicApprove('uuid-1')).rejects.toThrow('constraint violation');
+  });
+
+  it('createAlert handles all severity levels', async () => {
+    const severities: Array<'info' | 'warning' | 'critical'> = ['info', 'warning', 'critical'];
+
+    for (const severity of severities) {
+      const alert = {
+        id: `alt-${severity}`,
+        severity,
+        title: `${severity} alert`,
+        message: 'Test message',
+        acknowledged: false,
+        created_at: '',
+      };
+      mockFrom.mockReturnValue({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: alert, error: null }),
+          }),
+        }),
+      });
+
+      const result = await createAlert({ severity, title: `${severity} alert`, message: 'Test message' });
+      expect(result.severity).toBe(severity);
+    }
+  });
+
+  it('createAlert handles optional ticker field', async () => {
+    const alert = {
+      id: 'alt-with-ticker',
+      severity: 'warning',
+      title: 'Price Alert',
+      message: 'AAPL dropped 5%',
+      ticker: 'AAPL',
+      acknowledged: false,
+      created_at: '',
+    };
+    mockFrom.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: alert, error: null }),
+        }),
+      }),
+    });
+
+    const result = await createAlert({ severity: 'warning', title: 'Price Alert', message: 'AAPL dropped 5%', ticker: 'AAPL' });
+    expect(result.ticker).toBe('AAPL');
+  });
+
+  it('createAlert throws on Supabase error', async () => {
+    mockFrom.mockReturnValue({
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: { message: 'insert failed' } }),
+        }),
+      }),
+    });
+
+    await expect(createAlert({ severity: 'info', title: 'Test', message: 'Test message' })).rejects.toThrow('insert failed');
+  });
+});
+
+describe('Race Condition Prevention', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('atomicApprove prevents double-approval via status check', async () => {
+    // First approval succeeds
+    const approved = { id: 'uuid-1', status: 'approved', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: approved, error: null }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result1 = await atomicApprove('uuid-1');
+    expect(result1?.status).toBe('approved');
+
+    // Second approval attempt returns null (no rows matched pending status)
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result2 = await atomicApprove('uuid-1');
+    expect(result2).toBeNull();
+  });
+
+  it('rejectRecommendation prevents double-rejection via status check', async () => {
+    // First rejection succeeds
+    const rejected = { id: 'uuid-1', status: 'rejected', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: rejected, error: null }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result1 = await rejectRecommendation('uuid-1');
+    expect(result1?.status).toBe('rejected');
+
+    // Second rejection attempt returns null
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result2 = await rejectRecommendation('uuid-1');
+    expect(result2).toBeNull();
+  });
+
+  it('atomicApprove and rejectRecommendation cannot both succeed', async () => {
+    // Approval succeeds first
+    const approved = { id: 'uuid-1', status: 'approved', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: approved, error: null }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const approveResult = await atomicApprove('uuid-1');
+    expect(approveResult?.status).toBe('approved');
+
+    // Rejection attempt fails (status no longer pending)
+    mockFrom.mockReturnValue({
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const rejectResult = await rejectRecommendation('uuid-1');
+    expect(rejectResult).toBeNull();
+  });
+});
+
+describe('Timestamp and Metadata Handling', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('atomicApprove sets reviewed_at timestamp', async () => {
+    const updateMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: { id: 'uuid-1', status: 'approved' }, error: null }),
+          }),
+        }),
+      }),
+    });
+    mockFrom.mockReturnValue({ update: updateMock });
+
+    await atomicApprove('uuid-1');
+
+    const updateCall = updateMock.mock.calls[0][0];
+    expect(updateCall.reviewed_at).toBeDefined();
+    expect(typeof updateCall.reviewed_at).toBe('string');
+  });
+
+  it('rejectRecommendation sets reviewed_at timestamp', async () => {
+    const updateMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: { id: 'uuid-1', status: 'rejected' }, error: null }),
+          }),
+        }),
+      }),
+    });
+    mockFrom.mockReturnValue({ update: updateMock });
+
+    await rejectRecommendation('uuid-1');
+
+    const updateCall = updateMock.mock.calls[0][0];
+    expect(updateCall.reviewed_at).toBeDefined();
+    expect(typeof updateCall.reviewed_at).toBe('string');
+  });
+
+  it('markRiskBlocked sets reviewed_at and metadata', async () => {
+    const updateMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    });
+    mockFrom.mockReturnValue({ update: updateMock });
+
+    await markRiskBlocked('uuid-1', 'Portfolio limit exceeded');
+
+    const updateCall = updateMock.mock.calls[0][0];
+    expect(updateCall.reviewed_at).toBeDefined();
+    expect(updateCall.metadata).toEqual({ block_reason: 'Portfolio limit exceeded' });
+  });
 });
