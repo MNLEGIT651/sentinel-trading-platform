@@ -9,13 +9,10 @@ CRITICAL: RiskManager prevents catastrophic losses through:
 All edge cases and failure modes must be tested to prevent financial losses.
 """
 
-import pytest
-
 from src.risk.position_sizer import RiskLimits
 from src.risk.risk_manager import (
     AlertSeverity,
     PortfolioState,
-    PreTradeCheck,
     RiskAction,
     RiskAlert,
     RiskManager,
@@ -212,8 +209,9 @@ class TestRiskManagerPreTradeChecksBuy:
             position_sectors={},
         )
 
+        # 3 shares @ $150 = $450 = 0.45% of equity (within 5% limit)
         result = manager.pre_trade_check(
-            ticker="AAPL", shares=100, price=150.0, side="buy", state=state, sector="tech"
+            ticker="AAPL", shares=3, price=150.0, side="buy", state=state, sector="tech"
         )
 
         assert result.allowed is True
@@ -359,18 +357,19 @@ class TestRiskManagerPreTradeChecksBuy:
         assert result.allowed is True
 
     def test_buy_rejected_for_insufficient_cash(self):
-        """Buy rejected when not enough cash."""
+        """Buy rejected when not enough cash for even one share."""
         manager = RiskManager()
         state = PortfolioState(
             equity=100_000,
-            cash=1_000,  # Only $1,000 cash
+            cash=100,  # Only $100 cash — can't afford any shares at $150
             peak_equity=100_000,
             daily_starting_equity=100_000,
             positions={},
             position_sectors={},
         )
 
-        # Try to buy $15,000 worth
+        # Try to buy shares @ $150, after position limit caps to 33 shares ($4,950)
+        # Cash ($100) can't afford even 1 share
         result = manager.pre_trade_check(
             ticker="AAPL", shares=100, price=150.0, side="buy", state=state
         )
@@ -380,26 +379,27 @@ class TestRiskManagerPreTradeChecksBuy:
         assert "insufficient cash" in result.reason.lower()
 
     def test_buy_reduced_for_cash_availability(self):
-        """Buy reduced to affordable amount."""
+        """Buy reduced to affordable amount based on cash."""
         manager = RiskManager()
         state = PortfolioState(
             equity=100_000,
-            cash=5_000,  # $5,000 cash
+            cash=2_000,  # $2,000 cash
             peak_equity=100_000,
             daily_starting_equity=100_000,
             positions={},
             position_sectors={},
         )
 
-        # Try to buy 100 shares @ $150 = $15,000
-        # Can afford 33 shares ($4,950)
+        # Try to buy 30 shares @ $50 = $1,500 (1.5% of equity, within 5% limit)
+        # But let's try more shares to exceed cash:
+        # 50 shares @ $50 = $2,500 > $2,000 cash → reduced to int(2000/50) = 40 shares
         result = manager.pre_trade_check(
-            ticker="AAPL", shares=100, price=150.0, side="buy", state=state
+            ticker="AAPL", shares=50, price=50.0, side="buy", state=state
         )
 
         assert result.allowed is True
         assert result.action == RiskAction.REDUCE
-        assert result.adjusted_shares == 33
+        assert result.adjusted_shares == 40
         assert "cash availability" in result.reason.lower()
 
     def test_buy_rejected_when_daily_loss_limit_hit(self):
@@ -591,7 +591,7 @@ class TestRiskManagerPortfolioAssessment:
         )
 
         assessment1 = manager.assess_portfolio_risk(state1)
-        alert_count1 = len(assessment1["alerts"])
+        assert len(assessment1["alerts"]) > 0
 
         # Second assessment with no issues
         state2 = PortfolioState(
@@ -699,7 +699,11 @@ class TestRiskManagerCustomLimits:
 
         # Buy 10% position (should be allowed with custom limit)
         result = manager.pre_trade_check(
-            ticker="AAPL", shares=66, price=150.0, side="buy", state=state  # ~$10k = 10%
+            ticker="AAPL",
+            shares=66,
+            price=150.0,
+            side="buy",
+            state=state,  # ~$10k = 10%
         )
 
         assert result.allowed is True
