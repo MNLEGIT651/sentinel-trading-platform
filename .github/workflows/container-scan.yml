@@ -4,10 +4,12 @@ on:
   push:
     branches: [main]
     paths:
+      - 'apps/web/Dockerfile'
       - 'apps/engine/Dockerfile'
       - 'apps/agents/Dockerfile'
   pull_request:
     paths:
+      - 'apps/web/Dockerfile'
       - 'apps/engine/Dockerfile'
       - 'apps/agents/Dockerfile'
   schedule:
@@ -21,18 +23,20 @@ jobs:
   trivy-scan:
     name: Trivy Scan (${{ matrix.service }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false
       matrix:
         include:
+          - service: web
+            dockerfile: apps/web/Dockerfile
+            image: sentinel-web:${{ github.sha }}
           - service: engine
             dockerfile: apps/engine/Dockerfile
-            context: apps/engine
             image: sentinel-engine:${{ github.sha }}
           - service: agents
             dockerfile: apps/agents/Dockerfile
-            context: apps/agents
             image: sentinel-agents:${{ github.sha }}
 
     steps:
@@ -41,7 +45,10 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} ${{ matrix.context }}
+          docker build -t ${{ matrix.image }} -f ${{ matrix.dockerfile }} .
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
