@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './tests/setup.ts',
     // Exclude Playwright e2e tests - they use their own test runner
-    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/e2e/**', '**/e2e/**'],
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

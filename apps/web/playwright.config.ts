@@ -1,52 +1,29 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Playwright configuration for Sentinel Trading Platform E2E tests.
- *
- * Tests run against a locally started Next.js dev server so they don't
- * require any deployed infrastructure. Supabase auth is mocked at the
- * network level — no real credentials needed for the smoke suite.
- *
- * CI: `pnpm --filter web test:e2e`
- * Local: `pnpm --filter web exec playwright test --ui`
- */
-
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
-
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './e2e',
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source */
   forbidOnly: !!process.env.CI,
-  /* Retry once on CI to absorb transient flakiness */
-  retries: process.env.CI ? 1 : 0,
-  /* Limit parallelism in CI to avoid resource contention */
-  workers: process.env.CI ? 2 : '50%',
-  reporter: process.env.CI ? 'github' : 'list',
-
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: process.env.CI ? 'github' : 'html',
   use: {
-    baseURL: BASE_URL,
-    /* Capture screenshots and traces on first retry to aid debugging */
-    screenshot: 'only-on-failure',
+    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
-    /* Shorter timeout for CI where start-up is fresh */
-    actionTimeout: 10_000,
+    screenshot: 'only-on-failure',
   },
-
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-
-  /* Start a Next.js server automatically if not already running.
-   * CI uses the production build (`pnpm start`) for faster, more reliable startup.
-   * Locally we fall back to `pnpm dev` for hot-reload convenience. */
-  webServer: {
-    command: process.env.CI ? 'pnpm start' : 'pnpm dev',
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: process.env.CI
+    ? undefined
+    : {
+        command: 'pnpm dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: true,
+        timeout: 30_000,
+      },
 });

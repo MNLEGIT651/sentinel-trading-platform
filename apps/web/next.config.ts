@@ -1,5 +1,6 @@
 import { join } from 'path';
 import type { NextConfig } from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 // ─── Content-Security-Policy ──────────────────────────────────────────────────
 //
@@ -94,4 +95,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+export default withBundleAnalyzer(nextConfig);

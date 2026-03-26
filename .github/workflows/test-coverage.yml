@@ -100,6 +100,36 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Enforce coverage thresholds
+        if: always()
+        run: |
+          node -e "
+            const MIN_LINES = 50;
+            let failed = false;
+
+            function checkCoverage(name, path) {
+              try {
+                const coverage = require(path);
+                const pct = coverage.total.lines.pct;
+                console.log(name + ' lines coverage: ' + pct + '%');
+                if (pct < MIN_LINES) {
+                  console.error('ERROR: ' + name + ' lines coverage ' + pct + '% is below threshold of ' + MIN_LINES + '%');
+                  failed = true;
+                }
+              } catch (e) {
+                console.log(name + ' coverage report not found, skipping');
+              }
+            }
+
+            checkCoverage('Web', './apps/web/coverage/coverage-summary.json');
+            checkCoverage('Agents', './apps/agents/coverage/coverage-summary.json');
+
+            if (failed) {
+              process.exit(1);
+            }
+            console.log('All coverage thresholds passed');
+          "
+
   # ---------------------------------------------------------------------------
   # Coverage for Python engine
   # ---------------------------------------------------------------------------

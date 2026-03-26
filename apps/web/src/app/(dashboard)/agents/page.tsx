@@ -5,6 +5,7 @@ import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2 } from 'lucide-reac
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
 import { agentsClient, type OrchestratorStatus } from '@/lib/agents-client';
@@ -199,6 +200,26 @@ export default function AgentsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Offline guidance */}
+      {(isOffline || agentsOnline === false) && (
+        <Card className="bg-muted/30 border-border/50">
+          <CardContent className="flex items-start gap-3 py-4 px-4">
+            <Bot className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                The agents service is not running.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Start it with:{' '}
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+                  pnpm --filter agents dev
+                </code>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Agent Cards */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">

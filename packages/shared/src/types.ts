@@ -499,6 +499,28 @@ export interface EngineResponse<T> {
   timestamp: string;
 }
 
+/* ── Notification Types ─────────────────────────────────── */
+
+export type NotificationChannel = 'in_app' | 'email' | 'push';
+
+export interface NotificationPreference {
+  channel: NotificationChannel;
+  enabled: boolean;
+  /** For email: address. For push: subscription JSON. */
+  target?: string;
+}
+
+export interface NotificationPayload {
+  title: string;
+  body: string;
+  severity: AlertSeverity;
+  /** Link to open when notification is clicked */
+  actionUrl?: string;
+  /** ID of the related recommendation or alert */
+  sourceId?: string;
+  sourceType?: 'recommendation' | 'alert';
+}
+
 /**
  * Result returned by the engine's market-data ingest endpoint after a successful import.
  * One `IngestResult` is emitted per (symbol, timeframe) combination.

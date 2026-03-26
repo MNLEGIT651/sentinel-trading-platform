@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationCenter } from '@/components/notification-center';
 
 function getETTime(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
@@ -55,6 +56,12 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-border bg-card/80 backdrop-blur-sm px-4 relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:top-2 focus:left-2"
+      >
+        Skip to main content
+      </a>
       {/* Bottom accent line */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
 
@@ -75,6 +82,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-5">
+        <NotificationCenter />
         {/* Market status indicator */}
         <div className="flex items-center gap-2">
           <Activity className="h-3 w-3 text-muted-foreground/60" />

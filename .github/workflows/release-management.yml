@@ -154,6 +154,15 @@ jobs:
 
           cat changelog.md
 
+      - name: Install Syft
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Generate CycloneDX SBOM
+        run: syft scan dir:. -o cyclonedx-json=sbom.cdx.json
+
+      - name: Generate SPDX SBOM
+        run: syft scan dir:. -o spdx-json=sbom.spdx.json
+
       # softprops/action-gh-release replaces the deprecated actions/create-release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -164,6 +173,9 @@ jobs:
           draft: false
           prerelease: ${{ needs.validate-release.outputs.prerelease == 'true' }}
           generate_release_notes: true
+          files: |
+            sbom.cdx.json
+            sbom.spdx.json
 
       - name: Write release summary
         run: |
