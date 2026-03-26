@@ -28,8 +28,7 @@
     "test": {
       "dependsOn": ["^build"],
       "inputs": ["src/**", "tests/**", "package.json", "vitest.config.*", "tsconfig.json"],
-      "outputs": ["coverage/**"],
-      "cache": false
+      "outputs": ["coverage/**"]
     },
     "lint": {
       "inputs": ["src/**", "package.json", "eslint.config.*", "tsconfig.json"],
