@@ -225,9 +225,9 @@ class RiskManager:
                         f"({position_pct:.1%})"
                     ),
                 )
+            reduced_reason = f"Position reduced from {shares} to {adjusted} shares (position limit)"
             shares = adjusted
             trade_value = shares * price
-            reduced_reason = f"Position reduced from {shares} to {adjusted} shares (position limit)"
 
         # 2. Sector concentration limit
         sector_value = sum(

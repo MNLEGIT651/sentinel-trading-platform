@@ -60,9 +60,10 @@ export function useRealtime<T extends { id: string }>({
         'postgres_changes' as never,
         opts,
         (payload: { eventType: string; new: T; old: { id: string } }) => {
-          if (payload.eventType === event && event === 'INSERT') handleInsert({ new: payload.new });
-          if (payload.eventType === event && event === 'UPDATE') handleUpdate({ new: payload.new });
-          if (payload.eventType === event && event === 'DELETE') handleDelete({ old: payload.old });
+          if (payload.eventType !== event) return;
+          if (event === 'INSERT') handleInsert({ new: payload.new });
+          if (event === 'UPDATE') handleUpdate({ new: payload.new });
+          if (event === 'DELETE') handleDelete({ old: payload.old });
         },
       );
     }
