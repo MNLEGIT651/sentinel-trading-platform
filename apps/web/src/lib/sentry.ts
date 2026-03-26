@@ -7,6 +7,7 @@ export function initSentry(): void {
   if (!process.env.SENTRY_DSN) return;
 
   // Dynamic import so @sentry/nextjs is optional
+  // @ts-expect-error -- @sentry/nextjs is an optional peer dependency
   import('@sentry/nextjs')
     .then((Sentry) => {
       Sentry.init({
