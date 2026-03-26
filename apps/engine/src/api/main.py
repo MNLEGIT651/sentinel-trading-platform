@@ -17,6 +17,7 @@ from src.api.routes.strategies import router as strategies_router
 from src.config import Settings
 from src.logging_config import configure_logging
 from src.middleware.rate_limit import RateLimitMiddleware
+from src.middleware.security_headers import SecurityHeadersMiddleware
 from src.middleware.tracing import CorrelationIDMiddleware
 
 # Paths that don't require an API key (health checks, OpenAPI docs)
@@ -101,6 +102,9 @@ _settings = Settings()
 # Add correlation ID middleware for distributed tracing (first, so it applies to all requests)
 app.add_middleware(CorrelationIDMiddleware)
 
+# Add security headers to all responses
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Add rate limiting middleware (before auth, to protect against brute force)
 # In production with multiple instances, replace with Redis-based rate limiting
 rate_limit_per_min = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
@@ -115,8 +119,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["authorization", "content-type", "x-api-key", "x-correlation-id"],
 )
 
 app.include_router(health_router)

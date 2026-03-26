@@ -4,7 +4,7 @@ import logging
 from datetime import date, timedelta
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from src.config import Settings
@@ -145,11 +145,14 @@ async def get_quotes(tickers: str = "AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY") -
     return quotes
 
 
+_VALID_TIMEFRAMES = {"1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"}
+
+
 @router.get("/bars/{ticker}", response_model=list[MarketBar])
 async def get_bars(
     ticker: str,
-    timeframe: str = "1d",
-    days: int = 90,
+    timeframe: str = Query("1d", pattern=r"^(1m|5m|15m|30m|1h|4h|1d|1w|1M)$"),
+    days: int = Query(90, ge=1, le=365),
 ) -> list[MarketBar]:
     """Fetch historical OHLCV bars from Polygon.io."""
     polygon = _get_polygon()

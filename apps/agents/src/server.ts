@@ -28,6 +28,9 @@ import {
 import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
 
+/** Loose UUID v4 format check — rejects obviously invalid IDs before they hit the DB. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ── Cycle-in-progress flag ─────────────────────────────────────────
 // Module-level so the scheduler can also check it.
 
@@ -52,7 +55,7 @@ export function createApp(orchestrator: Orchestrator): Express {
       methods: ['GET', 'POST', 'OPTIONS'],
     }),
   );
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   // ── Health ──────────────────────────────────────────────────────
 
@@ -138,7 +141,9 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   app.get('/recommendations', async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const status = (req.query.status as string) ?? 'pending';
+      const validStatuses = ['pending', 'approved', 'rejected', 'filled', 'risk_blocked', 'all'];
+      const rawStatus = (req.query.status as string) ?? 'pending';
+      const status = validStatuses.includes(rawStatus) ? rawStatus : 'pending';
       const recommendations = await listRecommendations(status);
       res.json({ recommendations });
     } catch (err) {
@@ -157,7 +162,7 @@ export function createApp(orchestrator: Orchestrator): Express {
     async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       try {
         const id = req.params['id'];
-        if (!id) return res.status(400).json({ error: 'missing_id' });
+        if (!id || !UUID_RE.test(id)) return res.status(400).json({ error: 'invalid_id' });
 
         const rec = await getRecommendation(id);
         if (!rec) {
@@ -220,7 +225,7 @@ export function createApp(orchestrator: Orchestrator): Express {
     async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
       try {
         const id = req.params['id'];
-        if (!id) return res.status(400).json({ error: 'missing_id' });
+        if (!id || !UUID_RE.test(id)) return res.status(400).json({ error: 'invalid_id' });
 
         const rec = await getRecommendation(id);
         if (!rec) {
@@ -258,7 +263,7 @@ export function createApp(orchestrator: Orchestrator): Express {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('[Server] Unhandled error:', err.message);
-    res.status(500).json({ error: 'internal_error', detail: err.message });
+    res.status(500).json({ error: 'internal_error' });
   });
 
   return app;

@@ -134,33 +134,49 @@ describe('GET /alerts', () => {
 });
 
 describe('POST /recommendations/:id/approve', () => {
+  it('returns 400 for invalid (non-UUID) id', async () => {
+    const res = await request(app).post('/recommendations/nonexistent/approve');
+    expect(res.status).toBe(400);
+  });
+
   it('returns 404 when recommendation not found', async () => {
     const { getRecommendation } = await import('../src/recommendations-store.js');
     vi.mocked(getRecommendation).mockResolvedValue(null as any);
-    const res = await request(app).post('/recommendations/nonexistent/approve');
+    const res = await request(app).post(
+      '/recommendations/00000000-0000-0000-0000-000000000001/approve',
+    );
     expect(res.status).toBe(404);
   });
 
   it('returns 409 when recommendation is not pending (atomicApprove returns null)', async () => {
     const { getRecommendation, atomicApprove } = await import('../src/recommendations-store.js');
     vi.mocked(getRecommendation).mockResolvedValue({
-      id: 'rec-1',
+      id: '00000000-0000-0000-0000-000000000002',
       ticker: 'AAPL',
       side: 'buy',
       order_type: 'market',
       quantity: 5,
     } as any);
     vi.mocked(atomicApprove).mockResolvedValue(null);
-    const res = await request(app).post('/recommendations/rec-1/approve');
+    const res = await request(app).post(
+      '/recommendations/00000000-0000-0000-0000-000000000002/approve',
+    );
     expect(res.status).toBe(409);
   });
 });
 
 describe('POST /recommendations/:id/reject', () => {
+  it('returns 400 for invalid (non-UUID) id', async () => {
+    const res = await request(app).post('/recommendations/nonexistent/reject');
+    expect(res.status).toBe(400);
+  });
+
   it('returns 404 when recommendation not found', async () => {
     const { getRecommendation } = await import('../src/recommendations-store.js');
     vi.mocked(getRecommendation).mockResolvedValue(null as any);
-    const res = await request(app).post('/recommendations/nonexistent/reject');
+    const res = await request(app).post(
+      '/recommendations/00000000-0000-0000-0000-000000000003/reject',
+    );
     expect(res.status).toBe(404);
   });
 });

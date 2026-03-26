@@ -6,10 +6,27 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
  * Handles email confirmation links and OAuth redirects by exchanging the
  * authorization code for a session, then redirecting to the dashboard.
  */
+/**
+ * Validate the `next` redirect target to prevent open-redirect attacks.
+ * Only same-origin relative paths are allowed — protocol-relative URLs,
+ * absolute URLs, and path-traversal tricks are rejected.
+ */
+function sanitizeRedirectPath(raw: string): string {
+  if (
+    !raw.startsWith('/') ||
+    raw.startsWith('//') ||
+    raw.includes('://') ||
+    raw.includes('\\')
+  ) {
+    return '/';
+  }
+  return raw;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
+  const next = sanitizeRedirectPath(searchParams.get('next') ?? '/');
 
   if (code) {
     const supabase = await createServerSupabaseClient();
