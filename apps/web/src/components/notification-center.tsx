@@ -64,7 +64,7 @@ export function NotificationCenter() {
 
         setNotifications((prev) => {
           const prevById = new Map(prev.map((n) => [n.id, n]));
-          return alerts.slice(0, 20).map((a: Record<string, unknown>) => {
+          return (alerts as Record<string, unknown>[]).slice(0, 20).map((a) => {
             const id = String(a.id ?? crypto.randomUUID());
             const existing = prevById.get(id);
             return {
