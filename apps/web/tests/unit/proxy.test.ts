@@ -255,6 +255,15 @@ describe('proxy middleware — Supabase not configured', () => {
     expect(response.status).toBe(200);
     expect(mockUpdateSession).not.toHaveBeenCalled();
   });
+
+  it('treats placeholder Supabase values as unconfigured', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://placeholder.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'placeholder-anon-key';
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(makeRequest('/'));
+    expect(response.status).toBe(200);
+    expect(mockUpdateSession).not.toHaveBeenCalled();
+  });
 });
 
 // ─── Rate limiter unit tests ──────────────────────────────────────────────
