@@ -23,6 +23,18 @@ const PUBLIC_ROUTES = new Set(['/login', '/signup']);
  */
 const PUBLIC_PREFIXES = ['/auth/', '/api/health'];
 
+/**
+ * API paths that bypass the auth gate for monitoring and liveness probes.
+ * Keep this list tight — only add paths that external health checks or the
+ * dashboard need to reach without a user session.
+ */
+const PUBLIC_API_PATHS = new Set([
+  '/api/engine/health',
+  '/api/agents/health',
+  '/api/agents/status',
+  '/api/settings/status',
+]);
+
 /** Static assets and well-known files that never need auth. */
 const PUBLIC_FILES = new Set(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
 
@@ -41,7 +53,19 @@ function isApiRoute(pathname: string): boolean {
 function isPublicRoute(pathname: string): boolean {
   if (PUBLIC_ROUTES.has(pathname)) return true;
   if (PUBLIC_FILES.has(pathname)) return true;
+  if (PUBLIC_API_PATHS.has(pathname)) return true;
   return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+// ─── Auth configuration check ─────────────────────────────────────────────
+
+/**
+ * Returns true when Supabase environment variables are configured.
+ * When false, the proxy skips auth enforcement — there is no auth system to
+ * validate against (typical in CI / local-dev-without-Supabase scenarios).
+ */
+function isAuthConfigured(): boolean {
+  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
 // ─── Middleware ────────────────────────────────────────────────────────────
@@ -58,6 +82,12 @@ export async function proxy(request: NextRequest) {
     if (!rl.allowed) {
       return rateLimitResponse(rl.resetAtMs);
     }
+  }
+
+  // When Supabase is not configured there is no auth system to enforce.
+  // Pass all requests through so local dev and CI work without credentials.
+  if (!isAuthConfigured()) {
+    return NextResponse.next({ request });
   }
 
   // Always refresh session cookies (even on public routes) so Supabase
