@@ -63,42 +63,6 @@ supabase     -> schema, RLS, realtime, seed data
 - `packages/shared/src/index.ts`
 - `supabase/migrations/*`
 
-## Trust Boundaries
-
-```
-Browser (untrusted)
-  │
-  ├─ NEXT_PUBLIC_* env vars only
-  ├─ Supabase session cookies (HttpOnly, SameSite=Lax)
-  │
-  ▼
-Next.js Server (trusted edge)
-  │
-  ├─ Rate limiting (middleware)
-  ├─ Auth validation (Supabase getUser)
-  ├─ Proxy to backends (server-side only)
-  │
-  ├──▶ Engine API (trusted internal)
-  │     ├─ API key auth (ENGINE_API_KEY)
-  │     ├─ CORS restricted
-  │     ├─ Alpaca/Polygon external calls
-  │     └─ Supabase service role
-  │
-  └──▶ Agents API (trusted internal)
-        ├─ API key auth (ENGINE_API_KEY)
-        ├─ CORS restricted
-        ├─ Anthropic API calls
-        └─ Supabase service role
-```
-
-## Notification Flow (Phase 4)
-
-Agent cycle produces recommendations → stored in `agent_recommendations` table → Supabase Realtime pushes to web dashboard → NotificationCenter displays with badge count → User approves/rejects → Approved recommendations submitted to engine for execution.
-
-## Security Automation (Phase 1)
-
-CI pipeline includes: CodeQL SAST, Gitleaks secrets scanning, Trivy container scanning, OpenSSF Scorecard, OWASP ZAP DAST (manual trigger), SBOM generation on releases.
-
 ## Security & Notification Architecture
 
 ### Trust Boundaries
