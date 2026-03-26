@@ -144,10 +144,10 @@ class PaginationParams(BaseModel):
     )
 
 
-class ListResponse(BaseModel, generic=True):
+class ListResponse[T](BaseModel):
     """Standard paginated list response."""
 
-    data: list
+    data: list[T]
     offset: int
     limit: int
     total: int
