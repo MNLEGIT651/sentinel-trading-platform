@@ -2,13 +2,17 @@
 # Build context: monorepo root  (docker build -f apps/agents/Dockerfile .)
 FROM node:22-alpine AS base
 
+LABEL org.opencontainers.image.source="https://github.com/stevenschling13/Trading-App"
+LABEL org.opencontainers.image.description="Sentinel Trading Platform — Agent Orchestrator"
+
 RUN npm install --global pnpm@10.32.1
 
-# ─── Dependencies + Runtime ───────────────────────────────────────────────────
-FROM base AS runner
+# ─── Dependencies layer ──────────────────────────────────────────────────────
+FROM base AS deps
 
 WORKDIR /app
 
+# pnpm workspace resolution requires all workspace member package.json files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/agents/package.json apps/agents/
@@ -16,12 +20,22 @@ COPY apps/web/package.json apps/web/
 
 RUN pnpm install --frozen-lockfile
 
-# Copy source after deps (layer cache: deps change less often than src)
+# ─── Runtime image ────────────────────────────────────────────────────────────
+FROM base AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy installed deps and source
+COPY --from=deps /app/ ./
 COPY packages/shared ./packages/shared
 COPY apps/agents ./apps/agents
 
 RUN addgroup --system --gid 1001 sentinel \
-  && adduser --system --uid 1001 --ingroup sentinel sentinel
+  && adduser --system --uid 1001 --ingroup sentinel sentinel \
+  && chown -R sentinel:sentinel /app
+
 USER sentinel
 
 EXPOSE 3001

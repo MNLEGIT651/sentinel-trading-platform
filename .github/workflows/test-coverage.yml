@@ -52,11 +52,9 @@ jobs:
 
       - name: Run web tests with coverage
         run: pnpm --filter web test -- --coverage --reporter=json --reporter=default
-        continue-on-error: true
 
       - name: Run agents tests with coverage
         run: pnpm --filter agents test -- --coverage --reporter=json --reporter=default
-        continue-on-error: true
 
       - name: Generate coverage summary
         if: always()
@@ -177,7 +175,6 @@ jobs:
             --tb=short
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        continue-on-error: true
 
       - name: Generate coverage summary
         if: always()

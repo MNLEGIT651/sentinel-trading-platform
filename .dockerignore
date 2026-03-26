@@ -42,6 +42,9 @@ docs
 *.xlsx
 Codex
 
+# CI / GitHub (not needed in container images)
+.github
+
 # Supabase local
 supabase/.branches
 supabase/.temp

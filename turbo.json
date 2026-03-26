@@ -22,10 +22,19 @@
     "build": {
       "dependsOn": ["^build"],
       "env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+      "inputs": ["src/**", "package.json", "tsconfig.json", "tsconfig.*.json", "next.config.*"],
       "outputs": [".next/**", "dist/**"]
     },
-    "test": {},
-    "lint": {},
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tests/**", "package.json", "vitest.config.*", "tsconfig.json"],
+      "outputs": ["coverage/**"],
+      "cache": false
+    },
+    "lint": {
+      "inputs": ["src/**", "package.json", "eslint.config.*", "tsconfig.json"],
+      "outputs": []
+    },
     "clean": {
       "cache": false
     }

@@ -1,6 +1,9 @@
-# ─── Sentinel Web — Next.js 15 ───────────────────────────────────────────────
+# ─── Sentinel Web — Next.js Dashboard ────────────────────────────────────────
 # Build context: monorepo root  (docker build -f apps/web/Dockerfile .)
 FROM node:22-alpine AS base
+
+LABEL org.opencontainers.image.source="https://github.com/stevenschling13/Trading-App"
+LABEL org.opencontainers.image.description="Sentinel Trading Platform — Next.js Dashboard"
 
 RUN npm install --global pnpm@10.32.1
 
@@ -9,6 +12,7 @@ FROM base AS deps
 
 WORKDIR /app
 
+# pnpm workspace resolution requires all workspace member package.json files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
@@ -33,17 +37,12 @@ ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 ARG SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
 
+# Build-time only — NEXT_PUBLIC_ vars are inlined by the compiler,
+# SUPABASE_SERVICE_ROLE_KEY is used during SSR build but must NOT
+# persist in the runtime image (set via env at deploy time instead).
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
 ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-
-# Warn if build args contain placeholders (real values required for production)
-ARG VALIDATE_BUILD_ARGS=false
-RUN if [ "$VALIDATE_BUILD_ARGS" = "true" ] && echo "$NEXT_PUBLIC_SUPABASE_URL" | grep -q "placeholder"; then \
-      echo "ERROR: NEXT_PUBLIC_SUPABASE_URL still contains placeholder value." && \
-      echo "Pass real build args: --build-arg NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co" && \
-      exit 1; \
-    fi
 
 RUN pnpm --filter @sentinel/web build
 
