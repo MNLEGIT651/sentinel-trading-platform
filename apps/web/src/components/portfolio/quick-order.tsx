@@ -45,6 +45,7 @@ export function QuickOrder({
           <div className="flex items-center gap-1.5 rounded-md bg-muted/50 p-0.5">
             <button
               onClick={() => onSideChange('buy')}
+              aria-label="Buy"
               className={cn(
                 'rounded px-3 py-1 text-xs font-medium transition-colors',
                 side === 'buy'
@@ -56,6 +57,7 @@ export function QuickOrder({
             </button>
             <button
               onClick={() => onSideChange('sell')}
+              aria-label="Sell"
               className={cn(
                 'rounded px-3 py-1 text-xs font-medium transition-colors',
                 side === 'sell'
@@ -66,21 +68,47 @@ export function QuickOrder({
               Sell
             </button>
           </div>
-          <input
-            type="text"
-            value={symbol}
-            onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
-            placeholder="Symbol"
-            className="w-24 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <input
-            type="number"
-            value={qty}
-            onChange={(e) => onQtyChange(e.target.value)}
-            placeholder="Qty"
-            min="1"
-            className="w-20 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+          <div className="flex flex-col">
+            <label htmlFor="quick-order-symbol" className="sr-only">
+              Symbol
+            </label>
+            <input
+              id="quick-order-symbol"
+              type="text"
+              value={symbol}
+              onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
+              placeholder="Symbol"
+              aria-invalid={symbol !== '' && !validSymbol ? true : undefined}
+              className={cn(
+                'w-24 rounded-md border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary',
+                symbol !== '' && !validSymbol ? 'border-loss' : 'border-border',
+              )}
+            />
+            {symbol !== '' && !validSymbol && (
+              <span className="text-[10px] text-loss mt-0.5">1-5 uppercase letters</span>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="quick-order-qty" className="sr-only">
+              Quantity
+            </label>
+            <input
+              id="quick-order-qty"
+              type="number"
+              value={qty}
+              onChange={(e) => onQtyChange(e.target.value)}
+              placeholder="Qty"
+              min="1"
+              aria-invalid={qty !== '' && !validQty ? true : undefined}
+              className={cn(
+                'w-20 rounded-md border bg-background px-2.5 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary',
+                qty !== '' && !validQty ? 'border-loss' : 'border-border',
+              )}
+            />
+            {qty !== '' && !validQty && (
+              <span className="text-[10px] text-loss mt-0.5">Positive integer</span>
+            )}
+          </div>
           <button
             onClick={onSubmit}
             disabled={!canSubmit}
@@ -89,16 +117,15 @@ export function QuickOrder({
             <SendHorizonal className="h-3.5 w-3.5" />
             {submitting ? 'Sending...' : 'Submit'}
           </button>
-          {status && (
-            <span
-              className={cn(
-                'text-xs font-mono',
-                status.startsWith('Filled') ? 'text-profit' : 'text-loss',
-              )}
-            >
-              {status}
-            </span>
-          )}
+          <span
+            aria-live="polite"
+            className={cn(
+              'text-xs font-mono',
+              status ? (status.startsWith('Filled') ? 'text-profit' : 'text-loss') : '',
+            )}
+          >
+            {status ?? ''}
+          </span>
         </div>
       </CardContent>
     </Card>

@@ -243,7 +243,7 @@ describe('PortfolioPage', () => {
 
     render(<PortfolioPage />);
     await waitFor(() => {
-      expect(screen.getByText('No open positions')).toBeInTheDocument();
+      expect(screen.getByText(/No open positions/)).toBeInTheDocument();
     });
   });
 });

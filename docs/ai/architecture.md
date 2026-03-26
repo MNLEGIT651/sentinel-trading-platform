@@ -62,3 +62,44 @@ supabase     -> schema, RLS, realtime, seed data
 - `apps/engine/src/config.py`
 - `packages/shared/src/index.ts`
 - `supabase/migrations/*`
+
+## Security & Notification Architecture
+
+### Trust Boundaries
+
+```
+Browser ──► Next.js Server ──► Engine API (FastAPI)
+                │                    │
+                │                    ▼
+                │              Alpaca/Polygon (3rd party)
+                │
+                ├──► Agents API (Express)
+                │         │
+                │         ▼
+                │    Claude API (Anthropic)
+                │
+                └──► Supabase (PostgreSQL)
+```
+
+- Browser only communicates with Next.js origin (same-origin proxy)
+- Engine and Agents are never exposed directly to browsers
+- All inter-service auth uses `ENGINE_API_KEY` shared secret
+- Supabase RLS enforces per-user data isolation
+
+### Notification Flow
+
+1. Agent generates recommendation/alert → writes to Supabase
+2. Notification dispatcher (in agents) sends to configured channels:
+   - **Email** via Resend API (when RESEND_API_KEY configured)
+   - **In-app** via polling from web dashboard (30s interval)
+   - **Push** via Web Push API (when VAPID keys configured)
+3. User reviews in-app notification center or email
+4. For trade recommendations: approve/reject triggers execution flow
+
+### Security Automation
+
+CI/CD pipeline runs 9 security-related workflows:
+
+- Pre-merge: CodeQL SAST, Gitleaks secrets scan, dependency review
+- Post-deploy: OWASP ZAP DAST baseline, Lighthouse audit
+- Scheduled: Security safety audit (daily), container scan (weekly), Scorecard (weekly)

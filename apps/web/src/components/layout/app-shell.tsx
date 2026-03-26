@@ -17,7 +17,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar collapsed={!sidebarOpen} onToggle={toggleSidebar} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header onMenuClick={toggleSidebar} />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main id="main-content" className="flex-1 overflow-auto">
+          {children}
+        </main>
       </div>
     </div>
   );

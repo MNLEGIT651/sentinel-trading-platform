@@ -14,6 +14,13 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   { rules: disableReactRules },
+  {
+    rules: {
+      "jsx-a11y/alt-text": "warn",
+      "jsx-a11y/aria-props": "warn",
+      "jsx-a11y/aria-role": "warn",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

@@ -240,8 +240,28 @@ export default function SignalsPage() {
         </div>
       )}
 
-      {/* Empty / Table */}
-      {!isScanning && !error && (
+      {/* Empty state */}
+      {!isScanning && !error && signals.length === 0 && (
+        <Card className="bg-card/50 border-border/50">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Zap className="h-8 w-8 text-muted-foreground/40 mb-3" />
+            <h2 className="text-sm font-semibold text-foreground mb-1">No signals yet</h2>
+            <p className="text-xs text-muted-foreground max-w-sm mb-4">
+              Run a signal scan to analyze market conditions across your configured tickers
+            </p>
+            <Button
+              onClick={handleRunScan}
+              disabled={isScanning || engineOnline !== true}
+              size="sm"
+            >
+              Run Scan
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Signal Table */}
+      {!isScanning && !error && signals.length > 0 && (
         <SignalTimeline signals={sortedSignals} onToggleSort={toggleSort} />
       )}
     </div>

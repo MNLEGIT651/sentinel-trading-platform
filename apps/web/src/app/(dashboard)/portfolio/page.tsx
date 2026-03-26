@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { PieChart, RefreshCw } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
@@ -332,12 +333,22 @@ export default function PortfolioPage() {
         </TabsList>
 
         <TabsContent value="positions">
-          <PositionsTable
-            sortedPositions={sortedPositions}
-            sortField={sortField}
-            sortDir={sortDir}
-            onToggleSort={toggleSort}
-          />
+          {positions.length === 0 && isLive ? (
+            <Card className="bg-muted/30 border-border/50">
+              <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No open positions. Use Quick Order above to place your first trade.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <PositionsTable
+              sortedPositions={sortedPositions}
+              sortField={sortField}
+              sortDir={sortDir}
+              onToggleSort={toggleSort}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="allocation">
