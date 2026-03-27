@@ -85,6 +85,7 @@ describe('useRealtimeSync', () => {
       'decision_journal',
       'strategy_health_snapshots',
       'agent_recommendations',
+      'shadow_portfolios',
     ];
 
     // One channel per table
@@ -102,7 +103,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(9);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(10);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -220,5 +221,18 @@ describe('useRealtimeSync', () => {
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['agents'] }));
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['counterfactuals'] }));
+  });
+
+  it('invalidates shadow portfolios queries when shadow_portfolios changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const shadowSub = subscriptions.find((s) => s.table === 'shadow_portfolios');
+    expect(shadowSub).toBeDefined();
+    shadowSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['shadow-portfolios'] }));
   });
 });

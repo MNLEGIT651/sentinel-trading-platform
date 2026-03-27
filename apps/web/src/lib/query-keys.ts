@@ -70,4 +70,11 @@ export const queryKeys = {
     all: ['counterfactuals'] as const,
     list: (limit?: number, offset?: number) => ['counterfactuals', 'list', limit, offset] as const,
   },
+
+  // ── Shadow Portfolios ─────────────────────────────────────────────
+  shadowPortfolios: {
+    all: ['shadow-portfolios'] as const,
+    list: () => ['shadow-portfolios', 'list'] as const,
+    detail: (id: string) => ['shadow-portfolios', 'detail', id] as const,
+  },
 } as const;
