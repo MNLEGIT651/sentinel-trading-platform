@@ -1,3 +1,4 @@
+import hmac
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -45,7 +46,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
             provided = auth[7:]
         if not provided:
             provided = request.headers.get("X-API-Key", "")
-        if provided != self._api_key:
+        if not provided or not hmac.compare_digest(provided, self._api_key):
             return JSONResponse(
                 status_code=401,
                 content={"error": "unauthorized", "detail": "Invalid or missing API key"},

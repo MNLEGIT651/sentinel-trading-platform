@@ -98,11 +98,11 @@ async function readUpstreamErrorMessage(response: Response, fallback: string): P
   const contentType = response.headers.get('content-type') ?? '';
 
   if (contentType.includes('application/json')) {
-    const json = await response.json().catch(() => null);
+    const json = await response.json().catch((err: unknown) => { console.warn('[service-proxy] Failed to parse upstream JSON response:', (err as Error)?.message); return null; });
     return extractErrorMessage(json, fallback);
   }
 
-  const text = await response.text().catch(() => '');
+  const text = await response.text().catch((err: unknown) => { console.warn('[service-proxy] Failed to read upstream text response:', (err as Error)?.message); return ''; });
   return extractErrorMessage(text, fallback);
 }
 

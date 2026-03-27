@@ -18,7 +18,7 @@ interface AgentStatusInfo {
 }
 
 interface AgentStatusCardProps {
-  role: string;
+  agentRole: string;
   name: string;
   description: string;
   icon: React.ElementType;
@@ -29,7 +29,7 @@ interface AgentStatusCardProps {
 }
 
 export function AgentStatusCard({
-  role,
+  agentRole,
   name,
   description,
   icon: Icon,
@@ -76,7 +76,7 @@ export function AgentStatusCard({
             </div>
           </div>
           <Badge className={cn('border text-[10px] shrink-0', badgeClass)}>
-            {role.replace(/_/g, ' ')}
+            {agentRole.replace(/_/g, ' ')}
           </Badge>
         </div>
       </CardHeader>
