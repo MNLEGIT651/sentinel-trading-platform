@@ -21,6 +21,7 @@ const mockOrchestrator = {
     },
     cycleCount: 3,
     halted: false,
+    lastCycleAt: null,
   },
   runCycle: vi.fn().mockResolvedValue([]),
   halt: vi.fn(),
@@ -49,6 +50,21 @@ vi.mock('../src/engine-client.js', () => ({
       .fn()
       .mockResolvedValue({ order_id: 'alpaca-123', status: 'filled', fill_price: 180 }),
   })),
+}));
+
+// Mock lock manager — distributed lock backed by Supabase
+const mockLockManager = {
+  acquire: vi.fn().mockResolvedValue(true),
+  release: vi.fn().mockResolvedValue(true),
+  isHeld: vi.fn().mockResolvedValue(false),
+  shutdown: vi.fn(),
+  holderId: 'test-holder',
+};
+
+vi.mock('../src/lock-manager.js', () => ({
+  getLockManager: () => mockLockManager,
+  resetLockManager: vi.fn(),
+  LockManager: vi.fn(),
 }));
 
 // Route behavior is tested here; auth middleware behavior is covered separately.
@@ -83,19 +99,33 @@ describe('GET /status', () => {
 });
 
 describe('POST /cycle', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLockManager.acquire.mockResolvedValue(true);
+    mockLockManager.release.mockResolvedValue(true);
+    mockLockManager.isHeld.mockResolvedValue(false);
+    mockOrchestrator.currentState.halted = false;
+  });
 
   it('returns 200 and fires cycle', async () => {
     const res = await request(app).post('/cycle');
     expect(res.status).toBe(200);
     expect(res.body.started).toBe(true);
+    expect(mockLockManager.acquire).toHaveBeenCalledWith('agent_cycle');
   });
 
   it('returns 409 when halted', async () => {
     mockOrchestrator.currentState.halted = true;
     const res = await request(app).post('/cycle');
     expect(res.status).toBe(409);
-    mockOrchestrator.currentState.halted = false;
+    expect(mockLockManager.acquire).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when lock cannot be acquired (cycle already running)', async () => {
+    mockLockManager.acquire.mockResolvedValue(false);
+    const res = await request(app).post('/cycle');
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('cycle_in_progress');
   });
 });
 

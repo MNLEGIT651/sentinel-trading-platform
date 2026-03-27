@@ -19,6 +19,7 @@ import { createApp, isRunning } from './server.js';
 import { startScheduler } from './scheduler.js';
 import { AGENTS_ENV_GUIDANCE, REQUIRED_AGENT_ENV_VARS, getMissingAgentEnvVars } from './env.js';
 import { logger } from './logger.js';
+import { getLockManager } from './lock-manager.js';
 
 // Re-export public API for consumers that import this package
 export { Agent } from './agent.js';
@@ -87,6 +88,7 @@ async function main() {
   const shutdown = (signal: string) => {
     logger.info('boot.shutdown.start', { signal });
     schedulerTask.stop();
+    getLockManager().shutdown();
     server.close(() => {
       logger.info('boot.shutdown.complete');
       process.exit(0);
