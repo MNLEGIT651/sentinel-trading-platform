@@ -5,13 +5,13 @@ import { queryKeys } from '@/lib/query-keys';
 import type { JournalEntry } from '@sentinel/shared';
 
 export interface JournalFilters {
-  event_type?: string;
-  ticker?: string;
-  grade?: string;
-  from?: string;
-  to?: string;
-  limit?: number;
-  offset?: number;
+  event_type?: string | undefined;
+  ticker?: string | undefined;
+  grade?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
 }
 
 interface JournalResponse {
