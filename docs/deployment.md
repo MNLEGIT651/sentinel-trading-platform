@@ -20,6 +20,25 @@ agents  -> engine, Supabase, Anthropic
 - **Docker Compose** is local development only. Not a production path.
 - The browser never calls backend services directly. All backend traffic flows through same-origin `/api/engine/*` and `/api/agents/*` route handlers.
 
+### Railway Private Networking
+
+Services on the same Railway project can communicate over an internal private network using `<service>.railway.internal` hostnames. This is faster (no public internet round-trip) and more secure (traffic never leaves Railway's network).
+
+**How it works:**
+
+- Engine and Agents both run on Railway, so Agents → Engine calls use the private network.
+- Vercel (Web) is outside Railway, so Web → Engine and Web → Agents must use public Railway URLs.
+
+**Environment variable configuration:**
+
+| Service          | Variable     | Value                                                          | Network  |
+| ---------------- | ------------ | -------------------------------------------------------------- | -------- |
+| Railway Agents   | `ENGINE_URL` | `http://sentinel-engine-trading.railway.internal:8000`         | Private  |
+| Vercel Web       | `ENGINE_URL` | `https://<engine>.up.railway.app`                              | Public   |
+| Vercel Web       | `AGENTS_URL` | `https://<agents>.up.railway.app`                              | Public   |
+
+> **Note:** Private network hostnames use `http` (not `https`) and the Railway-assigned `PORT`. Public URLs use `https` and do not need a port suffix.
+
 ## Environment Ownership by Runtime
 
 ### Vercel (apps/web) -- Browser-Safe
