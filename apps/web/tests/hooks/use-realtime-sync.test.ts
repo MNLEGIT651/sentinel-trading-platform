@@ -82,6 +82,7 @@ describe('useRealtimeSync', () => {
       'signals',
       'market_data',
       'user_trading_policy',
+      'decision_journal',
     ];
 
     // One channel per table
@@ -99,7 +100,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(6);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(7);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -174,5 +175,18 @@ describe('useRealtimeSync', () => {
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ['portfolio', 'account'] }),
     );
+  });
+
+  it('invalidates journal queries when decision_journal changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const journalSub = subscriptions.find((s) => s.table === 'decision_journal');
+    expect(journalSub).toBeDefined();
+    journalSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['journal'] }));
   });
 });

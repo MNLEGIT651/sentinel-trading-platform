@@ -46,6 +46,15 @@ export const queryKeys = {
     serviceStatus: () => ['settings', 'service-status'] as const,
   },
 
+  // ── Journal ──────────────────────────────────────────────────────────
+  journal: {
+    all: ['journal'] as const,
+    entries: (filters?: Record<string, string | number | undefined>) =>
+      ['journal', 'entries', filters] as const,
+    entry: (id: string) => ['journal', 'entry', id] as const,
+    stats: () => ['journal', 'stats'] as const,
+  },
+
   health: {
     all: ['health'] as const,
     engine: () => ['health', 'engine'] as const,

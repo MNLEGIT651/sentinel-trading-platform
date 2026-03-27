@@ -617,3 +617,79 @@ export interface LatestPrices {
   /** ISO 8601 timestamp when this snapshot was assembled by the engine. */
   as_of: string;
 }
+
+// ─── Decision Journal ───────────────────────────────────────────────
+
+/** Event types tracked in the decision journal. */
+export type JournalEventType =
+  | 'recommendation'
+  | 'approval'
+  | 'rejection'
+  | 'fill'
+  | 'risk_block'
+  | 'cancellation'
+  | 'policy_change'
+  | 'manual_note';
+
+/** User-assigned trade grade for post-trade review. */
+export type TradeGrade = 'excellent' | 'good' | 'neutral' | 'bad' | 'terrible';
+
+/**
+ * A single decision journal entry — captures a moment in the trading
+ * decision lifecycle along with market context, agent reasoning, and
+ * optional post-trade outcome.
+ *
+ * Mirrors the `decision_journal` table in Supabase.
+ */
+export interface JournalEntry {
+  id: string;
+  user_id: string;
+  event_type: JournalEventType;
+  ticker: string | null;
+  direction: string | null;
+  quantity: number | null;
+  price: number | null;
+  agent_name: string | null;
+  reasoning: string | null;
+  confidence: number | null;
+  strategy_name: string | null;
+  market_regime: string | null;
+  vix_at_time: number | null;
+  sector: string | null;
+  recommendation_id: string | null;
+  order_id: string | null;
+  signal_id: string | null;
+  user_notes: string | null;
+  user_grade: TradeGrade | null;
+  outcome_pnl: number | null;
+  outcome_return_pct: number | null;
+  outcome_hold_minutes: number | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  graded_at: string | null;
+}
+
+/** Fields the client can provide when creating a journal entry. */
+export type JournalEntryCreate = Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'graded_at'>;
+
+/** Fields the client can update (annotations + outcome grading). */
+export interface JournalEntryUpdate {
+  user_notes?: string;
+  user_grade?: TradeGrade;
+  outcome_pnl?: number;
+  outcome_return_pct?: number;
+  outcome_hold_minutes?: number;
+}
+
+/** Aggregate stats for the journal, computed from the journal_stats view. */
+export interface JournalStats {
+  total_entries: number;
+  approvals: number;
+  rejections: number;
+  fills: number;
+  risk_blocks: number;
+  graded: number;
+  avg_return_pct: number | null;
+  winning_trades: number;
+  losing_trades: number;
+}
