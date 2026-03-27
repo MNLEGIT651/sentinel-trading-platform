@@ -64,4 +64,10 @@ export const queryKeys = {
     engine: () => ['health', 'engine'] as const,
     agents: () => ['health', 'agents'] as const,
   },
+
+  // ── Counterfactuals ─────────────────────────────────────────────────
+  counterfactuals: {
+    all: ['counterfactuals'] as const,
+    list: (limit?: number, offset?: number) => ['counterfactuals', 'list', limit, offset] as const,
+  },
 } as const;
