@@ -7,7 +7,7 @@ describe('AgentStatusCard', () => {
   it('renders agent name', () => {
     render(
       <AgentStatusCard
-        role="market_analyst"
+        agentRole="market_analyst"
         name="Market Analyst"
         description="Analyzes market conditions and trends."
         icon={Bot}
@@ -22,7 +22,7 @@ describe('AgentStatusCard', () => {
   it('renders agent role badge', () => {
     render(
       <AgentStatusCard
-        role="market_analyst"
+        agentRole="market_analyst"
         name="Market Analyst"
         description="Analyzes market conditions and trends."
         icon={Bot}
