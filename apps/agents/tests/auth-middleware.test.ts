@@ -20,8 +20,10 @@ function makeMocks() {
 }
 
 function makeReq(authHeader?: string): Request {
+  const headers: Record<string, string> = authHeader ? { authorization: authHeader } : {};
   return {
-    headers: authHeader ? { authorization: authHeader } : {},
+    headers,
+    get: (name: string) => headers[name.toLowerCase()],
   } as unknown as Request;
 }
 

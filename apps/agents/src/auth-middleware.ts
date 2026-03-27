@@ -35,7 +35,8 @@ export async function authMiddleware(
     return;
   }
 
-  const authHeader = req.headers['authorization'];
+  // req.get() always returns string | undefined, never string[]
+  const authHeader = req.get('authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'unauthorized', message: 'Missing bearer token' });
@@ -46,10 +47,10 @@ export async function authMiddleware(
 
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify<JWTPayload>(token, secret);
+    const { payload } = await jwtVerify<JWTPayload>(token, secret, { algorithms: ['HS256'] });
 
     // Attach the decoded payload to the request for downstream handlers.
-    (req as Request & { user: JWTPayload }).user = payload;
+    req.user = payload;
 
     next();
   } catch {

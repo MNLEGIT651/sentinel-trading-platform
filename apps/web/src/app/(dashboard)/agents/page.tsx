@@ -152,8 +152,8 @@ export default function AgentsPage() {
         </div>
       </div>
 
-      {/* Offline guidance */}
-      {isOffline && (
+      {/* Offline guidance — only when the service is confirmed unreachable */}
+      {agentsOnline === false && (
         <Card className="bg-muted/30 border-border/50">
           <CardContent className="flex items-start gap-3 py-4 px-4">
             <Bot className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />

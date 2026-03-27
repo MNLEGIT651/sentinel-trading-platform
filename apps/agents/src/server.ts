@@ -149,22 +149,23 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Recommendations ─────────────────────────────────────────────
 
-  const VALID_REC_STATUSES = new Set([
+  const VALID_REC_STATUSES = [
     'pending',
     'approved',
     'rejected',
     'filled',
     'risk_blocked',
     'all',
-  ]);
+  ] as const;
+  const VALID_REC_STATUS_SET = new Set<string>(VALID_REC_STATUSES);
 
   app.get('/recommendations', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const status = (req.query.status as string) ?? 'pending';
-      if (!VALID_REC_STATUSES.has(status)) {
+      if (!VALID_REC_STATUS_SET.has(status)) {
         return res.status(400).json({
           error: 'invalid_status',
-          message: `status must be one of: ${[...VALID_REC_STATUSES].join(', ')}`,
+          message: `status must be one of: ${VALID_REC_STATUSES.join(', ')}`,
         });
       }
       const recommendations = await listRecommendations(status);
