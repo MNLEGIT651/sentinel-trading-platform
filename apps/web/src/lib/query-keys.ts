@@ -77,4 +77,12 @@ export const queryKeys = {
     list: () => ['shadow-portfolios', 'list'] as const,
     detail: (id: string) => ['shadow-portfolios', 'detail', id] as const,
   },
+
+  // ── Regime ──────────────────────────────────────────────────────────
+  regime: {
+    all: ['regime'] as const,
+    state: () => ['regime', 'state'] as const,
+    playbooks: () => ['regime', 'playbooks'] as const,
+    playbook: (id: string) => ['regime', 'playbooks', id] as const,
+  },
 } as const;

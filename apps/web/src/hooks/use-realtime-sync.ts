@@ -23,6 +23,8 @@ const TABLE_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
   strategy_health_snapshots: [queryKeys.strategies.health.all(), queryKeys.strategies.all],
   agent_recommendations: [queryKeys.agents.all, queryKeys.counterfactuals.all],
   shadow_portfolios: [queryKeys.shadowPortfolios.all],
+  market_regime_history: [queryKeys.regime.all],
+  regime_playbooks: [queryKeys.regime.all],
 };
 
 const SUBSCRIBED_TABLES = Object.keys(TABLE_INVALIDATION_MAP);

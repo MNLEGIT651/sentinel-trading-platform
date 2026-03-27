@@ -86,6 +86,8 @@ describe('useRealtimeSync', () => {
       'strategy_health_snapshots',
       'agent_recommendations',
       'shadow_portfolios',
+      'market_regime_history',
+      'regime_playbooks',
     ];
 
     // One channel per table
@@ -103,7 +105,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(10);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(12);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -234,5 +236,31 @@ describe('useRealtimeSync', () => {
     shadowSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['shadow-portfolios'] }));
+  });
+
+  it('invalidates regime queries when market_regime_history changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const regimeSub = subscriptions.find((s) => s.table === 'market_regime_history');
+    expect(regimeSub).toBeDefined();
+    regimeSub!.callback({ eventType: 'INSERT', new: { id: '1', regime: 'bull' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['regime'] }));
+  });
+
+  it('invalidates regime queries when regime_playbooks changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const playbookSub = subscriptions.find((s) => s.table === 'regime_playbooks');
+    expect(playbookSub).toBeDefined();
+    playbookSub!.callback({ eventType: 'UPDATE', new: { id: '1', is_active: true }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['regime'] }));
   });
 });
