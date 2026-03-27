@@ -74,6 +74,7 @@ export class Orchestrator {
   private executor: ToolExecutor;
   private cycleInterval: ReturnType<typeof setInterval> | null = null;
   private cycleSequence: AgentRole[];
+  private cycleInProgress = false;
 
   constructor(options?: {
     apiKey?: string;
@@ -116,7 +117,10 @@ export class Orchestrator {
     try {
       const cycle = loadCycle();
       this.cycleSequence = cycle.sequence;
-    } catch {
+    } catch (err) {
+      logger.warn('orchestrator.workflow.fallback', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       this.cycleSequence = [
         'market_sentinel',
         'strategy_analyst',
@@ -134,35 +138,45 @@ export class Orchestrator {
    * Run a single trading cycle: market → strategy → risk → execute.
    */
   async runCycle(): Promise<AgentResult[]> {
+    if (this.cycleInProgress) {
+      logger.warn('orchestrator.cycle.skipped', { reason: 'in_progress' });
+      return [];
+    }
+
     if (this.state.halted) {
       logger.warn('orchestrator.cycle.skipped', { reason: 'halted' });
       return [];
     }
 
-    this.state.cycleCount++;
-    const results: AgentResult[] = [];
-    logger.info('orchestrator.cycle.start', { cycleCount: this.state.cycleCount });
+    this.cycleInProgress = true;
+    try {
+      this.state.cycleCount++;
+      const results: AgentResult[] = [];
+      logger.info('orchestrator.cycle.start', { cycleCount: this.state.cycleCount });
 
-    for (const role of this.cycleSequence) {
-      if (this.state.halted && role === 'execution_monitor') {
-        logger.warn('orchestrator.agent.skipped', { role, reason: 'halted' });
-        continue;
+      for (const role of this.cycleSequence) {
+        if (this.state.halted) {
+          logger.warn('orchestrator.agent.skipped', { role, reason: 'halted' });
+          continue;
+        }
+        const result = await this.runAgent(
+          role,
+          DEFAULT_AGENT_PROMPTS[role] ?? `Execute ${role} workflow.`,
+        );
+        results.push(result);
       }
-      const result = await this.runAgent(
-        role,
-        DEFAULT_AGENT_PROMPTS[role] ?? `Execute ${role} workflow.`,
-      );
-      results.push(result);
-    }
 
-    const successCount = results.filter((r) => r.success).length;
-    logger.info('orchestrator.cycle.complete', {
-      cycleCount: this.state.cycleCount,
-      successCount,
-      totalCount: results.length,
-    });
-    this.state.lastCycleAt = new Date().toISOString();
-    return results;
+      const successCount = results.filter((r) => r.success).length;
+      logger.info('orchestrator.cycle.complete', {
+        cycleCount: this.state.cycleCount,
+        successCount,
+        totalCount: results.length,
+      });
+      this.state.lastCycleAt = new Date().toISOString();
+      return results;
+    } finally {
+      this.cycleInProgress = false;
+    }
   }
 
   /**

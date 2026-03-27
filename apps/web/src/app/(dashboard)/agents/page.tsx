@@ -228,7 +228,7 @@ export default function AgentsPage() {
           return (
             <AgentStatusCard
               key={agent.role}
-              role={agent.role}
+              agentRole={agent.role}
               name={agent.name}
               description={agent.description}
               icon={agent.icon}

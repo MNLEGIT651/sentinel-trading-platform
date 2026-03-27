@@ -13,8 +13,6 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-    // Cap fork workers to avoid resource exhaustion on Windows
-    pool: 'forks',
-    maxForks: 4,
+    pool: 'threads',
   },
 });

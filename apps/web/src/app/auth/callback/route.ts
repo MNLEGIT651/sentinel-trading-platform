@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+/** Ensure the redirect target is a safe, same-origin path. */
+function sanitizeRedirectPath(next: string | null): string {
+  if (!next) return '/';
+  if (!next.startsWith('/')) return '/';
+  if (next.includes('//') || next.includes('://') || next.includes('\\')) return '/';
+  return next;
+}
+
 /**
  * Supabase auth callback handler.
  * Handles email confirmation links and OAuth redirects by exchanging the
@@ -9,13 +17,13 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
+  const safePath = sanitizeRedirectPath(searchParams.get('next'));
 
   if (code) {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${origin}${safePath}`);
     }
   }
 

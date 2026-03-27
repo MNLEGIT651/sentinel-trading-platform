@@ -3,6 +3,7 @@
  */
 
 import { EngineClient } from './engine-client.js';
+import { logger } from './logger.js';
 import {
   createRecommendation,
   createAlert as dbCreateAlert,
@@ -66,8 +67,12 @@ export class ToolExecutor {
     // Ingest is best-effort — don't fail if Supabase isn't available
     try {
       await this.engine.ingestData(tickers, timeframe);
-    } catch {
-      // ignore ingest errors
+    } catch (err) {
+      logger.warn('tool.ingest.failed', {
+        error: err instanceof Error ? err.message : String(err),
+        tickers,
+        timeframe,
+      });
     }
 
     const quotes = await this.engine.getQuotes(tickers);
