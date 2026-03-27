@@ -19,6 +19,12 @@ export { useJournalStatsQuery } from './use-journal-stats-query';
 export { useStrategyHealthQuery, useStrategyHealthDetailQuery } from './use-strategy-health-query';
 export { useRiskPreviewQuery } from './use-risk-preview-query';
 export type { PolicyImpact, RiskPreview } from './use-risk-preview-query';
+export { useCounterfactualsQuery } from './use-counterfactuals-query';
+export type {
+  CounterfactualResult,
+  CounterfactualStats,
+  CounterfactualsResponse,
+} from './use-counterfactuals-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';

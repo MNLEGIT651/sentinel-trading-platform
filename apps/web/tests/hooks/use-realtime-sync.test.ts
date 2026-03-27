@@ -84,6 +84,7 @@ describe('useRealtimeSync', () => {
       'user_trading_policy',
       'decision_journal',
       'strategy_health_snapshots',
+      'agent_recommendations',
     ];
 
     // One channel per table
@@ -101,7 +102,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(8);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(9);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -205,5 +206,19 @@ describe('useRealtimeSync', () => {
       expect.objectContaining({ queryKey: ['strategies', 'health'] }),
     );
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['strategies'] }));
+  });
+
+  it('invalidates agents and counterfactuals queries when agent_recommendations changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const recsSub = subscriptions.find((s) => s.table === 'agent_recommendations');
+    expect(recsSub).toBeDefined();
+    recsSub!.callback({ eventType: 'UPDATE', new: { id: '1', status: 'rejected' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['agents'] }));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['counterfactuals'] }));
   });
 });
