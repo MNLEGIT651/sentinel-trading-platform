@@ -31,6 +31,7 @@ jobs:
     name: Verify Deployment Health
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: ${{ github.event.client_payload.environment || inputs.environment || 'preview' }}
     env:
       DEPLOYMENT_URL: ${{ github.event.client_payload.url || inputs.deployment_url }}
       EXPECTED_ENVIRONMENT: ${{ github.event.client_payload.environment || inputs.environment || 'preview' }}
