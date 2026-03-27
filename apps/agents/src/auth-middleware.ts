@@ -1,0 +1,46 @@
+/**
+ * JWT authentication middleware for the Sentinel Agent HTTP server.
+ *
+ * Validates the `Authorization: Bearer <token>` header forwarded by the
+ * Next.js API proxy. The token is a Supabase access token — we verify its
+ * signature using the project's JWT secret (HS256).
+ *
+ * Public routes (/health, /status) bypass this middleware entirely; the
+ * proxy skips token injection for those paths.
+ */
+
+import type { Request, Response, NextFunction } from 'express';
+import { jwtVerify, type JWTPayload } from 'jose';
+
+const JWT_SECRET = process.env.SUPABASE_JWT_SECRET ?? '';
+
+/**
+ * Express middleware that enforces bearer-token authentication.
+ * Rejects with 401 when the token is absent, expired, or invalid.
+ */
+export async function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const authHeader = req.headers['authorization'];
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'unauthorized', message: 'Missing bearer token' });
+    return;
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+
+  try {
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify<JWTPayload>(token, secret);
+
+    // Attach the decoded payload to the request for downstream handlers.
+    (req as Request & { user: JWTPayload }).user = payload;
+
+    next();
+  } catch {
+    res.status(401).json({ error: 'unauthorized', message: 'Invalid or expired token' });
+  }
+}

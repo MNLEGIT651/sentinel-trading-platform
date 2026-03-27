@@ -28,6 +28,7 @@ import {
 import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
 import { getLockManager } from './lock-manager.js';
+import { authMiddleware } from './auth-middleware.js';
 
 const CYCLE_LOCK_NAME = 'agent_cycle';
 
@@ -54,6 +55,13 @@ export function createApp(orchestrator: Orchestrator): Express {
     }),
   );
   app.use(express.json());
+
+  // ── Auth (all routes except /health and /status) ─────────────────
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const publicPaths = ['/health', '/status'];
+    if (publicPaths.includes(req.path)) return next();
+    return authMiddleware(req, res, next);
+  });
 
   // ── Health ──────────────────────────────────────────────────────
 
