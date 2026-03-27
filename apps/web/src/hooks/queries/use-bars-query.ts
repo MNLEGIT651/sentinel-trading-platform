@@ -19,7 +19,7 @@ export function useBarsQuery(ticker: string, timeframe = '1d', days = 90) {
   const engineOnline = useAppStore((s) => s.engineOnline);
 
   return useQuery({
-    queryKey: queryKeys.data.bars(ticker, timeframe),
+    queryKey: queryKeys.data.bars(ticker, timeframe, days),
     queryFn: () => fetchBars(ticker, timeframe, days),
     enabled: engineOnline === true && !!ticker,
     staleTime: 60_000,

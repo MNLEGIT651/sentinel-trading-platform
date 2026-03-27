@@ -21,7 +21,8 @@ export const queryKeys = {
   data: {
     all: ['data'] as const,
     quotes: (tickers: string[]) => ['data', 'quotes', ...tickers.sort()] as const,
-    bars: (ticker: string, timeframe: string) => ['data', 'bars', ticker, timeframe] as const,
+    bars: (ticker: string, timeframe: string, days?: number) =>
+      ['data', 'bars', ticker, timeframe, days] as const,
   },
 
   // ── Agents ───────────────────────────────────────────────────────────

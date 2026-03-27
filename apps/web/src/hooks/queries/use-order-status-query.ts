@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import { queryKeys } from '@/lib/query-keys';
@@ -34,25 +35,29 @@ export function useOrderStatusQuery(
   opts?: { onSettled?: (order: OrderStatus) => void },
 ) {
   const queryClient = useQueryClient();
+  const settledRef = useRef(false);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.portfolio.orders.single(orderId ?? '__none__'),
-    queryFn: async () => {
-      const order = await fetchOrderStatus(orderId!);
-      if (TERMINAL_STATUSES.has(order.status)) {
-        // Invalidate portfolio data when order settles
-        queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.account() });
-        queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.positions() });
-        queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.orders.all() });
-        opts?.onSettled?.(order);
-      }
-      return order;
-    },
+    queryFn: () => fetchOrderStatus(orderId!),
     enabled: !!orderId,
-    refetchInterval: (query) => {
-      const data = query.state.data;
+    refetchInterval: (q) => {
+      const data = q.state.data;
       if (data && TERMINAL_STATUSES.has(data.status)) return false;
       return 2_000;
     },
   });
+
+  // Invalidate related caches when order reaches terminal state
+  useEffect(() => {
+    if (query.data && TERMINAL_STATUSES.has(query.data.status) && !settledRef.current) {
+      settledRef.current = true;
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.account() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.positions() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.orders.all() });
+      opts?.onSettled?.(query.data);
+    }
+  }, [query.data, queryClient, opts]);
+
+  return query;
 }

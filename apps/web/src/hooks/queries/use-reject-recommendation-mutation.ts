@@ -10,7 +10,7 @@ export function useRejectRecommendationMutation() {
   return useMutation({
     mutationFn: (id: string) => agentsClient.rejectRecommendation(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.agents.recommendations() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agents.all });
     },
   });
 }
