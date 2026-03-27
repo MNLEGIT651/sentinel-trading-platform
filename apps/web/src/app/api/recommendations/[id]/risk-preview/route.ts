@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
+import { getServiceConfig } from '@/lib/server/service-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,21 +65,29 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   let account: AccountInfo | null = null;
   let positions: Position[] = [];
 
-  try {
-    const [acctRes, posRes] = await Promise.all([
-      fetch(`${engineUrl()}/api/v1/portfolio/account`, { headers: engineHeaders() }),
-      fetch(`${engineUrl()}/api/v1/portfolio/positions`, { headers: engineHeaders() }),
-    ]);
+  const engineConfig = getServiceConfig('engine');
 
-    if (acctRes.ok) {
-      account = await acctRes.json();
+  if (engineConfig.configured && engineConfig.baseUrl) {
+    try {
+      const [acctRes, posRes] = await Promise.all([
+        fetch(`${engineConfig.baseUrl}/api/v1/portfolio/account`, {
+          headers: engineConfig.headers,
+        }),
+        fetch(`${engineConfig.baseUrl}/api/v1/portfolio/positions`, {
+          headers: engineConfig.headers,
+        }),
+      ]);
+
+      if (acctRes.ok) {
+        account = await acctRes.json();
+      }
+      if (posRes.ok) {
+        const posData = await posRes.json();
+        positions = Array.isArray(posData) ? posData : (posData.positions ?? []);
+      }
+    } catch {
+      // Engine unavailable — compute with fallback values
     }
-    if (posRes.ok) {
-      const posData = await posRes.json();
-      positions = Array.isArray(posData) ? posData : (posData.positions ?? []);
-    }
-  } catch {
-    // Engine unavailable — compute with fallback values
   }
 
   const equity = account?.equity ?? 100_000;
