@@ -3,6 +3,11 @@
  * Used by agents to interact with the quant engine.
  */
 
+import { logger } from './logger.js';
+
+const DEFAULT_READ_TIMEOUT_MS = 10_000;
+const DEFAULT_MUTATION_TIMEOUT_MS = 15_000;
+
 export interface EngineHealth {
   status: string;
   engine: string;
@@ -64,35 +69,106 @@ export class EngineClient {
     this.apiKey = apiKey;
   }
 
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-        ...options?.headers,
-      },
-    });
+  private headers(extra?: HeadersInit): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${this.apiKey}`,
+      ...(extra as Record<string, string>),
+    };
+  }
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`Engine API error ${res.status}: ${body}`);
+  /** Plain fetch with timeout — used for non-idempotent (POST) requests. */
+  private async fetchWithTimeout(
+    url: string,
+    init: RequestInit,
+    timeoutMs: number,
+  ): Promise<Response> {
+    try {
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) throw new Error(`Engine error: ${res.status}`);
+      return res;
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith('Engine error:')) throw err;
+      if (err instanceof DOMException && err.name === 'TimeoutError') {
+        throw new Error(
+          `Engine timed out after ${timeoutMs}ms: ${init.method ?? 'GET'} ${url}`,
+        );
+      }
+      throw new Error(`Engine unreachable: ${(err as Error).message}`);
     }
+  }
 
+  /** Fetch with timeout + retry on transient failures — used for idempotent GET requests. */
+  private async fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    timeoutMs: number,
+    retries = 1,
+  ): Promise<Response> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+        if (res.ok) return res;
+        if (attempt < retries && [502, 503, 504].includes(res.status)) {
+          logger.warn('engine.retry', { url, status: res.status, attempt: attempt + 1 });
+          await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+          continue;
+        }
+        throw new Error(`Engine error: ${res.status}`);
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith('Engine error:')) throw err;
+        if (attempt < retries) {
+          logger.warn('engine.retry', {
+            url,
+            error: (err as Error).message,
+            attempt: attempt + 1,
+          });
+          await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+          continue;
+        }
+        if (err instanceof DOMException && err.name === 'TimeoutError') {
+          throw new Error(
+            `Engine timed out after ${timeoutMs}ms: ${init.method ?? 'GET'} ${url}`,
+          );
+        }
+        throw new Error(`Engine unreachable: ${(err as Error).message}`);
+      }
+    }
+    throw new Error('Engine request failed after all retries');
+  }
+
+  /** GET request with retry and read timeout. */
+  private async get<T>(path: string): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    const res = await this.fetchWithRetry(
+      url,
+      { method: 'GET', headers: this.headers() },
+      DEFAULT_READ_TIMEOUT_MS,
+    );
+    return res.json() as Promise<T>;
+  }
+
+  /** POST request with mutation timeout (no retry). */
+  private async post<T>(path: string, body: unknown): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    const res = await this.fetchWithTimeout(
+      url,
+      { method: 'POST', headers: this.headers(), body: JSON.stringify(body) },
+      DEFAULT_MUTATION_TIMEOUT_MS,
+    );
     return res.json() as Promise<T>;
   }
 
   async getHealth(): Promise<EngineHealth> {
-    return this.request<EngineHealth>('/health');
+    return this.get<EngineHealth>('/health');
   }
 
   async getStrategies(): Promise<StrategiesResponse> {
-    return this.request<StrategiesResponse>('/api/v1/strategies/');
+    return this.get<StrategiesResponse>('/api/v1/strategies/');
   }
 
   async getRiskLimits(): Promise<RiskLimits> {
-    return this.request<RiskLimits>('/api/v1/risk/limits');
+    return this.get<RiskLimits>('/api/v1/risk/limits');
   }
 
   async assessRisk(state: {
@@ -103,10 +179,7 @@ export class EngineClient {
     positions: Record<string, number>;
     position_sectors: Record<string, string>;
   }): Promise<RiskAssessmentResponse> {
-    return this.request<RiskAssessmentResponse>('/api/v1/risk/assess', {
-      method: 'POST',
-      body: JSON.stringify(state),
-    });
+    return this.post<RiskAssessmentResponse>('/api/v1/risk/assess', state);
   }
 
   async calculatePositionSize(params: {
@@ -117,16 +190,13 @@ export class EngineClient {
     risk_fraction?: number;
     atr?: number;
   }): Promise<PositionSizeResponse> {
-    return this.request<PositionSizeResponse>('/api/v1/risk/position-size', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.post<PositionSizeResponse>('/api/v1/risk/position-size', params);
   }
 
   async ingestData(tickers: string[], timeframe = '1d') {
-    return this.request<{ ingested: number; errors: string[] }>('/api/v1/data/ingest', {
-      method: 'POST',
-      body: JSON.stringify({ tickers, timeframe }),
+    return this.post<{ ingested: number; errors: string[] }>('/api/v1/data/ingest', {
+      tickers,
+      timeframe,
     });
   }
 
@@ -141,7 +211,7 @@ export class EngineClient {
     status?: string;
     account_id?: string;
   }> {
-    return this.request('/api/v1/portfolio/account');
+    return this.get('/api/v1/portfolio/account');
   }
 
   async getPositions(): Promise<
@@ -154,7 +224,7 @@ export class EngineClient {
       current_price?: number;
     }>
   > {
-    return this.request('/api/v1/portfolio/positions');
+    return this.get('/api/v1/portfolio/positions');
   }
 
   async submitOrder(params: {
@@ -171,14 +241,11 @@ export class EngineClient {
     fill_quantity?: number;
     risk_note?: string;
   }> {
-    return this.request('/api/v1/portfolio/orders', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.post('/api/v1/portfolio/orders', params);
   }
 
   async getOpenOrders(): Promise<unknown[]> {
-    return this.request('/api/v1/portfolio/orders?status=open');
+    return this.get('/api/v1/portfolio/orders?status=open');
   }
 
   // ── Strategies ─────────────────────────────────────────────────
@@ -208,7 +275,7 @@ export class EngineClient {
     const body = Array.isArray(params)
       ? { tickers: params, days: 90, min_strength: 0.3 }
       : { days: 90, min_strength: 0.3, ...params };
-    return this.request('/api/v1/strategies/scan', { method: 'POST', body: JSON.stringify(body) });
+    return this.post('/api/v1/strategies/scan', body);
   }
 
   // ── Data ───────────────────────────────────────────────────────
@@ -225,7 +292,7 @@ export class EngineClient {
       timestamp: string;
     }>
   > {
-    return this.request(`/api/v1/data/quotes?tickers=${tickers.join(',')}`);
+    return this.get(`/api/v1/data/quotes?tickers=${tickers.join(',')}`);
   }
 
   // ── Risk ───────────────────────────────────────────────────────
@@ -247,9 +314,6 @@ export class EngineClient {
     reason: string;
     adjusted_shares: number | null;
   }> {
-    return this.request('/api/v1/risk/pre-trade-check', {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return this.post('/api/v1/risk/pre-trade-check', params);
   }
 }

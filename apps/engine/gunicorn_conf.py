@@ -13,7 +13,8 @@ backlog = 2048
 
 # Worker processes
 # Formula: (2 x CPU cores) + 1 is a good default for I/O-bound apps
-workers = int(os.getenv("WORKERS", multiprocessing.cpu_count() * 2 + 1))
+# Railway sets WEB_CONCURRENCY automatically based on container resources
+workers = int(os.getenv("WEB_CONCURRENCY", os.getenv("WORKERS", multiprocessing.cpu_count() * 2 + 1)))
 worker_class = "uvicorn.workers.UvicornWorker"
 worker_connections = 1000
 max_requests = 1000  # Restart workers after N requests to prevent memory leaks
