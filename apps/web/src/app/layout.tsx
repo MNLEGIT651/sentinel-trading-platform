@@ -3,6 +3,7 @@ import { JetBrains_Mono, DM_Sans } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from '@/components/ui/sonner';
+import { QueryProvider } from '@/components/providers/query-provider';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -32,7 +33,7 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
-        {children}
+        <QueryProvider>{children}</QueryProvider>
         <Toaster />
         <Analytics />
         <SpeedInsights />
