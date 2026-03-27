@@ -1,10 +1,51 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { renderWithProviders } from '../test-utils';
 import SettingsPage from '@/app/(dashboard)/settings/page';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/settings',
   useRouter: () => ({ push: vi.fn() }),
+}));
+
+// Mock the trading policy hook so tests don't depend on Supabase
+vi.mock('@/hooks/use-trading-policy', () => ({
+  useTradingPolicy: () => ({
+    policy: {
+      id: 'test-id',
+      user_id: 'test-user',
+      max_position_pct: 5,
+      max_sector_pct: 20,
+      daily_loss_limit_pct: 2,
+      soft_drawdown_pct: 10,
+      hard_drawdown_pct: 15,
+      max_open_positions: 20,
+      paper_trading: true,
+      auto_trading: false,
+      require_confirmation: true,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+    },
+    loading: false,
+    saving: false,
+    error: null,
+    updatePolicy: vi.fn().mockResolvedValue(true),
+  }),
+  policyValue: (policy: Record<string, unknown> | null, key: string) => {
+    if (policy && key in policy) return policy[key];
+    const defaults: Record<string, unknown> = {
+      max_position_pct: 5,
+      max_sector_pct: 20,
+      daily_loss_limit_pct: 2,
+      soft_drawdown_pct: 10,
+      hard_drawdown_pct: 15,
+      max_open_positions: 20,
+      paper_trading: true,
+      auto_trading: false,
+      require_confirmation: true,
+    };
+    return defaults[key];
+  },
 }));
 
 vi.mock('@/components/ui/tabs', async () => {
@@ -63,6 +104,9 @@ const localStorageMock = (() => {
     setItem: (k: string, v: string) => {
       store[k] = v;
     },
+    removeItem: (k: string) => {
+      delete store[k];
+    },
     clear: () => {
       store = {};
     },
@@ -94,17 +138,17 @@ afterEach(() => {
 
 describe('SettingsPage', () => {
   it('renders the settings header', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByText('Settings')).toBeInTheDocument());
   });
 
   it('shows Save Changes button', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByText('Save Changes')).toBeInTheDocument());
   });
 
   it('displays connection status section', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getByText('Service Status')).toBeInTheDocument();
       expect(screen.getByText('Quant Engine (FastAPI)')).toBeInTheDocument();
@@ -116,7 +160,7 @@ describe('SettingsPage', () => {
   });
 
   it('shows tab navigation', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /Risk/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Notifications/i })).toBeInTheDocument();
@@ -124,17 +168,17 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('Save Changes stores to localStorage', async () => {
-    render(<SettingsPage />);
+  it('Save Changes stores notification prefs to localStorage and calls updatePolicy', async () => {
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByText('Save Changes')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByText('Save Changes'));
     });
-    expect(localStorageMock.getItem('sentinel:settings')).not.toBeNull();
+    expect(localStorageMock.getItem('sentinel:notification-prefs')).not.toBeNull();
   });
 
   it('Save Changes shows "Saved" feedback momentarily', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByText('Save Changes')).toBeInTheDocument());
     await act(async () => {
       fireEvent.click(screen.getByText('Save Changes'));
@@ -143,7 +187,7 @@ describe('SettingsPage', () => {
   });
 
   it('can switch to Risk tab', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByRole('tab', { name: /Risk/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('tab', { name: /Risk/i }));
     await waitFor(() => {
@@ -153,7 +197,7 @@ describe('SettingsPage', () => {
   });
 
   it('can switch to Notifications tab', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() =>
       expect(screen.getByRole('tab', { name: /Notifications/i })).toBeInTheDocument(),
     );
@@ -165,7 +209,7 @@ describe('SettingsPage', () => {
   });
 
   it('can switch to Trading tab', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByRole('tab', { name: /Trading/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('tab', { name: /Trading/i }));
     await waitFor(() => {
@@ -175,7 +219,7 @@ describe('SettingsPage', () => {
   });
 
   it('shows system information on Trading tab', async () => {
-    render(<SettingsPage />);
+    renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByRole('tab', { name: /Trading/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('tab', { name: /Trading/i }));
     await waitFor(() => expect(screen.getByText('Sentinel Trading v0.1.0')).toBeInTheDocument());

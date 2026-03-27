@@ -1,3 +1,56 @@
+// ─── Trading Policy (server-side settings) ──────────────────────────
+
+/**
+ * Risk limits and trading mode persisted in `user_trading_policy` table.
+ * Values are percentages (e.g. 5 = 5%), not decimal fractions.
+ */
+export interface TradingPolicy {
+  id: string;
+  user_id: string;
+  max_position_pct: number;
+  max_sector_pct: number;
+  daily_loss_limit_pct: number;
+  soft_drawdown_pct: number;
+  hard_drawdown_pct: number;
+  max_open_positions: number;
+  paper_trading: boolean;
+  auto_trading: boolean;
+  require_confirmation: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fields the client can update via PUT /api/settings/policy. */
+export type TradingPolicyUpdate = Partial<
+  Omit<TradingPolicy, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+>;
+
+/** Default policy values matching engine risk_manager.py defaults. */
+export const DEFAULT_TRADING_POLICY: Omit<
+  TradingPolicy,
+  'id' | 'user_id' | 'created_at' | 'updated_at'
+> = {
+  max_position_pct: 5,
+  max_sector_pct: 20,
+  daily_loss_limit_pct: 2,
+  soft_drawdown_pct: 10,
+  hard_drawdown_pct: 15,
+  max_open_positions: 20,
+  paper_trading: true,
+  auto_trading: false,
+  require_confirmation: true,
+};
+
+/** Entry in the policy_change_log audit table. */
+export interface PolicyChangeEntry {
+  id: string;
+  user_id: string;
+  changed_at: string;
+  field_name: string;
+  old_value: string | null;
+  new_value: string | null;
+}
+
 // ─── Enums as Union Types ───────────────────────────────────────────
 
 /** The class of financial instrument being traded or tracked. */
