@@ -36,6 +36,23 @@ export type {
   ShadowPortfolioSnapshot,
   ShadowPortfolioCreate,
 } from './use-shadow-portfolios-query';
+export {
+  useRegimeStateQuery,
+  useRecordRegimeMutation,
+  usePlaybooksQuery,
+  useCreatePlaybookMutation,
+  useDeletePlaybookMutation,
+  useTogglePlaybookMutation,
+} from './use-regime-query';
+export type {
+  MarketRegime,
+  RegimeSource,
+  RegimeEntry,
+  RegimePlaybook,
+  RegimeState,
+  RegimePlaybookCreate,
+  RecordRegimeInput,
+} from './use-regime-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
