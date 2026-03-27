@@ -17,12 +17,24 @@ const JWT_SECRET = process.env.SUPABASE_JWT_SECRET ?? '';
 /**
  * Express middleware that enforces bearer-token authentication.
  * Rejects with 401 when the token is absent, expired, or invalid.
+ *
+ * Fails closed: if SUPABASE_JWT_SECRET is not configured, every request
+ * is rejected rather than silently accepted with an empty-string key.
  */
 export async function authMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  // Fail closed — never accept tokens when the secret is unconfigured.
+  if (!JWT_SECRET) {
+    res.status(503).json({
+      error: 'misconfigured',
+      message: 'Auth service is not configured. Set SUPABASE_JWT_SECRET.',
+    });
+    return;
+  }
+
   const authHeader = req.headers['authorization'];
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

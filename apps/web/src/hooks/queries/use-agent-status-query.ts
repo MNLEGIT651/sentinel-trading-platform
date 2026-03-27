@@ -17,5 +17,6 @@ export function useAgentStatusQuery() {
     queryFn: fetchStatus,
     enabled: agentsOnline === true,
     refetchInterval: 5_000,
+    staleTime: 4_000,
   });
 }

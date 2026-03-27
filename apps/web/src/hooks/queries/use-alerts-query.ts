@@ -18,5 +18,6 @@ export function useAlertsQuery(refetchInterval = 30_000) {
     queryFn: fetchAlerts,
     enabled: agentsOnline === true,
     refetchInterval,
+    staleTime: 4_000,
   });
 }

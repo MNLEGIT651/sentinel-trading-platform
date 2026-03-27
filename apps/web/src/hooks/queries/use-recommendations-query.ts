@@ -23,5 +23,6 @@ export function useRecommendationsQuery(
     queryFn: () => fetchRecommendations(status),
     enabled: agentsOnline === true,
     refetchInterval,
+    staleTime: 4_000,
   });
 }
