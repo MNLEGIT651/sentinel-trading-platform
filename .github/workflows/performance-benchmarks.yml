@@ -1,13 +1,11 @@
 name: Performance Benchmarks
 
 on:
-  pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'apps/engine/**'
-      - 'apps/agents/**'
   push:
     branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
   workflow_dispatch:
   schedule:
     - cron: '0 2 * * 1' # Weekly on Mondays at 2 AM UTC
@@ -68,8 +66,7 @@ jobs:
       - name: Run Lighthouse CI
         run: |
           cd apps/web
-          lhci autorun --collect.startServerCommand="pnpm start" --collect.url="http://localhost:3000" || echo "Lighthouse CI completed with warnings"
-        continue-on-error: true
+          lhci autorun --collect.startServerCommand="pnpm start" --collect.url="http://localhost:3000"
 
       - name: Generate performance summary
         if: always()
@@ -126,8 +123,7 @@ jobs:
       - name: Run performance benchmarks
         working-directory: apps/engine
         run: |
-          .venv/bin/python -m pytest tests/ -k "benchmark" --benchmark-only --benchmark-json=benchmark.json || echo "Benchmark suite completed"
-        continue-on-error: true
+          .venv/bin/python -m pytest tests/ -k "benchmark" --benchmark-only --benchmark-json=benchmark.json
         env:
           PYTHONDONTWRITEBYTECODE: '1'
 
@@ -196,8 +192,7 @@ jobs:
       - name: Run workflow execution benchmarks
         run: |
           cd apps/agents
-          # Run benchmark tests if they exist
-          pnpm test -- --grep="benchmark" || echo "No benchmark tests found"
+          pnpm test -- --grep="benchmark"
 
       - name: Generate agents performance summary
         if: always()

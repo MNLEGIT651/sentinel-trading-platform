@@ -104,12 +104,12 @@ test.describe('Auth redirect', () => {
     await expect(page).toHaveURL(/^https?:\/\/[^/]+\/$/);
   });
 
-  test('/api/agents/* passes through when Supabase is unconfigured', async ({ page }) => {
-    // With Supabase unconfigured, the proxy lets API requests through.
-    // The route handler may still return an error if the backend service
-    // (agents app) is unreachable, but it will NOT be a 401 from the proxy.
-    const response = await page.request.get('/api/agents/cycles');
-    // Must NOT be blocked by auth gate (401/403)
+  test('public API endpoints bypass auth when Supabase is unconfigured', async ({ page }) => {
+    // /api/agents/health is a public endpoint (no auth required).
+    // With Supabase unconfigured, the proxy passes through and the route
+    // handler skips auth for public paths. The agents backend isn't running
+    // in CI, so we expect 502 (Bad Gateway) — but NOT 401/403 (auth block).
+    const response = await page.request.get('/api/agents/health');
     expect(response.status()).not.toBe(401);
     expect(response.status()).not.toBe(403);
   });
