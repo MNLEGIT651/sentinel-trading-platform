@@ -49,8 +49,7 @@ export const queryKeys = {
   // ── Journal ──────────────────────────────────────────────────────────
   journal: {
     all: ['journal'] as const,
-    entries: (filters?: Record<string, string | number | undefined>) =>
-      ['journal', 'entries', filters] as const,
+    entries: (filters?: object) => ['journal', 'entries', filters] as const,
     entry: (id: string) => ['journal', 'entry', id] as const,
     stats: () => ['journal', 'stats'] as const,
   },
