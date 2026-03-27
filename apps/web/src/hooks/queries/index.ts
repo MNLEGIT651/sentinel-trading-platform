@@ -25,6 +25,17 @@ export type {
   CounterfactualStats,
   CounterfactualsResponse,
 } from './use-counterfactuals-query';
+export {
+  useShadowPortfoliosQuery,
+  useShadowPortfolioDetailQuery,
+  useCreateShadowPortfolioMutation,
+  useDeleteShadowPortfolioMutation,
+} from './use-shadow-portfolios-query';
+export type {
+  ShadowPortfolio,
+  ShadowPortfolioSnapshot,
+  ShadowPortfolioCreate,
+} from './use-shadow-portfolios-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
