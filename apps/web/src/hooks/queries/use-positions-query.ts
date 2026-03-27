@@ -4,19 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import { useAppStore } from '@/stores/app-store';
 import { queryKeys } from '@/lib/query-keys';
+import type { BrokerPosition } from '@/lib/engine-client';
 
-export interface Position {
-  symbol: string;
-  qty: number;
-  avg_entry_price: number;
-  current_price: number;
-  market_value: number;
-  unrealized_pl: number;
-  unrealized_plpc: number;
-  side: string;
-}
-
-async function fetchPositions(): Promise<Position[]> {
+async function fetchPositions(): Promise<BrokerPosition[]> {
   const res = await fetch(engineUrl('/api/v1/portfolio/positions'), {
     signal: AbortSignal.timeout(6000),
     headers: engineHeaders(),
@@ -35,3 +25,5 @@ export function usePositionsQuery() {
     refetchInterval: 30_000,
   });
 }
+
+export type { BrokerPosition } from '@/lib/engine-client';

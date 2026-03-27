@@ -6,8 +6,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { NotificationCenter } from '@/components/notification-center';
+import { useAppStore } from '@/stores/app-store';
+import { renderWithProviders } from '../test-utils';
 
 // Mock data
 const mockAlerts = [
@@ -39,8 +41,14 @@ describe('NotificationCenter', () => {
     // Clear localStorage before each test
     localStorage.clear();
 
-    // Mock fetch
-    global.fetch = vi.fn();
+    // Enable agents so useAlertsQuery fires
+    useAppStore.setState({ agentsOnline: true });
+
+    // Mock fetch with default empty alerts response
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ alerts: [] }),
+    });
   });
 
   afterEach(() => {
@@ -50,24 +58,24 @@ describe('NotificationCenter', () => {
 
   describe('Initial Rendering', () => {
     it('renders notification bell icon', () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
       const button = screen.getByRole('button', { name: /notifications/i });
       expect(button).toBeInTheDocument();
     });
 
     it('starts with notification panel closed', () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
       expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
     });
 
     it('does not show unread count badge initially', () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
       const button = screen.getByRole('button', { name: /notifications/i });
       expect(within(button).queryByText(/\d+/)).not.toBeInTheDocument();
     });
 
     it('has correct aria-label without unread count', () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
       expect(screen.getByLabelText('Notifications')).toBeInTheDocument();
     });
   });
@@ -79,10 +87,10 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('/api/agents/alerts');
+        expect(global.fetch).toHaveBeenCalledWith('/api/agents/alerts', expect.anything());
       });
     });
 
@@ -94,7 +102,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       // Initial fetch
       await vi.advanceTimersByTimeAsync(0);
@@ -112,7 +120,7 @@ describe('NotificationCenter', () => {
     it('handles fetch errors gracefully', async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -129,7 +137,7 @@ describe('NotificationCenter', () => {
         status: 500,
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -147,7 +155,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [] }),
       });
 
-      const { unmount } = render(<NotificationCenter />);
+      const { unmount } = renderWithProviders(<NotificationCenter />);
 
       await vi.advanceTimersByTimeAsync(0);
       expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -161,13 +169,13 @@ describe('NotificationCenter', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
-    it('handles alerts in array format', async () => {
+    it('handles alerts in object format', async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockAlerts,
+        json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -186,7 +194,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -213,7 +221,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: manyAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -238,7 +246,7 @@ describe('NotificationCenter', () => {
     });
 
     it('shows notification panel when bell is clicked', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -250,7 +258,7 @@ describe('NotificationCenter', () => {
     });
 
     it('displays all notifications', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -264,7 +272,7 @@ describe('NotificationCenter', () => {
     });
 
     it('displays notification messages', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -277,7 +285,7 @@ describe('NotificationCenter', () => {
     });
 
     it('displays notification timestamps', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -298,7 +306,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -317,7 +325,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         const badge = screen.getByText('3');
@@ -339,7 +347,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: manyAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(screen.getByText('9+')).toBeInTheDocument();
@@ -352,7 +360,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(screen.getByText('3')).toBeInTheDocument();
@@ -375,7 +383,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(screen.getByText('1')).toBeInTheDocument();
@@ -397,7 +405,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Notifications (3 unread)')).toBeInTheDocument();
@@ -412,7 +420,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -433,7 +441,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -455,7 +463,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(screen.getByText('3')).toBeInTheDocument();
@@ -481,7 +489,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -500,7 +508,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -525,7 +533,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -545,7 +553,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -568,7 +576,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -590,7 +598,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: mockAlerts }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -628,7 +636,7 @@ describe('NotificationCenter', () => {
         }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -648,7 +656,7 @@ describe('NotificationCenter', () => {
         }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -667,7 +675,7 @@ describe('NotificationCenter', () => {
         }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -686,7 +694,7 @@ describe('NotificationCenter', () => {
         }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -707,7 +715,7 @@ describe('NotificationCenter', () => {
     });
 
     it('closes panel when close button clicked', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -724,7 +732,7 @@ describe('NotificationCenter', () => {
     });
 
     it('closes panel when backdrop is clicked', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -742,7 +750,7 @@ describe('NotificationCenter', () => {
     });
 
     it('toggles panel when bell clicked multiple times', async () => {
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -788,7 +796,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: malformedAlerts as unknown[] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -816,7 +824,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: alertsWithoutId as unknown[] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -835,7 +843,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [mockAlerts[0]] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -865,7 +873,7 @@ describe('NotificationCenter', () => {
 
       (global.fetch as ReturnType<typeof vi.fn>).mockReturnValueOnce(promise);
 
-      const { unmount } = render(<NotificationCenter />);
+      const { unmount } = renderWithProviders(<NotificationCenter />);
 
       // Unmount before fetch completes
       unmount();
@@ -888,7 +896,7 @@ describe('NotificationCenter', () => {
         json: async () => ({}),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -905,7 +913,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: null }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -933,7 +941,7 @@ describe('NotificationCenter', () => {
         json: async () => ({ alerts: [longMessageAlert] }),
       });
 
-      render(<NotificationCenter />);
+      renderWithProviders(<NotificationCenter />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();

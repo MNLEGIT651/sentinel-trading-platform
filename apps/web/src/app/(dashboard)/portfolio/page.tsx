@@ -6,9 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
-import { cn } from '@/lib/utils';
-import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
-import type { BrokerAccount, BrokerPosition, MarketQuote } from '@/lib/engine-client';
 import { SnapshotMetrics } from '@/components/portfolio/snapshot-metrics';
 import {
   PositionsTable,
@@ -22,10 +19,19 @@ import {
 import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
 import { QuickOrder } from '@/components/portfolio/quick-order';
-import { useOrderPolling } from '@/hooks/use-order-polling';
-import { useOrderHistory } from '@/hooks/use-order-history';
 import { RecentOrders } from '@/components/portfolio/recent-orders';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
+import {
+  useAccountQuery,
+  usePositionsQuery,
+  useQuotesQuery,
+  useOrderHistoryQuery,
+  useOrderStatusQuery,
+  useSubmitOrderMutation,
+} from '@/hooks/queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
+import type { BrokerAccount } from '@/lib/engine-client';
 
 const FALLBACK_ACCOUNT: BrokerAccount = {
   cash: 100_000,
@@ -36,6 +42,17 @@ const FALLBACK_ACCOUNT: BrokerAccount = {
 
 export default function PortfolioPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
+  const queryClient = useQueryClient();
+
+  const [sortField, setSortField] = useState<SortField>('marketValue');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  // Order entry state
+  const [orderSymbol, setOrderSymbol] = useState('');
+  const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
+  const [orderQty, setOrderQty] = useState('');
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [pollingOrderId, setPollingOrderId] = useState<string | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => {
     return () => {
@@ -43,175 +60,90 @@ export default function PortfolioPage() {
     };
   }, []);
 
-  const [sortField, setSortField] = useState<SortField>('marketValue');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [account, setAccount] = useState<BrokerAccount | null>(null);
-  const [isLive, setIsLive] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  // TanStack Query hooks
+  const { data: account, isPending: accountLoading } = useAccountQuery();
+  const { data: brokerPositions } = usePositionsQuery();
+  const { data: orderHistory } = useOrderHistoryQuery();
+  const submitOrder = useSubmitOrderMutation();
 
-  // Order entry state
-  const [orderSymbol, setOrderSymbol] = useState('');
-  const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
-  const [orderQty, setOrderQty] = useState('');
-  const [orderStatus, setOrderStatus] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [pollingOrderId, setPollingOrderId] = useState<string | null>(null);
-
-  const fetchPortfolio = useCallback(
-    async (showRefresh = false) => {
-      if (engineOnline !== true) {
-        setAccount(FALLBACK_ACCOUNT);
-        setPositions([]);
-        setIsLive(false);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      if (showRefresh) setRefreshing(true);
-      try {
-        const [acctRes, posRes] = await Promise.all([
-          fetch(engineUrl('/api/v1/portfolio/account'), {
-            signal: AbortSignal.timeout(6000),
-            headers: engineHeaders(),
-          }),
-          fetch(engineUrl('/api/v1/portfolio/positions'), {
-            signal: AbortSignal.timeout(6000),
-            headers: engineHeaders(),
-          }),
-        ]);
-        if (!acctRes.ok || !posRes.ok) throw new Error('Engine error');
-
-        const acct: BrokerAccount = await acctRes.json();
-        const brokerPositions: BrokerPosition[] = await posRes.json();
-        setAccount(acct);
-
-        // Enrich positions with live prices if we have positions
-        if (brokerPositions.length > 0) {
-          const tickers = brokerPositions.map((p) => p.instrument_id);
-          let quotes: MarketQuote[] = [];
-          try {
-            const quotesRes = await fetch(
-              engineUrl(`/api/v1/data/quotes?tickers=${tickers.join(',')}`),
-              { signal: AbortSignal.timeout(8000), headers: engineHeaders() },
-            );
-            if (quotesRes.ok) quotes = await quotesRes.json();
-          } catch {
-            // Live prices unavailable — use avg_price as fallback
-          }
-
-          setPositions(
-            brokerPositions.map((bp) => {
-              const quote = quotes.find((q) => q.ticker === bp.instrument_id);
-              const currentPrice = bp.current_price ?? quote?.close ?? bp.avg_price;
-              const pos: import('@/components/portfolio/positions-table').Position = {
-                ticker: bp.instrument_id,
-                name: TICKER_NAMES[bp.instrument_id] ?? bp.instrument_id,
-                shares: bp.quantity,
-                avgEntry: bp.avg_price,
-                currentPrice,
-                sector: SECTOR_MAP[bp.instrument_id] ?? 'Other',
-              };
-              if (bp.unrealized_pl !== undefined) pos.unrealizedPl = bp.unrealized_pl;
-              if (bp.unrealized_plpc !== undefined) pos.unrealizedPlPct = bp.unrealized_plpc;
-              return pos;
-            }),
-          );
-        } else {
-          setPositions([]);
-        }
-        setIsLive(true);
-      } catch {
-        // Engine offline — show empty portfolio
-        setAccount(FALLBACK_ACCOUNT);
-        setPositions([]);
-        setIsLive(false);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [engineOnline],
+  // Get tickers for live quote enrichment
+  const positionTickers = useMemo(
+    () => (brokerPositions ?? []).map((p) => p.instrument_id),
+    [brokerPositions],
   );
+  const { data: positionQuotes } = useQuotesQuery(positionTickers);
 
-  const { orders: recentOrders, refresh: refreshOrders } = useOrderHistory(engineOnline === true);
-  const { isPolling } = useOrderPolling({
-    orderId: pollingOrderId,
+  // Order polling
+  const { isFetching: isPolling } = useOrderStatusQuery(pollingOrderId, {
     onSettled: () => {
       setPollingOrderId(null);
-      fetchPortfolio();
-      refreshOrders();
     },
   });
 
-  useEffect(() => {
-    if (engineOnline === null) return;
-    fetchPortfolio();
-  }, [engineOnline, fetchPortfolio]);
+  const isLive = engineOnline === true && !!account;
+  const loading = engineOnline === null || (engineOnline === true && accountLoading);
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    if (engineOnline !== true) return;
+  // Enrich positions with live prices
+  const positions: Position[] = useMemo(() => {
+    if (!brokerPositions || brokerPositions.length === 0) return [];
+    return brokerPositions.map((bp) => {
+      const quote = positionQuotes?.find((q) => q.ticker === bp.instrument_id);
+      const currentPrice = bp.current_price ?? quote?.close ?? bp.avg_price;
+      const pos: Position = {
+        ticker: bp.instrument_id,
+        name: TICKER_NAMES[bp.instrument_id] ?? bp.instrument_id,
+        shares: bp.quantity,
+        avgEntry: bp.avg_price,
+        currentPrice,
+        sector: SECTOR_MAP[bp.instrument_id] ?? 'Other',
+      };
+      if (bp.unrealized_pl !== undefined) pos.unrealizedPl = bp.unrealized_pl;
+      if (bp.unrealized_plpc !== undefined) pos.unrealizedPlPct = bp.unrealized_plpc;
+      return pos;
+    });
+  }, [brokerPositions, positionQuotes]);
 
-    const interval = setInterval(() => fetchPortfolio(), 30_000);
-    return () => clearInterval(interval);
-  }, [engineOnline, fetchPortfolio]);
+  const recentOrders = orderHistory ?? [];
 
-  const handleSubmitOrder = async () => {
+  const effectiveAccount = account ?? (engineOnline !== true ? FALLBACK_ACCOUNT : null);
+
+  const handleSubmitOrder = useCallback(async () => {
     if (engineOnline !== true) {
       setOrderStatus('Order failed — engine offline');
       return;
     }
 
     if (!orderSymbol || !orderQty || Number(orderQty) <= 0) return;
-    setSubmitting(true);
     setOrderStatus(null);
     try {
-      const res = await fetch(engineUrl('/api/v1/portfolio/orders'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...engineHeaders() },
-        body: JSON.stringify({
-          symbol: orderSymbol.toUpperCase(),
-          side: orderSide,
-          quantity: Number(orderQty),
-        }),
+      const result = await submitOrder.mutateAsync({
+        symbol: orderSymbol.toUpperCase(),
+        side: orderSide,
+        qty: Number(orderQty),
       });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const result = await res.json();
       setOrderStatus(
-        result.status === 'filled'
-          ? `Filled ${result.fill_quantity} @ $${result.fill_price?.toFixed(2)}`
-          : `Order ${result.status}`,
+        result.status === 'filled' ? `Filled @ order ${result.order_id}` : `Order ${result.status}`,
       );
       setOrderSymbol('');
       setOrderQty('');
-      refreshOrders();
 
       // Start polling if order isn't already terminal
-      const orderId = result.order_id as string | undefined;
-      if (orderId && result.status !== 'filled' && result.status !== 'rejected') {
-        setPollingOrderId(orderId);
-      } else {
-        // Already terminal — just refresh positions
-        fetchPortfolio();
+      if (result.order_id && result.status !== 'filled' && result.status !== 'rejected') {
+        setPollingOrderId(result.order_id);
       }
     } catch {
       if (mountedRef.current) setOrderStatus('Order failed — check engine');
-    } finally {
-      if (mountedRef.current) setSubmitting(false);
     }
-  };
+  }, [engineOnline, orderSymbol, orderQty, orderSide, submitOrder]);
 
   const totalValue = positions.reduce((s, p) => s + marketValue(p), 0);
   const totalPnl = positions.reduce((s, p) => s + pnl(p), 0);
   const totalCost = positions.reduce((s, p) => s + p.avgEntry * p.shares, 0);
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
-  const cashBalance = account?.cash ?? 100_000;
+  const cashBalance = effectiveAccount?.cash ?? 100_000;
   const portfolioTotal =
-    (account?.equity ?? cashBalance) > 0
-      ? (account?.equity ?? cashBalance + totalValue)
+    (effectiveAccount?.equity ?? cashBalance) > 0
+      ? (effectiveAccount?.equity ?? cashBalance + totalValue)
       : cashBalance + totalValue;
 
   const toggleSort = (field: SortField) => {
@@ -283,11 +215,14 @@ export default function PortfolioPage() {
           </div>
         </div>
         <button
-          onClick={() => fetchPortfolio(true)}
-          disabled={refreshing || engineOnline !== true}
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.account() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.positions() });
+          }}
+          disabled={engineOnline !== true}
           className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+          <RefreshCw className="h-3.5 w-3.5" />
           Refresh
         </button>
       </div>
@@ -307,7 +242,7 @@ export default function PortfolioPage() {
         side={orderSide}
         qty={orderQty}
         status={orderStatus}
-        submitting={submitting}
+        submitting={submitOrder.isPending}
         disabled={engineOnline !== true}
         onSymbolChange={setOrderSymbol}
         onSideChange={setOrderSide}

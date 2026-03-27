@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import MarketsPage from '@/app/(dashboard)/markets/page';
 import { useAppStore } from '@/stores/app-store';
+import { renderWithProviders } from '../test-utils';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/markets',
@@ -186,12 +187,12 @@ describe('MarketsPage', () => {
   });
 
   it('renders the watchlist panel', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     expect(screen.getByText('Watchlist')).toBeInTheDocument();
   });
 
   it('shows all 10 tickers', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     // AAPL appears in watchlist + chart header, so use getAllByText
     expect(screen.getAllByText('AAPL').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('MSFT')).toBeInTheDocument();
@@ -206,7 +207,7 @@ describe('MarketsPage', () => {
   });
 
   it('displays company names', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     // Apple Inc. appears in watchlist + chart header (AAPL selected by default)
     expect(screen.getAllByText('Apple Inc.').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Microsoft Corp.')).toBeInTheDocument();
@@ -214,14 +215,14 @@ describe('MarketsPage', () => {
   });
 
   it('shows the selected ticker in the chart header', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     // AAPL is selected by default — appears in both watchlist and chart header
     const aaplElements = screen.getAllByText('AAPL');
     expect(aaplElements.length).toBeGreaterThanOrEqual(2);
   });
 
   it('switches ticker when watchlist item is clicked', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByText('NVDA')).toBeInTheDocument();
     });
@@ -232,7 +233,7 @@ describe('MarketsPage', () => {
   });
 
   it('shows Offline badge when engine is unavailable', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByText('Offline')).toBeInTheDocument();
     });
@@ -250,7 +251,7 @@ describe('MarketsPage', () => {
         json: async () => mockBars,
       });
 
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByText('Live')).toBeInTheDocument();
     });
@@ -268,7 +269,7 @@ describe('MarketsPage', () => {
         json: async () => mockBars,
       });
 
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     // $178.72 appears in both watchlist and chart header for AAPL
     await waitFor(() => {
       expect(screen.getAllByText('$178.72').length).toBeGreaterThanOrEqual(1);
@@ -277,7 +278,7 @@ describe('MarketsPage', () => {
   });
 
   it('shows fallback prices when engine is offline', async () => {
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getAllByText('$178.72').length).toBeGreaterThanOrEqual(1);
     });
@@ -285,20 +286,18 @@ describe('MarketsPage', () => {
 
   it('renders the PriceChart component with bar data', async () => {
     useAppStore.setState({ engineOnline: true });
-    (fetch as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockQuotes,
-      })
-      .mockResolvedValue({
-        ok: true,
-        json: async () => mockBars,
-      });
+    (fetch as ReturnType<typeof vi.fn>).mockImplementation((url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/data/bars/')) {
+        return Promise.resolve({ ok: true, json: async () => mockBars });
+      }
+      return Promise.resolve({ ok: true, json: async () => mockQuotes });
+    });
 
-    render(<MarketsPage />);
+    renderWithProviders(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByTestId('price-chart')).toBeInTheDocument();
+      expect(screen.getByText(/Chart: 3 bars/)).toBeInTheDocument();
     });
-    expect(screen.getByText(/Chart: 3 bars/)).toBeInTheDocument();
   });
 });

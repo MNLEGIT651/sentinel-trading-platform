@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import DashboardPage from '@/app/(dashboard)/page';
+import { renderWithProviders } from '../test-utils';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
@@ -13,17 +14,17 @@ beforeEach(() => {
 
 describe('DashboardPage', () => {
   it('renders without crashing', () => {
-    const { container } = render(<DashboardPage />);
+    const { container } = renderWithProviders(<DashboardPage />);
     expect(container).toBeTruthy();
   });
 
   it('renders the Total Equity metric card label', () => {
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Total Equity')).toBeInTheDocument();
   });
 
   it('renders the Daily P&L metric card label', () => {
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Daily P&L')).toBeInTheDocument();
   });
 });

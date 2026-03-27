@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import StrategiesPage from '@/app/(dashboard)/strategies/page';
 import { useAppStore } from '@/stores/app-store';
+import { renderWithProviders } from '../test-utils';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/strategies',
@@ -40,29 +41,29 @@ describe('StrategiesPage — live data', () => {
   });
 
   it('renders page header', async () => {
-    render(<StrategiesPage />);
+    renderWithProviders(<StrategiesPage />);
     await waitFor(() => expect(screen.getByText('Strategies')).toBeInTheDocument());
   });
 
   it('shows live strategy names after fetch', async () => {
-    render(<StrategiesPage />);
+    renderWithProviders(<StrategiesPage />);
     await waitFor(() => expect(screen.getByText('Sma Crossover')).toBeInTheDocument());
   });
 
   it('shows family groups from live data', async () => {
-    render(<StrategiesPage />);
+    renderWithProviders(<StrategiesPage />);
     await waitFor(() => expect(screen.getByText('Trend Following')).toBeInTheDocument());
   });
 });
 
 describe('StrategiesPage — engine offline fallback', () => {
   beforeEach(() => {
-    useAppStore.setState({ engineOnline: false });
+    useAppStore.setState({ engineOnline: true });
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
   });
 
   it('falls back to hardcoded data when engine is offline', async () => {
-    render(<StrategiesPage />);
+    renderWithProviders(<StrategiesPage />);
     await waitFor(() => expect(screen.getByText('SMA Crossover')).toBeInTheDocument());
   });
 });

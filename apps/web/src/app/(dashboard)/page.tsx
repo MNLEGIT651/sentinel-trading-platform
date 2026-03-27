@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo } from 'react';
 import { DollarSign, TrendingUp, BarChart3, AlertTriangle, Zap } from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
@@ -10,12 +10,13 @@ import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
 import { useAppStore } from '@/stores/app-store';
 import type { Alert } from '@sentinel/shared';
-import type { MarketQuote, BrokerAccount } from '@/lib/engine-client';
-import type { AgentAlert } from '@/lib/agents-client';
 import { cn } from '@/lib/utils';
-import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
-
-const AGENTS_PROXY_BASE = '/api/agents';
+import {
+  useQuotesQuery,
+  useAccountQuery,
+  useAlertsQuery,
+  useRecommendationsQuery,
+} from '@/hooks/queries';
 
 const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
 
@@ -33,144 +34,54 @@ const fallbackTickerData = [
 export default function DashboardPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
   const agentsOnline = useAppStore((s) => s.agentsOnline);
-  const [tickerData, setTickerData] = useState(fallbackTickerData);
-  const [isLive, setIsLive] = useState(false);
-  const [account, setAccount] = useState<BrokerAccount | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [recentSignals, setRecentSignals] = useState<
-    Array<{
-      ticker: string;
-      side: string;
-      reason: string;
-      strength: number | null;
-      ts: string;
-    }>
-  >([]);
 
-  const fetchPrices = useCallback(async () => {
-    try {
-      const res = await fetch(
-        engineUrl(`/api/v1/data/quotes?tickers=${TICKER_SYMBOLS.join(',')}`),
-        { signal: AbortSignal.timeout(6000), headers: engineHeaders() },
-      );
-      if (!res.ok) throw new Error(`${res.status}`);
-      const quotes: MarketQuote[] = await res.json();
+  const { data: quotes } = useQuotesQuery(TICKER_SYMBOLS, 30_000);
+  const { data: account } = useAccountQuery();
+  const { data: agentAlerts } = useAlertsQuery(30_000);
+  const { data: filledRecs } = useRecommendationsQuery('filled', 30_000);
 
-      setTickerData(
-        TICKER_SYMBOLS.map((sym) => {
-          const q = quotes.find((q) => q.ticker === sym);
-          return {
-            ticker: sym,
-            price: q?.close ?? 0,
-            change: q?.change_pct ?? 0,
-          };
-        }).filter((t) => t.price > 0),
-      );
-      setIsLive(true);
-    } catch {
-      // Keep fallback data
-    }
-  }, []);
+  const isLive = engineOnline === true && !!quotes;
 
-  const fetchAccount = useCallback(async () => {
-    try {
-      const res = await fetch(engineUrl('/api/v1/portfolio/account'), {
-        signal: AbortSignal.timeout(6000),
-        headers: engineHeaders(),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      setAccount(await res.json());
-    } catch {
-      // Keep default values
-    }
-  }, []);
+  const tickerData = useMemo(() => {
+    if (!quotes) return fallbackTickerData;
+    return TICKER_SYMBOLS.map((sym) => {
+      const q = quotes.find((q) => q.ticker === sym);
+      return {
+        ticker: sym,
+        price: q?.close ?? 0,
+        change: q?.change_pct ?? 0,
+      };
+    }).filter((t) => t.price > 0);
+  }, [quotes]);
 
-  const fetchAlerts = useCallback(async () => {
-    try {
-      const [alertsRes, recsRes] = await Promise.allSettled([
-        fetch(`${AGENTS_PROXY_BASE}/alerts`, { signal: AbortSignal.timeout(3000) }),
-        fetch(`${AGENTS_PROXY_BASE}/recommendations?status=filled`, {
-          signal: AbortSignal.timeout(3000),
-        }),
-      ]);
+  const alerts: Alert[] = useMemo(() => {
+    if (!agentAlerts || agentAlerts.length === 0) return [];
+    return agentAlerts.map((a) => ({
+      id: a.id,
+      account_id: null,
+      instrument_id: a.ticker ?? null,
+      severity: a.severity,
+      status: 'active' as const,
+      title: a.title,
+      message: a.message,
+      metadata: null,
+      triggered_at: a.created_at,
+      acknowledged_at: null,
+      resolved_at: null,
+      created_at: a.created_at,
+    }));
+  }, [agentAlerts]);
 
-      if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {
-        const data = (await alertsRes.value.json()) as { alerts: AgentAlert[] };
-        if (data.alerts.length > 0) {
-          setAlerts(
-            data.alerts.map((a) => ({
-              id: a.id,
-              account_id: null,
-              instrument_id: a.ticker ?? null,
-              severity: a.severity,
-              status: 'active' as const,
-              title: a.title,
-              message: a.message,
-              metadata: null,
-              triggered_at: a.created_at,
-              acknowledged_at: null,
-              resolved_at: null,
-              created_at: a.created_at,
-            })),
-          );
-        }
-      }
-
-      if (recsRes.status === 'fulfilled' && recsRes.value.ok) {
-        const data = (await recsRes.value.json()) as {
-          recommendations: Array<{
-            ticker: string;
-            side: string;
-            reason?: string;
-            signal_strength?: number | null;
-            created_at: string;
-          }>;
-        };
-        setRecentSignals(
-          data.recommendations.slice(0, 5).map((r) => ({
-            ticker: r.ticker,
-            side: r.side,
-            reason: r.reason ?? '',
-            strength: r.signal_strength ?? null,
-            ts: r.created_at,
-          })),
-        );
-      }
-    } catch {
-      // Agents offline — show empty, not fake alerts
-    }
-  }, []);
-
-  useEffect(() => {
-    if (engineOnline !== true) {
-      setIsLive(false);
-      return;
-    }
-
-    fetchPrices();
-    fetchAccount();
-  }, [engineOnline, fetchPrices, fetchAccount]);
-
-  useEffect(() => {
-    if (agentsOnline !== true) {
-      setAlerts([]);
-      setRecentSignals([]);
-      return;
-    }
-
-    fetchAlerts();
-  }, [agentsOnline, fetchAlerts]);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    if (engineOnline !== true) return;
-
-    const interval = setInterval(() => {
-      fetchPrices();
-      fetchAccount();
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [engineOnline, fetchPrices, fetchAccount]);
+  const recentSignals = useMemo(() => {
+    if (!filledRecs) return [];
+    return filledRecs.slice(0, 5).map((r) => ({
+      ticker: r.ticker,
+      side: r.side,
+      reason: r.reason ?? '',
+      strength: r.signal_strength ?? null,
+      ts: r.created_at,
+    }));
+  }, [filledRecs]);
 
   const equity = account?.equity ?? 100_000;
   const pnl = equity - (account?.initial_capital ?? 100_000);

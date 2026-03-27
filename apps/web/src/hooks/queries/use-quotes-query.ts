@@ -7,14 +7,15 @@ import { queryKeys } from '@/lib/query-keys';
 
 export interface QuoteData {
   ticker: string;
-  price: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  vwap?: number | null;
+  timestamp?: string;
   change: number;
   change_pct: number;
-  volume?: number;
-  high?: number;
-  low?: number;
-  open?: number;
-  prev_close?: number;
 }
 
 async function fetchQuotes(tickers: string[]): Promise<QuoteData[]> {
