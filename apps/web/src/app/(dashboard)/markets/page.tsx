@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { PriceChart } from '@/components/charts/price-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,9 +8,8 @@ import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
-import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import type { OHLCV } from '@sentinel/shared';
-import type { MarketQuote } from '@/lib/engine-client';
+import { useQuotesQuery, useBarsQuery } from '@/hooks/queries';
 
 const WATCHLIST_TICKERS = [
   { ticker: 'AAPL', name: 'Apple Inc.' },
@@ -24,6 +23,8 @@ const WATCHLIST_TICKERS = [
   { ticker: 'V', name: 'Visa Inc.' },
   { ticker: 'SPY', name: 'SPDR S&P 500' },
 ];
+
+const TICKER_NAMES = WATCHLIST_TICKERS.map((w) => w.ticker);
 
 interface WatchlistItem {
   ticker: string;
@@ -74,121 +75,30 @@ function generateSampleData(basePrice: number): OHLCV[] {
 export default function MarketsPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
   const [selectedTicker, setSelectedTicker] = useState('AAPL');
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() =>
-    WATCHLIST_TICKERS.map((w) => ({ ...w, price: 0, change: 0 })),
-  );
-  const [chartData, setChartData] = useState<OHLCV[]>([]);
-  const [isLive, setIsLive] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [chartLoading, setChartLoading] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
 
-  // Fetch all watchlist quotes from the engine
-  useEffect(() => {
-    if (engineOnline !== true) {
-      if (engineOnline === false) {
-        setWatchlist(buildFallbackWatchlist());
-        setIsLive(false);
-        setLoading(false);
-      }
-      return;
-    }
+  const { data: quotes, isPending: quotesLoading } = useQuotesQuery(TICKER_NAMES);
+  const { data: bars, isPending: chartLoading } = useBarsQuery(selectedTicker);
 
-    let cancelled = false;
-    async function fetchQuotes() {
-      setLoading(true);
-      try {
-        const tickers = WATCHLIST_TICKERS.map((w) => w.ticker).join(',');
-        const res = await fetch(engineUrl(`/api/v1/data/quotes?tickers=${tickers}`), {
-          signal: AbortSignal.timeout(8000),
-          headers: engineHeaders(),
-        });
-        if (!res.ok) throw new Error(`${res.status}`);
-        const quotes: MarketQuote[] = await res.json();
-        if (cancelled) return;
+  const isLive = engineOnline === true && !!quotes;
+  const loading = engineOnline === null || (engineOnline === true && quotesLoading);
 
-        setWatchlist(
-          WATCHLIST_TICKERS.map((w) => {
-            const q = quotes.find((q) => q.ticker === w.ticker);
-            return {
-              ...w,
-              price: q?.close ?? 0,
-              change: q?.change_pct ?? 0,
-            };
-          }),
-        );
-        setIsLive(true);
-      } catch {
-        if (cancelled) return;
-        setWatchlist(buildFallbackWatchlist());
-        setIsLive(false);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetchQuotes();
-    return () => {
-      cancelled = true;
-    };
-  }, [engineOnline]);
+  const watchlist: WatchlistItem[] = useMemo(() => {
+    if (!quotes)
+      return engineOnline === false
+        ? buildFallbackWatchlist()
+        : WATCHLIST_TICKERS.map((w) => ({ ...w, price: 0, change: 0 }));
+    return WATCHLIST_TICKERS.map((w) => {
+      const q = quotes.find((q) => q.ticker === w.ticker);
+      return { ...w, price: q?.close ?? 0, change: q?.change_pct ?? 0 };
+    });
+  }, [quotes, engineOnline]);
 
-  // Fetch bars when ticker changes
-  const fetchBars = useCallback(
-    async (ticker: string) => {
-      if (engineOnline !== true) {
-        const fallback = buildFallbackWatchlist().find((stock) => stock.ticker === ticker);
-        setChartData(generateSampleData(fallback?.price ?? 150));
-        setChartLoading(false);
-        return;
-      }
-
-      if (abortRef.current) abortRef.current.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setChartLoading(true);
-
-      try {
-        const res = await fetch(engineUrl(`/api/v1/data/bars/${ticker}?timeframe=1d&days=90`), {
-          signal: controller.signal,
-          headers: engineHeaders(),
-        });
-        if (!res.ok) throw new Error(`${res.status}`);
-        const bars = await res.json();
-        if (controller.signal.aborted) return;
-        setChartData(
-          bars.map(
-            (b: {
-              timestamp: string;
-              open: number;
-              high: number;
-              low: number;
-              close: number;
-              volume: number;
-            }) => ({
-              timestamp: b.timestamp,
-              open: b.open,
-              high: b.high,
-              low: b.low,
-              close: b.close,
-              volume: b.volume,
-            }),
-          ),
-        );
-      } catch {
-        if (controller.signal.aborted) return;
-        // Fallback: synthetic data
-        const stock = watchlist.find((w) => w.ticker === ticker);
-        setChartData(generateSampleData(stock?.price || 150));
-      } finally {
-        if (!controller.signal.aborted) setChartLoading(false);
-      }
-    },
-    [engineOnline, watchlist],
-  );
-
-  useEffect(() => {
-    fetchBars(selectedTicker);
-  }, [engineOnline, selectedTicker, fetchBars]);
+  const chartData: OHLCV[] = useMemo(() => {
+    if (bars && bars.length > 0) return bars;
+    // Fallback: synthetic data when engine offline or no bars
+    const stock = watchlist.find((w) => w.ticker === selectedTicker);
+    return generateSampleData(stock?.price || 150);
+  }, [bars, watchlist, selectedTicker]);
 
   const selectedStock = watchlist.find((w) => w.ticker === selectedTicker);
 

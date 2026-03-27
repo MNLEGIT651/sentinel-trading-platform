@@ -1,83 +1,47 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Brain, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/stores/app-store';
 import { StrategyCard, type StrategyEntry } from '@/components/strategies/strategy-card';
 import { strategyFamilies, type StrategyFamily } from '@/components/strategies/strategy-data';
 import { familyConfig } from '@/components/strategies/family-config';
-import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
-
-interface EngineStrategyInfo {
-  name: string;
-  family: string;
-  description: string;
-  default_params: Record<string, unknown>;
-}
-
-interface EngineStrategyListResponse {
-  strategies: EngineStrategyInfo[];
-  families: string[];
-  total: number;
-}
+import { useStrategiesQuery } from '@/hooks/queries';
 
 export default function StrategiesPage() {
-  const engineOnline = useAppStore((s) => s.engineOnline);
-  const [liveData, setLiveData] = useState<StrategyFamily[] | null>(null);
-  const [strategyFetchState, setStrategyFetchState] = useState<'idle' | 'ready' | 'failed'>('idle');
+  const { data: fetchedStrategies, isPending } = useStrategiesQuery();
   const [expandedFamilies, setExpandedFamilies] = useState<Record<string, boolean>>(
     Object.fromEntries(strategyFamilies.map((f) => [f.family, true])),
   );
 
-  // Fetch live strategy data from engine
-  useEffect(() => {
-    if (engineOnline !== true) return;
-
-    fetch(engineUrl('/api/v1/strategies/'), {
-      signal: AbortSignal.timeout(5000),
-      headers: engineHeaders(),
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status}`);
-        return r.json() as Promise<EngineStrategyListResponse>;
-      })
-      .then((data) => {
-        const familyMap = new Map<string, StrategyEntry[]>();
-        for (const s of data.strategies) {
-          if (!familyMap.has(s.family)) familyMap.set(s.family, []);
-          familyMap.get(s.family)!.push({
-            id: s.name,
-            name: s.name
-              .split('_')
-              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(' '),
-            description: s.description,
-            version: '1.0.0',
-            is_active: true,
-            parameters: s.default_params,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-        }
-        const families = Array.from(familyMap.entries()).map(([family, strategies]) => ({
-          family,
-          strategies,
-        })) as StrategyFamily[];
-        setLiveData(families);
-        setExpandedFamilies(Object.fromEntries(families.map((f) => [f.family, true])));
-        setStrategyFetchState('ready');
-      })
-      .catch(() => {
-        // Engine offline — fall back to hardcoded data silently
-        setLiveData(null);
-        setStrategyFetchState('failed');
+  const liveData = useMemo(() => {
+    if (!fetchedStrategies) return null;
+    const familyMap = new Map<string, StrategyEntry[]>();
+    for (const s of fetchedStrategies) {
+      const family = s.family ?? 'unknown';
+      if (!familyMap.has(family)) familyMap.set(family, []);
+      familyMap.get(family)!.push({
+        id: s.name,
+        name: s.name
+          .split('_')
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' '),
+        description: s.description ?? '',
+        version: '1.0.0',
+        is_active: true,
+        parameters: s.default_params as Record<string, unknown>,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
-  }, [engineOnline]);
+    }
+    return Array.from(familyMap.entries()).map(([family, strategies]) => ({
+      family,
+      strategies,
+    })) as StrategyFamily[];
+  }, [fetchedStrategies]);
 
-  const loadingStrategies =
-    engineOnline === null || (engineOnline === true && strategyFetchState === 'idle');
+  const loadingStrategies = isPending;
   const displayFamilies: StrategyFamily[] = liveData ?? strategyFamilies;
 
   const toggleFamily = (family: string) => {

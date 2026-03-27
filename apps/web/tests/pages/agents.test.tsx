@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import AgentsPage from '@/app/(dashboard)/agents/page';
 import { useAppStore } from '@/stores/app-store';
+import { renderWithProviders } from '../test-utils';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/agents',
@@ -71,12 +72,12 @@ describe('AgentsPage', () => {
   });
 
   it('renders page header', async () => {
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => expect(screen.getByText('AI Agents')).toBeInTheDocument());
   });
 
   it('renders all 5 agent cards', async () => {
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => {
       expect(screen.getByText('Market Sentinel')).toBeInTheDocument();
       expect(screen.getByText('Strategy Analyst')).toBeInTheDocument();
@@ -85,19 +86,19 @@ describe('AgentsPage', () => {
   });
 
   it('shows cycle count from server status', async () => {
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => expect(screen.getByText(/7 cycles/i)).toBeInTheDocument());
   });
 
   it('renders pending recommendation with ticker', async () => {
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => expect(screen.getByText('NVDA')).toBeInTheDocument());
     expect(screen.getByText(/RSI oversold/i)).toBeInTheDocument();
   });
 
   it('clicking Approve calls approveRecommendation', async () => {
     const { agentsClient } = await import('@/lib/agents-client');
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => screen.getByText('NVDA'));
     fireEvent.click(screen.getByRole('button', { name: /approve/i }));
     await waitFor(() => expect(agentsClient.approveRecommendation).toHaveBeenCalledWith('rec-1'));
@@ -105,20 +106,20 @@ describe('AgentsPage', () => {
 
   it('clicking Reject calls rejectRecommendation', async () => {
     const { agentsClient } = await import('@/lib/agents-client');
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => screen.getByText('NVDA'));
     fireEvent.click(screen.getByRole('button', { name: /reject/i }));
     await waitFor(() => expect(agentsClient.rejectRecommendation).toHaveBeenCalledWith('rec-1'));
   });
 
   it('shows Scheduled badge', async () => {
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => expect(screen.getByText(/scheduled/i)).toBeInTheDocument());
   });
 
   it('clicking Run Cycle calls runCycle', async () => {
     const { agentsClient } = await import('@/lib/agents-client');
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => screen.getByRole('button', { name: /run cycle/i }));
     fireEvent.click(screen.getByRole('button', { name: /run cycle/i }));
     await waitFor(() => expect(agentsClient.runCycle).toHaveBeenCalled());
@@ -129,7 +130,7 @@ describe('AgentsPage', () => {
     vi.mocked(agentsClient.getStatus).mockRejectedValue(new Error('fetch failed'));
     vi.mocked(agentsClient.getRecommendations).mockRejectedValue(new Error('fetch failed'));
     vi.mocked(agentsClient.getAlerts).mockRejectedValue(new Error('fetch failed'));
-    render(<AgentsPage />);
+    renderWithProviders(<AgentsPage />);
     await waitFor(() => expect(screen.getAllByText(/offline/i).length).toBeGreaterThan(0));
   });
 });

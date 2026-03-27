@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import PortfolioPage from '@/app/(dashboard)/portfolio/page';
 import { useAppStore } from '@/stores/app-store';
+import { renderWithProviders } from '../test-utils';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -76,21 +77,21 @@ afterEach(() => {
 
 describe('PortfolioPage', () => {
   it('renders the portfolio header', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText('Portfolio')).toBeInTheDocument();
     });
   });
 
   it('displays position count from engine', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText(/2 positions/)).toBeInTheDocument();
     });
   });
 
   it('renders summary metric cards', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText('Portfolio Value')).toBeInTheDocument();
       expect(screen.getByText('Unrealized P&L')).toBeInTheDocument();
@@ -99,7 +100,7 @@ describe('PortfolioPage', () => {
   });
 
   it('renders position tickers from broker', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText('AAPL')).toBeInTheDocument();
       expect(screen.getByText('MSFT')).toBeInTheDocument();
@@ -107,7 +108,7 @@ describe('PortfolioPage', () => {
   });
 
   it('shows tab navigation with Positions, Allocation, Risk', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Positions' })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: 'Allocation' })).toBeInTheDocument();
@@ -116,14 +117,14 @@ describe('PortfolioPage', () => {
   });
 
   it('shows Live indicator when engine is connected', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText('Live')).toBeInTheDocument();
     });
   });
 
   it('renders the Quick Order panel', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText('Quick Order')).toBeInTheDocument();
       expect(screen.getByText('Buy')).toBeInTheDocument();
@@ -133,7 +134,7 @@ describe('PortfolioPage', () => {
   });
 
   it('renders the Refresh button', async () => {
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
@@ -206,7 +207,7 @@ describe('PortfolioPage', () => {
       return Promise.resolve({ ok: false } as Response);
     }) as typeof fetch;
 
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Quick Order')).toBeInTheDocument();
@@ -241,7 +242,7 @@ describe('PortfolioPage', () => {
       return Promise.resolve({ ok: false } as Response);
     }) as typeof fetch;
 
-    render(<PortfolioPage />);
+    renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       expect(screen.getByText(/No open positions/)).toBeInTheDocument();
     });

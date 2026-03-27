@@ -4,15 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import { useAppStore } from '@/stores/app-store';
 import { queryKeys } from '@/lib/query-keys';
-
-export interface BrokerAccount {
-  equity: number;
-  cash: number;
-  buying_power: number;
-  portfolio_value: number;
-  daily_pnl: number;
-  daily_pnl_pct: number;
-}
+import type { BrokerAccount } from '@/lib/engine-client';
 
 async function fetchAccount(): Promise<BrokerAccount> {
   const res = await fetch(engineUrl('/api/v1/portfolio/account'), {
@@ -33,3 +25,5 @@ export function useAccountQuery() {
     refetchInterval: 30_000,
   });
 }
+
+export type { BrokerAccount } from '@/lib/engine-client';

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { Bell, X, AlertTriangle, Info, AlertCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAlertsQuery } from '@/hooks/queries';
 
 interface Notification {
   id: string;
@@ -34,87 +35,48 @@ function saveReadIds(ids: Set<string>): void {
   }
 }
 
-function extractAlerts(json: unknown): Record<string, unknown>[] {
-  const isRecord = (v: unknown): v is Record<string, unknown> =>
-    typeof v === 'object' && v !== null && !Array.isArray(v);
-
-  let raw: unknown[] = [];
-  if (json && typeof json === 'object' && Array.isArray((json as { alerts?: unknown }).alerts)) {
-    raw = (json as { alerts: unknown[] }).alerts;
-  } else if (Array.isArray(json)) {
-    raw = json;
-  }
-  return raw.filter(isRecord);
-}
-
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { data: agentAlerts } = useAlertsQuery(30_000);
+
+  const [manualReadIds, setManualReadIds] = useState<Set<string>>(() => loadReadIds());
+
+  const notifications: Notification[] = useMemo(() => {
+    if (!agentAlerts || agentAlerts.length === 0) return [];
+    return agentAlerts.slice(0, 20).map((a) => {
+      const id = String(a.id ?? crypto.randomUUID());
+      return {
+        id,
+        title: String(a.title ?? 'Alert'),
+        body: String(a.message ?? ''),
+        severity: (['info', 'warning', 'critical'].includes(String(a.severity))
+          ? String(a.severity)
+          : 'info') as Notification['severity'],
+        read: manualReadIds.has(id),
+        created_at: String(a.created_at ?? new Date().toISOString()),
+        source_type: 'alert' as const,
+        source_id: String(a.id ?? ''),
+      };
+    });
+  }, [agentAlerts, manualReadIds]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    const readIds = loadReadIds();
-
-    async function poll() {
-      try {
-        const res = await fetch('/api/agents/alerts');
-        if (!res.ok || !mountedRef.current) return;
-        const json: unknown = await res.json();
-        const alerts = extractAlerts(json);
-        if (alerts.length === 0 || !mountedRef.current) return;
-
-        setNotifications((prev) => {
-          const prevById = new Map(prev.map((n) => [n.id, n]));
-          return alerts.slice(0, 20).map((a) => {
-            const id = String(a.id ?? crypto.randomUUID());
-            const existing = prevById.get(id);
-            return {
-              id,
-              title: String(a.title ?? a.alert_type ?? 'Alert'),
-              body: String(a.message ?? ''),
-              severity: (['info', 'warning', 'critical'].includes(String(a.severity))
-                ? String(a.severity)
-                : 'info') as Notification['severity'],
-              read: existing ? existing.read : readIds.has(id),
-              created_at: String(a.created_at ?? new Date().toISOString()),
-              source_type: 'alert',
-              source_id: String(a.id ?? ''),
-            };
-          });
-        });
-      } catch {
-        // Agent service may be offline — fail silently
-      }
-    }
-
-    poll();
-    const interval = setInterval(poll, 30_000);
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, []);
-
   const markRead = (id: string) => {
-    setNotifications((prev) => {
-      const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
-      const ids = loadReadIds();
-      ids.add(id);
-      saveReadIds(ids);
+    setManualReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      saveReadIds(next);
       return next;
     });
   };
 
   const markAllRead = () => {
-    setNotifications((prev) => {
-      const ids = loadReadIds();
-      for (const n of prev) ids.add(n.id);
-      saveReadIds(ids);
-      return prev.map((n) => ({ ...n, read: true }));
+    setManualReadIds((prev) => {
+      const next = new Set(prev);
+      for (const n of notifications) next.add(n.id);
+      saveReadIds(next);
+      return next;
     });
   };
 

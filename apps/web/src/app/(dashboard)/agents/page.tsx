@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -8,122 +7,74 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
-import { agentsClient, type OrchestratorStatus } from '@/lib/agents-client';
 import { AgentStatusCard } from '@/components/agents/agent-status-card';
 import { RecommendationCard } from '@/components/agents/recommendation-card';
 import { AgentAlertFeed } from '@/components/agents/agent-alert-feed';
 import { agentDefs } from '@/components/agents/agent-defs';
+import {
+  useAgentStatusQuery,
+  useRecommendationsQuery,
+  useAlertsQuery,
+  useTriggerCycleMutation,
+  useHaltMutation,
+  useResumeMutation,
+  useApproveRecommendationMutation,
+  useRejectRecommendationMutation,
+} from '@/hooks/queries';
 
 export default function AgentsPage() {
   const agentsOnline = useAppStore((s) => s.agentsOnline);
-  const [status, setStatus] = useState<OrchestratorStatus | null>(null);
-  const [recommendations, setRecommendations] = useState<
-    Awaited<ReturnType<typeof agentsClient.getRecommendations>>['recommendations']
-  >([]);
-  const [alerts, setAlerts] = useState<
-    Awaited<ReturnType<typeof agentsClient.getAlerts>>['alerts']
-  >([]);
-  const [isOffline, setIsOffline] = useState(false);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [cycleTriggering, setCycleTriggering] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchAll = useCallback(async () => {
-    try {
-      const [s, r, a] = await Promise.all([
-        agentsClient.getStatus(),
-        agentsClient.getRecommendations('pending'),
-        agentsClient.getAlerts(),
-      ]);
-      setStatus(s);
-      setRecommendations(r.recommendations);
-      setAlerts(a.alerts);
-      setIsOffline(false);
-    } catch {
-      setIsOffline(true);
-    }
-  }, []);
+  // TanStack Query hooks (auto-poll at 5s)
+  const { data: status, isError: statusError } = useAgentStatusQuery();
+  const { data: recommendations = [] } = useRecommendationsQuery('pending', 5_000);
+  const { data: alerts = [] } = useAlertsQuery(5_000);
 
-  useEffect(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+  // Mutation hooks
+  const cycleMutation = useTriggerCycleMutation();
+  const haltMutation = useHaltMutation();
+  const resumeMutation = useResumeMutation();
+  const approveMutation = useApproveRecommendationMutation();
+  const rejectMutation = useRejectRecommendationMutation();
 
-    if (agentsOnline !== true) {
-      setStatus(null);
-      setRecommendations([]);
-      setAlerts([]);
-      setIsOffline(agentsOnline === false);
-      return;
-    }
-
-    fetchAll();
-    pollRef.current = setInterval(fetchAll, 5_000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [agentsOnline, fetchAll]);
-
-  const handleRunCycle = async () => {
-    setCycleTriggering(true);
-    try {
-      await agentsClient.runCycle();
-      await fetchAll();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start cycle');
-    } finally {
-      setCycleTriggering(false);
-    }
-  };
-
-  const handleHalt = async () => {
-    try {
-      await agentsClient.halt();
-      await fetchAll();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to halt agents');
-    }
-  };
-
-  const handleResume = async () => {
-    try {
-      await agentsClient.resume();
-      await fetchAll();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to resume agents');
-    }
-  };
-
-  const handleApprove = async (id: string) => {
-    setApprovingId(id);
-    try {
-      await agentsClient.approveRecommendation(id);
-      await fetchAll();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Approve failed');
-    } finally {
-      setApprovingId(null);
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    setRejectingId(id);
-    try {
-      await agentsClient.rejectRecommendation(id);
-      await fetchAll();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Reject failed');
-    } finally {
-      setRejectingId(null);
-    }
-  };
-
+  const isOffline = agentsOnline === false || (agentsOnline === true && statusError);
   const isRunning = status?.isRunning ?? false;
   const isHalted = status?.halted ?? false;
   const cycleCount = status?.cycleCount ?? 0;
-  const controlsDisabled = agentsOnline !== true || isOffline;
+  const controlsDisabled = agentsOnline !== true || !!isOffline;
+
+  const approvingId = approveMutation.isPending ? (approveMutation.variables as string) : null;
+  const rejectingId = rejectMutation.isPending ? (rejectMutation.variables as string) : null;
+
+  const handleRunCycle = () => {
+    cycleMutation.mutate(undefined, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to start cycle'),
+    });
+  };
+
+  const handleHalt = () => {
+    haltMutation.mutate(undefined, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to halt agents'),
+    });
+  };
+
+  const handleResume = () => {
+    resumeMutation.mutate(undefined, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to resume agents'),
+    });
+  };
+
+  const handleApprove = (id: string) => {
+    approveMutation.mutate(id, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Approve failed'),
+    });
+  };
+
+  const handleReject = (id: string) => {
+    rejectMutation.mutate(id, {
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Reject failed'),
+    });
+  };
 
   return (
     <div className="space-y-4 p-4">
@@ -168,11 +119,11 @@ export default function AgentsPage() {
           )}
           <Button
             onClick={isHalted ? handleResume : handleRunCycle}
-            disabled={controlsDisabled || isRunning || cycleTriggering}
+            disabled={controlsDisabled || isRunning || cycleMutation.isPending}
             variant="default"
             size="sm"
           >
-            {isRunning || cycleTriggering ? (
+            {isRunning || cycleMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="ml-1.5">Running...</span>
@@ -202,7 +153,7 @@ export default function AgentsPage() {
       </div>
 
       {/* Offline guidance */}
-      {(isOffline || agentsOnline === false) && (
+      {isOffline && (
         <Card className="bg-muted/30 border-border/50">
           <CardContent className="flex items-start gap-3 py-4 px-4">
             <Bot className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -235,7 +186,7 @@ export default function AgentsPage() {
               color={agent.color}
               badgeClass={agent.badgeClass}
               {...(agentStatus !== undefined && { agentStatus })}
-              isOffline={isOffline}
+              isOffline={!!isOffline}
             />
           );
         })}
@@ -249,7 +200,7 @@ export default function AgentsPage() {
         onReject={handleReject}
       />
 
-      <AgentAlertFeed alerts={alerts} isOffline={isOffline} />
+      <AgentAlertFeed alerts={alerts} isOffline={!!isOffline} />
     </div>
   );
 }
