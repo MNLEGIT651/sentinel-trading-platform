@@ -693,3 +693,53 @@ export interface JournalStats {
   winning_trades: number;
   losing_trades: number;
 }
+
+// ─── Strategy Health ────────────────────────────────────────────────
+
+/** Trend direction for a strategy health metric. */
+export type HealthTrend = 'improving' | 'stable' | 'degrading';
+
+/** Signal frequency trend direction. */
+export type FrequencyTrend = 'increasing' | 'stable' | 'decreasing';
+
+/** Composite health label for a strategy. */
+export type HealthLabel = 'healthy' | 'warning' | 'critical' | 'inactive' | 'new';
+
+/** Per-regime performance breakdown stored in JSONB. */
+export interface RegimePerformance {
+  [regime: string]: {
+    win_rate: number | null;
+    avg_return: number | null;
+    trade_count: number;
+  };
+}
+
+/**
+ * A point-in-time health snapshot for a single strategy.
+ * Mirrors `strategy_health_latest` view in Supabase.
+ */
+export interface StrategyHealthSnapshot {
+  id: string;
+  strategy_name: string;
+  window_days: number;
+  total_signals: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number | null;
+  avg_return_pct: number | null;
+  expectancy: number | null;
+  sharpe_ratio: number | null;
+  max_drawdown: number | null;
+  profit_factor: number | null;
+  avg_confidence: number | null;
+  false_positive_rate: number | null;
+  regime_performance: RegimePerformance;
+  win_rate_trend: HealthTrend | null;
+  expectancy_trend: HealthTrend | null;
+  signal_freq_trend: FrequencyTrend | null;
+  health_score: number | null;
+  health_label: HealthLabel | null;
+  computed_at: string;
+  source: string;
+}

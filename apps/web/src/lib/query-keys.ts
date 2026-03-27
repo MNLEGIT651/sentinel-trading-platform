@@ -38,6 +38,10 @@ export const queryKeys = {
     all: ['strategies'] as const,
     list: () => ['strategies', 'list'] as const,
     scan: (tickers: string[], days: number) => ['strategies', 'scan', tickers, days] as const,
+    health: {
+      all: () => ['strategies', 'health'] as const,
+      byName: (name: string) => ['strategies', 'health', name] as const,
+    },
   },
 
   // ── Settings / Health ────────────────────────────────────────────────
