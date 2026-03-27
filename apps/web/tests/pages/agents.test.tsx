@@ -133,4 +133,17 @@ describe('AgentsPage', () => {
     renderWithProviders(<AgentsPage />);
     await waitFor(() => expect(screen.getAllByText(/offline/i).length).toBeGreaterThan(0));
   });
+
+  it('shows error banner when status query fails but agents are marked online', async () => {
+    const { agentsClient } = await import('@/lib/agents-client');
+    // agents service is reachable (online=true) but the status call errors
+    vi.mocked(agentsClient.getStatus).mockRejectedValue(new Error('500 Internal Server Error'));
+    // recommendations and alerts succeed with empty data
+    vi.mocked(agentsClient.getRecommendations).mockResolvedValue({ recommendations: [] });
+    vi.mocked(agentsClient.getAlerts).mockResolvedValue({ alerts: [] });
+    renderWithProviders(<AgentsPage />);
+    await waitFor(() =>
+      expect(screen.getByText(/unable to load agent status/i)).toBeInTheDocument(),
+    );
+  });
 });

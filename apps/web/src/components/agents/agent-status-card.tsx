@@ -87,17 +87,18 @@ export function AgentStatusCard({
             <Zap className="h-3 w-3 text-muted-foreground" />
             <span className="text-[10px] text-muted-foreground">{isOffline ? '—' : statusStr}</span>
           </div>
-          {agentStatus?.lastRun != null && (
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(agentStatus.lastRun).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-            </div>
-          )}
+          {agentStatus?.lastRun != null &&
+            (() => {
+              const d = new Date(agentStatus.lastRun);
+              return !isNaN(d.getTime()) ? (
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">
+                    {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ) : null;
+            })()}
         </div>
       </CardContent>
     </Card>

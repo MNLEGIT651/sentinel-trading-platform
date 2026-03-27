@@ -153,6 +153,21 @@ describe('GET /recommendations', () => {
     expect(res.status).toBe(200);
     expect(res.body.recommendations).toEqual([]);
   });
+
+  it('returns 200 for each valid status value', async () => {
+    const validStatuses = ['pending', 'approved', 'rejected', 'filled', 'risk_blocked', 'all'];
+    for (const status of validStatuses) {
+      const res = await request(app).get(`/recommendations?status=${status}`);
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it('returns 400 for an invalid status value', async () => {
+    const res = await request(app).get('/recommendations?status=invalid_status');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_status');
+    expect(res.body.message).toMatch(/must be one of/);
+  });
 });
 
 describe('GET /alerts', () => {
@@ -187,10 +202,12 @@ describe('POST /recommendations/:id/approve', () => {
 });
 
 describe('POST /recommendations/:id/reject', () => {
-  it('returns 404 when recommendation not found', async () => {
+  it('returns 404 with message when recommendation not found', async () => {
     const { getRecommendation } = await import('../src/recommendations-store.js');
     vi.mocked(getRecommendation).mockResolvedValue(null as any);
     const res = await request(app).post('/recommendations/nonexistent/reject');
     expect(res.status).toBe(404);
+    expect(res.body.error).toBe('not_found');
+    expect(res.body.message).toMatch(/nonexistent/);
   });
 });

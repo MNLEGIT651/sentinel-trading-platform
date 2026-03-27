@@ -38,10 +38,12 @@ export function AgentAlertFeed({ alerts, isOffline }: AgentAlertFeedProps) {
                   className="flex items-start gap-2 py-1.5 border-b border-border/30 last:border-0"
                 >
                   <span className="text-[10px] font-mono text-muted-foreground w-16 shrink-0 pt-0.5">
-                    {new Date(alert.created_at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {(() => {
+                      const d = new Date(alert.created_at);
+                      return !isNaN(d.getTime())
+                        ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : '—';
+                    })()}
                   </span>
                   <Badge
                     className={cn(

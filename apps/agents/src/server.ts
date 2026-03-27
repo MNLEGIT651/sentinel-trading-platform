@@ -28,6 +28,7 @@ import {
 import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
 import { getLockManager } from './lock-manager.js';
+import { authMiddleware } from './auth-middleware.js';
 
 const CYCLE_LOCK_NAME = 'agent_cycle';
 
@@ -54,6 +55,13 @@ export function createApp(orchestrator: Orchestrator): Express {
     }),
   );
   app.use(express.json());
+
+  // ── Auth (all routes except /health and /status) ─────────────────
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const publicPaths = ['/health', '/status'];
+    if (publicPaths.includes(req.path)) return next();
+    return authMiddleware(req, res, next);
+  });
 
   // ── Health ──────────────────────────────────────────────────────
 
@@ -141,9 +149,25 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Recommendations ─────────────────────────────────────────────
 
+  const VALID_REC_STATUSES = [
+    'pending',
+    'approved',
+    'rejected',
+    'filled',
+    'risk_blocked',
+    'all',
+  ] as const;
+  const VALID_REC_STATUS_SET = new Set<string>(VALID_REC_STATUSES);
+
   app.get('/recommendations', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const status = (req.query.status as string) ?? 'pending';
+      if (!VALID_REC_STATUS_SET.has(status)) {
+        return res.status(400).json({
+          error: 'invalid_status',
+          message: `status must be one of: ${VALID_REC_STATUSES.join(', ')}`,
+        });
+      }
       const recommendations = await listRecommendations(status);
       res.json({ recommendations });
     } catch (err) {
@@ -229,7 +253,9 @@ export function createApp(orchestrator: Orchestrator): Express {
 
         const rec = await getRecommendation(id);
         if (!rec) {
-          return res.status(404).json({ error: 'not_found' });
+          return res
+            .status(404)
+            .json({ error: 'not_found', message: `Recommendation ${id} not found` });
         }
 
         const rejected = await rejectRecommendation(id);

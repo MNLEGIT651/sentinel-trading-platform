@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
+import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export default function AgentsPage() {
   const agentsOnline = useAppStore((s) => s.agentsOnline);
 
   // TanStack Query hooks (auto-poll at 5s)
-  const { data: status, isError: statusError } = useAgentStatusQuery();
+  const { data: status, isError: statusError, isLoading: statusLoading } = useAgentStatusQuery();
   const { data: recommendations = [] } = useRecommendationsQuery('pending', 5_000);
   const { data: alerts = [] } = useAlertsQuery(5_000);
 
@@ -43,8 +43,8 @@ export default function AgentsPage() {
   const cycleCount = status?.cycleCount ?? 0;
   const controlsDisabled = agentsOnline !== true || !!isOffline;
 
-  const approvingId = approveMutation.isPending ? (approveMutation.variables as string) : null;
-  const rejectingId = rejectMutation.isPending ? (rejectMutation.variables as string) : null;
+  const approvingId = approveMutation.isPending ? (approveMutation.variables ?? null) : null;
+  const rejectingId = rejectMutation.isPending ? (rejectMutation.variables ?? null) : null;
 
   const handleRunCycle = () => {
     cycleMutation.mutate(undefined, {
@@ -152,8 +152,8 @@ export default function AgentsPage() {
         </div>
       </div>
 
-      {/* Offline guidance */}
-      {isOffline && (
+      {/* Offline guidance — only when the service is confirmed unreachable */}
+      {agentsOnline === false && (
         <Card className="bg-muted/30 border-border/50">
           <CardContent className="flex items-start gap-3 py-4 px-4">
             <Bot className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -168,6 +168,18 @@ export default function AgentsPage() {
                 </code>
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Status query error — service is online but the status call failed */}
+      {agentsOnline === true && statusError && !statusLoading && (
+        <Card className="bg-destructive/10 border-destructive/30">
+          <CardContent className="flex items-center gap-3 py-3 px-4">
+            <WifiOff className="h-4 w-4 text-destructive flex-shrink-0" />
+            <p className="text-sm text-destructive">
+              Unable to load agent status. The service may be restarting — retrying automatically.
+            </p>
           </CardContent>
         </Card>
       )}

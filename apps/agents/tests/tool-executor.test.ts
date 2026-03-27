@@ -259,6 +259,114 @@ describe('analyze_ticker', () => {
   });
 });
 
+describe('get_strategy_info', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns all strategies when no family filter is provided', async () => {
+    mockEngine.getStrategies.mockResolvedValue({
+      strategies: [
+        { name: 'sma_crossover', family: 'trend', description: 'SMA crossover' },
+        { name: 'rsi_momentum', family: 'momentum', description: 'RSI momentum' },
+      ],
+    });
+    const result = JSON.parse(await executor.execute('get_strategy_info', {}));
+    expect(result.strategies).toHaveLength(2);
+    expect(mockEngine.getStrategies).toHaveBeenCalledTimes(1);
+  });
+
+  it('filters strategies by family when family is provided', async () => {
+    mockEngine.getStrategies.mockResolvedValue({
+      strategies: [
+        { name: 'sma_crossover', family: 'trend', description: 'SMA crossover' },
+        { name: 'rsi_momentum', family: 'momentum', description: 'RSI momentum' },
+      ],
+    });
+    const result = JSON.parse(await executor.execute('get_strategy_info', { family: 'trend' }));
+    expect(result.family).toBe('trend');
+    expect(result.strategies).toHaveLength(1);
+    expect(result.strategies[0].name).toBe('sma_crossover');
+  });
+});
+
+describe('calculate_position_size', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('fetches account equity and delegates to engine.calculatePositionSize', async () => {
+    mockEngine.getAccount.mockResolvedValue({
+      equity: 100000,
+      cash: 90000,
+      positions_value: 10000,
+      initial_capital: 100000,
+    });
+    mockEngine.calculatePositionSize.mockResolvedValue({
+      ticker: 'AAPL',
+      shares: 27,
+      position_value: 4860,
+      fraction: 0.0486,
+    });
+
+    const result = JSON.parse(
+      await executor.execute('calculate_position_size', {
+        ticker: 'AAPL',
+        price: 180,
+        method: 'fixed_fraction',
+      }),
+    );
+
+    expect(result.shares).toBe(27);
+    expect(result.ticker).toBe('AAPL');
+    expect(mockEngine.getAccount).toHaveBeenCalledTimes(1);
+    expect(mockEngine.calculatePositionSize).toHaveBeenCalledWith(
+      expect.objectContaining({ ticker: 'AAPL', price: 180, equity: 100000 }),
+    );
+  });
+
+  it('uses fixed_fraction method by default when no method provided', async () => {
+    mockEngine.getAccount.mockResolvedValue({
+      equity: 50000,
+      cash: 40000,
+      initial_capital: 50000,
+    });
+    mockEngine.calculatePositionSize.mockResolvedValue({
+      ticker: 'MSFT',
+      shares: 10,
+      position_value: 3700,
+      fraction: 0.074,
+    });
+
+    await executor.execute('calculate_position_size', { ticker: 'MSFT', price: 370 });
+
+    expect(mockEngine.calculatePositionSize).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'fixed_fraction' }),
+    );
+  });
+});
+
+describe('get_open_orders', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns orders and count from engine', async () => {
+    mockEngine.getOpenOrders.mockResolvedValue([
+      { order_id: 'o1', ticker: 'AAPL', side: 'buy', quantity: 5, status: 'pending' },
+      { order_id: 'o2', ticker: 'MSFT', side: 'sell', quantity: 10, status: 'pending' },
+    ]);
+
+    const result = JSON.parse(await executor.execute('get_open_orders', {}));
+
+    expect(result.count).toBe(2);
+    expect(result.orders).toHaveLength(2);
+    expect(result.orders[0].order_id).toBe('o1');
+    expect(mockEngine.getOpenOrders).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns count of 0 when no open orders exist', async () => {
+    mockEngine.getOpenOrders.mockResolvedValue([]);
+    const result = JSON.parse(await executor.execute('get_open_orders', {}));
+    expect(result.count).toBe(0);
+    expect(result.orders).toHaveLength(0);
+  });
+});
+
 describe('create_alert', () => {
   it('writes alert to Supabase', async () => {
     const { createAlert } = await import('../src/recommendations-store.js');
