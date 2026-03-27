@@ -27,14 +27,15 @@ import {
 } from './recommendations-store.js';
 import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
+import { getLockManager } from './lock-manager.js';
 
-// ── Cycle-in-progress flag ─────────────────────────────────────────
-// Module-level so the scheduler can also check it.
+const CYCLE_LOCK_NAME = 'agent_cycle';
 
-let _isRunning = false;
+// ── Cycle-in-progress check ────────────────────────────────────────
+// Now delegates to the distributed lock manager instead of a module-level flag.
 
-export function isRunning(): boolean {
-  return _isRunning;
+export async function isRunning(): Promise<boolean> {
+  return getLockManager().isHeld(CYCLE_LOCK_NAME);
 }
 
 // ── App factory ────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Status ──────────────────────────────────────────────────────
 
-  app.get('/status', (_req: Request, res: Response) => {
+  app.get('/status', async (_req: Request, res: Response) => {
     const state = orchestrator.currentState;
 
     const agentStatus: Record<string, { status: string; lastRun: string | null }> = {};
@@ -83,11 +84,13 @@ export function createApp(orchestrator: Orchestrator): Express {
       };
     }
 
+    const running = await isRunning();
+
     res.json({
       agents: agentStatus,
       cycleCount: state.cycleCount,
       halted: state.halted,
-      isRunning: _isRunning,
+      isRunning: running,
       nextCycleAt: getNextCycleAt(),
       lastCycleAt: state.lastCycleAt,
     });
@@ -95,14 +98,17 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Cycle control ───────────────────────────────────────────────
 
-  app.post('/cycle', (_req: Request, res: Response) => {
+  app.post('/cycle', async (_req: Request, res: Response) => {
     if (orchestrator.currentState.halted) {
       return res.status(409).json({
         error: 'halted',
         message: 'Trading is halted. Call POST /resume first.',
       });
     }
-    if (_isRunning) {
+
+    const lockManager = getLockManager();
+    const acquired = await lockManager.acquire(CYCLE_LOCK_NAME);
+    if (!acquired) {
       return res.status(409).json({
         error: 'cycle_in_progress',
         message: 'A cycle is already running. Try again after it completes.',
@@ -110,15 +116,14 @@ export function createApp(orchestrator: Orchestrator): Express {
     }
 
     // Fire-and-forget — respond immediately, cycle runs async
-    _isRunning = true;
     orchestrator
       .runCycle()
       .then(() => {
-        _isRunning = false;
+        return lockManager.release(CYCLE_LOCK_NAME);
       })
       .catch((err: unknown) => {
-        _isRunning = false;
         console.error('[Server] Unhandled cycle error:', err);
+        return lockManager.release(CYCLE_LOCK_NAME);
       });
 
     res.json({ started: true, message: 'Agent cycle started' });

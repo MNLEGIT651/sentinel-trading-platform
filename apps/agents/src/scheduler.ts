@@ -58,7 +58,7 @@ export function getNextCycleAt(): string | null {
 export function startScheduler(
   runner: CycleRunner,
   options?: {
-    isRunning?: () => boolean;
+    isRunning?: () => boolean | Promise<boolean>;
     isHalted?: () => boolean;
   },
 ): ScheduledTask {
@@ -71,7 +71,7 @@ export function startScheduler(
       return;
     }
 
-    if (options?.isRunning?.()) {
+    if (await options?.isRunning?.()) {
       console.log('[Scheduler] Skipping cycle — previous cycle still running');
       return;
     }
