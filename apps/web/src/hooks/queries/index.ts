@@ -13,6 +13,9 @@ export { useAlertsQuery } from './use-alerts-query';
 export { useStrategiesQuery } from './use-strategies-query';
 export { useOrderHistoryQuery } from './use-order-history-query';
 export { useOrderStatusQuery } from './use-order-status-query';
+export { useJournalQuery } from './use-journal-query';
+export type { JournalFilters } from './use-journal-query';
+export { useJournalStatsQuery } from './use-journal-stats-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
@@ -20,3 +23,5 @@ export { useApproveRecommendationMutation } from './use-approve-recommendation-m
 export { useRejectRecommendationMutation } from './use-reject-recommendation-mutation';
 export { useTriggerCycleMutation } from './use-trigger-cycle-mutation';
 export { useHaltMutation, useResumeMutation } from './use-halt-resume-mutations';
+export { useCreateJournalEntryMutation } from './use-create-journal-entry-mutation';
+export { useGradeJournalMutation } from './use-grade-journal-mutation';
