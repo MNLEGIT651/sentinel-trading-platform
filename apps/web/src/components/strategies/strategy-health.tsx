@@ -6,38 +6,39 @@ import { TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight } from 'l
 
 // ── Health label config ─────────────────────────────────────────────
 
-const LABEL_CONFIG: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  healthy: {
-    bg: 'bg-emerald-500/10',
-    text: 'text-emerald-400',
-    dot: 'bg-emerald-400',
-    label: 'Healthy',
-  },
-  warning: {
-    bg: 'bg-amber-500/10',
-    text: 'text-amber-400',
-    dot: 'bg-amber-400',
-    label: 'Warning',
-  },
-  critical: {
-    bg: 'bg-red-500/10',
-    text: 'text-red-400',
-    dot: 'bg-red-400',
-    label: 'Critical',
-  },
-  inactive: {
-    bg: 'bg-zinc-500/10',
-    text: 'text-zinc-400',
-    dot: 'bg-zinc-400',
-    label: 'Inactive',
-  },
-  new: {
-    bg: 'bg-blue-500/10',
-    text: 'text-blue-400',
-    dot: 'bg-blue-400',
-    label: 'New',
-  },
-};
+const LABEL_CONFIG: Record<HealthLabel, { bg: string; text: string; dot: string; label: string }> =
+  {
+    healthy: {
+      bg: 'bg-emerald-500/10',
+      text: 'text-emerald-400',
+      dot: 'bg-emerald-400',
+      label: 'Healthy',
+    },
+    warning: {
+      bg: 'bg-amber-500/10',
+      text: 'text-amber-400',
+      dot: 'bg-amber-400',
+      label: 'Warning',
+    },
+    critical: {
+      bg: 'bg-red-500/10',
+      text: 'text-red-400',
+      dot: 'bg-red-400',
+      label: 'Critical',
+    },
+    inactive: {
+      bg: 'bg-zinc-500/10',
+      text: 'text-zinc-400',
+      dot: 'bg-zinc-400',
+      label: 'Inactive',
+    },
+    new: {
+      bg: 'bg-blue-500/10',
+      text: 'text-blue-400',
+      dot: 'bg-blue-400',
+      label: 'New',
+    },
+  };
 
 // ── Trend icon helper ───────────────────────────────────────────────
 
