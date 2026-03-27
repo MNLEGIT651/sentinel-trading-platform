@@ -96,12 +96,52 @@ describe('AgentsPage', () => {
     expect(screen.getByText(/RSI oversold/i)).toBeInTheDocument();
   });
 
-  it('clicking Approve calls approveRecommendation', async () => {
+  it('clicking Approve opens review dialog, confirm calls approveRecommendation', async () => {
     const { agentsClient } = await import('@/lib/agents-client');
+
+    // Mock the risk preview fetch
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          recommendation: {
+            id: 'rec-1',
+            ticker: 'NVDA',
+            side: 'buy',
+            quantity: 5,
+            order_type: 'market',
+          },
+          impacts: [
+            { metric: 'Position Size', current: 0, projected: 2.5, limit: 5, unit: '%' },
+            { metric: 'Open Positions', current: 3, projected: 4, limit: 20, unit: '' },
+          ],
+          limits: {
+            max_position_pct: 5,
+            max_sector_pct: 20,
+            max_open_positions: 20,
+            daily_loss_limit_pct: 2,
+            soft_drawdown_pct: 10,
+            hard_drawdown_pct: 15,
+          },
+          portfolio: { equity: 100000, cash: 50000, positions_count: 3, engine_connected: true },
+        }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
     renderWithProviders(<AgentsPage />);
     await waitFor(() => screen.getByText('NVDA'));
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+
+    // Click "Review & Approve" to open the dialog
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    // Wait for risk preview to load and the dialog "Approve Trade" button to appear
+    await waitFor(() => screen.getByRole('button', { name: /approve trade/i }));
+
+    // Confirm the approval
+    fireEvent.click(screen.getByRole('button', { name: /approve trade/i }));
     await waitFor(() => expect(agentsClient.approveRecommendation).toHaveBeenCalledWith('rec-1'));
+
+    vi.unstubAllGlobals();
   });
 
   it('clicking Reject calls rejectRecommendation', async () => {

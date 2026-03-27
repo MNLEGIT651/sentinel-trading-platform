@@ -17,6 +17,8 @@ export { useJournalQuery } from './use-journal-query';
 export type { JournalFilters } from './use-journal-query';
 export { useJournalStatsQuery } from './use-journal-stats-query';
 export { useStrategyHealthQuery, useStrategyHealthDetailQuery } from './use-strategy-health-query';
+export { useRiskPreviewQuery } from './use-risk-preview-query';
+export type { PolicyImpact, RiskPreview } from './use-risk-preview-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';

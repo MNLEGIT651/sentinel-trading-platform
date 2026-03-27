@@ -31,6 +31,7 @@ export const queryKeys = {
     status: () => ['agents', 'status'] as const,
     recommendations: (status?: string) => ['agents', 'recommendations', status] as const,
     alerts: () => ['agents', 'alerts'] as const,
+    riskPreview: (id: string) => ['agents', 'risk-preview', id] as const,
   },
 
   // ── Strategies ───────────────────────────────────────────────────────
