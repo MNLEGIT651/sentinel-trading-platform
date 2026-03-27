@@ -16,6 +16,7 @@ export { useOrderStatusQuery } from './use-order-status-query';
 export { useJournalQuery } from './use-journal-query';
 export type { JournalFilters } from './use-journal-query';
 export { useJournalStatsQuery } from './use-journal-stats-query';
+export { useStrategyHealthQuery, useStrategyHealthDetailQuery } from './use-strategy-health-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';

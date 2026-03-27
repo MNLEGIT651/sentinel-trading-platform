@@ -20,6 +20,7 @@ const TABLE_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
   market_data: [queryKeys.data.all],
   user_trading_policy: [queryKeys.settings.policy()],
   decision_journal: [queryKeys.journal.all],
+  strategy_health_snapshots: [queryKeys.strategies.health.all(), queryKeys.strategies.all],
 };
 
 const SUBSCRIBED_TABLES = Object.keys(TABLE_INVALIDATION_MAP);

@@ -83,6 +83,7 @@ describe('useRealtimeSync', () => {
       'market_data',
       'user_trading_policy',
       'decision_journal',
+      'strategy_health_snapshots',
     ];
 
     // One channel per table
@@ -100,7 +101,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(7);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(8);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -188,5 +189,21 @@ describe('useRealtimeSync', () => {
     journalSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['journal'] }));
+  });
+
+  it('invalidates strategy health queries when strategy_health_snapshots changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const healthSub = subscriptions.find((s) => s.table === 'strategy_health_snapshots');
+    expect(healthSub).toBeDefined();
+    healthSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ['strategies', 'health'] }),
+    );
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['strategies'] }));
   });
 });
