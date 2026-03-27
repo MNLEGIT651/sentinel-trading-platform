@@ -84,9 +84,9 @@ interface ApprovalDialogProps {
   side: 'buy' | 'sell';
   quantity: number;
   orderType: string;
-  reason?: string;
-  strategyName?: string;
-  signalStrength?: number | null;
+  reason?: string | undefined;
+  strategyName?: string | undefined;
+  signalStrength?: number | null | undefined;
   isApproving: boolean;
   onConfirm: () => void;
   onCancel: () => void;
