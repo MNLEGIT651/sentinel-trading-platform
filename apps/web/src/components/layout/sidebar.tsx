@@ -22,6 +22,9 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Power,
+  CheckSquare,
+  ArrowUpDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +43,9 @@ const navItems = [
   { label: 'Catalysts', href: '/catalysts', icon: Calendar },
   { label: 'Backtest', href: '/backtest', icon: FlaskConical },
   { label: 'Agents', href: '/agents', icon: Bot },
+  { label: 'Approvals', href: '/approvals', icon: CheckSquare },
+  { label: 'Orders', href: '/orders', icon: ArrowUpDown },
+  { label: 'Controls', href: '/system-controls', icon: Power },
   { label: 'Roles', href: '/roles', icon: Shield },
   { label: 'Audit Log', href: '/audit-log', icon: ClipboardList },
   { label: 'Settings', href: '/settings', icon: Settings },
