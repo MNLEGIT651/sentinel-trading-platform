@@ -138,12 +138,12 @@ export function createApp(orchestrator: Orchestrator): Express {
   });
 
   app.post('/halt', (_req: Request, res: Response) => {
-    orchestrator.halt('Manual halt via dashboard');
+    void orchestrator.halt('Manual halt via dashboard');
     res.json({ halted: true, message: 'Trading halted' });
   });
 
   app.post('/resume', (_req: Request, res: Response) => {
-    orchestrator.resume();
+    void orchestrator.resume();
     res.json({ halted: false, message: 'Trading resumed' });
   });
 

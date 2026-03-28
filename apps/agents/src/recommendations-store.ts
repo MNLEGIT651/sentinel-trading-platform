@@ -1,6 +1,28 @@
 // apps/agents/src/recommendations-store.ts
 import { getSupabaseClient } from './supabase-client.js';
 
+async function emitEvent(
+  recommendationId: string,
+  eventType: string,
+  actorType: 'system' | 'agent' | 'operator' = 'system',
+  actorId?: string,
+  payload: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    const db = getSupabaseClient();
+    await db.from('recommendation_events').insert({
+      recommendation_id: recommendationId,
+      event_type: eventType,
+      actor_type: actorType,
+      actor_id: actorId ?? null,
+      payload,
+    });
+  } catch (err) {
+    // Non-blocking — event emission should never break the main flow
+    console.warn('[recommendations-store] Failed to emit event:', eventType, err);
+  }
+}
+
 export interface RecommendationCreate {
   agent_role: string;
   ticker: string;
@@ -43,6 +65,11 @@ export async function createRecommendation(rec: RecommendationCreate): Promise<R
     .select()
     .single();
   if (error) throw new Error(error.message);
+  await emitEvent(data.id, 'created', 'agent', rec.agent_role, {
+    ticker: rec.ticker,
+    side: rec.side,
+    quantity: rec.quantity,
+  });
   return data as Recommendation;
 }
 
@@ -85,6 +112,7 @@ export async function atomicApprove(id: string): Promise<Recommendation | null> 
     .single();
   if (error?.code === 'PGRST116') return null;
   if (error) throw new Error(error.message);
+  await emitEvent(id, 'approved', 'operator');
   return data as Recommendation;
 }
 
@@ -95,6 +123,7 @@ export async function markFilled(id: string, orderId: string): Promise<void> {
     .update({ status: 'filled', order_id: orderId })
     .eq('id', id);
   if (error) throw new Error(error.message);
+  await emitEvent(id, 'filled', 'system', undefined, { order_id: orderId });
 }
 
 export async function markRiskBlocked(id: string, reason: string): Promise<void> {
@@ -108,6 +137,7 @@ export async function markRiskBlocked(id: string, reason: string): Promise<void>
     })
     .eq('id', id);
   if (error) throw new Error(error.message);
+  await emitEvent(id, 'risk_blocked', 'system', undefined, { reason });
 }
 
 export async function rejectRecommendation(id: string): Promise<Recommendation | null> {
@@ -121,6 +151,7 @@ export async function rejectRecommendation(id: string): Promise<Recommendation |
     .single();
   if (error?.code === 'PGRST116') return null;
   if (error) throw new Error(error.message);
+  await emitEvent(id, 'rejected', 'operator');
   return data as Recommendation;
 }
 

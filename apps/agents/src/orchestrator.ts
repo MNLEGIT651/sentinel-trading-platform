@@ -24,6 +24,7 @@ import {
   STRATEGY_ANALYST_COOLDOWN_MS,
 } from './config.js';
 import { logger } from './logger.js';
+import { getSupabaseClient } from './supabase-client.js';
 
 const DEFAULT_CONFIGS: AgentConfig[] = [
   {
@@ -83,8 +84,7 @@ export class Orchestrator {
     /** Inject a pre-built ToolExecutor — used in tests to supply a mock executor. */
     executor?: ToolExecutor;
   }) {
-    this.executor =
-      options?.executor ?? new ToolExecutor(new EngineClient(options?.engineUrl));
+    this.executor = options?.executor ?? new ToolExecutor(new EngineClient(options?.engineUrl));
 
     const configs = options?.configs ?? DEFAULT_CONFIGS;
 
@@ -135,6 +135,25 @@ export class Orchestrator {
   }
 
   /**
+   * Sync halt state from the system_controls table so DB is the source of truth.
+   */
+  private async syncHaltStateFromDB(): Promise<void> {
+    try {
+      const db = getSupabaseClient();
+      const { data, error } = await db
+        .from('system_controls')
+        .select('trading_halted')
+        .limit(1)
+        .single();
+      if (!error && data) {
+        this.state.halted = data.trading_halted;
+      }
+    } catch (err) {
+      logger.warn('orchestrator.syncHaltState.failed', { error: String(err) });
+    }
+  }
+
+  /**
    * Run a single trading cycle: market → strategy → risk → execute.
    */
   async runCycle(): Promise<AgentResult[]> {
@@ -142,6 +161,8 @@ export class Orchestrator {
       logger.warn('orchestrator.cycle.skipped', { reason: 'in_progress' });
       return [];
     }
+
+    await this.syncHaltStateFromDB();
 
     if (this.state.halted) {
       logger.warn('orchestrator.cycle.skipped', { reason: 'halted' });
@@ -204,7 +225,11 @@ export class Orchestrator {
     this.state.lastRun[role] = result.timestamp;
 
     if (result.success) {
-      logger.info('agent.complete', { role, name: agent.config.name, durationMs: result.durationMs });
+      logger.info('agent.complete', {
+        role,
+        name: agent.config.name,
+        durationMs: result.durationMs,
+      });
     } else {
       logger.error('agent.failed', { role, name: agent.config.name, error: result.error });
     }
@@ -250,20 +275,38 @@ export class Orchestrator {
   }
 
   /**
-   * Emergency halt — stops all trading activity.
+   * Emergency halt — stops all trading activity and persists to DB.
    */
-  halt(reason: string): void {
+  async halt(reason: string): Promise<void> {
     this.state.halted = true;
     this.stop();
     logger.error('orchestrator.halt', { reason });
+    try {
+      const db = getSupabaseClient();
+      await db
+        .from('system_controls')
+        .update({ trading_halted: true, updated_at: new Date().toISOString() })
+        .neq('id', '');
+    } catch (err) {
+      logger.warn('orchestrator.halt.dbWrite.failed', { error: String(err) });
+    }
   }
 
   /**
-   * Resume trading after halt.
+   * Resume trading after halt and persist to DB.
    */
-  resume(): void {
+  async resume(): Promise<void> {
     this.state.halted = false;
     logger.info('orchestrator.resume');
+    try {
+      const db = getSupabaseClient();
+      await db
+        .from('system_controls')
+        .update({ trading_halted: false, updated_at: new Date().toISOString() })
+        .neq('id', '');
+    } catch (err) {
+      logger.warn('orchestrator.resume.dbWrite.failed', { error: String(err) });
+    }
   }
 
   /**

@@ -7,6 +7,7 @@ from enum import StrEnum
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src.db import get_db
 from src.execution import get_broker
 from src.execution.broker_interface import OrderRequest
 from src.execution.order_store import TERMINAL_STATUSES, get_order_store
@@ -69,6 +70,22 @@ async def get_positions() -> list[dict]:
 @router.post("/orders")
 async def submit_order(body: SubmitOrderBody) -> dict:
     """Submit a new order to the broker (pre-trade risk check enforced)."""
+    # ── Trading halt check ──────────────────────────────────────────
+    try:
+        db = get_db()
+        if db is not None:
+            row = db.table("system_controls").select("trading_halted").limit(1).single().execute()
+            if row.data and row.data.get("trading_halted"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Trading is halted. Cannot submit orders.",
+                )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Could not check trading halt status: %s", exc)
+    # ────────────────────────────────────────────────────────────────
+
     try:
         broker = get_broker()
 

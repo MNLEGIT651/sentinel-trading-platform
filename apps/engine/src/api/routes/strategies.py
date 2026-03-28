@@ -71,6 +71,7 @@ class ScanResponse(BaseModel):
     tickers_scanned: int
     strategies_run: int
     errors: list[str]
+    run_id: str | None = None
 
 
 class ScanRequest(BaseModel):
@@ -188,6 +189,32 @@ async def get_strategies() -> StrategyListResponse:
 @router.post("/scan", response_model=ScanResponse)
 async def scan_signals(request: ScanRequest) -> ScanResponse:
     """Run strategy scan against live Polygon data for the given tickers."""
+    db = get_db()
+    run_id: str | None = None
+    if db is not None:
+        try:
+            strategy_names = list(list_strategies().keys())
+            result = (
+                db.table("signal_runs")
+                .insert(
+                    {
+                        "requested_by": "api",
+                        "universe": request.tickers,
+                        "strategies": strategy_names,
+                        "days": request.days,
+                        "min_strength": float(request.min_strength),
+                        "status": "running",
+                    }
+                )
+                .select("id")
+                .single()
+                .execute()
+            )
+            raw_id = result.data["id"] if result.data else None
+            run_id = str(raw_id) if raw_id is not None else None
+        except Exception as exc:
+            logger.warning("Failed to create signal_run record: %s", exc)
+
     data_map: dict[str, OHLCVData] = {}
     fetch_errors: list[str] = []
     polygon: PolygonClient | None = None
@@ -232,12 +259,25 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
             await polygon.close()
 
     if not data_map:
+        if db is not None and run_id is not None:
+            try:
+                db.table("signal_runs").update(
+                    {
+                        "finished_at": datetime.now(UTC).isoformat(),
+                        "total_signals": 0,
+                        "status": "failed",
+                        "errors": fetch_errors,
+                    }
+                ).eq("id", run_id).execute()
+            except Exception as exc:
+                logger.warning("Failed to update signal_run record: %s", exc)
         return ScanResponse(
             signals=[],
             total_signals=0,
             tickers_scanned=0,
             strategies_run=0,
             errors=fetch_errors,
+            run_id=run_id,
         )
 
     generator = SignalGenerator(min_signal_strength=request.min_strength)
@@ -258,12 +298,26 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
         for s in batch.top_signals(50)
     ]
 
+    if db is not None and run_id is not None:
+        try:
+            db.table("signal_runs").update(
+                {
+                    "finished_at": datetime.now(UTC).isoformat(),
+                    "total_signals": len(signals_out),
+                    "status": "completed",
+                    "errors": fetch_errors + batch.errors,
+                }
+            ).eq("id", run_id).execute()
+        except Exception as exc:
+            logger.warning("Failed to update signal_run record: %s", exc)
+
     return ScanResponse(
         signals=signals_out,
         total_signals=batch.total_signals,
         tickers_scanned=batch.tickers_scanned,
         strategies_run=batch.strategies_run,
         errors=fetch_errors + batch.errors,
+        run_id=run_id,
     )
 
 
