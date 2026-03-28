@@ -91,4 +91,11 @@ export const queryKeys = {
     all: ['data-quality'] as const,
     list: (filters?: object) => ['data-quality', 'list', filters] as const,
   },
+
+  // ── Replay / Incident Mode ────────────────────────────────────────
+  replay: {
+    all: ['replay'] as const,
+    snapshot: (timestamp: string, window: number) =>
+      ['replay', 'snapshot', timestamp, window] as const,
+  },
 } as const;
