@@ -836,6 +836,82 @@ export interface OperatorAction {
 /** Status of a signal scan run. */
 export type SignalRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
 
+// ─── Workflow Jobs (Durable Workflow Engine) ─────────────────────────
+
+/** Status of a workflow job. */
+export type WorkflowJobStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'retrying';
+
+/** Workflow type identifiers. */
+export type WorkflowType =
+  | 'recommendation_lifecycle'
+  | 'order_execution'
+  | 'risk_evaluation'
+  | 'agent_cycle';
+
+/** A durable workflow job tracked in the DB. */
+export interface WorkflowJob {
+  id: string;
+  workflow_type: WorkflowType;
+  idempotency_key: string | null;
+  status: WorkflowJobStatus;
+  current_step: string | null;
+  steps_completed: string[];
+  input_data: Record<string, unknown>;
+  output_data: Record<string, unknown>;
+  error_message: string | null;
+  error_count: number;
+  max_retries: number;
+  retry_after: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  timeout_at: string | null;
+  created_at: string;
+  updated_at: string;
+  recommendation_id: string | null;
+  order_id: string | null;
+  agent_run_id: string | null;
+}
+
+/** Step execution log entry. */
+export type WorkflowStepStatus = 'started' | 'completed' | 'failed' | 'skipped';
+
+export interface WorkflowStepLog {
+  id: string;
+  job_id: string;
+  step_name: string;
+  status: WorkflowStepStatus;
+  input_data: Record<string, unknown>;
+  output_data: Record<string, unknown>;
+  error: string | null;
+  duration_ms: number | null;
+  executed_at: string;
+}
+
+/** Filters for querying workflow jobs. */
+export interface WorkflowJobsFilters {
+  workflow_type?: WorkflowType | undefined;
+  status?: WorkflowJobStatus | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+}
+
+/** Summary stats for the workflows page. */
+export interface WorkflowStats {
+  total: number;
+  pending: number;
+  running: number;
+  completed: number;
+  failed: number;
+  retrying: number;
+  avg_duration_ms: number | null;
+}
+
 /**
  * Metadata for a signal scan execution.
  * Mirrors the `signal_runs` table.
