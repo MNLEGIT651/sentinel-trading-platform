@@ -14,24 +14,31 @@ import {
   DollarSign,
   BarChart3,
   ExternalLink,
+  FileText,
+  AlertCircle,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { useFillsQuery, useRiskEvaluationsQuery } from '@/hooks/queries';
+import { useFillsQuery, useRiskEvaluationsQuery, useOrderHistoryQuery } from '@/hooks/queries';
 import type { Fill, RiskEvaluation, RiskCheck } from '@sentinel/shared';
+import type { OrderHistoryEntry } from '@/hooks/queries/use-order-history-query';
+import { cn } from '@/lib/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
-type TimelineEntryType = 'fill' | 'risk';
+type TimelineEntryType = 'fill' | 'risk' | 'order';
 
 interface TimelineEntry {
   id: string;
   type: TimelineEntryType;
   timestamp: string;
-  data: Fill | RiskEvaluation;
+  data: Fill | RiskEvaluation | OrderHistoryEntry;
 }
 
 type DateRange = 'today' | 'week' | 'month' | 'all';
-type TypeFilter = 'all' | 'fills' | 'risk';
+type TypeFilter = 'all' | 'fills' | 'risk' | 'orders';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -62,11 +69,28 @@ function formatCurrency(val: number): string {
 const ENTRY_META: Record<TimelineEntryType, { label: string; icon: typeof CheckCircle }> = {
   fill: { label: 'Fill', icon: CheckCircle },
   risk: { label: 'Risk Eval', icon: Shield },
+  order: { label: 'Order', icon: FileText },
 };
+
+const ORDER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  pending: { bg: 'bg-zinc-500/15', text: 'text-zinc-400' },
+  submitted: { bg: 'bg-blue-500/15', text: 'text-blue-400' },
+  partial: { bg: 'bg-amber-500/15', text: 'text-amber-400' },
+  filled: { bg: 'bg-green-500/15', text: 'text-green-400' },
+  cancelled: { bg: 'bg-zinc-500/15', text: 'text-zinc-500' },
+  rejected: { bg: 'bg-red-500/15', text: 'text-red-400' },
+};
+
+const DEFAULT_ORDER_STYLE = { bg: 'bg-zinc-500/15', text: 'text-zinc-400' };
 
 function getEntryBadgeColor(entry: TimelineEntry): string {
   if (entry.type === 'fill') {
     return 'bg-green-500/15 text-green-400';
+  }
+  if (entry.type === 'order') {
+    const order = entry.data as OrderHistoryEntry;
+    const style = ORDER_STATUS_STYLES[order.status] ?? DEFAULT_ORDER_STYLE;
+    return `${style.bg} ${style.text}`;
   }
   const risk = entry.data as RiskEvaluation;
   return risk.allowed ? 'bg-orange-500/15 text-orange-400' : 'bg-red-500/15 text-red-400';
@@ -77,16 +101,19 @@ function getEntryBadgeColor(entry: TimelineEntry): string {
 function StatsRow({
   fills,
   riskEvals,
+  orders,
   isLoading,
 }: {
   fills: Fill[];
   riskEvals: RiskEvaluation[];
+  orders: OrderHistoryEntry[];
   isLoading: boolean;
 }) {
   const stats = useMemo(() => {
     const totalFills = fills.length;
     const totalRiskEvals = riskEvals.length;
-    const totalEntries = totalFills + totalRiskEvals;
+    const totalOrders = orders.length;
+    const totalEntries = totalFills + totalRiskEvals + totalOrders;
 
     const totalCommission = fills.reduce((sum, f) => sum + (f.commission ?? 0), 0);
 
@@ -96,10 +123,13 @@ function StatsRow({
         ? slippageValues.reduce((a, b) => a + b, 0) / slippageValues.length
         : null;
 
-    const fillRate = totalEntries > 0 ? ((totalFills / totalEntries) * 100).toFixed(1) : '—';
+    const fillRate =
+      totalOrders > 0
+        ? ((orders.filter((o) => o.status === 'filled').length / totalOrders) * 100).toFixed(1)
+        : '—';
 
-    return { totalEntries, totalFills, fillRate, totalCommission, avgSlippage };
-  }, [fills, riskEvals]);
+    return { totalEntries, totalFills, totalOrders, fillRate, totalCommission, avgSlippage };
+  }, [fills, riskEvals, orders]);
 
   if (isLoading) {
     return (
@@ -165,16 +195,22 @@ function EntryBadge({ entry }: { entry: TimelineEntry }) {
   const meta = ENTRY_META[entry.type];
   const color = getEntryBadgeColor(entry);
   const Icon = meta.icon;
+
+  let label = meta.label;
+  if (entry.type === 'risk') {
+    label = (entry.data as RiskEvaluation).allowed ? 'Allowed' : 'Blocked';
+  } else if (entry.type === 'order') {
+    label =
+      (entry.data as OrderHistoryEntry).status.charAt(0).toUpperCase() +
+      (entry.data as OrderHistoryEntry).status.slice(1);
+  }
+
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color}`}
     >
       <Icon className="h-3 w-3" />
-      {entry.type === 'risk'
-        ? (entry.data as RiskEvaluation).allowed
-          ? 'Allowed'
-          : 'Blocked'
-        : meta.label}
+      {label}
     </span>
   );
 }
@@ -319,6 +355,170 @@ function RiskEvalDetail({ evaluation }: { evaluation: RiskEvaluation }) {
   );
 }
 
+// ─── Execution Quality ──────────────────────────────────────────────────
+
+function ExecutionQuality({ order }: { order: OrderHistoryEntry }) {
+  if (order.fill_price == null || order.status !== 'filled') return null;
+
+  return (
+    <div className="mt-2 rounded border border-zinc-800 bg-zinc-950/50 p-2">
+      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1">
+        Execution Quality
+      </p>
+      <div className="flex flex-wrap gap-3 text-xs">
+        <div>
+          <span className="text-zinc-500">Fill Price: </span>
+          <span className="text-zinc-200 font-medium">{formatCurrency(order.fill_price)}</span>
+        </div>
+        {order.order_type !== 'market' && (
+          <div>
+            <span className="text-zinc-500">
+              {order.order_type === 'limit' ? 'Limit' : 'Request'} Price:{' '}
+            </span>
+            <span className="text-zinc-200">
+              {order.fill_price ? formatCurrency(order.fill_price) : '—'}
+            </span>
+          </div>
+        )}
+        <div>
+          <span className="text-zinc-500">Fill Rate: </span>
+          <span
+            className={cn(
+              'font-medium',
+              order.filled_qty >= order.qty ? 'text-green-400' : 'text-amber-400',
+            )}
+          >
+            {order.qty > 0 ? ((order.filled_qty / order.qty) * 100).toFixed(0) : 0}%
+          </span>
+          <span className="text-zinc-600 ml-1">
+            ({order.filled_qty}/{order.qty})
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Order Detail ───────────────────────────────────────────────────────
+
+const ORDER_STATUS_STEPS = ['pending', 'submitted', 'partial', 'filled'] as const;
+const ORDER_TERMINAL = ['cancelled', 'rejected'] as const;
+
+function OrderLifecycleBar({ status }: { status: string }) {
+  const isTerminal = (ORDER_TERMINAL as readonly string[]).includes(status);
+  const currentIdx = isTerminal
+    ? -1
+    : ORDER_STATUS_STEPS.indexOf(status as (typeof ORDER_STATUS_STEPS)[number]);
+
+  return (
+    <div className="flex items-center gap-1 mt-2">
+      {ORDER_STATUS_STEPS.map((step, idx) => {
+        const isActive = !isTerminal && idx <= currentIdx;
+        const isCurrent = !isTerminal && idx === currentIdx;
+        return (
+          <div key={step} className="flex items-center gap-1">
+            <div
+              className={cn(
+                'h-1.5 rounded-full transition-all',
+                idx === 0 ? 'w-4' : 'w-8',
+                isActive ? (isCurrent ? 'bg-green-400' : 'bg-green-400/50') : 'bg-zinc-800',
+              )}
+            />
+            {idx < ORDER_STATUS_STEPS.length - 1 && (
+              <div
+                className={cn('w-1 h-1 rounded-full', isActive ? 'bg-green-400/30' : 'bg-zinc-800')}
+              />
+            )}
+          </div>
+        );
+      })}
+      {isTerminal && (
+        <div className="flex items-center gap-1 ml-1">
+          <XCircle className="h-3 w-3 text-red-400" />
+          <span className="text-[10px] text-red-400 font-medium uppercase">{status}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderDetail({ order }: { order: OrderHistoryEntry }) {
+  return (
+    <div className="space-y-2">
+      {/* Lifecycle bar */}
+      <div>
+        <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+          Order Lifecycle
+        </p>
+        <OrderLifecycleBar status={order.status} />
+        <div className="flex gap-3 mt-1 text-[10px] text-zinc-600">
+          {ORDER_STATUS_STEPS.map((s) => (
+            <span key={s}>{s}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+        <div>
+          <span className="text-zinc-500">Order ID</span>
+          <p className="text-zinc-300 font-mono text-[11px] truncate">{order.order_id}</p>
+        </div>
+        <div>
+          <span className="text-zinc-500">Symbol</span>
+          <p className="text-zinc-300 font-semibold">{order.symbol}</p>
+        </div>
+        <div>
+          <span className="text-zinc-500">Side</span>
+          <p
+            className={cn('font-medium', order.side === 'buy' ? 'text-green-400' : 'text-red-400')}
+          >
+            {order.side.toUpperCase()}
+          </p>
+        </div>
+        <div>
+          <span className="text-zinc-500">Type</span>
+          <p className="text-zinc-300">{order.order_type}</p>
+        </div>
+        <div>
+          <span className="text-zinc-500">Quantity</span>
+          <p className="text-zinc-300">{order.qty}</p>
+        </div>
+        <div>
+          <span className="text-zinc-500">Filled Qty</span>
+          <p className="text-zinc-300">{order.filled_qty}</p>
+        </div>
+        {order.fill_price != null && (
+          <div>
+            <span className="text-zinc-500">Fill Price</span>
+            <p className="text-zinc-300">{formatCurrency(order.fill_price)}</p>
+          </div>
+        )}
+        {order.submitted_at && (
+          <div>
+            <span className="text-zinc-500">Submitted</span>
+            <p className="text-zinc-300">{formatTimestamp(order.submitted_at)}</p>
+          </div>
+        )}
+        {order.filled_at && (
+          <div>
+            <span className="text-zinc-500">Filled</span>
+            <p className="text-zinc-300">{formatTimestamp(order.filled_at)}</p>
+          </div>
+        )}
+      </div>
+
+      {order.risk_note && (
+        <div className="text-xs">
+          <span className="text-zinc-500">Risk Note: </span>
+          <span className="text-zinc-300">{order.risk_note}</span>
+        </div>
+      )}
+
+      <ExecutionQuality order={order} />
+    </div>
+  );
+}
+
 // ─── Timeline Card ──────────────────────────────────────────────────────
 
 function TimelineCard({ entry }: { entry: TimelineEntry }) {
@@ -330,6 +530,21 @@ function TimelineCard({ entry }: { entry: TimelineEntry }) {
       return {
         primary: `${fill.fill_qty} @ ${formatCurrency(fill.fill_price)}`,
         secondary: fill.order_id ? `Order ${fill.order_id.slice(0, 8)}…` : null,
+      };
+    }
+    if (entry.type === 'order') {
+      const order = entry.data as OrderHistoryEntry;
+      const sideLabel = order.side === 'buy' ? 'BUY' : 'SELL';
+      return {
+        primary: `${sideLabel} ${order.symbol} × ${order.qty}`,
+        secondary:
+          order.fill_price != null
+            ? `Filled @ ${formatCurrency(order.fill_price)}`
+            : order.status === 'cancelled'
+              ? 'Cancelled'
+              : order.status === 'rejected'
+                ? 'Rejected'
+                : null,
       };
     }
     const risk = entry.data as RiskEvaluation;
@@ -377,6 +592,31 @@ function TimelineCard({ entry }: { entry: TimelineEntry }) {
           </div>
         )}
 
+        {entry.type === 'order' && (
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
+            <span className="flex items-center gap-1">
+              {(entry.data as OrderHistoryEntry).side === 'buy' ? (
+                <TrendingUp className="h-3 w-3 text-green-400" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-red-400" />
+              )}
+              {(entry.data as OrderHistoryEntry).order_type}
+            </span>
+            {(entry.data as OrderHistoryEntry).filled_qty > 0 && (
+              <span>
+                Filled: {(entry.data as OrderHistoryEntry).filled_qty}/
+                {(entry.data as OrderHistoryEntry).qty}
+              </span>
+            )}
+            {(entry.data as OrderHistoryEntry).risk_note && (
+              <span className="flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {(entry.data as OrderHistoryEntry).risk_note}
+              </span>
+            )}
+          </div>
+        )}
+
         {entry.type === 'risk' && (
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
             {(entry.data as RiskEvaluation).checks_performed.length > 0 && (
@@ -394,11 +634,9 @@ function TimelineCard({ entry }: { entry: TimelineEntry }) {
         {/* Expanded detail */}
         {expanded && (
           <div className="mt-3 border-t border-zinc-800 pt-3">
-            {entry.type === 'fill' ? (
-              <FillDetail fill={entry.data as Fill} />
-            ) : (
-              <RiskEvalDetail evaluation={entry.data as RiskEvaluation} />
-            )}
+            {entry.type === 'fill' && <FillDetail fill={entry.data as Fill} />}
+            {entry.type === 'risk' && <RiskEvalDetail evaluation={entry.data as RiskEvaluation} />}
+            {entry.type === 'order' && <OrderDetail order={entry.data as OrderHistoryEntry} />}
           </div>
         )}
       </CardContent>
@@ -417,6 +655,7 @@ const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
 
 const TYPE_FILTER_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: 'all', label: 'All Types' },
+  { value: 'orders', label: 'Orders' },
   { value: 'fills', label: 'Fills' },
   { value: 'risk', label: 'Risk Evals' },
 ];
@@ -441,11 +680,14 @@ export default function OrdersPage() {
     limit: 200,
   });
 
-  const isLoading = fillsQuery.isLoading || riskQuery.isLoading;
-  const isError = fillsQuery.isError || riskQuery.isError;
+  const ordersQuery = useOrderHistoryQuery(200);
+
+  const isLoading = fillsQuery.isLoading || riskQuery.isLoading || ordersQuery.isLoading;
+  const isError = fillsQuery.isError || riskQuery.isError || ordersQuery.isError;
 
   const fills = useMemo(() => fillsQuery.data?.data ?? [], [fillsQuery.data]);
   const riskEvals = useMemo(() => riskQuery.data?.data ?? [], [riskQuery.data]);
+  const orders = useMemo(() => ordersQuery.data ?? [], [ordersQuery.data]);
 
   // Build unified timeline
   const timeline = useMemo(() => {
@@ -458,6 +700,21 @@ export default function OrdersPage() {
           type: 'fill',
           timestamp: fill.fill_ts,
           data: fill,
+        });
+      }
+    }
+
+    if (typeFilter === 'all' || typeFilter === 'orders') {
+      for (const order of orders) {
+        const ts = order.filled_at ?? order.submitted_at ?? new Date().toISOString();
+        if (from && new Date(ts) < new Date(from)) {
+          continue;
+        }
+        entries.push({
+          id: `order-${order.order_id}`,
+          type: 'order',
+          timestamp: ts,
+          data: order,
         });
       }
     }
@@ -480,13 +737,23 @@ export default function OrdersPage() {
     // Sort by timestamp descending (newest first)
     entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    // Symbol search — filter fills by order_id (partial match)
+    // Symbol search — filter by order_id, symbol, or reason (partial match)
     if (symbolSearch.trim()) {
       const q = symbolSearch.trim().toLowerCase();
       return entries.filter((e) => {
         if (e.type === 'fill') {
           const fill = e.data as Fill;
           return fill.order_id.toLowerCase().includes(q) || fill.id.toLowerCase().includes(q);
+        }
+        if (e.type === 'order') {
+          const order = e.data as OrderHistoryEntry;
+          return (
+            order.symbol.toLowerCase().includes(q) ||
+            order.order_id.toLowerCase().includes(q) ||
+            order.side.toLowerCase().includes(q) ||
+            order.status.toLowerCase().includes(q) ||
+            (order.risk_note?.toLowerCase().includes(q) ?? false)
+          );
         }
         if (e.type === 'risk') {
           const risk = e.data as RiskEvaluation;
@@ -501,7 +768,7 @@ export default function OrdersPage() {
     }
 
     return entries;
-  }, [fills, riskEvals, typeFilter, from, symbolSearch]);
+  }, [fills, riskEvals, orders, typeFilter, from, symbolSearch]);
 
   // Paginate
   const totalEntries = timeline.length;
@@ -539,7 +806,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats */}
-      <StatsRow fills={fills} riskEvals={riskEvals} isLoading={isLoading} />
+      <StatsRow fills={fills} riskEvals={riskEvals} orders={orders} isLoading={isLoading} />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">

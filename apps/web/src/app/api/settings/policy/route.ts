@@ -160,6 +160,15 @@ export async function PUT(request: Request): Promise<NextResponse> {
       );
     }
 
+    // Log the policy change as an operator action for audit trail
+    await supabase.from('operator_actions').insert({
+      operator_id: user.id,
+      action_type: 'update_policy',
+      target_type: 'user_trading_policy',
+      target_id: user.id,
+      metadata: validation.data,
+    });
+
     return NextResponse.json(updated as TradingPolicy);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

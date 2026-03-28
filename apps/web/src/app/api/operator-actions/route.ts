@@ -35,6 +35,9 @@ export async function GET(request: NextRequest) {
   const offset = Math.max(Number(searchParams.get('offset') ?? 0), 0);
   const actionType = searchParams.get('action_type');
   const operatorId = searchParams.get('operator_id');
+  const targetType = searchParams.get('target_type');
+  const from = searchParams.get('from');
+  const to = searchParams.get('to');
 
   let query = supabase
     .from('operator_actions')
@@ -47,6 +50,15 @@ export async function GET(request: NextRequest) {
   }
   if (operatorId) {
     query = query.eq('operator_id', operatorId);
+  }
+  if (targetType) {
+    query = query.eq('target_type', targetType);
+  }
+  if (from) {
+    query = query.gte('created_at', from);
+  }
+  if (to) {
+    query = query.lte('created_at', to);
   }
 
   const { data, count, error } = await query;

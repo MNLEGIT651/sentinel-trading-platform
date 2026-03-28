@@ -20,14 +20,22 @@ async function getUserToken(): Promise<string | null> {
   try {
     const supabase = await createServerSupabaseClient();
     // Validate the JWT first — getSession() does NOT verify the token.
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return null;
     // Only after validation, read the session to get the access token.
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return session?.access_token ?? null;
   } catch {
     return null;
   }
+}
+
+function getCorrelationId(request: Request): string {
+  return request.headers.get('x-correlation-id') ?? crypto.randomUUID();
 }
 
 async function handle(request: Request, context: RouteContext): Promise<Response> {
@@ -37,7 +45,9 @@ async function handle(request: Request, context: RouteContext): Promise<Response
   // Health and status are public — no auth needed
   const isPublic = upstreamPath === '/health' || upstreamPath === '/status';
 
-  const extraHeaders: Record<string, string> = {};
+  const extraHeaders: Record<string, string> = {
+    'x-correlation-id': getCorrelationId(request),
+  };
 
   if (!isPublic) {
     const token = await getUserToken();

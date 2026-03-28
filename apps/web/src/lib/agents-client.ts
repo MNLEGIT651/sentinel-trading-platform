@@ -35,6 +35,13 @@ export interface TradeRecommendation {
   signal_strength?: number | null;
   status: 'pending' | 'approved' | 'rejected' | 'filled' | 'risk_blocked';
   order_id?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  metadata?: {
+    portfolio_fit_score?: number | null;
+    risk_note?: string | null;
+    [key: string]: unknown;
+  };
 }
 
 export interface AgentAlert {
@@ -136,9 +143,10 @@ export const agentsClient = {
   },
 
   /** Reject a pending recommendation (no order placed). */
-  rejectRecommendation(id: string): Promise<{ status: string }> {
+  rejectRecommendation(id: string, reason?: string): Promise<{ status: string }> {
     return agentsFetch<{ status: string }>(`/recommendations/${id}/reject`, {
       method: 'POST',
+      ...(reason ? { body: JSON.stringify({ reason }) } : {}),
     });
   },
 

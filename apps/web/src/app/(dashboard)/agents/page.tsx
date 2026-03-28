@@ -44,7 +44,7 @@ export default function AgentsPage() {
   const controlsDisabled = agentsOnline !== true || !!isOffline;
 
   const approvingId = approveMutation.isPending ? (approveMutation.variables ?? null) : null;
-  const rejectingId = rejectMutation.isPending ? (rejectMutation.variables ?? null) : null;
+  const rejectingId = rejectMutation.isPending ? (rejectMutation.variables?.id ?? null) : null;
 
   const handleRunCycle = () => {
     cycleMutation.mutate(undefined, {
@@ -71,9 +71,12 @@ export default function AgentsPage() {
   };
 
   const handleReject = (id: string) => {
-    rejectMutation.mutate(id, {
-      onError: (err) => toast.error(err instanceof Error ? err.message : 'Reject failed'),
-    });
+    rejectMutation.mutate(
+      { id },
+      {
+        onError: (err) => toast.error(err instanceof Error ? err.message : 'Reject failed'),
+      },
+    );
   };
 
   return (

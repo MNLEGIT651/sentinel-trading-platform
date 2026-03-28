@@ -99,10 +99,18 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Log the operator action
+  // Derive specific action type from the update payload
+  let actionType: string = 'system_config_change';
+  if ('trading_halted' in body) {
+    actionType = body.trading_halted ? 'halt_trading' : 'resume_trading';
+  } else if ('global_mode' in body) {
+    actionType = 'change_mode';
+  }
+
+  // Log the operator action with a specific action type
   await supabase.from('operator_actions').insert({
     operator_id: user.id,
-    action_type: 'system_config_change',
+    action_type: actionType,
     target_type: 'system_controls',
     target_id: current.id,
     metadata: body,

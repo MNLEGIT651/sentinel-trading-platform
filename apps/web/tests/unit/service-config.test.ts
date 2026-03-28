@@ -20,6 +20,10 @@ function restoreEnv() {
   }
 }
 
+function setNodeEnv(value: string) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
+
 describe('getServiceConfig', () => {
   beforeEach(() => restoreEnv());
   afterEach(() => restoreEnv());
@@ -29,7 +33,7 @@ describe('getServiceConfig', () => {
   it('returns configured engine with valid env vars', () => {
     process.env.ENGINE_URL = 'https://engine.example.com';
     process.env.ENGINE_API_KEY = 'test-key';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(true);
@@ -40,7 +44,7 @@ describe('getServiceConfig', () => {
 
   it('returns unconfigured engine when URL missing in production', () => {
     delete process.env.ENGINE_URL;
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(false);
@@ -50,7 +54,7 @@ describe('getServiceConfig', () => {
   it('returns unconfigured engine when API key missing in production', () => {
     process.env.ENGINE_URL = 'https://engine.example.com';
     delete process.env.ENGINE_API_KEY;
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(false);
@@ -59,7 +63,7 @@ describe('getServiceConfig', () => {
   it('rejects localhost URLs in production', () => {
     process.env.ENGINE_URL = 'http://localhost:8000';
     process.env.ENGINE_API_KEY = 'test-key';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(false);
@@ -69,7 +73,7 @@ describe('getServiceConfig', () => {
   it('rejects 127.0.0.1 URLs in production', () => {
     process.env.ENGINE_URL = 'http://127.0.0.1:8000';
     process.env.ENGINE_API_KEY = 'test-key';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(false);
@@ -78,7 +82,7 @@ describe('getServiceConfig', () => {
   it('allows localhost in development', () => {
     process.env.ENGINE_URL = 'http://localhost:8000';
     process.env.ENGINE_API_KEY = 'test-key';
-    process.env.NODE_ENV = 'development';
+    setNodeEnv('development');
     delete process.env.VERCEL;
 
     const config = getServiceConfig('engine');
@@ -89,7 +93,7 @@ describe('getServiceConfig', () => {
   it('falls back to localhost defaults in development when env vars unset', () => {
     delete process.env.ENGINE_URL;
     delete process.env.ENGINE_API_KEY;
-    process.env.NODE_ENV = 'development';
+    setNodeEnv('development');
     delete process.env.VERCEL;
 
     const config = getServiceConfig('engine');
@@ -100,7 +104,7 @@ describe('getServiceConfig', () => {
   it('strips trailing slashes from baseUrl', () => {
     process.env.ENGINE_URL = 'https://engine.example.com///';
     process.env.ENGINE_API_KEY = 'test-key';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('engine');
     expect(config.baseUrl).toBe('https://engine.example.com');
@@ -109,7 +113,7 @@ describe('getServiceConfig', () => {
   it('treats VERCEL=1 as production runtime', () => {
     delete process.env.ENGINE_URL;
     process.env.VERCEL = '1';
-    process.env.NODE_ENV = 'development';
+    setNodeEnv('development');
 
     const config = getServiceConfig('engine');
     expect(config.configured).toBe(false);
@@ -119,7 +123,7 @@ describe('getServiceConfig', () => {
 
   it('returns configured agents with valid URL', () => {
     process.env.AGENTS_URL = 'https://agents.example.com';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('agents');
     expect(config.configured).toBe(true);
@@ -130,7 +134,7 @@ describe('getServiceConfig', () => {
 
   it('returns unconfigured agents when URL missing in production', () => {
     delete process.env.AGENTS_URL;
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('agents');
     expect(config.configured).toBe(false);
@@ -138,7 +142,7 @@ describe('getServiceConfig', () => {
 
   it('agents rejects localhost in production', () => {
     process.env.AGENTS_URL = 'http://localhost:3001';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     const config = getServiceConfig('agents');
     expect(config.configured).toBe(false);

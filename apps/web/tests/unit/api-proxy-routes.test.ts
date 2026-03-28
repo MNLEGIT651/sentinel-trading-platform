@@ -12,10 +12,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── Mock service-proxy ────────────────────────────────────────────────────
 
-const mockProxyServiceRequest = vi.fn<
-  [string, Request, string[] | undefined, Record<string, string>?],
-  Promise<Response>
->();
+const mockProxyServiceRequest =
+  vi.fn<
+    (
+      service: string,
+      req: Request,
+      path: string[] | undefined,
+      headers?: Record<string, string>,
+    ) => Promise<Response>
+  >();
 
 vi.mock('@/lib/server/service-proxy', () => ({
   proxyServiceRequest: (...args: Parameters<typeof mockProxyServiceRequest>) =>
@@ -24,8 +29,9 @@ vi.mock('@/lib/server/service-proxy', () => ({
 
 // ─── Mock Supabase server client ───────────────────────────────────────────
 
-const mockGetUser = vi.fn<[], Promise<{ data: { user: { id: string } | null } }>>();
-const mockGetSession = vi.fn<[], Promise<{ data: { session: { access_token: string } | null } }>>();
+const mockGetUser = vi.fn<() => Promise<{ data: { user: { id: string } | null } }>>();
+const mockGetSession =
+  vi.fn<() => Promise<{ data: { session: { access_token: string } | null } }>>();
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerSupabaseClient: () => ({
@@ -75,7 +81,12 @@ describe('/api/engine/[...path] route handler', () => {
     const response = await GET(request, ctx);
 
     expect(mockProxyServiceRequest).toHaveBeenCalledOnce();
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith('engine', request, ['health']);
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
+      'engine',
+      request,
+      ['health'],
+      expect.objectContaining({ 'x-correlation-id': expect.any(String) }),
+    );
     expect(response).toBe(upstream);
   });
 
@@ -89,7 +100,12 @@ describe('/api/engine/[...path] route handler', () => {
 
     await GET(request, ctx);
 
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith('engine', request, undefined);
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
+      'engine',
+      request,
+      undefined,
+      expect.objectContaining({ 'x-correlation-id': expect.any(String) }),
+    );
   });
 
   it('returns whatever proxyServiceRequest returns (502 on upstream failure)', async () => {
@@ -131,7 +147,12 @@ describe('/api/agents/[...path] route handler', () => {
 
     // Should not call getSession for public paths
     expect(mockGetSession).not.toHaveBeenCalled();
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith('agents', request, ['health'], {});
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
+      'agents',
+      request,
+      ['health'],
+      expect.objectContaining({ 'x-correlation-id': expect.any(String) }),
+    );
     expect(response).toBe(upstream);
   });
 
@@ -145,7 +166,12 @@ describe('/api/agents/[...path] route handler', () => {
     await handle(request, ctx);
 
     expect(mockGetSession).not.toHaveBeenCalled();
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith('agents', request, ['status'], {});
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
+      'agents',
+      request,
+      ['status'],
+      expect.objectContaining({ 'x-correlation-id': expect.any(String) }),
+    );
   });
 
   it('returns 401 when no Supabase session exists for a protected path', async () => {
@@ -176,9 +202,15 @@ describe('/api/agents/[...path] route handler', () => {
 
     const response = await handle(request, ctx);
 
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith('agents', request, ['cycles'], {
-      Authorization: 'Bearer supabase-jwt-token-abc',
-    });
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
+      'agents',
+      request,
+      ['cycles'],
+      expect.objectContaining({
+        Authorization: 'Bearer supabase-jwt-token-abc',
+        'x-correlation-id': expect.any(String),
+      }),
+    );
     expect(response).toBe(upstream);
   });
 
@@ -214,9 +246,15 @@ describe('/api/agents/[...path] route handler', () => {
 
     const response = await POST(request, ctx);
 
-    expect(mockProxyServiceRequest).toHaveBeenCalledWith('agents', request, ['cycles', 'run'], {
-      Authorization: 'Bearer jwt-xyz',
-    });
+    expect(mockProxyServiceRequest).toHaveBeenCalledWith(
+      'agents',
+      request,
+      ['cycles', 'run'],
+      expect.objectContaining({
+        Authorization: 'Bearer jwt-xyz',
+        'x-correlation-id': expect.any(String),
+      }),
+    );
     expect(response).toBe(upstream);
   });
 });

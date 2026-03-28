@@ -1,16 +1,25 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Shield, User } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, Gavel, Shield, User, XCircle } from 'lucide-react';
 
-import type { RecommendationEvent, RiskEvaluation } from '@sentinel/shared';
+import type {
+  RecommendationEvent,
+  RiskEvaluation,
+  Order,
+  Fill,
+  OperatorAction,
+} from '@sentinel/shared';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   useRecommendationEventsQuery,
   type RecommendationDetail,
 } from '@/hooks/queries/use-recommendation-events-query';
+import { useApproveRecommendationMutation } from '@/hooks/queries/use-approve-recommendation-mutation';
+import { useRejectRecommendationMutation } from '@/hooks/queries/use-reject-recommendation-mutation';
 
 /* ------------------------------------------------------------------ */
 /*  Status / event-type colour helpers                                */
@@ -29,8 +38,8 @@ const STATUS_COLORS: Record<string, string> = {
   partially_filled: 'bg-amber-500/10 text-amber-400',
   risk_checked: 'bg-zinc-500/10 text-zinc-400',
   reviewed: 'bg-zinc-500/10 text-zinc-400',
-  // fallback for recommendation-level status
   pending: 'bg-blue-500/10 text-blue-400',
+  new: 'bg-blue-500/10 text-blue-400',
 };
 
 function statusColor(status: string): string {
@@ -77,6 +86,11 @@ function formatTs(iso: string): string {
 
 function formatEventType(t: string): string {
   return t.replace(/_/g, ' ');
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (value == null) return '—';
+  return `$${Number(value).toFixed(2)}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -244,6 +258,224 @@ function RiskEvaluations({ evaluations }: { evaluations: RiskEvaluation[] }) {
   );
 }
 
+function OrderDetail({ order, fills }: { order: Order; fills: Fill[] }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+      <h2 className="text-sm font-medium text-muted-foreground">Order &amp; Fill Detail</h2>
+
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+        <div>
+          <span className="text-muted-foreground">Broker Order ID</span>
+          <p className="font-mono text-foreground text-xs break-all">
+            {order.broker_order_id ?? '—'}
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Status</span>
+          <p>
+            <Badge className={statusColor(order.status)}>{formatEventType(order.status)}</Badge>
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Side / Type</span>
+          <p className="text-foreground">
+            {order.side} · {order.order_type}
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Qty (filled / total)</span>
+          <p className="font-mono text-foreground">
+            {order.filled_quantity} / {order.quantity}
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Avg Fill Price</span>
+          <p className="font-mono text-foreground">{formatCurrency(order.filled_avg_price)}</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Limit Price</span>
+          <p className="font-mono text-foreground">{formatCurrency(order.limit_price)}</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Submitted</span>
+          <p className="text-xs text-foreground">{formatTs(order.submitted_at)}</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Filled At</span>
+          <p className="text-xs text-foreground">
+            {order.filled_at ? formatTs(order.filled_at) : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Fills table */}
+      {fills.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-medium text-muted-foreground">Fills ({fills.length})</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="pb-1.5 pr-4 font-medium">Time</th>
+                  <th className="pb-1.5 pr-4 font-medium">Price</th>
+                  <th className="pb-1.5 pr-4 font-medium">Qty</th>
+                  <th className="pb-1.5 pr-4 font-medium">Commission</th>
+                  <th className="pb-1.5 pr-4 font-medium">Slippage</th>
+                  <th className="pb-1.5 font-medium">Venue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fills.map((fill) => (
+                  <tr key={fill.id} className="border-b border-border/50">
+                    <td className="py-1.5 pr-4 text-muted-foreground">{formatTs(fill.fill_ts)}</td>
+                    <td className="py-1.5 pr-4 font-mono text-foreground">
+                      {formatCurrency(fill.fill_price)}
+                    </td>
+                    <td className="py-1.5 pr-4 font-mono text-foreground">{fill.fill_qty}</td>
+                    <td className="py-1.5 pr-4 font-mono text-foreground">
+                      {formatCurrency(fill.commission)}
+                    </td>
+                    <td className="py-1.5 pr-4 font-mono text-foreground">
+                      {fill.slippage != null ? `${Number(fill.slippage).toFixed(4)}` : '—'}
+                    </td>
+                    <td className="py-1.5 text-foreground">{fill.venue ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OperatorActionsSection({ actions }: { actions: OperatorAction[] }) {
+  if (actions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+      <h2 className="text-sm font-medium text-muted-foreground">Operator Actions</h2>
+
+      <ol className="relative border-l border-border ml-3 space-y-4">
+        {actions.map((action) => (
+          <li key={action.id} className="ml-6">
+            <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border border-border bg-background" />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-violet-500/10 text-violet-400">
+                <Gavel className="mr-1 h-3 w-3" />
+                {formatEventType(action.action_type)}
+              </Badge>
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {formatTs(action.created_at)}
+              </span>
+            </div>
+
+            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <User className="h-3 w-3" />
+              <span>{action.operator_id}</span>
+            </div>
+
+            {action.reason && <p className="mt-1 text-sm text-foreground">{action.reason}</p>}
+
+            {action.metadata && Object.keys(action.metadata).length > 0 && (
+              <pre className="mt-2 max-h-32 overflow-auto rounded bg-background p-2 text-xs text-muted-foreground">
+                {JSON.stringify(action.metadata, null, 2)}
+              </pre>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function ApproveRejectControls({ id, status }: { id: string; status: string }) {
+  const approve = useApproveRecommendationMutation();
+  const reject = useRejectRecommendationMutation();
+  const [confirming, setConfirming] = useState<'approve' | 'reject' | null>(null);
+
+  const canAct = status === 'pending' || status === 'pending_approval';
+  if (!canAct) return null;
+
+  const isBusy = approve.isPending || reject.isPending;
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+      <h2 className="text-sm font-medium text-muted-foreground">Actions</h2>
+
+      {approve.isError && (
+        <p className="text-xs text-red-400">
+          Approve failed: {approve.error instanceof Error ? approve.error.message : 'Unknown error'}
+        </p>
+      )}
+      {reject.isError && (
+        <p className="text-xs text-red-400">
+          Reject failed: {reject.error instanceof Error ? reject.error.message : 'Unknown error'}
+        </p>
+      )}
+
+      {confirming === null ? (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            disabled={isBusy}
+            onClick={() => setConfirming('approve')}
+          >
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+            Approve &amp; Submit
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={isBusy}
+            onClick={() => setConfirming('reject')}
+          >
+            <XCircle className="mr-1 h-3.5 w-3.5" />
+            Reject
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-foreground">
+            {confirming === 'approve'
+              ? 'Submit this order to the broker?'
+              : 'Reject this recommendation?'}
+          </span>
+          <Button
+            variant={confirming === 'approve' ? 'default' : 'destructive'}
+            size="sm"
+            disabled={isBusy}
+            onClick={() => {
+              if (confirming === 'approve') {
+                approve.mutate(id);
+              } else {
+                reject.mutate({ id });
+              }
+              setConfirming(null);
+            }}
+          >
+            {isBusy ? 'Processing…' : 'Confirm'}
+          </Button>
+          <Button variant="ghost" size="sm" disabled={isBusy} onClick={() => setConfirming(null)}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      {approve.isSuccess && (
+        <p className="text-xs text-emerald-400">Order submitted — ID: {approve.data?.orderId}</p>
+      )}
+      {reject.isSuccess && <p className="text-xs text-emerald-400">Recommendation rejected.</p>}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Page                                                              */
 /* ------------------------------------------------------------------ */
@@ -276,7 +508,7 @@ export default function RecommendationDetailPage({ params }: { params: Promise<{
     );
   }
 
-  const { recommendation: rec, events, riskEvaluations } = data;
+  const { recommendation: rec, events, riskEvaluations, order, fills, operatorActions } = data;
 
   return (
     <div className="space-y-4 p-4">
@@ -300,6 +532,9 @@ export default function RecommendationDetailPage({ params }: { params: Promise<{
         )}
       </div>
 
+      {/* Approve / Reject controls */}
+      <ApproveRejectControls id={rec.id} status={rec.status} />
+
       {/* Summary */}
       <SummaryCard rec={rec} />
 
@@ -308,6 +543,12 @@ export default function RecommendationDetailPage({ params }: { params: Promise<{
 
       {/* Risk */}
       <RiskEvaluations evaluations={riskEvaluations} />
+
+      {/* Order & Fills */}
+      {order && <OrderDetail order={order} fills={fills} />}
+
+      {/* Operator Actions */}
+      <OperatorActionsSection actions={operatorActions} />
     </div>
   );
 }

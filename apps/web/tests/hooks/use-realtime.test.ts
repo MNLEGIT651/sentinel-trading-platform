@@ -189,7 +189,7 @@ describe('useRealtime', () => {
       );
 
       // Get the subscribe callback
-      const subscribeCallback = mockChannel.subscribe.mock.calls[0][0];
+      const subscribeCallback = mockChannel.subscribe.mock.calls[0]![0];
 
       // Simulate successful subscription
       act(() => {
@@ -206,7 +206,7 @@ describe('useRealtime', () => {
         }),
       );
 
-      const subscribeCallback = mockChannel.subscribe.mock.calls[0][0];
+      const subscribeCallback = mockChannel.subscribe.mock.calls[0]![0];
 
       act(() => {
         subscribeCallback('CHANNEL_ERROR');
@@ -222,7 +222,7 @@ describe('useRealtime', () => {
         }),
       );
 
-      const subscribeCallback = mockChannel.subscribe.mock.calls[0][0];
+      const subscribeCallback = mockChannel.subscribe.mock.calls[0]![0];
 
       act(() => {
         subscribeCallback('CLOSED');
@@ -362,9 +362,9 @@ describe('useRealtime', () => {
         });
       });
 
-      expect(result.current.data[0].id).toBe('1');
-      expect(result.current.data[1].id).toBe('2');
-      expect(result.current.data[2].id).toBe('3');
+      expect(result.current.data[0]!.id).toBe('1');
+      expect(result.current.data[1]!.id).toBe('2');
+      expect(result.current.data[2]!.id).toBe('3');
     });
 
     it('does nothing when UPDATE id not found', () => {
@@ -573,7 +573,7 @@ describe('useRealtime', () => {
       });
 
       expect(result.current.data).toHaveLength(1);
-      expect(result.current.data[0].id).toBe('1');
+      expect(result.current.data[0]!.id).toBe('1');
     });
 
     it('routes events to correct handler based on eventType', () => {
@@ -602,14 +602,14 @@ describe('useRealtime', () => {
       });
 
       expect(result.current.data).toHaveLength(1);
-      expect(result.current.data[0].name).toBe('Insert');
+      expect(result.current.data[0]!.name).toBe('Insert');
 
       act(() => {
         updateHandler?.({ eventType: 'UPDATE', new: updateItem, old: { id: '1' } });
       });
 
       expect(result.current.data).toHaveLength(1);
-      expect(result.current.data[0].name).toBe('Update');
+      expect(result.current.data[0]!.name).toBe('Update');
 
       act(() => {
         deleteHandler?.({ eventType: 'DELETE', new: {}, old: { id: '1' } });
@@ -747,12 +747,12 @@ describe('useRealtime', () => {
             table: 'test_table',
             events,
           }),
-        { initialProps: { events: ['INSERT'] as const } },
+        { initialProps: { events: ['INSERT'] as ('INSERT' | 'UPDATE' | 'DELETE')[] } },
       );
 
       expect(mockSupabaseClient.channel).toHaveBeenCalledTimes(1);
 
-      rerender({ events: ['INSERT', 'UPDATE'] as const });
+      rerender({ events: ['INSERT', 'UPDATE'] as ('INSERT' | 'UPDATE' | 'DELETE')[] });
 
       expect(mockSupabaseClient.channel).toHaveBeenCalledTimes(2);
       expect(mockSupabaseClient.removeChannel).toHaveBeenCalledTimes(1);
@@ -867,7 +867,7 @@ describe('useRealtime', () => {
       // Only INSERT handler should be registered
       expect(mockChannel.on).toHaveBeenCalledTimes(1);
 
-      const insertHandler = mockChannel.on.mock.calls[0][2];
+      const insertHandler = mockChannel.on.mock.calls[0]![2];
 
       act(() => {
         insertHandler({ eventType: 'INSERT', new: { id: '2', name: 'New', value: 200 }, old: {} });
@@ -885,7 +885,7 @@ describe('useRealtime', () => {
       });
 
       // Update should not fire (no handler registered)
-      expect(result.current.data[1].name).toBe('Existing');
+      expect(result.current.data[1]!.name).toBe('Existing');
     });
 
     it('preserves data when connection status changes', () => {
@@ -898,7 +898,7 @@ describe('useRealtime', () => {
         }),
       );
 
-      const subscribeCallback = mockChannel.subscribe.mock.calls[0][0];
+      const subscribeCallback = mockChannel.subscribe.mock.calls[0]![0];
 
       act(() => {
         subscribeCallback('SUBSCRIBED');

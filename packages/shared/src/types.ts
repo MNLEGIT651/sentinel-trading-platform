@@ -699,6 +699,9 @@ export interface JournalStats {
 /** Global system operating mode. */
 export type SystemMode = 'paper' | 'live' | 'backtest';
 
+/** Autonomy level for strategies and the global system. */
+export type AutonomyMode = 'disabled' | 'alert_only' | 'suggest' | 'auto_approve' | 'auto_execute';
+
 /**
  * Centralized system configuration — single-row table.
  * Mirrors the `system_controls` table in Supabase.
@@ -709,6 +712,8 @@ export interface SystemControls {
   live_execution_enabled: boolean;
   global_mode: SystemMode;
   max_daily_trades: number;
+  autonomy_mode: AutonomyMode;
+  previous_autonomy_mode: string | null;
   updated_at: string;
   updated_by: string | null;
 }
@@ -733,10 +738,12 @@ export type RecommendationEventType =
   | 'filled'
   | 'cancelled'
   | 'failed'
-  | 'reviewed';
+  | 'reviewed'
+  | 'auto_approved'
+  | 'auto_execution_denied';
 
 /** Actor that caused a recommendation event. */
-export type ActorType = 'system' | 'agent' | 'operator';
+export type ActorType = 'system' | 'agent' | 'operator' | 'policy';
 
 /**
  * A single event in a recommendation's lifecycle.
@@ -814,7 +821,8 @@ export type OperatorActionType =
   | 'cancel_order'
   | 'manual_order'
   | 'role_change'
-  | 'system_config_change';
+  | 'system_config_change'
+  | 'incident_fallback';
 
 /**
  * An auditable operator action.
@@ -835,6 +843,118 @@ export interface OperatorAction {
 
 /** Status of a signal scan run. */
 export type SignalRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+
+// ─── Universe Restrictions ──────────────────────────────────────────
+
+/** Restriction type for universe filtering. */
+export type RestrictionType = 'whitelist' | 'blacklist';
+
+/**
+ * A universe restriction rule for symbol/sector/asset-class filtering.
+ * Mirrors the `universe_restrictions` table.
+ */
+export interface UniverseRestriction {
+  id: string;
+  restriction_type: RestrictionType;
+  symbols: string[];
+  sectors: string[];
+  asset_classes: string[];
+  reason: string | null;
+  enabled: boolean;
+  created_at: string;
+  created_by: string | null;
+}
+
+// ─── Incident State ─────────────────────────────────────────────────
+
+/** State of the automatic incident fallback monitor. */
+export interface IncidentState {
+  isActive: boolean;
+  triggeredAt: string | null;
+  reason: string | null;
+  previousMode: string | null;
+  recoveryEligibleAt: string | null;
+}
+
+// ─── Workflow Jobs (Durable Workflow Engine) ─────────────────────────
+
+/** Status of a workflow job. */
+export type WorkflowJobStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'retrying';
+
+/** Workflow type identifiers. */
+export type WorkflowType =
+  | 'recommendation_lifecycle'
+  | 'order_execution'
+  | 'risk_evaluation'
+  | 'agent_cycle';
+
+/** A durable workflow job tracked in the DB. */
+export interface WorkflowJob {
+  id: string;
+  workflow_type: WorkflowType;
+  idempotency_key: string | null;
+  status: WorkflowJobStatus;
+  current_step: string | null;
+  steps_completed: string[];
+  input_data: Record<string, unknown>;
+  output_data: Record<string, unknown>;
+  error_message: string | null;
+  error_count: number;
+  max_retries: number;
+  retry_after: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  timeout_at: string | null;
+  created_at: string;
+  updated_at: string;
+  recommendation_id: string | null;
+  order_id: string | null;
+  agent_run_id: string | null;
+}
+
+/** Step execution log entry. */
+export type WorkflowStepStatus = 'started' | 'completed' | 'failed' | 'skipped';
+
+export interface WorkflowStepLog {
+  id: string;
+  job_id: string;
+  step_name: string;
+  status: WorkflowStepStatus;
+  input_data: Record<string, unknown>;
+  output_data: Record<string, unknown>;
+  error: string | null;
+  duration_ms: number | null;
+  executed_at: string;
+}
+
+/** Filters for querying workflow jobs. */
+export interface WorkflowJobsFilters {
+  workflow_type?: WorkflowType | undefined;
+  status?: WorkflowJobStatus | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  sort_by?: 'created_at' | 'updated_at' | undefined;
+  sort_direction?: 'asc' | 'desc' | undefined;
+}
+
+/** Summary stats for the workflows page. */
+export interface WorkflowStats {
+  total: number;
+  pending: number;
+  running: number;
+  completed: number;
+  failed: number;
+  retrying: number;
+  cancelled: number;
+  avg_duration_ms: number | null;
+  failure_rate: number | null;
+}
 
 /**
  * Metadata for a signal scan execution.

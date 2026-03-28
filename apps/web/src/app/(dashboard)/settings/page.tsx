@@ -23,6 +23,7 @@ import { RiskSettings } from '@/components/settings/risk-settings';
 import { ScheduleSettings } from '@/components/settings/schedule-settings';
 import { ToggleField } from '@/components/settings/toggle-field';
 import { useTradingPolicy, policyValue } from '@/hooks/use-trading-policy';
+import { useSystemControlsQuery } from '@/hooks/queries/use-system-controls-query';
 
 /** localStorage key for notification preferences (UI-only, not policy). */
 const NOTIFICATION_STORAGE_KEY = 'sentinel:notification-prefs';
@@ -48,6 +49,9 @@ export default function SettingsPage() {
     error: policyError,
     updatePolicy,
   } = useTradingPolicy();
+
+  // ── Server-backed system controls (read-only on this page) ─────────
+  const { data: systemControls } = useSystemControlsQuery();
 
   // Local form state mirrors the DB policy, updated on load
   const [maxPosition, setMaxPosition] = useState('5');
@@ -275,6 +279,29 @@ export default function SettingsPage() {
 
           {/* ── Trading ──────────────────────────────────────────────── */}
           <TabsContent value="trading">
+            {/* System-wide mode banner */}
+            {systemControls && (
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+                <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <p className="text-[11px] text-muted-foreground">
+                  System-wide mode is{' '}
+                  <span className="font-semibold text-foreground">
+                    {systemControls.global_mode.toUpperCase()}
+                  </span>
+                  {systemControls.trading_halted && (
+                    <span className="text-red-500 font-semibold"> (HALTED)</span>
+                  )}
+                  . This is managed on the{' '}
+                  <a
+                    href="/system-controls"
+                    className="underline text-primary hover:text-primary/80"
+                  >
+                    System Controls
+                  </a>{' '}
+                  page and takes precedence over per-user settings below.
+                </p>
+              </div>
+            )}
             <div className="grid gap-4 lg:grid-cols-2">
               <Card className="bg-card border-border">
                 <CardHeader className="pb-3">

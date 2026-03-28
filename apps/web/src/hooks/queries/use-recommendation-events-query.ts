@@ -2,7 +2,13 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { RecommendationEvent, RiskEvaluation } from '@sentinel/shared';
+import type {
+  RecommendationEvent,
+  RiskEvaluation,
+  Order,
+  Fill,
+  OperatorAction,
+} from '@sentinel/shared';
 
 interface RecommendationRecord {
   id: string;
@@ -17,12 +23,16 @@ interface RecommendationRecord {
   status: string;
   created_at: string;
   metadata: Record<string, unknown> | null;
+  order_id: string | null;
 }
 
 export type RecommendationDetail = {
   recommendation: RecommendationRecord;
   events: RecommendationEvent[];
   riskEvaluations: RiskEvaluation[];
+  order: Order | null;
+  fills: Fill[];
+  operatorActions: OperatorAction[];
 };
 
 async function fetchRecommendationEvents(id: string): Promise<RecommendationDetail> {

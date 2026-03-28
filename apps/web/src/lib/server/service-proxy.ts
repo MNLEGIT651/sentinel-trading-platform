@@ -58,9 +58,11 @@ function filterResponseHeaders(headers: Headers): Headers {
   const nextHeaders = new Headers();
   const contentType = headers.get('content-type');
   const cacheControl = headers.get('cache-control');
+  const correlationId = headers.get('x-correlation-id') ?? headers.get('x-request-id');
 
   if (contentType) nextHeaders.set('content-type', contentType);
   if (cacheControl) nextHeaders.set('cache-control', cacheControl);
+  if (correlationId) nextHeaders.set('x-correlation-id', correlationId);
 
   return nextHeaders;
 }
@@ -98,11 +100,20 @@ async function readUpstreamErrorMessage(response: Response, fallback: string): P
   const contentType = response.headers.get('content-type') ?? '';
 
   if (contentType.includes('application/json')) {
-    const json = await response.json().catch((err: unknown) => { console.warn('[service-proxy] Failed to parse upstream JSON response:', (err as Error)?.message); return null; });
+    const json = await response.json().catch((err: unknown) => {
+      console.warn(
+        '[service-proxy] Failed to parse upstream JSON response:',
+        (err as Error)?.message,
+      );
+      return null;
+    });
     return extractErrorMessage(json, fallback);
   }
 
-  const text = await response.text().catch((err: unknown) => { console.warn('[service-proxy] Failed to read upstream text response:', (err as Error)?.message); return ''; });
+  const text = await response.text().catch((err: unknown) => {
+    console.warn('[service-proxy] Failed to read upstream text response:', (err as Error)?.message);
+    return '';
+  });
   return extractErrorMessage(text, fallback);
 }
 
@@ -176,10 +187,12 @@ async function fetchUpstream(
   if (method !== 'GET' && method !== 'HEAD') {
     const buffer = await request.arrayBuffer();
     if (buffer.byteLength > MAX_BODY_BYTES) {
-      throw new ServiceError(
-        `Request body exceeds the ${MAX_BODY_BYTES / 1024}KiB limit.`,
-        { code: 'upstream', service, retryable: false, status: 413 },
-      );
+      throw new ServiceError(`Request body exceeds the ${MAX_BODY_BYTES / 1024}KiB limit.`, {
+        code: 'upstream',
+        service,
+        retryable: false,
+        status: 413,
+      });
     }
     body = buffer;
   }

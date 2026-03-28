@@ -1,6 +1,11 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.4';
+  };
   public: {
     Tables: {
       accounts: {
@@ -114,6 +119,7 @@ export type Database = {
           quantity: number;
           reason: string | null;
           reviewed_at: string | null;
+          reviewed_by: string | null;
           side: string;
           signal_strength: number | null;
           status: string;
@@ -125,12 +131,13 @@ export type Database = {
           created_at?: string;
           id?: string;
           limit_price?: number | null;
-          metadata: Json;
+          metadata?: Json;
           order_id?: string | null;
           order_type?: string;
           quantity: number;
           reason?: string | null;
           reviewed_at?: string | null;
+          reviewed_by?: string | null;
           side: string;
           signal_strength?: number | null;
           status?: string;
@@ -148,6 +155,7 @@ export type Database = {
           quantity?: number;
           reason?: string | null;
           reviewed_at?: string | null;
+          reviewed_by?: string | null;
           side?: string;
           signal_strength?: number | null;
           status?: string;
@@ -159,12 +167,17 @@ export type Database = {
       alerts: {
         Row: {
           acknowledged: boolean | null;
+          category: string | null;
           created_at: string | null;
           id: string;
           instrument_id: string | null;
           message: string;
           metadata: Json | null;
+          related_object_id: string | null;
+          related_object_type: string | null;
+          resolved_at: string | null;
           severity: string;
+          source_agent: string | null;
           strategy_id: string | null;
           title: string;
           type: string;
@@ -172,12 +185,17 @@ export type Database = {
         };
         Insert: {
           acknowledged?: boolean | null;
+          category?: string | null;
           created_at?: string | null;
           id?: string;
           instrument_id?: string | null;
           message: string;
           metadata?: Json | null;
+          related_object_id?: string | null;
+          related_object_type?: string | null;
+          resolved_at?: string | null;
           severity?: string;
+          source_agent?: string | null;
           strategy_id?: string | null;
           title: string;
           type: string;
@@ -185,18 +203,38 @@ export type Database = {
         };
         Update: {
           acknowledged?: boolean | null;
+          category?: string | null;
           created_at?: string | null;
           id?: string;
           instrument_id?: string | null;
           message?: string;
           metadata?: Json | null;
+          related_object_id?: string | null;
+          related_object_type?: string | null;
+          resolved_at?: string | null;
           severity?: string;
+          source_agent?: string | null;
           strategy_id?: string | null;
           title?: string;
           type?: string;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'alerts_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'alerts_strategy_id_fkey';
+            columns: ['strategy_id'];
+            isOneToOne: false;
+            referencedRelation: 'strategies';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       backtest_results: {
         Row: {
@@ -276,6 +314,275 @@ export type Database = {
           trade_log?: Json | null;
           turnover?: number | null;
           win_rate?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'backtest_results_strategy_id_fkey';
+            columns: ['strategy_id'];
+            isOneToOne: false;
+            referencedRelation: 'strategies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      catalyst_events: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          eps_actual: number | null;
+          eps_estimate: number | null;
+          event_date: string;
+          event_time: string | null;
+          event_type: string;
+          id: string;
+          impact: string | null;
+          metadata: Json | null;
+          revenue_actual: number | null;
+          revenue_estimate: number | null;
+          sector: string | null;
+          source: string | null;
+          source_id: string | null;
+          ticker: string | null;
+          title: string;
+          updated_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          eps_actual?: number | null;
+          eps_estimate?: number | null;
+          event_date: string;
+          event_time?: string | null;
+          event_type: string;
+          id?: string;
+          impact?: string | null;
+          metadata?: Json | null;
+          revenue_actual?: number | null;
+          revenue_estimate?: number | null;
+          sector?: string | null;
+          source?: string | null;
+          source_id?: string | null;
+          ticker?: string | null;
+          title: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          eps_actual?: number | null;
+          eps_estimate?: number | null;
+          event_date?: string;
+          event_time?: string | null;
+          event_type?: string;
+          id?: string;
+          impact?: string | null;
+          metadata?: Json | null;
+          revenue_actual?: number | null;
+          revenue_estimate?: number | null;
+          sector?: string | null;
+          source?: string | null;
+          source_id?: string | null;
+          ticker?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
+      cycle_history: {
+        Row: {
+          agents_run: string[] | null;
+          error: string | null;
+          finished_at: string | null;
+          holder_id: string;
+          id: string;
+          outcome: string;
+          started_at: string;
+        };
+        Insert: {
+          agents_run?: string[] | null;
+          error?: string | null;
+          finished_at?: string | null;
+          holder_id: string;
+          id?: string;
+          outcome?: string;
+          started_at?: string;
+        };
+        Update: {
+          agents_run?: string[] | null;
+          error?: string | null;
+          finished_at?: string | null;
+          holder_id?: string;
+          id?: string;
+          outcome?: string;
+          started_at?: string;
+        };
+        Relationships: [];
+      };
+      data_quality_events: {
+        Row: {
+          created_at: string;
+          event_type: string;
+          id: number;
+          message: string;
+          metadata: Json | null;
+          provider: string | null;
+          resolved: boolean;
+          resolved_at: string | null;
+          severity: string;
+          ticker: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_type: string;
+          id?: never;
+          message: string;
+          metadata?: Json | null;
+          provider?: string | null;
+          resolved?: boolean;
+          resolved_at?: string | null;
+          severity?: string;
+          ticker?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string;
+          id?: never;
+          message?: string;
+          metadata?: Json | null;
+          provider?: string | null;
+          resolved?: boolean;
+          resolved_at?: string | null;
+          severity?: string;
+          ticker?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      decision_journal: {
+        Row: {
+          agent_name: string | null;
+          confidence: number | null;
+          created_at: string;
+          direction: string | null;
+          event_type: string;
+          graded_at: string | null;
+          id: string;
+          market_regime: string | null;
+          metadata: Json | null;
+          order_id: string | null;
+          outcome_hold_minutes: number | null;
+          outcome_pnl: number | null;
+          outcome_return_pct: number | null;
+          price: number | null;
+          quantity: number | null;
+          reasoning: string | null;
+          recommendation_id: string | null;
+          sector: string | null;
+          signal_id: string | null;
+          strategy_name: string | null;
+          ticker: string | null;
+          user_grade: string | null;
+          user_id: string;
+          user_notes: string | null;
+          vix_at_time: number | null;
+        };
+        Insert: {
+          agent_name?: string | null;
+          confidence?: number | null;
+          created_at?: string;
+          direction?: string | null;
+          event_type: string;
+          graded_at?: string | null;
+          id?: string;
+          market_regime?: string | null;
+          metadata?: Json | null;
+          order_id?: string | null;
+          outcome_hold_minutes?: number | null;
+          outcome_pnl?: number | null;
+          outcome_return_pct?: number | null;
+          price?: number | null;
+          quantity?: number | null;
+          reasoning?: string | null;
+          recommendation_id?: string | null;
+          sector?: string | null;
+          signal_id?: string | null;
+          strategy_name?: string | null;
+          ticker?: string | null;
+          user_grade?: string | null;
+          user_id: string;
+          user_notes?: string | null;
+          vix_at_time?: number | null;
+        };
+        Update: {
+          agent_name?: string | null;
+          confidence?: number | null;
+          created_at?: string;
+          direction?: string | null;
+          event_type?: string;
+          graded_at?: string | null;
+          id?: string;
+          market_regime?: string | null;
+          metadata?: Json | null;
+          order_id?: string | null;
+          outcome_hold_minutes?: number | null;
+          outcome_pnl?: number | null;
+          outcome_return_pct?: number | null;
+          price?: number | null;
+          quantity?: number | null;
+          reasoning?: string | null;
+          recommendation_id?: string | null;
+          sector?: string | null;
+          signal_id?: string | null;
+          strategy_name?: string | null;
+          ticker?: string | null;
+          user_grade?: string | null;
+          user_id?: string;
+          user_notes?: string | null;
+          vix_at_time?: number | null;
+        };
+        Relationships: [];
+      };
+      fills: {
+        Row: {
+          broker_fill_id: string | null;
+          commission: number;
+          created_at: string;
+          fill_price: number;
+          fill_qty: number;
+          fill_ts: string;
+          id: string;
+          order_id: string;
+          slippage: number | null;
+          venue: string | null;
+        };
+        Insert: {
+          broker_fill_id?: string | null;
+          commission?: number;
+          created_at?: string;
+          fill_price: number;
+          fill_qty: number;
+          fill_ts?: string;
+          id?: string;
+          order_id: string;
+          slippage?: number | null;
+          venue?: string | null;
+        };
+        Update: {
+          broker_fill_id?: string | null;
+          commission?: number;
+          created_at?: string;
+          fill_price?: number;
+          fill_qty?: number;
+          fill_ts?: string;
+          id?: string;
+          order_id?: string;
+          slippage?: number | null;
+          venue?: string | null;
         };
         Relationships: [];
       };
@@ -361,6 +668,157 @@ export type Database = {
           volume?: number | null;
           vwap?: number | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'market_data_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      market_regime_history: {
+        Row: {
+          confidence: number;
+          created_at: string;
+          detected_at: string;
+          expires_at: string | null;
+          id: number;
+          indicators: Json;
+          notes: string | null;
+          regime: string;
+          source: string;
+          user_id: string;
+        };
+        Insert: {
+          confidence?: number;
+          created_at?: string;
+          detected_at?: string;
+          expires_at?: string | null;
+          id?: never;
+          indicators?: Json;
+          notes?: string | null;
+          regime: string;
+          source?: string;
+          user_id: string;
+        };
+        Update: {
+          confidence?: number;
+          created_at?: string;
+          detected_at?: string;
+          expires_at?: string | null;
+          id?: never;
+          indicators?: Json;
+          notes?: string | null;
+          regime?: string;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      market_snapshots: {
+        Row: {
+          captured_at: string;
+          created_at: string;
+          day_change_pct: number | null;
+          id: string;
+          instrument_id: string;
+          last_price: number | null;
+          regime_label: string | null;
+          source: string;
+          volatility_score: number | null;
+          volume: number | null;
+        };
+        Insert: {
+          captured_at?: string;
+          created_at?: string;
+          day_change_pct?: number | null;
+          id?: string;
+          instrument_id: string;
+          last_price?: number | null;
+          regime_label?: string | null;
+          source?: string;
+          volatility_score?: number | null;
+          volume?: number | null;
+        };
+        Update: {
+          captured_at?: string;
+          created_at?: string;
+          day_change_pct?: number | null;
+          id?: string;
+          instrument_id?: string;
+          last_price?: number | null;
+          regime_label?: string | null;
+          source?: string;
+          volatility_score?: number | null;
+          volume?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'market_snapshots_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      operator_actions: {
+        Row: {
+          action_type: string;
+          created_at: string;
+          id: string;
+          metadata: Json;
+          operator_id: string;
+          reason: string | null;
+          target_id: string | null;
+          target_type: string | null;
+        };
+        Insert: {
+          action_type: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          operator_id: string;
+          reason?: string | null;
+          target_id?: string | null;
+          target_type?: string | null;
+        };
+        Update: {
+          action_type?: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json;
+          operator_id?: string;
+          reason?: string | null;
+          target_id?: string | null;
+          target_type?: string | null;
+        };
+        Relationships: [];
+      };
+      orchestrator_locks: {
+        Row: {
+          acquired_at: string;
+          expires_at: string;
+          heartbeat_at: string;
+          holder_id: string;
+          lock_name: string;
+        };
+        Insert: {
+          acquired_at?: string;
+          expires_at: string;
+          heartbeat_at?: string;
+          holder_id: string;
+          lock_name: string;
+        };
+        Update: {
+          acquired_at?: string;
+          expires_at?: string;
+          heartbeat_at?: string;
+          holder_id?: string;
+          lock_name?: string;
+        };
         Relationships: [];
       };
       orders: {
@@ -427,6 +885,55 @@ export type Database = {
           submitted_at?: string | null;
           user_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'orders_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'orders_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'orders_signal_id_fkey';
+            columns: ['signal_id'];
+            isOneToOne: false;
+            referencedRelation: 'signals';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      policy_change_log: {
+        Row: {
+          changed_at: string;
+          field_name: string;
+          id: string;
+          new_value: string | null;
+          old_value: string | null;
+          user_id: string;
+        };
+        Insert: {
+          changed_at?: string;
+          field_name: string;
+          id?: string;
+          new_value?: string | null;
+          old_value?: string | null;
+          user_id: string;
+        };
+        Update: {
+          changed_at?: string;
+          field_name?: string;
+          id?: string;
+          new_value?: string | null;
+          old_value?: string | null;
+          user_id?: string;
+        };
         Relationships: [];
       };
       portfolio_positions: {
@@ -466,7 +973,22 @@ export type Database = {
           updated_at?: string | null;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_positions_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'portfolio_positions_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       portfolio_snapshots: {
         Row: {
@@ -493,7 +1015,7 @@ export type Database = {
           daily_pnl?: number | null;
           daily_return?: number | null;
           drawdown?: number | null;
-          id: number;
+          id?: never;
           max_drawdown?: number | null;
           num_positions?: number | null;
           positions_value: number;
@@ -509,13 +1031,153 @@ export type Database = {
           daily_pnl?: number | null;
           daily_return?: number | null;
           drawdown?: number | null;
-          id?: number;
+          id?: never;
           max_drawdown?: number | null;
           num_positions?: number | null;
           positions_value?: number;
           timestamp?: string;
           total_equity?: number;
           user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_snapshots_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      recommendation_events: {
+        Row: {
+          actor_id: string | null;
+          actor_type: string;
+          created_at: string;
+          event_ts: string;
+          event_type: string;
+          id: string;
+          payload: Json;
+          recommendation_id: string;
+        };
+        Insert: {
+          actor_id?: string | null;
+          actor_type?: string;
+          created_at?: string;
+          event_ts?: string;
+          event_type: string;
+          id?: string;
+          payload?: Json;
+          recommendation_id: string;
+        };
+        Update: {
+          actor_id?: string | null;
+          actor_type?: string;
+          created_at?: string;
+          event_ts?: string;
+          event_type?: string;
+          id?: string;
+          payload?: Json;
+          recommendation_id?: string;
+        };
+        Relationships: [];
+      };
+      regime_playbooks: {
+        Row: {
+          auto_approve: boolean;
+          created_at: string;
+          daily_loss_limit_pct: number | null;
+          description: string | null;
+          disabled_strategies: string[];
+          enabled_strategies: string[];
+          id: string;
+          is_active: boolean;
+          max_position_pct: number | null;
+          max_sector_pct: number | null;
+          name: string;
+          position_size_modifier: number;
+          regime: string;
+          require_confirmation: boolean;
+          strategy_weights: Json;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          auto_approve?: boolean;
+          created_at?: string;
+          daily_loss_limit_pct?: number | null;
+          description?: string | null;
+          disabled_strategies?: string[];
+          enabled_strategies?: string[];
+          id?: string;
+          is_active?: boolean;
+          max_position_pct?: number | null;
+          max_sector_pct?: number | null;
+          name: string;
+          position_size_modifier?: number;
+          regime: string;
+          require_confirmation?: boolean;
+          strategy_weights?: Json;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          auto_approve?: boolean;
+          created_at?: string;
+          daily_loss_limit_pct?: number | null;
+          description?: string | null;
+          disabled_strategies?: string[];
+          enabled_strategies?: string[];
+          id?: string;
+          is_active?: boolean;
+          max_position_pct?: number | null;
+          max_sector_pct?: number | null;
+          name?: string;
+          position_size_modifier?: number;
+          regime?: string;
+          require_confirmation?: boolean;
+          strategy_weights?: Json;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      risk_evaluations: {
+        Row: {
+          adjusted_quantity: number | null;
+          allowed: boolean;
+          checks_performed: Json;
+          created_at: string;
+          evaluated_at: string;
+          id: string;
+          original_quantity: number | null;
+          policy_version: string | null;
+          reason: string | null;
+          recommendation_id: string;
+        };
+        Insert: {
+          adjusted_quantity?: number | null;
+          allowed: boolean;
+          checks_performed?: Json;
+          created_at?: string;
+          evaluated_at?: string;
+          id?: string;
+          original_quantity?: number | null;
+          policy_version?: string | null;
+          reason?: string | null;
+          recommendation_id: string;
+        };
+        Update: {
+          adjusted_quantity?: number | null;
+          allowed?: boolean;
+          checks_performed?: Json;
+          created_at?: string;
+          evaluated_at?: string;
+          id?: string;
+          original_quantity?: number | null;
+          policy_version?: string | null;
+          reason?: string | null;
+          recommendation_id?: string;
         };
         Relationships: [];
       };
@@ -552,7 +1214,7 @@ export type Database = {
           calmar_ratio?: number | null;
           current_drawdown?: number | null;
           cvar_95?: number | null;
-          id: number;
+          id?: never;
           max_drawdown?: number | null;
           metadata?: Json | null;
           profit_factor?: number | null;
@@ -574,7 +1236,7 @@ export type Database = {
           calmar_ratio?: number | null;
           current_drawdown?: number | null;
           cvar_95?: number | null;
-          id?: number;
+          id?: never;
           max_drawdown?: number | null;
           metadata?: Json | null;
           profit_factor?: number | null;
@@ -585,6 +1247,253 @@ export type Database = {
           user_id?: string;
           var_95?: number | null;
           win_rate?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'risk_metrics_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      risk_policies: {
+        Row: {
+          approval_required: boolean;
+          autonomy_mode: string;
+          created_at: string;
+          created_by: string | null;
+          daily_loss_limit_pct: number;
+          disabled_at: string | null;
+          enabled_at: string;
+          hard_drawdown_pct: number;
+          id: string;
+          max_position_pct: number;
+          max_sector_pct: number;
+          soft_drawdown_pct: number;
+          version: number;
+        };
+        Insert: {
+          approval_required?: boolean;
+          autonomy_mode?: string;
+          created_at?: string;
+          created_by?: string | null;
+          daily_loss_limit_pct?: number;
+          disabled_at?: string | null;
+          enabled_at?: string;
+          hard_drawdown_pct?: number;
+          id?: string;
+          max_position_pct?: number;
+          max_sector_pct?: number;
+          soft_drawdown_pct?: number;
+          version?: never;
+        };
+        Update: {
+          approval_required?: boolean;
+          autonomy_mode?: string;
+          created_at?: string;
+          created_by?: string | null;
+          daily_loss_limit_pct?: number;
+          disabled_at?: string | null;
+          enabled_at?: string;
+          hard_drawdown_pct?: number;
+          id?: string;
+          max_position_pct?: number;
+          max_sector_pct?: number;
+          soft_drawdown_pct?: number;
+          version?: never;
+        };
+        Relationships: [];
+      };
+      role_change_log: {
+        Row: {
+          changed_by: string;
+          created_at: string;
+          id: string;
+          new_role: string;
+          old_role: string;
+          reason: string | null;
+          target_user_id: string;
+        };
+        Insert: {
+          changed_by: string;
+          created_at?: string;
+          id?: string;
+          new_role: string;
+          old_role: string;
+          reason?: string | null;
+          target_user_id: string;
+        };
+        Update: {
+          changed_by?: string;
+          created_at?: string;
+          id?: string;
+          new_role?: string;
+          old_role?: string;
+          reason?: string | null;
+          target_user_id?: string;
+        };
+        Relationships: [];
+      };
+      shadow_portfolio_snapshots: {
+        Row: {
+          cash: number;
+          created_at: string;
+          equity: number;
+          id: number;
+          max_drawdown_pct: number;
+          positions_count: number;
+          positions_value: number;
+          shadow_portfolio_id: string;
+          signals_approved: number;
+          signals_blocked: number;
+          signals_generated: number;
+          snapshot_at: string;
+          total_pnl: number;
+          total_return_pct: number;
+        };
+        Insert: {
+          cash?: number;
+          created_at?: string;
+          equity?: number;
+          id?: never;
+          max_drawdown_pct?: number;
+          positions_count?: number;
+          positions_value?: number;
+          shadow_portfolio_id: string;
+          signals_approved?: number;
+          signals_blocked?: number;
+          signals_generated?: number;
+          snapshot_at?: string;
+          total_pnl?: number;
+          total_return_pct?: number;
+        };
+        Update: {
+          cash?: number;
+          created_at?: string;
+          equity?: number;
+          id?: never;
+          max_drawdown_pct?: number;
+          positions_count?: number;
+          positions_value?: number;
+          shadow_portfolio_id?: string;
+          signals_approved?: number;
+          signals_blocked?: number;
+          signals_generated?: number;
+          snapshot_at?: string;
+          total_pnl?: number;
+          total_return_pct?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'shadow_portfolio_snapshots_shadow_portfolio_id_fkey';
+            columns: ['shadow_portfolio_id'];
+            isOneToOne: false;
+            referencedRelation: 'shadow_portfolios';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      shadow_portfolios: {
+        Row: {
+          created_at: string;
+          daily_loss_limit_pct: number | null;
+          description: string | null;
+          disabled_strategies: string[];
+          enabled_strategies: string[];
+          hard_drawdown_pct: number | null;
+          id: string;
+          initial_capital: number;
+          is_active: boolean;
+          max_open_positions: number | null;
+          max_position_pct: number | null;
+          max_sector_pct: number | null;
+          name: string;
+          soft_drawdown_pct: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          daily_loss_limit_pct?: number | null;
+          description?: string | null;
+          disabled_strategies?: string[];
+          enabled_strategies?: string[];
+          hard_drawdown_pct?: number | null;
+          id?: string;
+          initial_capital?: number;
+          is_active?: boolean;
+          max_open_positions?: number | null;
+          max_position_pct?: number | null;
+          max_sector_pct?: number | null;
+          name: string;
+          soft_drawdown_pct?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          daily_loss_limit_pct?: number | null;
+          description?: string | null;
+          disabled_strategies?: string[];
+          enabled_strategies?: string[];
+          hard_drawdown_pct?: number | null;
+          id?: string;
+          initial_capital?: number;
+          is_active?: boolean;
+          max_open_positions?: number | null;
+          max_position_pct?: number | null;
+          max_sector_pct?: number | null;
+          name?: string;
+          soft_drawdown_pct?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      signal_runs: {
+        Row: {
+          created_at: string;
+          days: number;
+          errors: Json;
+          finished_at: string | null;
+          id: string;
+          min_strength: number;
+          requested_by: string;
+          started_at: string;
+          status: string;
+          strategies: Json;
+          total_signals: number;
+          universe: Json;
+        };
+        Insert: {
+          created_at?: string;
+          days?: number;
+          errors?: Json;
+          finished_at?: string | null;
+          id?: string;
+          min_strength?: number;
+          requested_by?: string;
+          started_at?: string;
+          status?: string;
+          strategies?: Json;
+          total_signals?: number;
+          universe?: Json;
+        };
+        Update: {
+          created_at?: string;
+          days?: number;
+          errors?: Json;
+          finished_at?: string | null;
+          id?: string;
+          min_strength?: number;
+          requested_by?: string;
+          started_at?: string;
+          status?: string;
+          strategies?: Json;
+          total_signals?: number;
+          universe?: Json;
         };
         Relationships: [];
       };
@@ -631,7 +1540,29 @@ export type Database = {
           strength?: number;
           user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'signals_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'signals_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'signals_strategy_id_fkey';
+            columns: ['strategy_id'];
+            isOneToOne: false;
+            referencedRelation: 'strategies';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       strategies: {
         Row: {
@@ -652,7 +1583,7 @@ export type Database = {
           id?: string;
           is_active?: boolean | null;
           name: string;
-          parameters: Json;
+          parameters?: Json;
           updated_at?: string | null;
           version?: number | null;
         };
@@ -666,6 +1597,114 @@ export type Database = {
           parameters?: Json;
           updated_at?: string | null;
           version?: number | null;
+        };
+        Relationships: [];
+      };
+      strategy_health_snapshots: {
+        Row: {
+          avg_confidence: number | null;
+          avg_return_pct: number | null;
+          computed_at: string;
+          expectancy: number | null;
+          expectancy_trend: string | null;
+          false_positive_rate: number | null;
+          health_label: string | null;
+          health_score: number | null;
+          id: string;
+          losing_trades: number;
+          max_drawdown: number | null;
+          profit_factor: number | null;
+          regime_performance: Json | null;
+          sharpe_ratio: number | null;
+          signal_freq_trend: string | null;
+          source: string;
+          strategy_name: string;
+          total_signals: number;
+          total_trades: number;
+          win_rate: number | null;
+          win_rate_trend: string | null;
+          window_days: number;
+          winning_trades: number;
+        };
+        Insert: {
+          avg_confidence?: number | null;
+          avg_return_pct?: number | null;
+          computed_at?: string;
+          expectancy?: number | null;
+          expectancy_trend?: string | null;
+          false_positive_rate?: number | null;
+          health_label?: string | null;
+          health_score?: number | null;
+          id?: string;
+          losing_trades?: number;
+          max_drawdown?: number | null;
+          profit_factor?: number | null;
+          regime_performance?: Json | null;
+          sharpe_ratio?: number | null;
+          signal_freq_trend?: string | null;
+          source?: string;
+          strategy_name: string;
+          total_signals?: number;
+          total_trades?: number;
+          win_rate?: number | null;
+          win_rate_trend?: string | null;
+          window_days?: number;
+          winning_trades?: number;
+        };
+        Update: {
+          avg_confidence?: number | null;
+          avg_return_pct?: number | null;
+          computed_at?: string;
+          expectancy?: number | null;
+          expectancy_trend?: string | null;
+          false_positive_rate?: number | null;
+          health_label?: string | null;
+          health_score?: number | null;
+          id?: string;
+          losing_trades?: number;
+          max_drawdown?: number | null;
+          profit_factor?: number | null;
+          regime_performance?: Json | null;
+          sharpe_ratio?: number | null;
+          signal_freq_trend?: string | null;
+          source?: string;
+          strategy_name?: string;
+          total_signals?: number;
+          total_trades?: number;
+          win_rate?: number | null;
+          win_rate_trend?: string | null;
+          window_days?: number;
+          winning_trades?: number;
+        };
+        Relationships: [];
+      };
+      system_controls: {
+        Row: {
+          global_mode: string;
+          id: string;
+          live_execution_enabled: boolean;
+          max_daily_trades: number;
+          trading_halted: boolean;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          global_mode?: string;
+          id?: string;
+          live_execution_enabled?: boolean;
+          max_daily_trades?: number;
+          trading_halted?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          global_mode?: string;
+          id?: string;
+          live_execution_enabled?: boolean;
+          max_daily_trades?: number;
+          trading_halted?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -733,6 +1772,114 @@ export type Database = {
           total_costs?: number | null;
           user_id?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'trades_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'trades_entry_order_id_fkey';
+            columns: ['entry_order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'trades_exit_order_id_fkey';
+            columns: ['exit_order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'trades_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'trades_strategy_id_fkey';
+            columns: ['strategy_id'];
+            isOneToOne: false;
+            referencedRelation: 'strategies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      user_profiles: {
+        Row: {
+          created_at: string;
+          display_name: string | null;
+          id: string;
+          role: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name?: string | null;
+          id: string;
+          role?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string | null;
+          id?: string;
+          role?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_trading_policy: {
+        Row: {
+          auto_trading: boolean;
+          created_at: string;
+          daily_loss_limit_pct: number;
+          hard_drawdown_pct: number;
+          id: string;
+          max_open_positions: number;
+          max_position_pct: number;
+          max_sector_pct: number;
+          paper_trading: boolean;
+          require_confirmation: boolean;
+          soft_drawdown_pct: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          auto_trading?: boolean;
+          created_at?: string;
+          daily_loss_limit_pct?: number;
+          hard_drawdown_pct?: number;
+          id?: string;
+          max_open_positions?: number;
+          max_position_pct?: number;
+          max_sector_pct?: number;
+          paper_trading?: boolean;
+          require_confirmation?: boolean;
+          soft_drawdown_pct?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          auto_trading?: boolean;
+          created_at?: string;
+          daily_loss_limit_pct?: number;
+          hard_drawdown_pct?: number;
+          id?: string;
+          max_open_positions?: number;
+          max_position_pct?: number;
+          max_sector_pct?: number;
+          paper_trading?: boolean;
+          require_confirmation?: boolean;
+          soft_drawdown_pct?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [];
       };
       watchlist_items: {
@@ -751,7 +1898,22 @@ export type Database = {
           instrument_id?: string;
           watchlist_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'watchlist_items_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'watchlist_items_watchlist_id_fkey';
+            columns: ['watchlist_id'];
+            isOneToOne: false;
+            referencedRelation: 'watchlists';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       watchlists: {
         Row: {
@@ -777,6 +1939,75 @@ export type Database = {
           is_default?: boolean | null;
           name?: string;
           user_id?: string;
+        };
+        Relationships: [];
+      };
+      workflow_jobs: {
+        Row: {
+          agent_run_id: string | null;
+          completed_at: string | null;
+          created_at: string;
+          current_step: string | null;
+          error_count: number | null;
+          error_message: string | null;
+          id: string;
+          idempotency_key: string | null;
+          input_data: Json | null;
+          max_retries: number | null;
+          order_id: string | null;
+          output_data: Json | null;
+          recommendation_id: string | null;
+          retry_after: string | null;
+          started_at: string | null;
+          status: string;
+          steps_completed: string[] | null;
+          timeout_at: string | null;
+          updated_at: string;
+          workflow_type: string;
+        };
+        Insert: {
+          agent_run_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          current_step?: string | null;
+          error_count?: number | null;
+          error_message?: string | null;
+          id?: string;
+          idempotency_key?: string | null;
+          input_data?: Json | null;
+          max_retries?: number | null;
+          order_id?: string | null;
+          output_data?: Json | null;
+          recommendation_id?: string | null;
+          retry_after?: string | null;
+          started_at?: string | null;
+          status?: string;
+          steps_completed?: string[] | null;
+          timeout_at?: string | null;
+          updated_at?: string;
+          workflow_type: string;
+        };
+        Update: {
+          agent_run_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          current_step?: string | null;
+          error_count?: number | null;
+          error_message?: string | null;
+          id?: string;
+          idempotency_key?: string | null;
+          input_data?: Json | null;
+          max_retries?: number | null;
+          order_id?: string | null;
+          output_data?: Json | null;
+          recommendation_id?: string | null;
+          retry_after?: string | null;
+          started_at?: string | null;
+          status?: string;
+          steps_completed?: string[] | null;
+          timeout_at?: string | null;
+          updated_at?: string;
+          workflow_type?: string;
         };
         Relationships: [];
       };
@@ -825,8 +2056,62 @@ export type Database = {
         };
         Relationships: [];
       };
+      workflow_step_log: {
+        Row: {
+          duration_ms: number | null;
+          error: string | null;
+          executed_at: string;
+          id: string;
+          input_data: Json | null;
+          job_id: string;
+          output_data: Json | null;
+          status: string;
+          step_name: string;
+        };
+        Insert: {
+          duration_ms?: number | null;
+          error?: string | null;
+          executed_at?: string;
+          id?: string;
+          input_data?: Json | null;
+          job_id: string;
+          output_data?: Json | null;
+          status: string;
+          step_name: string;
+        };
+        Update: {
+          duration_ms?: number | null;
+          error?: string | null;
+          executed_at?: string;
+          id?: string;
+          input_data?: Json | null;
+          job_id?: string;
+          output_data?: Json | null;
+          status?: string;
+          step_name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workflow_step_log_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'workflow_jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
+      journal_stats: {
+        Row: {
+          avg_pnl: number | null;
+          grade_variety: number | null;
+          losses: number | null;
+          total_entries: number | null;
+          wins: number | null;
+        };
+        Relationships: [];
+      };
       portfolio_positions_live: {
         Row: {
           account_id: string | null;
@@ -843,11 +2128,119 @@ export type Database = {
           updated_at: string | null;
           user_id: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'portfolio_positions_account_id_fkey';
+            columns: ['account_id'];
+            isOneToOne: false;
+            referencedRelation: 'accounts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'portfolio_positions_instrument_id_fkey';
+            columns: ['instrument_id'];
+            isOneToOne: false;
+            referencedRelation: 'instruments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      risk_policy_current: {
+        Row: {
+          approval_required: boolean | null;
+          autonomy_mode: string | null;
+          created_at: string | null;
+          created_by: string | null;
+          daily_loss_limit_pct: number | null;
+          disabled_at: string | null;
+          enabled_at: string | null;
+          hard_drawdown_pct: number | null;
+          id: string | null;
+          max_position_pct: number | null;
+          max_sector_pct: number | null;
+          soft_drawdown_pct: number | null;
+          version: number | null;
+        };
+        Relationships: [];
+      };
+      strategy_health_latest: {
+        Row: {
+          avg_confidence: number | null;
+          avg_return_pct: number | null;
+          computed_at: string | null;
+          expectancy: number | null;
+          health_label: string | null;
+          health_score: number | null;
+          id: string | null;
+          losing_trades: number | null;
+          max_drawdown: number | null;
+          profit_factor: number | null;
+          sharpe_ratio: number | null;
+          source: string | null;
+          strategy_name: string | null;
+          total_signals: number | null;
+          total_trades: number | null;
+          win_rate: number | null;
+          window_days: number | null;
+          winning_trades: number | null;
+        };
         Relationships: [];
       };
     };
     Functions: {
-      [_ in never]: never;
+      acquire_lock: {
+        Args: {
+          p_holder_id: string;
+          p_lock_name: string;
+          p_ttl_seconds?: number;
+        };
+        Returns: boolean;
+      };
+      claim_workflow_job: {
+        Args: {
+          p_timeout_seconds?: number;
+          p_worker_id: string;
+          p_workflow_type: string;
+        };
+        Returns: string;
+      };
+      complete_workflow_step: {
+        Args: {
+          p_duration_ms?: number;
+          p_job_id: string;
+          p_next_step?: string;
+          p_output?: Json;
+          p_step_name: string;
+        };
+        Returns: boolean;
+      };
+      fail_workflow_job: {
+        Args: {
+          p_error: string;
+          p_job_id: string;
+          p_retry?: boolean;
+          p_step_name?: string;
+        };
+        Returns: string;
+      };
+      get_user_role: { Args: { p_user_id?: string }; Returns: string };
+      has_role_level: {
+        Args: { p_required_role: string; p_user_id?: string };
+        Returns: boolean;
+      };
+      heartbeat_lock: {
+        Args: {
+          p_holder_id: string;
+          p_lock_name: string;
+          p_ttl_seconds?: number;
+        };
+        Returns: boolean;
+      };
+      is_lock_held: { Args: { p_lock_name: string }; Returns: boolean };
+      release_lock: {
+        Args: { p_holder_id: string; p_lock_name: string };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -858,25 +2251,31 @@ export type Database = {
   };
 };
 
-type PublicSchema = Database[Extract<keyof Database, 'public'>];
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-        Database[PublicTableNameOrOptions['schema']]['Views'])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-      Database[PublicTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R;
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    ? (PublicSchema['Tables'] & PublicSchema['Views'])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R;
       }
       ? R
@@ -884,18 +2283,24 @@ export type Tables<
     : never;
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends keyof PublicSchema['Tables'] | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I;
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-    ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I;
       }
       ? I
@@ -903,18 +2308,24 @@ export type TablesInsert<
     : never;
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends keyof PublicSchema['Tables'] | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U;
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-    ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U;
       }
       ? U
@@ -922,12 +2333,41 @@ export type TablesUpdate<
     : never;
 
 export type Enums<
-  PublicEnumNameOrOptions extends keyof PublicSchema['Enums'] | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions['schema']]['Enums']
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
-    ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const;

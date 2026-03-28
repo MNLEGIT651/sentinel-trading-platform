@@ -15,10 +15,10 @@ import { NextRequest } from 'next/server';
 
 // ─── Mock Supabase updateSession ──────────────────────────────────────────
 
-const mockUpdateSession = vi.fn<
-  [NextRequest],
-  Promise<{ user: { id: string } | null; supabaseResponse: Response }>
->();
+const mockUpdateSession =
+  vi.fn<
+    (req: NextRequest) => Promise<{ user: { id: string } | null; supabaseResponse: Response }>
+  >();
 
 vi.mock('@/lib/supabase/server', () => ({
   updateSession: (req: NextRequest) => mockUpdateSession(req),
@@ -26,7 +26,8 @@ vi.mock('@/lib/supabase/server', () => ({
 
 // ─── Mock rate limiter ────────────────────────────────────────────────────
 
-const mockCheck = vi.fn<[string], { allowed: boolean; remaining: number; resetAtMs: number }>();
+const mockCheck =
+  vi.fn<(key: string) => { allowed: boolean; remaining: number; resetAtMs: number }>();
 
 vi.mock('@/lib/server/rate-limiter', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/server/rate-limiter')>();

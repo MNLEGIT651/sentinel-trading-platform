@@ -9,6 +9,23 @@ from typing import Any
 from src.middleware.tracing import request_id_context
 
 
+def _get_otel_context() -> dict[str, str]:
+    """Extract trace_id and span_id from the current OTel span, if available."""
+    try:
+        from opentelemetry import trace
+
+        span = trace.get_current_span()
+        ctx = span.get_span_context()
+        if ctx and ctx.trace_id:
+            return {
+                "trace_id": format(ctx.trace_id, "032x"),
+                "span_id": format(ctx.span_id, "016x"),
+            }
+    except Exception:  # noqa: BLE001 – OTel may not be installed
+        pass
+    return {}
+
+
 class JSONFormatter(logging.Formatter):
     """Format logs as JSON for easy parsing by log aggregation services."""
 
@@ -21,6 +38,9 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
             "request_id": request_id_context.get(""),
         }
+
+        # Inject OpenTelemetry trace context when available
+        log_data.update(_get_otel_context())
 
         # Add exception info if present
         if record.exc_info:

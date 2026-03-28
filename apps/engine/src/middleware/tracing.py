@@ -26,17 +26,33 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Extract or generate request ID
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        # Extract or generate request ID — accept both x-correlation-id (sent
+        # by the web/agents proxy) and X-Request-ID for backwards compat.
+        request_id = (
+            request.headers.get("x-correlation-id")
+            or request.headers.get("X-Request-ID")
+            or str(uuid.uuid4())
+        )
         request_id_context.set(request_id)
 
         # Add to logging context
         logging.LogRecord.request_id = request_id
 
+        # Attach correlation_id to the active OTel span (if tracing is enabled)
+        try:
+            from opentelemetry import trace
+
+            span = trace.get_current_span()
+            if span.is_recording():
+                span.set_attribute("correlation_id", request_id)
+        except Exception:  # noqa: BLE001 – OTel may not be installed
+            pass
+
         response = await call_next(request)
 
-        # Include request ID in response headers
+        # Include request ID in response headers (both names for interop)
         response.headers["X-Request-ID"] = request_id
+        response.headers["x-correlation-id"] = request_id
 
         return response
 

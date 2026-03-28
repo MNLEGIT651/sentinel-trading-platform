@@ -9,19 +9,28 @@ type RouteContext = {
   params: Promise<{ path?: string[] }>;
 };
 
+function getCorrelationId(request: Request): string {
+  return request.headers.get('x-correlation-id') ?? crypto.randomUUID();
+}
+
 async function handle(request: Request, context: RouteContext): Promise<Response> {
   const { path } = await context.params;
   const upstreamPath = `/${(path ?? []).join('/')}`;
+  const extraHeaders: Record<string, string> = {
+    'x-correlation-id': getCorrelationId(request),
+  };
 
   // Health endpoint is public for monitoring
   if (upstreamPath === '/health') {
-    return proxyServiceRequest('engine', request, path);
+    return proxyServiceRequest('engine', request, path, extraHeaders);
   }
 
   // All other engine endpoints require an authenticated user
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
         { error: 'unauthorized', message: 'Not authenticated' },
@@ -35,7 +44,7 @@ async function handle(request: Request, context: RouteContext): Promise<Response
     );
   }
 
-  return proxyServiceRequest('engine', request, path);
+  return proxyServiceRequest('engine', request, path, extraHeaders);
 }
 
 export {

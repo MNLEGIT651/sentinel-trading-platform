@@ -23,8 +23,10 @@ if TYPE_CHECKING:
     from src.data.polygon_client import PolygonClient
 from src.strategies.registry import FAMILY_MAP, list_strategies
 from src.strategies.signal_generator import SignalGenerator
+from src.telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 
 router = APIRouter(prefix="/strategies", tags=["strategies"])
@@ -280,23 +282,32 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
             run_id=run_id,
         )
 
-    generator = SignalGenerator(min_signal_strength=request.min_strength)
-    if request.use_composite:
-        batch = generator.scan_with_composite(data_map)
-    else:
-        batch = generator.scan(data_map)
+    with _tracer.start_as_current_span(
+        "strategies.scan_signals",
+        attributes={
+            "scan.tickers": ",".join(data_map.keys()),
+            "scan.ticker_count": len(data_map),
+            "scan.use_composite": request.use_composite,
+            "scan.min_strength": request.min_strength,
+        },
+    ):
+        generator = SignalGenerator(min_signal_strength=request.min_strength)
+        if request.use_composite:
+            batch = generator.scan_with_composite(data_map)
+        else:
+            batch = generator.scan(data_map)
 
-    signals_out = [
-        SignalOut(
-            ticker=s.ticker,
-            direction=s.direction.value,
-            strength=round(s.strength, 4),
-            strategy_name=s.strategy_name,
-            reason=s.reason,
-            metadata=s.metadata,
-        )
-        for s in batch.top_signals(50)
-    ]
+        signals_out = [
+            SignalOut(
+                ticker=s.ticker,
+                direction=s.direction.value,
+                strength=round(s.strength, 4),
+                strategy_name=s.strategy_name,
+                reason=s.reason,
+                metadata=s.metadata,
+            )
+            for s in batch.top_signals(50)
+        ]
 
     if db is not None and run_id is not None:
         try:
@@ -318,6 +329,82 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
         strategies_run=batch.strategies_run,
         errors=fetch_errors + batch.errors,
         run_id=run_id,
+    )
+
+
+class StrategyAutonomyResponse(BaseModel):
+    """Response for a strategy's autonomy mode."""
+
+    strategy_id: str
+    strategy_name: str
+    autonomy_mode: str
+
+
+class StrategyAutonomyUpdateRequest(BaseModel):
+    """Request body for updating a strategy's autonomy mode."""
+
+    autonomy_mode: str = Field(
+        ...,
+        pattern="^(disabled|alert_only|suggest|auto_approve|auto_execute)$",
+    )
+
+
+@router.get("/{strategy_id}/autonomy", response_model=StrategyAutonomyResponse)
+async def get_strategy_autonomy(strategy_id: str) -> StrategyAutonomyResponse:
+    """Get the autonomy mode for a specific strategy."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    result = (
+        db.table("strategies")
+        .select("id, name, autonomy_mode")
+        .eq("id", strategy_id)
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_id} not found")
+
+    row = result.data
+    return StrategyAutonomyResponse(
+        strategy_id=str(row["id"]),
+        strategy_name=row["name"],
+        autonomy_mode=row["autonomy_mode"] or "suggest",
+    )
+
+
+@router.put("/{strategy_id}/autonomy", response_model=StrategyAutonomyResponse)
+async def update_strategy_autonomy(
+    strategy_id: str, body: StrategyAutonomyUpdateRequest
+) -> StrategyAutonomyResponse:
+    """Update the autonomy mode for a specific strategy."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    # Verify strategy exists
+    existing = db.table("strategies").select("id").eq("id", strategy_id).maybe_single().execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_id} not found")
+
+    result = (
+        db.table("strategies")
+        .update({"autonomy_mode": body.autonomy_mode})
+        .eq("id", strategy_id)
+        .select("id, name, autonomy_mode")
+        .single()
+        .execute()
+    )
+
+    row = result.data
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to update strategy autonomy mode")
+
+    return StrategyAutonomyResponse(
+        strategy_id=str(row["id"]),
+        strategy_name=row["name"],
+        autonomy_mode=row["autonomy_mode"],
     )
 
 

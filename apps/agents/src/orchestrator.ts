@@ -25,6 +25,10 @@ import {
 } from './config.js';
 import { logger } from './logger.js';
 import { getSupabaseClient } from './supabase-client.js';
+import { trace, SpanStatusCode, type Span } from '@opentelemetry/api';
+import { startCycleWorkflow, recordAgentStepInCycleJob } from './workflows/agent-cycle.js';
+
+const tracer = trace.getTracer('sentinel-agents', '1.0.0');
 
 const DEFAULT_CONFIGS: AgentConfig[] = [
   {
@@ -175,26 +179,74 @@ export class Orchestrator {
       const results: AgentResult[] = [];
       logger.info('orchestrator.cycle.start', { cycleCount: this.state.cycleCount });
 
-      for (const role of this.cycleSequence) {
-        if (this.state.halted) {
-          logger.warn('orchestrator.agent.skipped', { role, reason: 'halted' });
-          continue;
-        }
-        const result = await this.runAgent(
-          role,
-          DEFAULT_AGENT_PROMPTS[role] ?? `Execute ${role} workflow.`,
-        );
-        results.push(result);
+      // Create a workflow job to track this cycle (fire-and-forget on failure)
+      let cycleJobId: string | null = null;
+      try {
+        cycleJobId = await startCycleWorkflow({
+          cycleCount: this.state.cycleCount,
+          sequence: [...this.cycleSequence],
+        });
+      } catch (err) {
+        logger.warn('orchestrator.cycle.workflow_job.failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
 
-      const successCount = results.filter((r) => r.success).length;
-      logger.info('orchestrator.cycle.complete', {
-        cycleCount: this.state.cycleCount,
-        successCount,
-        totalCount: results.length,
-      });
-      this.state.lastCycleAt = new Date().toISOString();
-      return results;
+      return await tracer.startActiveSpan(
+        'orchestrator.runCycle',
+        { attributes: { 'cycle.count': this.state.cycleCount } },
+        async (span: Span) => {
+          try {
+            for (const role of this.cycleSequence) {
+              if (this.state.halted) {
+                logger.warn('orchestrator.agent.skipped', { role, reason: 'halted' });
+                continue;
+              }
+              const result = await this.runAgent(
+                role,
+                DEFAULT_AGENT_PROMPTS[role] ?? `Execute ${role} workflow.`,
+              );
+              results.push(result);
+
+              // Record each agent result in the cycle workflow job
+              if (cycleJobId) {
+                void recordAgentStepInCycleJob(cycleJobId, role, {
+                  success: result.success,
+                  durationMs: result.durationMs,
+                  error: result.error,
+                }).catch(() => {
+                  /* non-blocking */
+                });
+              }
+            }
+
+            const successCount = results.filter((r) => r.success).length;
+            logger.info('orchestrator.cycle.complete', {
+              cycleCount: this.state.cycleCount,
+              successCount,
+              totalCount: results.length,
+              cycleJobId,
+            });
+            this.state.lastCycleAt = new Date().toISOString();
+
+            span.setAttributes({
+              'cycle.success_count': successCount,
+              'cycle.total_count': results.length,
+            });
+            span.setStatus({ code: SpanStatusCode.OK });
+            return results;
+          } catch (err) {
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: err instanceof Error ? err.message : String(err),
+            });
+            span.recordException(err instanceof Error ? err : new Error(String(err)));
+            throw err;
+          } finally {
+            span.end();
+          }
+        },
+      );
     } finally {
       this.cycleInProgress = false;
     }
@@ -216,25 +268,35 @@ export class Orchestrator {
       };
     }
 
-    logger.info('agent.start', { role, name: agent.config.name });
-    this.state.agents[role] = 'running';
+    return tracer.startActiveSpan(
+      `agent.run.${role}`,
+      { attributes: { 'agent.role': role, 'agent.name': agent.config.name } },
+      async (span: Span) => {
+        logger.info('agent.start', { role, name: agent.config.name });
+        this.state.agents[role] = 'running';
 
-    const result = await agent.run(prompt);
+        const result = await agent.run(prompt);
 
-    this.state.agents[role] = result.success ? 'idle' : 'error';
-    this.state.lastRun[role] = result.timestamp;
+        this.state.agents[role] = result.success ? 'idle' : 'error';
+        this.state.lastRun[role] = result.timestamp;
 
-    if (result.success) {
-      logger.info('agent.complete', {
-        role,
-        name: agent.config.name,
-        durationMs: result.durationMs,
-      });
-    } else {
-      logger.error('agent.failed', { role, name: agent.config.name, error: result.error });
-    }
+        if (result.success) {
+          logger.info('agent.complete', {
+            role,
+            name: agent.config.name,
+            durationMs: result.durationMs,
+          });
+          span.setAttributes({ 'agent.duration_ms': result.durationMs });
+          span.setStatus({ code: SpanStatusCode.OK });
+        } else {
+          logger.error('agent.failed', { role, name: agent.config.name, error: result.error });
+          span.setStatus({ code: SpanStatusCode.ERROR, message: result.error ?? 'unknown' });
+        }
 
-    return result;
+        span.end();
+        return result;
+      },
+    );
   }
 
   /**

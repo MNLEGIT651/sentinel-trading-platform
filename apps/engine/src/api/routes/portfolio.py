@@ -7,13 +7,23 @@ from enum import StrEnum
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src.api.models.responses import (
+    AccountResponse,
+    CancelOrderResponse,
+    OrderResponse,
+    OrderSubmitResponse,
+    PositionResponse,
+    StoredOrderResponse,
+)
 from src.db import get_db
 from src.execution import get_broker
 from src.execution.broker_interface import OrderRequest
 from src.execution.order_store import TERMINAL_STATUSES, get_order_store
 from src.risk.risk_manager import PortfolioState, RiskManager
+from src.telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 
@@ -45,30 +55,32 @@ class SubmitOrderBody(BaseModel):
 # ── Endpoints ────────────────────────────────────────────
 
 
-@router.get("/account")
-async def get_account() -> dict:
+@router.get("/account", response_model=AccountResponse)
+async def get_account() -> AccountResponse:
     """Get broker account summary (cash, equity, buying power)."""
     try:
         broker = get_broker()
-        return await broker.get_account()
+        data = await broker.get_account()
+        return AccountResponse(**data)
     except Exception as exc:
         logger.error("Failed to fetch account: %s", exc)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get("/positions")
-async def get_positions() -> list[dict]:
+@router.get("/positions", response_model=list[PositionResponse])
+async def get_positions() -> list[PositionResponse]:
     """Get all open positions from the broker."""
     try:
         broker = get_broker()
-        return await broker.get_positions()
+        data = await broker.get_positions()
+        return [PositionResponse(**p) for p in data]
     except Exception as exc:
         logger.error("Failed to fetch positions: %s", exc)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.post("/orders")
-async def submit_order(body: SubmitOrderBody) -> dict:
+@router.post("/orders", response_model=OrderSubmitResponse)
+async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
     """Submit a new order to the broker (pre-trade risk check enforced)."""
     # ── Trading halt check ──────────────────────────────────────────
     try:
@@ -147,20 +159,32 @@ async def submit_order(body: SubmitOrderBody) -> dict:
             stop_price=body.stop_price,
         )
 
-        if isinstance(broker, AlpacaBroker):
-            result = await broker.submit_order(request, time_in_force=body.time_in_force)
-        else:
-            result = await broker.submit_order(request, current_price=price)
+        with _tracer.start_as_current_span(
+            "portfolio.submit_order",
+            attributes={
+                "order.symbol": body.symbol.upper(),
+                "order.side": body.side.value,
+                "order.type": body.order_type.value,
+                "order.quantity": float(effective_quantity),
+            },
+        ) as span:
+            if isinstance(broker, AlpacaBroker):
+                result = await broker.submit_order(request, time_in_force=body.time_in_force)
+            else:
+                result = await broker.submit_order(request, current_price=price)
 
-        return {
-            "order_id": result.order_id,
-            "status": result.status,
-            "fill_price": result.fill_price,
-            "fill_quantity": result.fill_quantity,
-            "commission": result.commission,
-            "slippage": result.slippage,
-            "risk_note": risk_result.reason if risk_result.adjusted_shares else None,
-        }
+            span.set_attribute("order.id", result.order_id)
+            span.set_attribute("order.status", result.status)
+
+        return OrderSubmitResponse(
+            order_id=result.order_id,
+            status=result.status,
+            fill_price=result.fill_price,
+            fill_quantity=result.fill_quantity,
+            commission=result.commission,
+            slippage=result.slippage,
+            risk_note=risk_result.reason if risk_result.adjusted_shares else None,
+        )
     except HTTPException:
         raise
     except Exception as exc:
@@ -168,27 +192,28 @@ async def submit_order(body: SubmitOrderBody) -> dict:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get("/orders")
-async def get_orders(status: str = "open") -> list[dict]:
+@router.get("/orders", response_model=list[OrderResponse])
+async def get_orders(status: str = "open") -> list[OrderResponse]:
     """Get orders filtered by status."""
     try:
         broker = get_broker()
-        return await broker.get_orders(status=status)
+        data = await broker.get_orders(status=status)
+        return [OrderResponse(**o) for o in data]
     except Exception as exc:
         logger.error("Failed to fetch orders: %s", exc)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get("/orders/history")
-async def get_order_history(limit: int = 20) -> list[dict]:
+@router.get("/orders/history", response_model=list[StoredOrderResponse])
+async def get_order_history(limit: int = 20) -> list[StoredOrderResponse]:
     """Get recent order history from the in-memory store."""
     capped = min(max(limit, 1), 100)
     store = get_order_store()
-    return [dataclasses.asdict(o) for o in store.recent(limit=capped)]
+    return [StoredOrderResponse(**dataclasses.asdict(o)) for o in store.recent(limit=capped)]
 
 
-@router.get("/orders/{order_id}")
-async def get_order_by_id(order_id: str) -> dict:
+@router.get("/orders/{order_id}", response_model=StoredOrderResponse)
+async def get_order_by_id(order_id: str) -> StoredOrderResponse:
     """Get a single order by ID. Refreshes from Alpaca if non-terminal."""
     store = get_order_store()
     order = store.get(order_id)
@@ -205,16 +230,16 @@ async def get_order_by_id(order_id: str) -> dict:
             if refreshed is not None:
                 order = refreshed
 
-    return dataclasses.asdict(order)
+    return StoredOrderResponse(**dataclasses.asdict(order))
 
 
-@router.delete("/orders/{order_id}")
-async def cancel_order(order_id: str) -> dict:
+@router.delete("/orders/{order_id}", response_model=CancelOrderResponse)
+async def cancel_order(order_id: str) -> CancelOrderResponse:
     """Cancel an open order."""
     try:
         broker = get_broker()
         await broker.cancel_order(order_id)
-        return {"status": "cancelled", "order_id": order_id}
+        return CancelOrderResponse(status="cancelled", order_id=order_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "ENGINE_URL",
+    "ENGINE_API_KEY",
+    "AGENTS_URL",
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "ANTHROPIC_API_KEY",
+    "POLYGON_API_KEY",
+    "ALPACA_API_KEY",
+    "ALPACA_SECRET_KEY",
+    "ALPACA_BASE_URL",
+    "CORS_ORIGINS",
+    "BROKER_MODE"
+  ],
+  "tasks": {
+    "dev": {
+      "persistent": true,
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+      "outputs": [".next/**", "dist/**"]
+    },
+    "test": {},
+    "lint": {},
+    "clean": {
+      "cache": false
+    }
+  }
+}
