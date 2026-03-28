@@ -33,6 +33,16 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         # Add to logging context
         logging.LogRecord.request_id = request_id
 
+        # Attach correlation_id to the active OTel span (if tracing is enabled)
+        try:
+            from opentelemetry import trace
+
+            span = trace.get_current_span()
+            if span.is_recording():
+                span.set_attribute("correlation_id", request_id)
+        except Exception:  # noqa: BLE001 – OTel may not be installed
+            pass
+
         response = await call_next(request)
 
         # Include request ID in response headers

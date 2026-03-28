@@ -23,8 +23,10 @@ if TYPE_CHECKING:
     from src.data.polygon_client import PolygonClient
 from src.strategies.registry import FAMILY_MAP, list_strategies
 from src.strategies.signal_generator import SignalGenerator
+from src.telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 
 router = APIRouter(prefix="/strategies", tags=["strategies"])
@@ -280,23 +282,32 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
             run_id=run_id,
         )
 
-    generator = SignalGenerator(min_signal_strength=request.min_strength)
-    if request.use_composite:
-        batch = generator.scan_with_composite(data_map)
-    else:
-        batch = generator.scan(data_map)
+    with _tracer.start_as_current_span(
+        "strategies.scan_signals",
+        attributes={
+            "scan.tickers": ",".join(data_map.keys()),
+            "scan.ticker_count": len(data_map),
+            "scan.use_composite": request.use_composite,
+            "scan.min_strength": request.min_strength,
+        },
+    ):
+        generator = SignalGenerator(min_signal_strength=request.min_strength)
+        if request.use_composite:
+            batch = generator.scan_with_composite(data_map)
+        else:
+            batch = generator.scan(data_map)
 
-    signals_out = [
-        SignalOut(
-            ticker=s.ticker,
-            direction=s.direction.value,
-            strength=round(s.strength, 4),
-            strategy_name=s.strategy_name,
-            reason=s.reason,
-            metadata=s.metadata,
-        )
-        for s in batch.top_signals(50)
-    ]
+        signals_out = [
+            SignalOut(
+                ticker=s.ticker,
+                direction=s.direction.value,
+                strength=round(s.strength, 4),
+                strategy_name=s.strategy_name,
+                reason=s.reason,
+                metadata=s.metadata,
+            )
+            for s in batch.top_signals(50)
+        ]
 
     if db is not None and run_id is not None:
         try:
