@@ -29,6 +29,7 @@ import { WorkflowWorker } from './workflow-worker.js';
 
 // Register workflow definitions (side-effect import)
 import './workflows/recommendation-lifecycle.js';
+import './workflows/agent-cycle.js';
 
 // Re-export public API for consumers that import this package
 export { Agent } from './agent.js';

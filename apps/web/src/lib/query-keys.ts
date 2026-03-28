@@ -97,6 +97,8 @@ export const queryKeys = {
     all: ['replay'] as const,
     snapshot: (timestamp: string, window: number) =>
       ['replay', 'snapshot', timestamp, window] as const,
+    search: (filters?: object) => ['replay', 'search', filters] as const,
+    reconstruction: (id: string) => ['replay', 'reconstruction', id] as const,
   },
 
   // ── Catalyst Overlay ─────────────────────────────────────────────
@@ -133,6 +135,14 @@ export const queryKeys = {
   riskEvaluations: {
     all: ['risk-evaluations'] as const,
     list: (filters?: object) => ['risk-evaluations', 'list', filters] as const,
+  },
+
+  // ── Autonomy ─────────────────────────────────────────────────────
+  autonomy: {
+    all: ['autonomy'] as const,
+    strategiesAutonomy: () => ['strategies', 'autonomy'] as const,
+    universeRestrictions: () => ['universe-restrictions'] as const,
+    autoExecutionActivity: () => ['auto-execution-activity'] as const,
   },
 
   // ── Fills ────────────────────────────────────────────────────────

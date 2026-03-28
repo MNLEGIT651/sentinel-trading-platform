@@ -18,6 +18,7 @@ import {
   Clock,
   Calendar,
   Shield,
+  ShieldCheck,
   ClipboardList,
   Settings,
   ChevronLeft,
@@ -75,6 +76,7 @@ const navSections: NavSection[] = [
     section: 'Governance',
     items: [
       { label: 'Controls', href: '/system-controls', icon: Power },
+      { label: 'Autonomy', href: '/autonomy', icon: ShieldCheck },
       { label: 'Roles', href: '/roles', icon: Shield },
       { label: 'Audit Log', href: '/audit-log', icon: ClipboardList },
       { label: 'Settings', href: '/settings', icon: Settings },

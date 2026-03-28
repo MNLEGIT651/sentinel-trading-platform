@@ -1,7 +1,8 @@
 """Risk management API routes.
 
 Endpoints for portfolio risk assessment, position sizing,
-risk configuration, and operational halt/resume controls.
+risk configuration, operational halt/resume controls,
+and universe restrictions.
 """
 
 from __future__ import annotations
@@ -382,9 +383,7 @@ async def get_risk_state() -> RiskStateResponse:
             {
                 "id": str(row["id"]),
                 "recommendation_id": (
-                    str(row["recommendation_id"])
-                    if row.get("recommendation_id")
-                    else None
+                    str(row["recommendation_id"]) if row.get("recommendation_id") else None
                 ),
                 "reason": row.get("reason"),
                 "evaluated_at": row.get("evaluated_at"),
@@ -562,9 +561,7 @@ async def update_risk_policy(body: RiskPolicyUpdateRequest) -> RiskPolicyRespons
         "enabled_at": now,
     }
 
-    insert_result = (
-        db.table("risk_policies").insert(new_row).select("*").single().execute()
-    )
+    insert_result = db.table("risk_policies").insert(new_row).select("*").single().execute()
     row = insert_result.data
     if not row:
         raise HTTPException(status_code=500, detail="Failed to insert new risk policy")
@@ -728,3 +725,119 @@ async def check_auto_execution_eligibility(
         checks=checks,
         recommendation_id=recommendation_id,
     )
+
+
+# ---------------------------------------------------------------------------
+# Universe Restrictions
+# ---------------------------------------------------------------------------
+
+
+class UniverseRestrictionResponse(BaseModel):
+    """Single universe restriction."""
+
+    id: str
+    restriction_type: str
+    symbols: list[str]
+    sectors: list[str]
+    asset_classes: list[str]
+    reason: str | None = None
+    enabled: bool
+    created_at: str | None = None
+    created_by: str | None = None
+
+
+class UniverseRestrictionCreateRequest(BaseModel):
+    """Request body for creating a universe restriction."""
+
+    restriction_type: str = Field(..., pattern="^(whitelist|blacklist)$")
+    symbols: list[str] = Field(default_factory=list)
+    sectors: list[str] = Field(default_factory=list)
+    asset_classes: list[str] = Field(default_factory=list)
+    reason: str | None = None
+    enabled: bool = True
+
+
+class UniverseRestrictionsListResponse(BaseModel):
+    """Response listing active universe restrictions."""
+
+    restrictions: list[UniverseRestrictionResponse]
+    total: int
+
+
+def _row_to_restriction(row: dict) -> UniverseRestrictionResponse:
+    return UniverseRestrictionResponse(
+        id=str(row["id"]),
+        restriction_type=row["restriction_type"],
+        symbols=row.get("symbols") or [],
+        sectors=row.get("sectors") or [],
+        asset_classes=row.get("asset_classes") or [],
+        reason=row.get("reason"),
+        enabled=row.get("enabled", True),
+        created_at=row.get("created_at"),
+        created_by=str(row["created_by"]) if row.get("created_by") else None,
+    )
+
+
+@router.get("/universe-restrictions", response_model=UniverseRestrictionsListResponse)
+async def list_universe_restrictions() -> UniverseRestrictionsListResponse:
+    """List active universe restrictions."""
+    db = _require_db()
+
+    result = (
+        db.table("universe_restrictions")
+        .select("*")
+        .eq("enabled", True)
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    rows = result.data or []
+    return UniverseRestrictionsListResponse(
+        restrictions=[_row_to_restriction(r) for r in rows],
+        total=len(rows),
+    )
+
+
+@router.post(
+    "/universe-restrictions",
+    response_model=UniverseRestrictionResponse,
+    status_code=201,
+)
+async def create_universe_restriction(
+    body: UniverseRestrictionCreateRequest,
+) -> UniverseRestrictionResponse:
+    """Add a new universe restriction."""
+    db = _require_db()
+
+    new_row = {
+        "restriction_type": body.restriction_type,
+        "symbols": body.symbols,
+        "sectors": body.sectors,
+        "asset_classes": body.asset_classes,
+        "reason": body.reason,
+        "enabled": body.enabled,
+    }
+
+    result = db.table("universe_restrictions").insert(new_row).select("*").single().execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create universe restriction")
+
+    return _row_to_restriction(result.data)
+
+
+@router.delete("/universe-restrictions/{restriction_id}", status_code=204)
+async def delete_universe_restriction(restriction_id: str) -> None:
+    """Remove a universe restriction."""
+    db = _require_db()
+
+    existing = (
+        db.table("universe_restrictions")
+        .select("id")
+        .eq("id", restriction_id)
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Universe restriction not found")
+
+    db.table("universe_restrictions").delete().eq("id", restriction_id).execute()

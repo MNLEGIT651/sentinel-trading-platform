@@ -9,10 +9,14 @@ const originalEnv = {
 };
 
 function restoreEnv() {
-  process.env.NODE_ENV = originalEnv.NODE_ENV;
+  (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv.NODE_ENV;
   process.env.ENGINE_URL = originalEnv.ENGINE_URL;
   process.env.ENGINE_API_KEY = originalEnv.ENGINE_API_KEY;
   process.env.AGENTS_URL = originalEnv.AGENTS_URL;
+}
+
+function setNodeEnv(value: string) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
 }
 
 describe('proxyServiceRequest', () => {
@@ -26,7 +30,7 @@ describe('proxyServiceRequest', () => {
   });
 
   it('returns 503 when the agents service is not configured in production', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     delete process.env.AGENTS_URL;
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -44,7 +48,7 @@ describe('proxyServiceRequest', () => {
   });
 
   it('returns 503 when the engine API key is missing in production', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     process.env.ENGINE_URL = 'https://engine.example';
     delete process.env.ENGINE_API_KEY;
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -63,7 +67,7 @@ describe('proxyServiceRequest', () => {
   });
 
   it('retries retryable GET failures and injects server-side auth headers', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     process.env.ENGINE_URL = 'https://engine.example';
     process.env.ENGINE_API_KEY = 'secret-key';
 
@@ -94,7 +98,7 @@ describe('proxyServiceRequest', () => {
   });
 
   it('does not retry non-idempotent POST requests and returns a timeout payload', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     process.env.ENGINE_URL = 'https://engine.example';
     process.env.ENGINE_API_KEY = 'secret-key';
 

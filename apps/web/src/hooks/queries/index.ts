@@ -76,6 +76,19 @@ export type {
   ReplaySummary,
   ReplayResponse,
 } from './use-replay-query';
+export {
+  useRecommendationSearchQuery,
+  useRecommendationReplayQuery,
+} from './use-recommendation-replay-query';
+export type {
+  RecommendationSearchFilters,
+  RecommendationSearchResult,
+  RecommendationSearchResponse,
+  RecommendationReplayData,
+  RecommendationOutcome,
+  JournalEntryRecord,
+  MarketRegimeSnapshot,
+} from './use-recommendation-replay-query';
 
 // ── Catalyst Overlay ────────────────────────────────────────────────
 export { useCatalystsQuery, useCreateCatalystMutation } from './use-catalysts-query';
@@ -114,6 +127,23 @@ export {
   useHaltSystemMutation,
   useResumeSystemMutation,
 } from './use-system-controls-query';
+
+// ── Autonomy ──────────────────────────────────────────────────────
+export {
+  useStrategiesAutonomyQuery,
+  useUpdateStrategyAutonomyMutation,
+} from './use-strategies-autonomy-query';
+export type { StrategyAutonomyEntry } from './use-strategies-autonomy-query';
+
+export {
+  useUniverseRestrictionsQuery,
+  useCreateRestrictionMutation,
+  useDeleteRestrictionMutation,
+} from './use-universe-restrictions-query';
+export type { CreateRestrictionInput } from './use-universe-restrictions-query';
+
+export { useAutoExecutionActivityQuery } from './use-auto-execution-activity-query';
+export type { AutoExecutionEvent } from './use-auto-execution-activity-query';
 
 // ── Recommendation Events ─────────────────────────────────────────
 export {

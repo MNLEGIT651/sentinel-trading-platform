@@ -699,6 +699,9 @@ export interface JournalStats {
 /** Global system operating mode. */
 export type SystemMode = 'paper' | 'live' | 'backtest';
 
+/** Autonomy level for strategies and the global system. */
+export type AutonomyMode = 'disabled' | 'alert_only' | 'suggest' | 'auto_approve' | 'auto_execute';
+
 /**
  * Centralized system configuration — single-row table.
  * Mirrors the `system_controls` table in Supabase.
@@ -709,6 +712,8 @@ export interface SystemControls {
   live_execution_enabled: boolean;
   global_mode: SystemMode;
   max_daily_trades: number;
+  autonomy_mode: AutonomyMode;
+  previous_autonomy_mode: string | null;
   updated_at: string;
   updated_by: string | null;
 }
@@ -733,10 +738,12 @@ export type RecommendationEventType =
   | 'filled'
   | 'cancelled'
   | 'failed'
-  | 'reviewed';
+  | 'reviewed'
+  | 'auto_approved'
+  | 'auto_execution_denied';
 
 /** Actor that caused a recommendation event. */
-export type ActorType = 'system' | 'agent' | 'operator';
+export type ActorType = 'system' | 'agent' | 'operator' | 'policy';
 
 /**
  * A single event in a recommendation's lifecycle.
@@ -814,7 +821,8 @@ export type OperatorActionType =
   | 'cancel_order'
   | 'manual_order'
   | 'role_change'
-  | 'system_config_change';
+  | 'system_config_change'
+  | 'incident_fallback';
 
 /**
  * An auditable operator action.
@@ -835,6 +843,38 @@ export interface OperatorAction {
 
 /** Status of a signal scan run. */
 export type SignalRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+
+// ─── Universe Restrictions ──────────────────────────────────────────
+
+/** Restriction type for universe filtering. */
+export type RestrictionType = 'whitelist' | 'blacklist';
+
+/**
+ * A universe restriction rule for symbol/sector/asset-class filtering.
+ * Mirrors the `universe_restrictions` table.
+ */
+export interface UniverseRestriction {
+  id: string;
+  restriction_type: RestrictionType;
+  symbols: string[];
+  sectors: string[];
+  asset_classes: string[];
+  reason: string | null;
+  enabled: boolean;
+  created_at: string;
+  created_by: string | null;
+}
+
+// ─── Incident State ─────────────────────────────────────────────────
+
+/** State of the automatic incident fallback monitor. */
+export interface IncidentState {
+  isActive: boolean;
+  triggeredAt: string | null;
+  reason: string | null;
+  previousMode: string | null;
+  recoveryEligibleAt: string | null;
+}
 
 // ─── Workflow Jobs (Durable Workflow Engine) ─────────────────────────
 
@@ -899,6 +939,8 @@ export interface WorkflowJobsFilters {
   status?: WorkflowJobStatus | undefined;
   limit?: number | undefined;
   offset?: number | undefined;
+  sort_by?: 'created_at' | 'updated_at' | undefined;
+  sort_direction?: 'asc' | 'desc' | undefined;
 }
 
 /** Summary stats for the workflows page. */
@@ -909,7 +951,9 @@ export interface WorkflowStats {
   completed: number;
   failed: number;
   retrying: number;
+  cancelled: number;
   avg_duration_ms: number | null;
+  failure_rate: number | null;
 }
 
 /**

@@ -29,6 +29,8 @@ export function useWorkflowJobsQuery(filters?: WorkflowJobsFilters) {
       if (filters?.status) params.set('status', filters.status);
       if (filters?.limit != null) params.set('limit', String(filters.limit));
       if (filters?.offset != null) params.set('offset', String(filters.offset));
+      if (filters?.sort_by) params.set('sort_by', filters.sort_by);
+      if (filters?.sort_direction) params.set('sort_direction', filters.sort_direction);
 
       const qs = params.toString();
       const res = await fetch(`/api/workflows${qs ? `?${qs}` : ''}`);

@@ -4,9 +4,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+const VALID_SORT_FIELDS = new Set(['created_at', 'updated_at']);
+
 /**
- * GET /api/workflows?workflow_type=X&status=Y&limit=50&offset=0
- * Returns workflow jobs with optional filters.
+ * GET /api/workflows?workflow_type=X&status=Y&limit=50&offset=0&sort_by=created_at&sort_direction=desc
+ * Returns workflow jobs with optional filters, sorting, and summary stats.
  */
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
@@ -23,11 +25,16 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status');
   const limit = Math.min(Number(searchParams.get('limit') ?? 50), 200);
   const offset = Number(searchParams.get('offset') ?? 0);
+  const sortBy = searchParams.get('sort_by');
+  const sortDirection = searchParams.get('sort_direction');
+
+  const sortField = sortBy && VALID_SORT_FIELDS.has(sortBy) ? sortBy : 'created_at';
+  const ascending = sortDirection === 'asc';
 
   let query = supabase
     .from('workflow_jobs')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
+    .order(sortField, { ascending })
     .range(offset, offset + limit - 1);
 
   if (workflowType) {
@@ -43,16 +50,45 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Also fetch summary stats
-  const { data: statsData } = await supabase.from('workflow_jobs').select('status');
+  // Fetch summary stats: status counts + completed_at/created_at for avg duration
+  const { data: statsData } = await supabase
+    .from('workflow_jobs')
+    .select('status, created_at, completed_at');
+
+  const total = statsData?.length ?? 0;
+  const pending = statsData?.filter((j) => j.status === 'pending').length ?? 0;
+  const running = statsData?.filter((j) => j.status === 'running').length ?? 0;
+  const completed = statsData?.filter((j) => j.status === 'completed').length ?? 0;
+  const failed = statsData?.filter((j) => j.status === 'failed').length ?? 0;
+  const retrying = statsData?.filter((j) => j.status === 'retrying').length ?? 0;
+  const cancelled = statsData?.filter((j) => j.status === 'cancelled').length ?? 0;
+
+  // Compute average completion time for completed jobs
+  let avgDurationMs: number | null = null;
+  if (statsData) {
+    const durations = statsData
+      .filter((j) => j.status === 'completed' && j.completed_at && j.created_at)
+      .map((j) => new Date(j.completed_at!).getTime() - new Date(j.created_at!).getTime())
+      .filter((d) => d > 0);
+    if (durations.length > 0) {
+      avgDurationMs = Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+    }
+  }
+
+  // Failure rate: failed / (completed + failed) — excludes pending/running
+  const resolved = completed + failed;
+  const failureRate = resolved > 0 ? Math.round((failed / resolved) * 10000) / 100 : null;
 
   const stats = {
-    total: statsData?.length ?? 0,
-    pending: statsData?.filter((j) => j.status === 'pending').length ?? 0,
-    running: statsData?.filter((j) => j.status === 'running').length ?? 0,
-    completed: statsData?.filter((j) => j.status === 'completed').length ?? 0,
-    failed: statsData?.filter((j) => j.status === 'failed').length ?? 0,
-    retrying: statsData?.filter((j) => j.status === 'retrying').length ?? 0,
+    total,
+    pending,
+    running,
+    completed,
+    failed,
+    retrying,
+    cancelled,
+    avg_duration_ms: avgDurationMs,
+    failure_rate: failureRate,
   };
 
   return NextResponse.json({ data: data ?? [], total: count ?? 0, stats });

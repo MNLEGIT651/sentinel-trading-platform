@@ -17,7 +17,7 @@ const originalEnv = {
 };
 
 function restoreEnv() {
-  process.env.NODE_ENV = originalEnv.NODE_ENV;
+  (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv.NODE_ENV;
   process.env.ENGINE_URL = originalEnv.ENGINE_URL;
   process.env.ENGINE_API_KEY = originalEnv.ENGINE_API_KEY;
   process.env.AGENTS_URL = originalEnv.AGENTS_URL;
@@ -31,6 +31,10 @@ function restoreEnv() {
   process.env.ALPACA_BASE_URL = originalEnv.ALPACA_BASE_URL;
 }
 
+function setNodeEnv(value: string) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
+
 describe('/api/settings/status', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -42,7 +46,7 @@ describe('/api/settings/status', () => {
   });
 
   it('marks localhost engine targets and missing agents service as not configured in production', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     process.env.ENGINE_URL = 'http://localhost:8000';
     process.env.ENGINE_API_KEY = 'secret-key';
     delete process.env.AGENTS_URL;
@@ -73,7 +77,7 @@ describe('/api/settings/status', () => {
   });
 
   it('derives provider readiness from engine and agents health payloads', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     process.env.ENGINE_URL = 'https://engine.example';
     process.env.ENGINE_API_KEY = 'secret-key';
     process.env.AGENTS_URL = 'https://agents.example';
@@ -127,7 +131,7 @@ describe('/api/settings/status', () => {
   });
 
   it('keeps provider status disconnected when health checks fail behind healthy services', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     process.env.ENGINE_URL = 'https://engine.example';
     process.env.ENGINE_API_KEY = 'secret-key';
     process.env.AGENTS_URL = 'https://agents.example';

@@ -7,35 +7,48 @@ import { queryKeys } from '@/lib/query-keys';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
- * Table-to-query-key mapping.
+ * Table-to-query-key mapping — operator-facing tables only.
  *
- * When a Postgres change fires on a Realtime-enabled table, every query key
- * listed here is invalidated so TanStack Query triggers a background refetch.
+ * Realtime is used selectively for tables the operator UI needs live updates
+ * for (approvals, alerts, portfolio state, execution, signals, workflows).
+ *
+ * Internal / high-volume tables (strategy_health_snapshots, shadow_portfolios,
+ * market_regime_history, data_quality_events, catalyst_events, backtest_results,
+ * cycle_history, orchestrator_locks, agent_logs) are intentionally excluded.
+ * Those are fetched on demand via TanStack Query polling or explicit refetch.
+ * Keeping them off Realtime reduces connection load and avoids using Realtime
+ * as an orchestration backbone.
  */
 const TABLE_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
+  // Execution & portfolio
   orders: [queryKeys.portfolio.orders.all(), queryKeys.portfolio.account()],
-  portfolio_positions: [queryKeys.portfolio.positions(), queryKeys.portfolio.account()],
-  alerts: [queryKeys.agents.alerts()],
-  signals: [queryKeys.agents.all, queryKeys.strategies.all],
-  market_data: [queryKeys.data.all],
-  user_trading_policy: [queryKeys.settings.policy()],
-  decision_journal: [queryKeys.journal.all],
-  strategy_health_snapshots: [queryKeys.strategies.health.all(), queryKeys.strategies.all],
-  agent_recommendations: [queryKeys.agents.all, queryKeys.counterfactuals.all],
-  shadow_portfolios: [queryKeys.shadowPortfolios.all],
-  market_regime_history: [queryKeys.regime.all],
-  regime_playbooks: [queryKeys.regime.all],
-  data_quality_events: [queryKeys.dataQuality.all],
-  catalyst_events: [queryKeys.catalysts.all],
-  user_profiles: [queryKeys.roles.all(), queryKeys.roles.me()],
-  system_controls: [queryKeys.systemControls.all],
-  recommendation_events: [queryKeys.recommendationEvents.all],
-  risk_evaluations: [queryKeys.riskEvaluations.all],
   fills: [queryKeys.fills.all, queryKeys.portfolio.orders.all()],
-  operator_actions: [queryKeys.operatorActions.all],
+  portfolio_positions: [queryKeys.portfolio.positions(), queryKeys.portfolio.account()],
+
+  // Signals & recommendations
+  signals: [queryKeys.agents.all, queryKeys.strategies.all],
   signal_runs: [queryKeys.signalRuns.all],
+  agent_recommendations: [queryKeys.agents.all, queryKeys.counterfactuals.all],
+  recommendation_events: [queryKeys.recommendationEvents.all],
+
+  // Operator notifications & controls
+  alerts: [queryKeys.agents.alerts()],
+  system_controls: [queryKeys.systemControls.all],
+  operator_actions: [queryKeys.operatorActions.all],
+  risk_evaluations: [queryKeys.riskEvaluations.all],
+
+  // Market data
+  market_data: [queryKeys.data.all],
+
+  // Workflow status
   workflow_jobs: [['workflow-jobs']],
   workflow_step_log: [['workflow-jobs']],
+
+  // User-facing configuration & journal
+  user_trading_policy: [queryKeys.settings.policy()],
+  decision_journal: [queryKeys.journal.all],
+  regime_playbooks: [queryKeys.regime.all],
+  user_profiles: [queryKeys.roles.all(), queryKeys.roles.me()],
 };
 
 const SUBSCRIBED_TABLES = Object.keys(TABLE_INVALIDATION_MAP);

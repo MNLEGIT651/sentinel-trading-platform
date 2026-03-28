@@ -26,8 +26,13 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Extract or generate request ID
-        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        # Extract or generate request ID — accept both x-correlation-id (sent
+        # by the web/agents proxy) and X-Request-ID for backwards compat.
+        request_id = (
+            request.headers.get("x-correlation-id")
+            or request.headers.get("X-Request-ID")
+            or str(uuid.uuid4())
+        )
         request_id_context.set(request_id)
 
         # Add to logging context
@@ -45,8 +50,9 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
-        # Include request ID in response headers
+        # Include request ID in response headers (both names for interop)
         response.headers["X-Request-ID"] = request_id
+        response.headers["x-correlation-id"] = request_id
 
         return response
 

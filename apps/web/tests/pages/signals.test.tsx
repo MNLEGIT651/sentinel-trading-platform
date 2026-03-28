@@ -46,11 +46,11 @@ describe('SignalsPage', () => {
     const fetchMock = vi.mocked(fetch);
     render(<SignalsPage />);
 
-    fireEvent.click(screen.getAllByRole('button')[0]);
+    fireEvent.click(screen.getAllByRole('button')[0]!);
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA' },
     });
-    fireEvent.click(screen.getAllByRole('button', { name: /Run Scan/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /Run Scan/i })[0]!);
 
     expect(await screen.findByText(/Only the first 5 tickers were scanned/i)).toBeInTheDocument();
 
@@ -63,7 +63,7 @@ describe('SignalsPage', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('signal timed out')));
     render(<SignalsPage />);
 
-    fireEvent.click(screen.getAllByRole('button', { name: /Run Scan/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /Run Scan/i })[0]!);
 
     expect(
       await screen.findByText(/Signal scan exceeded the live data time budget/i),

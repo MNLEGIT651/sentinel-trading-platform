@@ -10,14 +10,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  ClipboardList,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  Filter,
-  X,
-} from 'lucide-react';
+import { ClipboardList, ChevronDown, ChevronUp, ExternalLink, Filter, X } from 'lucide-react';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -35,7 +28,15 @@ const ACTION_TYPES: OperatorActionType[] = [
   'system_config_change',
 ];
 
-const TARGET_TYPES = ['recommendation', 'order', 'system', 'policy', 'risk_policy', 'user', 'role'] as const;
+const TARGET_TYPES = [
+  'recommendation',
+  'order',
+  'system',
+  'policy',
+  'risk_policy',
+  'user',
+  'role',
+] as const;
 
 const ACTION_TYPE_LABELS: Record<OperatorActionType, string> = {
   halt_trading: 'Halt Trading',
@@ -49,6 +50,7 @@ const ACTION_TYPE_LABELS: Record<OperatorActionType, string> = {
   manual_order: 'Manual Order',
   role_change: 'Role Change',
   system_config_change: 'System Config Change',
+  incident_fallback: 'Incident Fallback',
 };
 
 const ACTION_TYPE_COLORS: Record<OperatorActionType, string> = {
@@ -63,6 +65,7 @@ const ACTION_TYPE_COLORS: Record<OperatorActionType, string> = {
   cancel_order: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
   manual_order: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
   role_change: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+  incident_fallback: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
 };
 
 type DateRangePreset = '' | '24h' | '7d' | '30d';
@@ -204,15 +207,10 @@ function ActionRow({ action }: { action: OperatorAction }) {
         <ActionTypeBadge actionType={action.action_type} />
       </td>
       <td className="px-4 py-3">
-        <div
-          className="text-sm text-foreground"
-          title={formatAbsoluteTime(action.created_at)}
-        >
+        <div className="text-sm text-foreground" title={formatAbsoluteTime(action.created_at)}>
           {relativeTime(action.created_at)}
         </div>
-        <div className="text-xs text-muted-foreground">
-          {formatAbsoluteTime(action.created_at)}
-        </div>
+        <div className="text-xs text-muted-foreground">{formatAbsoluteTime(action.created_at)}</div>
       </td>
       <td className="px-4 py-3 font-mono text-xs text-muted-foreground" title={action.operator_id}>
         {truncateUuid(action.operator_id)}
@@ -234,7 +232,10 @@ function ActionRow({ action }: { action: OperatorAction }) {
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                 ) : (
-                  <span className="font-mono text-xs text-muted-foreground" title={action.target_id}>
+                  <span
+                    className="font-mono text-xs text-muted-foreground"
+                    title={action.target_id}
+                  >
                     {truncateUuid(action.target_id)}
                   </span>
                 )}

@@ -4,6 +4,7 @@
  */
 
 import { logger } from './logger.js';
+import { getCorrelationId, CORRELATION_HEADER } from './correlation.js';
 
 const DEFAULT_READ_TIMEOUT_MS = 10_000;
 const DEFAULT_MUTATION_TIMEOUT_MS = 15_000;
@@ -70,9 +71,11 @@ export class EngineClient {
   }
 
   private headers(extra?: HeadersInit): Record<string, string> {
+    const correlationId = getCorrelationId();
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${this.apiKey}`,
+      ...(correlationId ? { [CORRELATION_HEADER]: correlationId } : {}),
       ...(extra as Record<string, string>),
     };
   }
@@ -90,9 +93,7 @@ export class EngineClient {
     } catch (err) {
       if (err instanceof Error && err.message.startsWith('Engine error:')) throw err;
       if (err instanceof DOMException && err.name === 'TimeoutError') {
-        throw new Error(
-          `Engine timed out after ${timeoutMs}ms: ${init.method ?? 'GET'} ${url}`,
-        );
+        throw new Error(`Engine timed out after ${timeoutMs}ms: ${init.method ?? 'GET'} ${url}`);
       }
       throw new Error(`Engine unreachable: ${(err as Error).message}`);
     }
@@ -127,9 +128,7 @@ export class EngineClient {
           continue;
         }
         if (err instanceof DOMException && err.name === 'TimeoutError') {
-          throw new Error(
-            `Engine timed out after ${timeoutMs}ms: ${init.method ?? 'GET'} ${url}`,
-          );
+          throw new Error(`Engine timed out after ${timeoutMs}ms: ${init.method ?? 'GET'} ${url}`);
         }
         throw new Error(`Engine unreachable: ${(err as Error).message}`);
       }

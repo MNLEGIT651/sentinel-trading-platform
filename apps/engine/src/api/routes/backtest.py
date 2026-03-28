@@ -9,6 +9,7 @@ import numpy as np
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from src.api.models.responses import BacktestableStrategiesResponse
 from src.backtest.engine import BacktestEngine
 from src.strategies.base import OHLCVData
 from src.strategies.registry import STRATEGY_CLASSES, create_strategy
@@ -149,10 +150,10 @@ async def run_backtest(req: BacktestRequest) -> BacktestResponse:
     )
 
 
-@router.get("/strategies")
-async def list_backtestable_strategies() -> dict:
+@router.get("/strategies", response_model=BacktestableStrategiesResponse)
+async def list_backtestable_strategies() -> BacktestableStrategiesResponse:
     """List strategies available for backtesting."""
-    return {
-        "strategies": sorted(STRATEGY_CLASSES.keys()),
-        "trends": ["up", "down", "volatile", "random"],
-    }
+    return BacktestableStrategiesResponse(
+        strategies=sorted(STRATEGY_CLASSES.keys()),
+        trends=["up", "down", "volatile", "random"],
+    )

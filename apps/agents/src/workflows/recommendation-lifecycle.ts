@@ -1,12 +1,24 @@
 /**
  * Recommendation Lifecycle Workflow
- * Steps: risk_check → submit_order → confirm_fill
+ * Steps: risk_check → auto_execution_check → submit_order → confirm_fill
+ *
+ * After the risk check passes, the auto-execution evaluator determines
+ * whether the recommendation can be auto-approved based on the active
+ * risk policy. If so the recommendation is approved with actor_type='policy'
+ * and proceeds to order submission. Otherwise it stays as pending_approval
+ * for an operator.
  */
 
 import { registerWorkflow, createWorkflowJob } from '../workflow-runner.js';
 import { EngineClient } from '../engine-client.js';
-import { markFilled, markRiskBlocked } from '../recommendations-store.js';
+import { markFilled, markRiskBlocked, atomicApprove } from '../recommendations-store.js';
 import { logger } from '../logger.js';
+import {
+  evaluateAutoExecution,
+  fetchActivePolicy,
+  fetchSystemControls,
+  logAutoExecutionDecision,
+} from '../auto-execution.js';
 
 const engineClient = new EngineClient();
 
@@ -64,7 +76,103 @@ registerWorkflow({
             adjusted_shares: result.adjusted_shares ?? quantity,
             risk_reason: result.reason,
           },
-          nextStep: 'submit_order',
+          nextStep: 'auto_execution_check',
+        };
+      },
+    },
+    {
+      name: 'auto_execution_check',
+      handler: async (_jobId, input, stepOutput) => {
+        const {
+          recommendation_id,
+          ticker,
+          quantity: origQty,
+          price,
+        } = input as {
+          recommendation_id: string;
+          ticker: string;
+          quantity: number;
+          price?: number;
+        };
+        const adjustedShares = (stepOutput.adjusted_shares as number) ?? origQty;
+
+        // Fetch live policy and system controls
+        const [policy, systemControls] = await Promise.all([
+          fetchActivePolicy(),
+          fetchSystemControls(),
+        ]);
+
+        if (!policy) {
+          logger.info('workflow.auto_execution_check.no_policy', { recommendation_id });
+          return {
+            output: { auto_executed: false, auto_reason: 'No active risk policy found' },
+            nextStep: null, // leave as pending_approval for operator
+          };
+        }
+
+        const decision = await evaluateAutoExecution(
+          {
+            id: recommendation_id,
+            signal_strength: (input as Record<string, unknown>).signal_strength as
+              | number
+              | undefined,
+            quantity: adjustedShares,
+            price: price ?? null,
+            ticker,
+          },
+          policy,
+          systemControls,
+        );
+
+        // Always log the decision for audit trail
+        await logAutoExecutionDecision(recommendation_id, decision);
+
+        if (decision.canAutoExecute) {
+          // Auto-approve the recommendation
+          const claimed = await atomicApprove(recommendation_id);
+          if (!claimed) {
+            logger.warn('workflow.auto_execution_check.claim_failed', { recommendation_id });
+            return {
+              output: {
+                auto_executed: false,
+                auto_reason: 'Could not claim recommendation for auto-approval',
+              },
+              nextStep: null,
+            };
+          }
+
+          logger.info('workflow.auto_execution_check.approved', {
+            recommendation_id,
+            policyVersion: decision.policyVersion,
+            reason: decision.reason,
+          });
+
+          return {
+            output: {
+              auto_executed: true,
+              auto_reason: decision.reason,
+              policy_version: decision.policyVersion,
+              auto_checks: decision.checks,
+            },
+            nextStep: 'submit_order',
+          };
+        }
+
+        // Cannot auto-execute — leave pending for operator
+        logger.info('workflow.auto_execution_check.denied', {
+          recommendation_id,
+          reason: decision.reason,
+          policyVersion: decision.policyVersion,
+        });
+
+        return {
+          output: {
+            auto_executed: false,
+            auto_reason: decision.reason,
+            policy_version: decision.policyVersion,
+            auto_checks: decision.checks,
+          },
+          nextStep: null, // workflow ends; operator must approve manually
         };
       },
     },

@@ -17,6 +17,7 @@ import {
   BarChart3,
   CheckCircle2,
   XCircle,
+  List,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,8 @@ import {
   useHaltSystemMutation,
   useResumeSystemMutation,
 } from '@/hooks/queries/use-system-controls-query';
-import type { SystemMode } from '@sentinel/shared';
+import { useOperatorActionsQuery } from '@/hooks/queries/use-operator-actions-query';
+import type { SystemMode, OperatorAction } from '@sentinel/shared';
 
 /* ------------------------------------------------------------------ */
 /*  Confirmation Dialog                                                */
@@ -145,6 +147,7 @@ type ConfirmAction =
 
 export default function SystemControlsPage() {
   const { data: controls, isLoading, isError, error } = useSystemControlsQuery();
+  const { data: actionsResponse } = useOperatorActionsQuery({ limit: 10 });
   const updateMutation = useUpdateSystemControlsMutation();
   const haltMutation = useHaltSystemMutation();
   const resumeMutation = useResumeSystemMutation();
@@ -569,6 +572,55 @@ export default function SystemControlsPage() {
               <span className="font-medium text-foreground">{truncateId(controls.updated_by)}</span>
             </span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ---- Recent Operator Actions ---- */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <List className="h-5 w-5 text-muted-foreground" />
+            Recent Actions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {actionsResponse?.data && actionsResponse.data.length > 0 ? (
+            <div className="rounded-md border border-border overflow-hidden">
+              <div className="divide-y divide-border">
+                {actionsResponse.data.map((action: OperatorAction) => (
+                  <div
+                    key={action.id}
+                    className="flex items-center justify-between px-4 py-3 text-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        variant={
+                          action.action_type === 'halt_trading'
+                            ? 'destructive'
+                            : action.action_type === 'resume_trading'
+                              ? 'default'
+                              : 'secondary'
+                        }
+                      >
+                        {action.action_type.replace(/_/g, ' ')}
+                      </Badge>
+                      {action.reason && (
+                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {action.reason}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>{truncateId(action.operator_id)}</span>
+                      <span>{formatTimestamp(action.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No recent actions recorded.</p>
+          )}
         </CardContent>
       </Card>
 

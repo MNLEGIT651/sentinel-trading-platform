@@ -239,8 +239,44 @@ export function stopWorkflowRunner(): void {
   }
 }
 
+// ── Idempotency key helpers ──────────────────────────────────────────
+
+/**
+ * Generate a deterministic idempotency key.
+ * Format: `{workflowType}:{entityId}:{timestampBucket}`
+ * The timestamp bucket groups by 10-minute windows to prevent duplicate
+ * jobs for the same entity within a short timeframe.
+ */
+export function generateIdempotencyKey(
+  workflowType: string,
+  entityId: string,
+  bucketMinutes = 10,
+): string {
+  const bucketMs = bucketMinutes * 60 * 1_000;
+  const bucket = Math.floor(Date.now() / bucketMs) * bucketMs;
+  return `${workflowType}:${entityId}:${bucket}`;
+}
+
+// ── Per-workflow-type max retries ────────────────────────────────────
+
+const workflowMaxRetries = new Map<string, number>();
+
+/** Configure max retries for a specific workflow type. */
+export function setWorkflowMaxRetries(workflowType: string, maxRetries: number): void {
+  workflowMaxRetries.set(workflowType, maxRetries);
+}
+
+/** Get the configured max retries for a workflow type (default 3). */
+export function getWorkflowMaxRetries(workflowType: string): number {
+  return workflowMaxRetries.get(workflowType) ?? 3;
+}
+
 /**
  * Create a new workflow job (convenience helper).
+ *
+ * If no idempotency key is supplied and a recommendationId is present,
+ * one is generated automatically. If a duplicate key already exists the
+ * existing job id is returned instead of creating a new row.
  */
 export async function createWorkflowJob(params: {
   workflowType: string;
@@ -253,13 +289,41 @@ export async function createWorkflowJob(params: {
 }): Promise<string | null> {
   try {
     const db = getSupabaseClient();
+
+    // Auto-generate idempotency key when one isn't explicitly provided
+    const idempotencyKey =
+      params.idempotencyKey ??
+      (params.recommendationId
+        ? generateIdempotencyKey(params.workflowType, params.recommendationId)
+        : null);
+
+    // If we have a key, check for an existing job first (UNIQUE constraint guard)
+    if (idempotencyKey) {
+      const { data: existing } = await db
+        .from('workflow_jobs')
+        .select('id')
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle();
+
+      if (existing) {
+        logger.info('workflow.job.duplicate', {
+          existingJobId: existing.id,
+          idempotencyKey,
+          type: params.workflowType,
+        });
+        return existing.id;
+      }
+    }
+
+    const resolvedMaxRetries = params.maxRetries ?? getWorkflowMaxRetries(params.workflowType);
+
     const { data, error } = await db
       .from('workflow_jobs')
       .insert({
         workflow_type: params.workflowType,
-        idempotency_key: params.idempotencyKey ?? null,
+        idempotency_key: idempotencyKey,
         input_data: params.inputData ?? {},
-        max_retries: params.maxRetries ?? 3,
+        max_retries: resolvedMaxRetries,
         recommendation_id: params.recommendationId ?? null,
         order_id: params.orderId ?? null,
       })
@@ -267,13 +331,33 @@ export async function createWorkflowJob(params: {
       .single();
 
     if (error) {
+      // Handle race condition: another worker inserted between our check and insert
+      if (error.code === '23505' && idempotencyKey) {
+        const { data: raced } = await db
+          .from('workflow_jobs')
+          .select('id')
+          .eq('idempotency_key', idempotencyKey)
+          .maybeSingle();
+        if (raced) {
+          logger.info('workflow.job.duplicate.race', {
+            existingJobId: raced.id,
+            idempotencyKey,
+          });
+          return raced.id;
+        }
+      }
+
       logger.error('workflow.job.create.failed', {
         error: error.message,
         type: params.workflowType,
       });
       return null;
     }
-    logger.info('workflow.job.created', { jobId: data.id, type: params.workflowType });
+    logger.info('workflow.job.created', {
+      jobId: data.id,
+      type: params.workflowType,
+      idempotencyKey,
+    });
     return data.id;
   } catch (err) {
     logger.error('workflow.job.create.error', {

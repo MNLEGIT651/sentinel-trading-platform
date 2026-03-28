@@ -4,7 +4,7 @@ import logging
 from datetime import date, timedelta
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from src.config import Settings
@@ -183,3 +183,63 @@ async def get_bars(
         raise
     finally:
         await polygon.close()
+
+
+# ---------------------------------------------------------------------------
+# Regime
+# ---------------------------------------------------------------------------
+
+
+class RegimeEntry(BaseModel):
+    """A single market regime history record."""
+
+    id: int
+    regime: str | None = None
+    confidence: float | None = None
+    indicators: dict = Field(default_factory=dict)
+    detected_at: str | None = None
+    expires_at: str | None = None
+    source: str | None = None
+    notes: str | None = None
+
+
+class RegimeResponse(BaseModel):
+    """Current market regime labels."""
+
+    regimes: list[RegimeEntry]
+    total: int
+
+
+@router.get("/regime", response_model=RegimeResponse)
+async def get_regime(
+    limit: int = Query(default=10, ge=1, le=100),
+) -> RegimeResponse:
+    """Current regime labels from latest market_regime_history entries."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    result = (
+        db.table("market_regime_history")
+        .select("*", count="exact")
+        .order("detected_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+
+    entries = [
+        RegimeEntry(
+            id=row["id"],
+            regime=row.get("regime"),
+            confidence=float(row["confidence"]) if row.get("confidence") is not None else None,
+            indicators=row.get("indicators") or {},
+            detected_at=row.get("detected_at"),
+            expires_at=row.get("expires_at"),
+            source=row.get("source"),
+            notes=row.get("notes"),
+        )
+        for row in (result.data or [])
+    ]
+    total = result.count if result.count is not None else len(entries)
+
+    return RegimeResponse(regimes=entries, total=total)

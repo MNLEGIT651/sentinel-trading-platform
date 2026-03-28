@@ -30,7 +30,7 @@ export async function GET(
 
   const supabase = await createServerSupabaseClient();
 
-  const [recResult, eventsResult, riskResult] = await Promise.all([
+  const [recResult, eventsResult, riskResult, operatorActionsResult] = await Promise.all([
     supabase.from('agent_recommendations').select('*').eq('id', id).single(),
     supabase
       .from('recommendation_events')
@@ -38,6 +38,12 @@ export async function GET(
       .eq('recommendation_id', id)
       .order('event_ts', { ascending: true }),
     supabase.from('risk_evaluations').select('*').eq('recommendation_id', id),
+    supabase
+      .from('operator_actions')
+      .select('*')
+      .eq('target_type', 'recommendation')
+      .eq('target_id', id)
+      .order('created_at', { ascending: true }),
   ]);
 
   if (recResult.error) {
@@ -47,10 +53,30 @@ export async function GET(
     );
   }
 
+  // Fetch associated order + fills if the recommendation has an order_id
+  let order = null;
+  let fills: unknown[] = [];
+  const orderId = recResult.data?.order_id;
+  if (orderId) {
+    const [orderResult, fillsResult] = await Promise.all([
+      supabase.from('orders').select('*').eq('id', orderId).single(),
+      supabase
+        .from('fills')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('fill_ts', { ascending: true }),
+    ]);
+    order = orderResult.data ?? null;
+    fills = fillsResult.data ?? [];
+  }
+
   return NextResponse.json({
     recommendation: recResult.data,
     events: eventsResult.data ?? [],
     riskEvaluations: riskResult.data ?? [],
+    order,
+    fills,
+    operatorActions: operatorActionsResult.data ?? [],
   });
 }
 

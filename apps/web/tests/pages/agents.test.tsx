@@ -149,7 +149,9 @@ describe('AgentsPage', () => {
     renderWithProviders(<AgentsPage />);
     await waitFor(() => screen.getByText('NVDA'));
     fireEvent.click(screen.getByRole('button', { name: /reject/i }));
-    await waitFor(() => expect(agentsClient.rejectRecommendation).toHaveBeenCalledWith('rec-1'));
+    await waitFor(() =>
+      expect(agentsClient.rejectRecommendation).toHaveBeenCalledWith('rec-1', undefined),
+    );
   });
 
   it('shows Scheduled badge', async () => {

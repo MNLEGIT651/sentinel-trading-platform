@@ -9,7 +9,7 @@ const originalEnv = {
 };
 
 function restoreEnv() {
-  process.env.NODE_ENV = originalEnv.NODE_ENV;
+  (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv.NODE_ENV;
   process.env.ENGINE_URL = originalEnv.ENGINE_URL;
   process.env.ENGINE_API_KEY = originalEnv.ENGINE_API_KEY;
   process.env.AGENTS_URL = originalEnv.AGENTS_URL;
@@ -26,7 +26,7 @@ describe('/api/health', () => {
   });
 
   it('returns not_configured dependencies without probing missing services in production', async () => {
-    process.env.NODE_ENV = 'production';
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
     delete process.env.ENGINE_URL;
     delete process.env.ENGINE_API_KEY;
     delete process.env.AGENTS_URL;
@@ -48,7 +48,7 @@ describe('/api/health', () => {
   });
 
   it('reports disconnected dependencies without returning a failing route status', async () => {
-    process.env.NODE_ENV = 'production';
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
     process.env.ENGINE_URL = 'https://engine.example';
     process.env.ENGINE_API_KEY = 'secret-key';
     process.env.AGENTS_URL = 'https://agents.example';

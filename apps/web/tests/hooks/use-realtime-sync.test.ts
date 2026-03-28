@@ -77,28 +77,23 @@ describe('useRealtimeSync', () => {
 
     const expectedTables = [
       'orders',
-      'portfolio_positions',
-      'alerts',
-      'signals',
-      'market_data',
-      'user_trading_policy',
-      'decision_journal',
-      'strategy_health_snapshots',
-      'agent_recommendations',
-      'shadow_portfolios',
-      'market_regime_history',
-      'regime_playbooks',
-      'data_quality_events',
-      'catalyst_events',
-      'user_profiles',
-      'system_controls',
-      'recommendation_events',
-      'risk_evaluations',
       'fills',
-      'operator_actions',
+      'portfolio_positions',
+      'signals',
       'signal_runs',
+      'agent_recommendations',
+      'recommendation_events',
+      'alerts',
+      'system_controls',
+      'operator_actions',
+      'risk_evaluations',
+      'market_data',
       'workflow_jobs',
       'workflow_step_log',
+      'user_trading_policy',
+      'decision_journal',
+      'regime_playbooks',
+      'user_profiles',
     ];
 
     // One channel per table
@@ -116,7 +111,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(21);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(18);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -206,22 +201,6 @@ describe('useRealtimeSync', () => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['journal'] }));
   });
 
-  it('invalidates strategy health queries when strategy_health_snapshots changes', () => {
-    const qc = makeQueryClient();
-    const spy = vi.spyOn(qc, 'invalidateQueries');
-
-    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
-
-    const healthSub = subscriptions.find((s) => s.table === 'strategy_health_snapshots');
-    expect(healthSub).toBeDefined();
-    healthSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
-
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ['strategies', 'health'] }),
-    );
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['strategies'] }));
-  });
-
   it('invalidates agents and counterfactuals queries when agent_recommendations changes', () => {
     const qc = makeQueryClient();
     const spy = vi.spyOn(qc, 'invalidateQueries');
@@ -236,32 +215,6 @@ describe('useRealtimeSync', () => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['counterfactuals'] }));
   });
 
-  it('invalidates shadow portfolios queries when shadow_portfolios changes', () => {
-    const qc = makeQueryClient();
-    const spy = vi.spyOn(qc, 'invalidateQueries');
-
-    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
-
-    const shadowSub = subscriptions.find((s) => s.table === 'shadow_portfolios');
-    expect(shadowSub).toBeDefined();
-    shadowSub!.callback({ eventType: 'INSERT', new: { id: '1' }, old: {} });
-
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['shadow-portfolios'] }));
-  });
-
-  it('invalidates regime queries when market_regime_history changes', () => {
-    const qc = makeQueryClient();
-    const spy = vi.spyOn(qc, 'invalidateQueries');
-
-    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
-
-    const regimeSub = subscriptions.find((s) => s.table === 'market_regime_history');
-    expect(regimeSub).toBeDefined();
-    regimeSub!.callback({ eventType: 'INSERT', new: { id: '1', regime: 'bull' }, old: {} });
-
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['regime'] }));
-  });
-
   it('invalidates regime queries when regime_playbooks changes', () => {
     const qc = makeQueryClient();
     const spy = vi.spyOn(qc, 'invalidateQueries');
@@ -273,32 +226,6 @@ describe('useRealtimeSync', () => {
     playbookSub!.callback({ eventType: 'UPDATE', new: { id: '1', is_active: true }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['regime'] }));
-  });
-
-  it('invalidates data quality queries when data_quality_events changes', () => {
-    const qc = makeQueryClient();
-    const spy = vi.spyOn(qc, 'invalidateQueries');
-
-    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
-
-    const dqSub = subscriptions.find((s) => s.table === 'data_quality_events');
-    expect(dqSub).toBeDefined();
-    dqSub!.callback({ eventType: 'INSERT', new: { id: 1, event_type: 'stale_quote' }, old: {} });
-
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['data-quality'] }));
-  });
-
-  it('invalidates catalysts queries when catalyst_events changes', () => {
-    const qc = makeQueryClient();
-    const spy = vi.spyOn(qc, 'invalidateQueries');
-
-    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
-
-    const catSub = subscriptions.find((s) => s.table === 'catalyst_events');
-    expect(catSub).toBeDefined();
-    catSub!.callback({ eventType: 'INSERT', new: { id: '1', event_type: 'earnings' }, old: {} });
-
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['catalysts'] }));
   });
 
   it('invalidates roles queries when user_profiles changes', () => {

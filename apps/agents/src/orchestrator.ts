@@ -26,6 +26,7 @@ import {
 import { logger } from './logger.js';
 import { getSupabaseClient } from './supabase-client.js';
 import { trace, SpanStatusCode, type Span } from '@opentelemetry/api';
+import { startCycleWorkflow, recordAgentStepInCycleJob } from './workflows/agent-cycle.js';
 
 const tracer = trace.getTracer('sentinel-agents', '1.0.0');
 
@@ -178,6 +179,19 @@ export class Orchestrator {
       const results: AgentResult[] = [];
       logger.info('orchestrator.cycle.start', { cycleCount: this.state.cycleCount });
 
+      // Create a workflow job to track this cycle (fire-and-forget on failure)
+      let cycleJobId: string | null = null;
+      try {
+        cycleJobId = await startCycleWorkflow({
+          cycleCount: this.state.cycleCount,
+          sequence: [...this.cycleSequence],
+        });
+      } catch (err) {
+        logger.warn('orchestrator.cycle.workflow_job.failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
       return await tracer.startActiveSpan(
         'orchestrator.runCycle',
         { attributes: { 'cycle.count': this.state.cycleCount } },
@@ -193,6 +207,17 @@ export class Orchestrator {
                 DEFAULT_AGENT_PROMPTS[role] ?? `Execute ${role} workflow.`,
               );
               results.push(result);
+
+              // Record each agent result in the cycle workflow job
+              if (cycleJobId) {
+                void recordAgentStepInCycleJob(cycleJobId, role, {
+                  success: result.success,
+                  durationMs: result.durationMs,
+                  error: result.error,
+                }).catch(() => {
+                  /* non-blocking */
+                });
+              }
             }
 
             const successCount = results.filter((r) => r.success).length;
@@ -200,6 +225,7 @@ export class Orchestrator {
               cycleCount: this.state.cycleCount,
               successCount,
               totalCount: results.length,
+              cycleJobId,
             });
             this.state.lastCycleAt = new Date().toISOString();
 

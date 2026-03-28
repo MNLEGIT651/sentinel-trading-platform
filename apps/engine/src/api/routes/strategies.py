@@ -332,6 +332,82 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
     )
 
 
+class StrategyAutonomyResponse(BaseModel):
+    """Response for a strategy's autonomy mode."""
+
+    strategy_id: str
+    strategy_name: str
+    autonomy_mode: str
+
+
+class StrategyAutonomyUpdateRequest(BaseModel):
+    """Request body for updating a strategy's autonomy mode."""
+
+    autonomy_mode: str = Field(
+        ...,
+        pattern="^(disabled|alert_only|suggest|auto_approve|auto_execute)$",
+    )
+
+
+@router.get("/{strategy_id}/autonomy", response_model=StrategyAutonomyResponse)
+async def get_strategy_autonomy(strategy_id: str) -> StrategyAutonomyResponse:
+    """Get the autonomy mode for a specific strategy."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    result = (
+        db.table("strategies")
+        .select("id, name, autonomy_mode")
+        .eq("id", strategy_id)
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_id} not found")
+
+    row = result.data
+    return StrategyAutonomyResponse(
+        strategy_id=str(row["id"]),
+        strategy_name=row["name"],
+        autonomy_mode=row["autonomy_mode"] or "suggest",
+    )
+
+
+@router.put("/{strategy_id}/autonomy", response_model=StrategyAutonomyResponse)
+async def update_strategy_autonomy(
+    strategy_id: str, body: StrategyAutonomyUpdateRequest
+) -> StrategyAutonomyResponse:
+    """Update the autonomy mode for a specific strategy."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    # Verify strategy exists
+    existing = db.table("strategies").select("id").eq("id", strategy_id).maybe_single().execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_id} not found")
+
+    result = (
+        db.table("strategies")
+        .update({"autonomy_mode": body.autonomy_mode})
+        .eq("id", strategy_id)
+        .select("id, name, autonomy_mode")
+        .single()
+        .execute()
+    )
+
+    row = result.data
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to update strategy autonomy mode")
+
+    return StrategyAutonomyResponse(
+        strategy_id=str(row["id"]),
+        strategy_name=row["name"],
+        autonomy_mode=row["autonomy_mode"],
+    )
+
+
 @router.get("/families/{family}", response_model=StrategyListResponse)
 async def get_family_strategies(family: str) -> StrategyListResponse:
     """List strategies in a specific family."""
