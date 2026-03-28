@@ -67,6 +67,16 @@ export type {
   DataQualityFilters,
 } from './use-data-quality-query';
 
+// ── Replay / Incident Mode ──────────────────────────────────────────
+export { useReplayQuery } from './use-replay-query';
+export type {
+  TimelineEvent,
+  TimelineEventType,
+  TimelineEventSeverity,
+  ReplaySummary,
+  ReplayResponse,
+} from './use-replay-query';
+
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
 export { useApproveRecommendationMutation } from './use-approve-recommendation-mutation';
