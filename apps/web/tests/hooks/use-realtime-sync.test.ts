@@ -88,6 +88,7 @@ describe('useRealtimeSync', () => {
       'shadow_portfolios',
       'market_regime_history',
       'regime_playbooks',
+      'data_quality_events',
     ];
 
     // One channel per table
@@ -105,7 +106,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(12);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(13);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -262,5 +263,18 @@ describe('useRealtimeSync', () => {
     playbookSub!.callback({ eventType: 'UPDATE', new: { id: '1', is_active: true }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['regime'] }));
+  });
+
+  it('invalidates data quality queries when data_quality_events changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const dqSub = subscriptions.find((s) => s.table === 'data_quality_events');
+    expect(dqSub).toBeDefined();
+    dqSub!.callback({ eventType: 'INSERT', new: { id: 1, event_type: 'stale_quote' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['data-quality'] }));
   });
 });

@@ -85,4 +85,10 @@ export const queryKeys = {
     playbooks: () => ['regime', 'playbooks'] as const,
     playbook: (id: string) => ['regime', 'playbooks', id] as const,
   },
+
+  // ── Data Quality ────────────────────────────────────────────────────
+  dataQuality: {
+    all: ['data-quality'] as const,
+    list: (filters?: object) => ['data-quality', 'list', filters] as const,
+  },
 } as const;
