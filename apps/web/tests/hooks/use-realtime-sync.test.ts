@@ -97,6 +97,8 @@ describe('useRealtimeSync', () => {
       'fills',
       'operator_actions',
       'signal_runs',
+      'workflow_jobs',
+      'workflow_step_log',
     ];
 
     // One channel per table

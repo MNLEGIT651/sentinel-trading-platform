@@ -20,6 +20,10 @@ import { startScheduler } from './scheduler.js';
 import { AGENTS_ENV_GUIDANCE, REQUIRED_AGENT_ENV_VARS, getMissingAgentEnvVars } from './env.js';
 import { logger } from './logger.js';
 import { getLockManager } from './lock-manager.js';
+import { startWorkflowRunner, stopWorkflowRunner } from './workflow-runner.js';
+
+// Register workflow definitions (side-effect import)
+import './workflows/recommendation-lifecycle.js';
 
 // Re-export public API for consumers that import this package
 export { Agent } from './agent.js';
@@ -84,10 +88,15 @@ async function main() {
   });
   logger.info('boot.scheduler.ready');
 
+  // ── Workflow runner ────────────────────────────────────────────
+  startWorkflowRunner();
+  logger.info('boot.workflow_runner.ready');
+
   // ── Graceful shutdown ──────────────────────────────────────────
   const shutdown = (signal: string) => {
     logger.info('boot.shutdown.start', { signal });
     schedulerTask.stop();
+    stopWorkflowRunner();
     getLockManager().shutdown();
     server.close(() => {
       logger.info('boot.shutdown.complete');

@@ -34,6 +34,8 @@ const TABLE_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
   fills: [queryKeys.fills.all, queryKeys.portfolio.orders.all()],
   operator_actions: [queryKeys.operatorActions.all],
   signal_runs: [queryKeys.signalRuns.all],
+  workflow_jobs: [['workflow-jobs']],
+  workflow_step_log: [['workflow-jobs']],
 };
 
 const SUBSCRIBED_TABLES = Object.keys(TABLE_INVALIDATION_MAP);

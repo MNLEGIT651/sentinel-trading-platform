@@ -1,7 +1,17 @@
 'use client';
 
 import { useMemo } from 'react';
-import { DollarSign, TrendingUp, BarChart3, AlertTriangle, Zap } from 'lucide-react';
+import {
+  DollarSign,
+  TrendingUp,
+  BarChart3,
+  AlertTriangle,
+  Zap,
+  Shield,
+  Activity,
+  Clock,
+  Bot,
+} from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
 import { PriceTicker } from '@/components/dashboard/price-ticker';
@@ -16,6 +26,8 @@ import {
   useAccountQuery,
   useAlertsQuery,
   useRecommendationsQuery,
+  useSystemControlsQuery,
+  useAgentStatusQuery,
 } from '@/hooks/queries';
 
 const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
@@ -39,6 +51,9 @@ export default function DashboardPage() {
   const { data: account } = useAccountQuery();
   const { data: agentAlerts } = useAlertsQuery(30_000);
   const { data: filledRecs } = useRecommendationsQuery('filled', 30_000);
+  const { data: systemControls } = useSystemControlsQuery();
+  const { data: pendingRecs } = useRecommendationsQuery('pending', 30_000);
+  const { data: agentStatus } = useAgentStatusQuery();
 
   const isLive = engineOnline === true && !!quotes;
 
@@ -91,6 +106,57 @@ export default function DashboardPage() {
     <div className="space-y-4 p-4">
       {engineOnline === false && <OfflineBanner service="engine" />}
       {agentsOnline === false && <OfflineBanner service="agents" />}
+
+      {/* System Health Strip */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-4 py-2 text-sm">
+        <div className="flex items-center gap-1.5">
+          <Shield className="h-3.5 w-3.5" />
+          {systemControls?.trading_halted ? (
+            <span className="font-medium text-loss">Halted</span>
+          ) : (
+            <span className="font-medium text-profit">Active</span>
+          )}
+        </div>
+        <span className="text-border">|</span>
+        <div className="flex items-center gap-1.5">
+          <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium uppercase">
+            {systemControls?.global_mode ?? 'paper'}
+          </span>
+        </div>
+        <span className="text-border">|</span>
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-muted-foreground">Pending:</span>
+          <span
+            className={cn(
+              'font-medium',
+              (pendingRecs?.length ?? 0) > 0 ? 'text-amber-500' : 'text-muted-foreground',
+            )}
+          >
+            {pendingRecs?.length ?? 0}
+          </span>
+        </div>
+        <span className="text-border">|</span>
+        <div className="flex items-center gap-1.5">
+          <Bot className="h-3.5 w-3.5 text-muted-foreground" />
+          <span
+            className={cn(
+              'font-medium',
+              agentStatus?.halted
+                ? 'text-loss'
+                : agentStatus?.isRunning
+                  ? 'text-profit'
+                  : 'text-muted-foreground',
+            )}
+          >
+            {agentStatus?.halted ? 'Halted' : agentStatus?.isRunning ? 'Running' : 'Idle'}
+          </span>
+          {agentStatus?.cycleCount != null && (
+            <span className="text-xs text-muted-foreground">#{agentStatus.cycleCount}</span>
+          )}
+        </div>
+      </div>
 
       {/* Row 1: Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">

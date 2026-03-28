@@ -25,6 +25,7 @@ import {
   Power,
   CheckSquare,
   ArrowUpDown,
+  Workflow,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +46,7 @@ const navItems = [
   { label: 'Agents', href: '/agents', icon: Bot },
   { label: 'Approvals', href: '/approvals', icon: CheckSquare },
   { label: 'Orders', href: '/orders', icon: ArrowUpDown },
+  { label: 'Workflows', href: '/workflows', icon: Workflow },
   { label: 'Controls', href: '/system-controls', icon: Power },
   { label: 'Roles', href: '/roles', icon: Shield },
   { label: 'Audit Log', href: '/audit-log', icon: ClipboardList },

@@ -1,0 +1,59 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+/**
+ * GET /api/workflows?workflow_type=X&status=Y&limit=50&offset=0
+ * Returns workflow jobs with optional filters.
+ */
+export async function GET(request: NextRequest) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = request.nextUrl;
+  const workflowType = searchParams.get('workflow_type');
+  const status = searchParams.get('status');
+  const limit = Math.min(Number(searchParams.get('limit') ?? 50), 200);
+  const offset = Number(searchParams.get('offset') ?? 0);
+
+  let query = supabase
+    .from('workflow_jobs')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (workflowType) {
+    query = query.eq('workflow_type', workflowType);
+  }
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Also fetch summary stats
+  const { data: statsData } = await supabase.from('workflow_jobs').select('status');
+
+  const stats = {
+    total: statsData?.length ?? 0,
+    pending: statsData?.filter((j) => j.status === 'pending').length ?? 0,
+    running: statsData?.filter((j) => j.status === 'running').length ?? 0,
+    completed: statsData?.filter((j) => j.status === 'completed').length ?? 0,
+    failed: statsData?.filter((j) => j.status === 'failed').length ?? 0,
+    retrying: statsData?.filter((j) => j.status === 'retrying').length ?? 0,
+  };
+
+  return NextResponse.json({ data: data ?? [], total: count ?? 0, stats });
+}

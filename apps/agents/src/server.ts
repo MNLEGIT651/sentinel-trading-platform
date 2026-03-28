@@ -29,6 +29,8 @@ import { EngineClient } from './engine-client.js';
 import { getNextCycleAt } from './scheduler.js';
 import { getLockManager } from './lock-manager.js';
 import { authMiddleware } from './auth-middleware.js';
+import { logger } from './logger.js';
+import { startRecommendationWorkflow } from './workflows/recommendation-lifecycle.js';
 
 const CYCLE_LOCK_NAME = 'agent_cycle';
 
@@ -225,6 +227,21 @@ export function createApp(orchestrator: Orchestrator): Express {
             orderId: result.order_id,
             status: result.status,
             fill_price: result.fill_price,
+          });
+
+          // Fire-and-forget: start durable workflow for order execution
+          const workflowParams: Parameters<typeof startRecommendationWorkflow>[0] = {
+            recommendationId: id,
+            ticker: rec.ticker,
+            side: rec.side as 'buy' | 'sell',
+            quantity: rec.quantity ?? 0,
+          };
+          if (rec.limit_price != null) workflowParams.price = rec.limit_price;
+          void startRecommendationWorkflow(workflowParams).catch((err) => {
+            logger.error('workflow.start.failed', {
+              recommendationId: id,
+              error: err instanceof Error ? err.message : String(err),
+            });
           });
         } catch (engineErr: unknown) {
           const msg = engineErr instanceof Error ? engineErr.message : String(engineErr);

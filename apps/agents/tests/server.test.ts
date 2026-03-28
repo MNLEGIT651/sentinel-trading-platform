@@ -67,6 +67,18 @@ vi.mock('../src/lock-manager.js', () => ({
   LockManager: vi.fn(),
 }));
 
+// Mock workflow module to prevent transitive EngineClient instantiation at import time
+vi.mock('../src/workflows/recommendation-lifecycle.js', () => ({
+  startRecommendationWorkflow: vi.fn().mockResolvedValue('mock-workflow-job-id'),
+}));
+
+vi.mock('../src/workflow-runner.js', () => ({
+  registerWorkflow: vi.fn(),
+  startWorkflowRunner: vi.fn(),
+  stopWorkflowRunner: vi.fn(),
+  createWorkflowJob: vi.fn().mockResolvedValue('mock-job-id'),
+}));
+
 // Route behavior is tested here; auth middleware behavior is covered separately.
 vi.mock('../src/auth-middleware.js', () => ({
   authMiddleware: (_req: unknown, _res: unknown, next: () => void) => next(),

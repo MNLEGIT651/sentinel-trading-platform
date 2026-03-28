@@ -137,6 +137,9 @@ export type { RiskEvaluationsFilters } from './use-risk-evaluations-query';
 export { useFillsQuery, useRecordFillMutation } from './use-fills-query';
 export type { FillsFilters } from './use-fills-query';
 
+// ── Workflow Jobs ─────────────────────────────────────────────────
+export { useWorkflowJobsQuery, useWorkflowStepsQuery } from './use-workflow-jobs-query';
+
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
 export { useApproveRecommendationMutation } from './use-approve-recommendation-mutation';
