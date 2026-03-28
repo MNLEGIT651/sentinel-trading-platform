@@ -13,19 +13,15 @@ does not change.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel, Field
-
-T = TypeVar("T")
-
 
 # ---------------------------------------------------------------------------
 # Generic envelope — matches packages/shared/src/types.ts EngineResponse<T>
 # ---------------------------------------------------------------------------
 
 
-class EngineResponse(BaseModel, Generic[T]):
+class EngineResponse[T](BaseModel):
     """Standard API envelope.
 
     Available for future migration of all endpoints to a uniform shape.

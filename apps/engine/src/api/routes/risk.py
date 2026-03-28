@@ -689,7 +689,10 @@ async def check_auto_execution_eligibility(
     if position_value > MAX_AUTO_POSITION_VALUE:
         return AutoExecutionEligibilityResponse(
             can_auto_execute=False,
-            reason=f"Position value ${position_value:.0f} exceeds auto-execution limit ${MAX_AUTO_POSITION_VALUE:.0f}",
+            reason=(
+                f"Position value ${position_value:.0f} exceeds "
+                f"auto-execution limit ${MAX_AUTO_POSITION_VALUE:.0f}"
+            ),
             policy_version=policy["version"],
             checks=checks,
             recommendation_id=recommendation_id,
