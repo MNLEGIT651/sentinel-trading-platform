@@ -77,6 +77,18 @@ export type {
   ReplayResponse,
 } from './use-replay-query';
 
+// ── Catalyst Overlay ────────────────────────────────────────────────
+export { useCatalystsQuery, useCreateCatalystMutation } from './use-catalysts-query';
+export type {
+  CatalystEvent,
+  CatalystEventType,
+  CatalystImpact,
+  CatalystFilters,
+  CatalystStats,
+  CatalystResponse,
+  CatalystEventCreate,
+} from './use-catalysts-query';
+
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
 export { useApproveRecommendationMutation } from './use-approve-recommendation-mutation';

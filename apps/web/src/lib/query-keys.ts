@@ -98,4 +98,10 @@ export const queryKeys = {
     snapshot: (timestamp: string, window: number) =>
       ['replay', 'snapshot', timestamp, window] as const,
   },
+
+  // ── Catalyst Overlay ─────────────────────────────────────────────
+  catalysts: {
+    all: ['catalysts'] as const,
+    list: (filters?: object) => ['catalysts', 'list', filters] as const,
+  },
 } as const;
