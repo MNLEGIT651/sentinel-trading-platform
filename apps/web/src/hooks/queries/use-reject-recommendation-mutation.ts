@@ -8,7 +8,8 @@ export function useRejectRecommendationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => agentsClient.rejectRecommendation(id),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      agentsClient.rejectRecommendation(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.all });
     },

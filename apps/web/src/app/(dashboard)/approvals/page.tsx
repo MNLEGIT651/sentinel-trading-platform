@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle,
@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Filter,
   Loader2,
+  Search,
   Shield,
   TrendingDown,
   TrendingUp,
@@ -23,10 +24,65 @@ import { useApproveRecommendationMutation } from '@/hooks/queries/use-approve-re
 import { useRejectRecommendationMutation } from '@/hooks/queries/use-reject-recommendation-mutation';
 import { ApprovalDialog } from '@/components/agents/approval-dialog';
 
-// ── Filter / sort types ────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────
 
+type StatusFilter = 'pending' | 'approved' | 'rejected' | 'filled' | 'risk_blocked' | 'all';
 type SideFilter = 'all' | 'buy' | 'sell';
-type SortOption = 'newest' | 'strength';
+type SortOption = 'newest' | 'strength' | 'fit';
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'filled', label: 'Filled' },
+  { value: 'risk_blocked', label: 'Risk Blocked' },
+  { value: 'all', label: 'All' },
+];
+
+// ── Helpers ────────────────────────────────────────────────────────
+
+function relativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+function signalColor(strength: number): string {
+  if (strength > 0.7) return 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10';
+  if (strength >= 0.5) return 'text-amber-400 border-amber-500/20 bg-amber-500/10';
+  return 'text-red-400 border-red-500/20 bg-red-500/10';
+}
+
+function statusBadge(status: TradeRecommendation['status']) {
+  switch (status) {
+    case 'pending':
+      return { className: 'bg-amber-500/15 text-amber-400 border-amber-500/30', label: 'Pending' };
+    case 'approved':
+      return {
+        className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        label: 'Approved',
+      };
+    case 'rejected':
+      return { className: 'bg-red-500/15 text-red-400 border-red-500/30', label: 'Rejected' };
+    case 'filled':
+      return { className: 'bg-blue-500/15 text-blue-400 border-blue-500/30', label: 'Filled' };
+    case 'risk_blocked':
+      return {
+        className: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+        label: 'Risk Blocked',
+      };
+    default:
+      return { className: 'bg-muted text-muted-foreground border-border', label: status };
+  }
+}
 
 // ── Skeleton placeholder ───────────────────────────────────────────
 
@@ -75,7 +131,7 @@ function StatsBar({ recommendations }: StatsBarProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <div className="rounded-lg border border-border bg-card px-4 py-3">
-        <div className="text-[11px] text-muted-foreground">Pending</div>
+        <div className="text-[11px] text-muted-foreground">Total</div>
         <div className="mt-1 flex items-center gap-2">
           <Clock className="h-4 w-4 text-amber-400" />
           <span className="text-xl font-bold text-foreground">{stats.total}</span>
@@ -108,19 +164,87 @@ function StatsBar({ recommendations }: StatsBarProps) {
   );
 }
 
+// ── Reject dialog ──────────────────────────────────────────────────
+
+interface RejectDialogProps {
+  rec: TradeRecommendation;
+  isRejecting: boolean;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}
+
+function RejectDialog({ rec, isRejecting, onConfirm, onCancel }: RejectDialogProps) {
+  const [reason, setReason] = useState('');
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md animate-in fade-in zoom-in-95 rounded-xl border border-border bg-card shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+          <XCircle className="h-5 w-5 text-red-400" />
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Reject Recommendation</h2>
+            <p className="text-[11px] text-muted-foreground">
+              {rec.ticker} · {rec.side.toUpperCase()} {rec.quantity} shares
+            </p>
+          </div>
+        </div>
+        <div className="px-5 py-4">
+          <label
+            htmlFor="reject-reason"
+            className="mb-1.5 block text-xs font-medium text-foreground"
+          >
+            Rejection reason
+          </label>
+          <textarea
+            id="reject-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Provide a reason for rejecting this recommendation..."
+            rows={3}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+          <button
+            onClick={onCancel}
+            disabled={isRejecting}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={isRejecting}
+            className="flex items-center gap-1.5 rounded-md bg-red-600 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+          >
+            {isRejecting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <XCircle className="h-3.5 w-3.5" />
+            )}
+            Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────
 
 export default function ApprovalsPage() {
-  const { data: recommendations, isLoading, isError } = useRecommendationsQuery('pending');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  const { data: recommendations, isLoading, isError } = useRecommendationsQuery(statusFilter);
   const approveMutation = useApproveRecommendationMutation();
   const rejectMutation = useRejectRecommendationMutation();
 
   const [reviewingRec, setReviewingRec] = useState<TradeRecommendation | null>(null);
+  const [rejectingRec, setRejectingRec] = useState<TradeRecommendation | null>(null);
+  const [tickerSearch, setTickerSearch] = useState('');
   const [sideFilter, setSideFilter] = useState<SideFilter>('all');
   const [strategyFilter, setStrategyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  // Derive unique strategy names for the filter dropdown
   const strategies = useMemo(() => {
     if (!recommendations) return [];
     const names = new Set<string>();
@@ -130,11 +254,14 @@ export default function ApprovalsPage() {
     return Array.from(names).sort();
   }, [recommendations]);
 
-  // Filter and sort
   const filtered = useMemo(() => {
     if (!recommendations) return [];
     let list = [...recommendations];
 
+    if (tickerSearch.trim()) {
+      const q = tickerSearch.trim().toUpperCase();
+      list = list.filter((r) => r.ticker.toUpperCase().includes(q));
+    }
     if (sideFilter !== 'all') {
       list = list.filter((r) => r.side === sideFilter);
     }
@@ -146,13 +273,27 @@ export default function ApprovalsPage() {
       if (sortBy === 'newest') {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
-      const aStr = a.signal_strength ?? -1;
-      const bStr = b.signal_strength ?? -1;
-      return bStr - aStr;
+      if (sortBy === 'strength') {
+        return (b.signal_strength ?? -1) - (a.signal_strength ?? -1);
+      }
+      // sort by portfolio fit score (from metadata)
+      const aFit = a.metadata?.portfolio_fit_score ?? -1;
+      const bFit = b.metadata?.portfolio_fit_score ?? -1;
+      return bFit - aFit;
     });
 
     return list;
-  }, [recommendations, sideFilter, strategyFilter, sortBy]);
+  }, [recommendations, tickerSearch, sideFilter, strategyFilter, sortBy]);
+
+  const handleReject = useCallback(
+    (id: string, reason: string) => {
+      rejectMutation.mutate(reason ? { id, reason } : { id });
+      setRejectingRec(null);
+    },
+    [rejectMutation],
+  );
+
+  const isPending = statusFilter === 'pending';
 
   // ── Loading state ──────────────────────────────────────────────
 
@@ -161,7 +302,7 @@ export default function ApprovalsPage() {
       <div className="space-y-4 p-4">
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Pending Approvals</h1>
+          <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -190,7 +331,7 @@ export default function ApprovalsPage() {
       <div className="space-y-4 p-4">
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Pending Approvals</h1>
+          <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
         </div>
         <Card className="border-red-500/30 bg-red-500/5">
           <CardContent className="flex items-center gap-3 py-6">
@@ -218,8 +359,8 @@ export default function ApprovalsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">Pending Approvals</h1>
-            {allRecs.length > 0 && (
+            <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
+            {allRecs.length > 0 && isPending && (
               <Badge className="border bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">
                 {allRecs.length} awaiting review
               </Badge>
@@ -227,13 +368,41 @@ export default function ApprovalsPage() {
           </div>
         </div>
 
-        {/* Stats bar — always computed from unfiltered pending recs */}
+        {/* Stats bar */}
         <StatsBar recommendations={allRecs} />
 
         {/* Filters */}
         <Card className="border-border bg-card">
           <CardContent className="flex flex-wrap items-center gap-3 py-3">
             <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+            {/* Status filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Ticker search */}
+            <div className="flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                value={tickerSearch}
+                onChange={(e) => setTickerSearch(e.target.value)}
+                placeholder="Search ticker..."
+                className="w-28 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
 
             {/* Side filter */}
             <div className="flex items-center gap-1.5">
@@ -276,18 +445,24 @@ export default function ApprovalsPage() {
             {/* Sort */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground">Sort:</span>
-              {(['newest', 'strength'] as const).map((opt) => (
+              {(
+                [
+                  { key: 'newest', label: 'Newest' },
+                  { key: 'strength', label: 'Signal' },
+                  { key: 'fit', label: 'Fit Score' },
+                ] as const
+              ).map((opt) => (
                 <button
-                  key={opt}
-                  onClick={() => setSortBy(opt)}
+                  key={opt.key}
+                  onClick={() => setSortBy(opt.key)}
                   className={cn(
                     'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                    sortBy === opt
+                    sortBy === opt.key
                       ? 'bg-primary/15 text-primary'
                       : 'text-muted-foreground hover:bg-muted',
                   )}
                 >
-                  {opt === 'newest' ? 'Newest' : 'Strength'}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -300,12 +475,14 @@ export default function ApprovalsPage() {
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <CheckCircle className="mb-3 h-10 w-10 text-emerald-400" />
               <h2 className="text-sm font-semibold text-foreground">
-                All caught up! No pending approvals.
+                {isPending ? 'All caught up! No pending approvals.' : 'No recommendations found.'}
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 {allRecs.length > 0
                   ? 'No recommendations match the current filters.'
-                  : 'New recommendations will appear here when agents generate them.'}
+                  : isPending
+                    ? 'New recommendations will appear here when agents generate them.'
+                    : 'Try adjusting your filters.'}
               </p>
             </CardContent>
           </Card>
@@ -316,8 +493,12 @@ export default function ApprovalsPage() {
           <div className="space-y-3">
             {filtered.map((rec) => {
               const isApproving = approveMutation.isPending && approveMutation.variables === rec.id;
-              const isRejecting = rejectMutation.isPending && rejectMutation.variables === rec.id;
+              const isRejecting =
+                rejectMutation.isPending && rejectMutation.variables?.id === rec.id;
               const isBusy = isApproving || isRejecting;
+              const fitScore = rec.metadata?.portfolio_fit_score;
+              const riskNote = rec.metadata?.risk_note;
+              const sBadge = statusBadge(rec.status);
 
               return (
                 <Card key={rec.id} className="border-border bg-card">
@@ -344,11 +525,30 @@ export default function ApprovalsPage() {
                               {rec.side.toUpperCase()}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              {rec.quantity} shares @ {rec.order_type}
+                              {rec.quantity} shares · {rec.order_type}
+                              {rec.limit_price != null && ` @ $${rec.limit_price}`}
                             </span>
+                            {/* Status badge */}
+                            <Badge className={cn('border text-[9px]', sBadge.className)}>
+                              {sBadge.label}
+                            </Badge>
+                          </div>
+
+                          {/* Signal strength with color coding + portfolio fit */}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
                             {rec.signal_strength != null && (
-                              <Badge className="border border-blue-500/20 bg-blue-500/10 text-[9px] text-blue-400">
-                                {(rec.signal_strength * 100).toFixed(0)}% signal
+                              <Badge
+                                className={cn(
+                                  'border text-[9px]',
+                                  signalColor(rec.signal_strength),
+                                )}
+                              >
+                                Signal: {(rec.signal_strength * 100).toFixed(0)}%
+                              </Badge>
+                            )}
+                            {fitScore != null && (
+                              <Badge className="border border-purple-500/20 bg-purple-500/10 text-[9px] text-purple-400">
+                                Fit: {(fitScore * 100).toFixed(0)}%
                               </Badge>
                             )}
                           </div>
@@ -359,6 +559,12 @@ export default function ApprovalsPage() {
                             </div>
                           )}
 
+                          {riskNote && (
+                            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-amber-400/80">
+                              ⚠ {riskNote}
+                            </p>
+                          )}
+
                           {rec.reason && (
                             <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
                               {rec.reason}
@@ -366,56 +572,61 @@ export default function ApprovalsPage() {
                           )}
 
                           <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground">
-                            <span className="flex items-center gap-1">
+                            <span
+                              className="flex items-center gap-1"
+                              title={new Date(rec.created_at).toLocaleString()}
+                            >
                               <Clock className="h-3 w-3" />
-                              {new Date(rec.created_at).toLocaleString()}
+                              {relativeTime(rec.created_at)}
                             </span>
                             <Link
                               href={`/recommendations/${rec.id}`}
                               className="flex items-center gap-1 text-primary hover:underline"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              Full details
+                              Details
                             </Link>
                           </div>
                         </div>
                       </div>
 
-                      {/* Right: action buttons */}
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          disabled={isBusy}
-                          onClick={() => setReviewingRec(rec)}
-                          className="h-7 bg-profit text-xs hover:bg-profit/80"
-                        >
-                          {isApproving ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <Shield className="mr-1 h-3 w-3" />
-                              Review &amp; Approve
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={isBusy}
-                          onClick={() => rejectMutation.mutate(rec.id)}
-                          className="h-7 text-xs"
-                        >
-                          {isRejecting ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <XCircle className="mr-1 h-3 w-3" />
-                              Reject
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      {/* Right: action buttons (only for pending) */}
+                      {rec.status === 'pending' && (
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            disabled={isBusy}
+                            onClick={() => setReviewingRec(rec)}
+                            className="h-7 bg-profit text-xs hover:bg-profit/80"
+                          >
+                            {isApproving ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Shield className="mr-1 h-3 w-3" />
+                                Review &amp; Approve
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isBusy}
+                            onClick={() => setRejectingRec(rec)}
+                            className="h-7 text-xs"
+                          >
+                            {isRejecting ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <XCircle className="mr-1 h-3 w-3" />
+                                Reject
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -425,7 +636,7 @@ export default function ApprovalsPage() {
         )}
       </div>
 
-      {/* Risk review dialog */}
+      {/* Risk review dialog (approve) */}
       {reviewingRec && (
         <ApprovalDialog
           recommendationId={reviewingRec.id}
@@ -443,9 +654,19 @@ export default function ApprovalsPage() {
           }}
           onCancel={() => setReviewingRec(null)}
           onReject={() => {
-            rejectMutation.mutate(reviewingRec.id);
             setReviewingRec(null);
+            setRejectingRec(reviewingRec);
           }}
+        />
+      )}
+
+      {/* Reject dialog with reason input */}
+      {rejectingRec && (
+        <RejectDialog
+          rec={rejectingRec}
+          isRejecting={rejectMutation.isPending && rejectMutation.variables?.id === rejectingRec.id}
+          onConfirm={(reason) => handleReject(rejectingRec.id, reason)}
+          onCancel={() => setRejectingRec(null)}
         />
       )}
     </>
