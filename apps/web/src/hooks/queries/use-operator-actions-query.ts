@@ -8,6 +8,9 @@ export type OperatorActionsFilters = {
   offset?: number | undefined;
   action_type?: string | undefined;
   operator_id?: string | undefined;
+  target_type?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
 };
 
 export type OperatorActionsResponse = {
@@ -31,6 +34,9 @@ function buildQueryString(filters?: OperatorActionsFilters | undefined): string 
   if (filters?.offset != null) params.set('offset', String(filters.offset));
   if (filters?.action_type) params.set('action_type', filters.action_type);
   if (filters?.operator_id) params.set('operator_id', filters.operator_id);
+  if (filters?.target_type) params.set('target_type', filters.target_type);
+  if (filters?.from) params.set('from', filters.from);
+  if (filters?.to) params.set('to', filters.to);
   const qs = params.toString();
   return qs ? `?${qs}` : '';
 }
