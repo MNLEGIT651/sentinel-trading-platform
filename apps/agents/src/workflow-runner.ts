@@ -6,6 +6,9 @@
 
 import { getSupabaseClient } from './supabase-client.js';
 import { logger } from './logger.js';
+import { trace, SpanStatusCode, type Span } from '@opentelemetry/api';
+
+const tracer = trace.getTracer('sentinel-agents', '1.0.0');
 
 // Step handler signature
 type StepHandler = (
@@ -28,6 +31,11 @@ export function registerWorkflow(def: WorkflowDefinition): void {
   logger.info('workflow.registered', { type: def.type, steps: def.steps.map((s) => s.name) });
 }
 
+/** Return the workflow types currently registered. */
+export function getRegisteredWorkflowTypes(): string[] {
+  return Array.from(workflows.keys());
+}
+
 // Default poll interval
 const POLL_INTERVAL_MS = 5_000;
 const WORKER_ID = `worker-${process.pid}-${Date.now()}`;
@@ -38,7 +46,7 @@ let isProcessing = false;
 /**
  * Process a single claimed job through its workflow steps.
  */
-async function processJob(jobId: string): Promise<void> {
+export async function processJob(jobId: string): Promise<void> {
   const db = getSupabaseClient();
 
   // Fetch full job data
@@ -83,34 +91,60 @@ async function processJob(jobId: string): Promise<void> {
     const nextStepName = remainingSteps[remainingSteps.indexOf(step) + 1]?.name ?? null;
 
     try {
-      logger.info('workflow.step.start', { jobId, step: step.name });
+      const earlyExit = await tracer.startActiveSpan(
+        `workflow.step.${step.name}`,
+        {
+          attributes: {
+            'workflow.job_id': jobId,
+            'workflow.type': job.workflow_type as string,
+            'workflow.step': step.name,
+          },
+        },
+        async (span: Span): Promise<boolean> => {
+          try {
+            logger.info('workflow.step.start', { jobId, step: step.name });
 
-      const result = await step.handler(
-        jobId,
-        job.input_data as Record<string, unknown>,
-        mergedOutput,
+            const result = await step.handler(
+              jobId,
+              job.input_data as Record<string, unknown>,
+              mergedOutput,
+            );
+
+            const durationMs = Date.now() - startMs;
+
+            await db.rpc('complete_workflow_step', {
+              p_job_id: jobId,
+              p_step_name: step.name,
+              p_output: result.output,
+              p_next_step: result.nextStep ?? nextStepName,
+              p_duration_ms: durationMs,
+            });
+
+            mergedOutput = { ...mergedOutput, ...result.output };
+
+            logger.info('workflow.step.completed', { jobId, step: step.name, durationMs });
+            span.setAttributes({ 'workflow.step.duration_ms': durationMs });
+            span.setStatus({ code: SpanStatusCode.OK });
+            span.end();
+
+            if (result.nextStep === null && nextStepName !== null) {
+              logger.info('workflow.job.early_exit', { jobId, step: step.name });
+              return true;
+            }
+            return false;
+          } catch (err) {
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: err instanceof Error ? err.message : String(err),
+            });
+            span.recordException(err instanceof Error ? err : new Error(String(err)));
+            span.end();
+            throw err;
+          }
+        },
       );
 
-      const durationMs = Date.now() - startMs;
-
-      await db.rpc('complete_workflow_step', {
-        p_job_id: jobId,
-        p_step_name: step.name,
-        p_output: result.output,
-        p_next_step: result.nextStep ?? nextStepName,
-        p_duration_ms: durationMs,
-      });
-
-      // Merge output for next step
-      mergedOutput = { ...mergedOutput, ...result.output };
-
-      logger.info('workflow.step.completed', { jobId, step: step.name, durationMs });
-
-      // Handler explicitly ended the workflow early
-      if (result.nextStep === null && nextStepName !== null) {
-        logger.info('workflow.job.early_exit', { jobId, step: step.name });
-        return;
-      }
+      if (earlyExit) return;
     } catch (err) {
       const durationMs = Date.now() - startMs;
       const errorMsg = err instanceof Error ? err.message : String(err);

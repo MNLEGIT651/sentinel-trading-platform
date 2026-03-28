@@ -24,6 +24,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.56.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/sdk-trace-node": "^1.30.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5",
     "@types/node": "^25.5.0",

@@ -14,13 +14,18 @@
  *  ⚡  Execution Monitor  — Trade recommendations
  */
 
+// Telemetry must be initialised before any other imports so the SDK can
+// monkey-patch HTTP / Express modules before they are loaded.
+import { initTelemetry, shutdownTelemetry } from './telemetry.js';
+initTelemetry();
+
 import { Orchestrator } from './orchestrator.js';
 import { createApp, isRunning } from './server.js';
 import { startScheduler } from './scheduler.js';
 import { AGENTS_ENV_GUIDANCE, REQUIRED_AGENT_ENV_VARS, getMissingAgentEnvVars } from './env.js';
 import { logger } from './logger.js';
 import { getLockManager } from './lock-manager.js';
-import { startWorkflowRunner, stopWorkflowRunner } from './workflow-runner.js';
+import { WorkflowWorker } from './workflow-worker.js';
 
 // Register workflow definitions (side-effect import)
 import './workflows/recommendation-lifecycle.js';
@@ -88,16 +93,18 @@ async function main() {
   });
   logger.info('boot.scheduler.ready');
 
-  // ── Workflow runner ────────────────────────────────────────────
-  startWorkflowRunner();
-  logger.info('boot.workflow_runner.ready');
+  // ── Workflow worker ─────────────────────────────────────────────
+  const workflowWorker = new WorkflowWorker();
+  await workflowWorker.start();
+  logger.info('boot.workflow_worker.ready');
 
   // ── Graceful shutdown ──────────────────────────────────────────
   const shutdown = (signal: string) => {
     logger.info('boot.shutdown.start', { signal });
     schedulerTask.stop();
-    stopWorkflowRunner();
+    void workflowWorker.stop();
     getLockManager().shutdown();
+    void shutdownTelemetry();
     server.close(() => {
       logger.info('boot.shutdown.complete');
       process.exit(0);
