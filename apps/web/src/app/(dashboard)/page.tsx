@@ -15,6 +15,7 @@ import {
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
 import { PriceTicker } from '@/components/dashboard/price-ticker';
+import { IncidentControls } from '@/components/dashboard/incident-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
@@ -157,6 +158,9 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Incident Controls */}
+      <IncidentControls />
 
       {/* Row 1: Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
