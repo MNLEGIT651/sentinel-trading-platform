@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import type { OperatorAction, OperatorActionType } from '@sentinel/shared';
 import {
   useOperatorActionsQuery,
@@ -73,6 +74,16 @@ function truncateUuid(uuid: string): string {
   return uuid.length > 8 ? `${uuid.slice(0, 8)}…` : uuid;
 }
 
+function targetUrl(targetType: string | null, targetId: string | null): string | null {
+  if (!targetType || !targetId) return null;
+  const t = targetType.toLowerCase();
+  if (t === 'recommendation') return `/recommendations/${targetId}`;
+  if (t === 'order') return `/orders`;
+  if (t === 'policy' || t === 'risk_policy') return `/settings`;
+  if (t === 'user' || t === 'role') return `/roles`;
+  return null;
+}
+
 // ─── Sub-components ─────────────────────────────────────────────────
 
 function ActionTypeBadge({ actionType }: { actionType: OperatorActionType }) {
@@ -123,18 +134,28 @@ function ActionRow({ action }: { action: OperatorAction }) {
         {truncateUuid(action.operator_id)}
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
-        {action.target_type ? (
-          <span>
-            <span className="text-foreground">{action.target_type}</span>
-            {action.target_id && (
-              <span className="ml-1 font-mono text-xs" title={action.target_id}>
-                {truncateUuid(action.target_id)}
-              </span>
-            )}
-          </span>
-        ) : (
-          '—'
-        )}
+        {action.target_type
+          ? (() => {
+              const url = targetUrl(action.target_type, action.target_id);
+              const content = (
+                <span>
+                  <span className="text-foreground">{action.target_type}</span>
+                  {action.target_id && (
+                    <span className="ml-1 font-mono text-xs" title={action.target_id}>
+                      {truncateUuid(action.target_id)}
+                    </span>
+                  )}
+                </span>
+              );
+              return url ? (
+                <Link href={url} className="underline-offset-2 hover:underline hover:text-blue-400">
+                  {content}
+                </Link>
+              ) : (
+                content
+              );
+            })()
+          : '—'}
       </td>
       <td
         className="max-w-xs truncate px-4 py-3 text-sm text-muted-foreground"
