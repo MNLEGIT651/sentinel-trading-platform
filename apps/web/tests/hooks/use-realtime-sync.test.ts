@@ -90,6 +90,7 @@ describe('useRealtimeSync', () => {
       'regime_playbooks',
       'data_quality_events',
       'catalyst_events',
+      'user_profiles',
     ];
 
     // One channel per table
@@ -107,7 +108,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(14);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(15);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -290,5 +291,18 @@ describe('useRealtimeSync', () => {
     catSub!.callback({ eventType: 'INSERT', new: { id: '1', event_type: 'earnings' }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['catalysts'] }));
+  });
+
+  it('invalidates roles queries when user_profiles changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const profileSub = subscriptions.find((s) => s.table === 'user_profiles');
+    expect(profileSub).toBeDefined();
+    profileSub!.callback({ eventType: 'UPDATE', new: { id: '1', role: 'approver' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['roles'] }));
   });
 });

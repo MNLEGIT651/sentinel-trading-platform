@@ -89,6 +89,24 @@ export type {
   CatalystEventCreate,
 } from './use-catalysts-query';
 
+// ── Operator Roles ─────────────────────────────────────────────────
+export {
+  useMyProfileQuery,
+  useRolesQuery,
+  useUpdateRoleMutation,
+  hasRoleLevel,
+  ROLE_LABELS,
+  ROLE_DESCRIPTIONS,
+  ROLE_LEVELS,
+} from './use-roles-query';
+export type {
+  OperatorRole,
+  UserProfile,
+  RoleChangeEntry,
+  RolesResponse,
+  RoleUpdateRequest,
+} from './use-roles-query';
+
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
 export { useApproveRecommendationMutation } from './use-approve-recommendation-mutation';

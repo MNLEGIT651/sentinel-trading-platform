@@ -17,6 +17,7 @@ import {
   Database,
   Clock,
   Calendar,
+  Shield,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -38,6 +39,7 @@ const navItems = [
   { label: 'Catalysts', href: '/catalysts', icon: Calendar },
   { label: 'Backtest', href: '/backtest', icon: FlaskConical },
   { label: 'Agents', href: '/agents', icon: Bot },
+  { label: 'Roles', href: '/roles', icon: Shield },
   { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;
 
