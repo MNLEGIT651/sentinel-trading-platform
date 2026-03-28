@@ -694,6 +694,167 @@ export interface JournalStats {
   losing_trades: number;
 }
 
+// ─── System Controls ────────────────────────────────────────────────
+
+/** Global system operating mode. */
+export type SystemMode = 'paper' | 'live' | 'backtest';
+
+/**
+ * Centralized system configuration — single-row table.
+ * Mirrors the `system_controls` table in Supabase.
+ */
+export interface SystemControls {
+  id: string;
+  trading_halted: boolean;
+  live_execution_enabled: boolean;
+  global_mode: SystemMode;
+  max_daily_trades: number;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+/** Fields the client can update via PATCH /api/system-controls. */
+export type SystemControlsUpdate = Partial<
+  Omit<SystemControls, 'id' | 'updated_at' | 'updated_by'>
+>;
+
+// ─── Recommendation Events ──────────────────────────────────────────
+
+/** Event types in the recommendation lifecycle state machine. */
+export type RecommendationEventType =
+  | 'created'
+  | 'risk_checked'
+  | 'risk_blocked'
+  | 'pending_approval'
+  | 'approved'
+  | 'rejected'
+  | 'submitted'
+  | 'partially_filled'
+  | 'filled'
+  | 'cancelled'
+  | 'failed'
+  | 'reviewed';
+
+/** Actor that caused a recommendation event. */
+export type ActorType = 'system' | 'agent' | 'operator';
+
+/**
+ * A single event in a recommendation's lifecycle.
+ * Mirrors the `recommendation_events` table.
+ */
+export interface RecommendationEvent {
+  id: string;
+  recommendation_id: string;
+  event_type: RecommendationEventType;
+  event_ts: string;
+  actor_type: ActorType;
+  actor_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+// ─── Risk Evaluations ───────────────────────────────────────────────
+
+/**
+ * Audit record for a risk evaluation performed on a recommendation.
+ * Mirrors the `risk_evaluations` table.
+ */
+export interface RiskEvaluation {
+  id: string;
+  recommendation_id: string;
+  policy_version: string | null;
+  allowed: boolean;
+  original_quantity: number | null;
+  adjusted_quantity: number | null;
+  checks_performed: RiskCheck[];
+  reason: string | null;
+  evaluated_at: string;
+  created_at: string;
+}
+
+/** Individual risk check within an evaluation. */
+export interface RiskCheck {
+  name: string;
+  passed: boolean;
+  limit: number | null;
+  actual: number | null;
+  message: string | null;
+}
+
+// ─── Fills ──────────────────────────────────────────────────────────
+
+/**
+ * Individual fill record for an order execution.
+ * Mirrors the `fills` table.
+ */
+export interface Fill {
+  id: string;
+  order_id: string;
+  fill_ts: string;
+  fill_price: number;
+  fill_qty: number;
+  commission: number;
+  slippage: number | null;
+  venue: string | null;
+  broker_fill_id: string | null;
+  created_at: string;
+}
+
+// ─── Operator Actions ───────────────────────────────────────────────
+
+/** Types of actions an operator can perform. */
+export type OperatorActionType =
+  | 'halt_trading'
+  | 'resume_trading'
+  | 'approve_recommendation'
+  | 'reject_recommendation'
+  | 'update_policy'
+  | 'change_mode'
+  | 'override_risk'
+  | 'cancel_order'
+  | 'manual_order'
+  | 'role_change'
+  | 'system_config_change';
+
+/**
+ * An auditable operator action.
+ * Mirrors the `operator_actions` table.
+ */
+export interface OperatorAction {
+  id: string;
+  operator_id: string;
+  action_type: OperatorActionType;
+  target_type: string | null;
+  target_id: string | null;
+  reason: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+// ─── Signal Runs ────────────────────────────────────────────────────
+
+/** Status of a signal scan run. */
+export type SignalRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+
+/**
+ * Metadata for a signal scan execution.
+ * Mirrors the `signal_runs` table.
+ */
+export interface SignalRun {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  requested_by: string;
+  universe: string[];
+  strategies: string[];
+  days: number;
+  min_strength: number;
+  total_signals: number;
+  status: SignalRunStatus;
+  errors: unknown[];
+  created_at: string;
+}
+
 // ─── Strategy Health ────────────────────────────────────────────────
 
 /** Trend direction for a strategy health metric. */
