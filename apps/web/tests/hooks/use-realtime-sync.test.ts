@@ -91,6 +91,12 @@ describe('useRealtimeSync', () => {
       'data_quality_events',
       'catalyst_events',
       'user_profiles',
+      'system_controls',
+      'recommendation_events',
+      'risk_evaluations',
+      'fills',
+      'operator_actions',
+      'signal_runs',
     ];
 
     // One channel per table
@@ -108,7 +114,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(15);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(21);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -304,5 +310,92 @@ describe('useRealtimeSync', () => {
     profileSub!.callback({ eventType: 'UPDATE', new: { id: '1', role: 'approver' }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['roles'] }));
+  });
+
+  it('invalidates system controls queries when system_controls changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const sysSub = subscriptions.find((s) => s.table === 'system_controls');
+    expect(sysSub).toBeDefined();
+    sysSub!.callback({ eventType: 'UPDATE', new: { id: '1', trading_halted: true }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['system-controls'] }));
+  });
+
+  it('invalidates recommendation event queries when recommendation_events changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const recEvtSub = subscriptions.find((s) => s.table === 'recommendation_events');
+    expect(recEvtSub).toBeDefined();
+    recEvtSub!.callback({ eventType: 'INSERT', new: { id: '1', event_type: 'approved' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ['recommendation-events'] }),
+    );
+  });
+
+  it('invalidates risk evaluations queries when risk_evaluations changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const riskSub = subscriptions.find((s) => s.table === 'risk_evaluations');
+    expect(riskSub).toBeDefined();
+    riskSub!.callback({ eventType: 'INSERT', new: { id: '1', allowed: true }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['risk-evaluations'] }));
+  });
+
+  it('invalidates fills and order queries when fills changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const fillsSub = subscriptions.find((s) => s.table === 'fills');
+    expect(fillsSub).toBeDefined();
+    fillsSub!.callback({ eventType: 'INSERT', new: { id: '1', fill_qty: 100 }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['fills'] }));
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ['portfolio', 'orders'] }),
+    );
+  });
+
+  it('invalidates operator actions queries when operator_actions changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const opSub = subscriptions.find((s) => s.table === 'operator_actions');
+    expect(opSub).toBeDefined();
+    opSub!.callback({
+      eventType: 'INSERT',
+      new: { id: '1', action_type: 'halt_trading' },
+      old: {},
+    });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['operator-actions'] }));
+  });
+
+  it('invalidates signal runs queries when signal_runs changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const runSub = subscriptions.find((s) => s.table === 'signal_runs');
+    expect(runSub).toBeDefined();
+    runSub!.callback({ eventType: 'INSERT', new: { id: '1', status: 'completed' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['signal-runs'] }));
   });
 });

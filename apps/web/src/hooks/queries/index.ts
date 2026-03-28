@@ -107,6 +107,36 @@ export type {
   RoleUpdateRequest,
 } from './use-roles-query';
 
+// ── System Controls ───────────────────────────────────────────────
+export {
+  useSystemControlsQuery,
+  useUpdateSystemControlsMutation,
+  useHaltSystemMutation,
+  useResumeSystemMutation,
+} from './use-system-controls-query';
+
+// ── Recommendation Events ─────────────────────────────────────────
+export {
+  useRecommendationEventsQuery,
+  useAddRecommendationEventMutation,
+} from './use-recommendation-events-query';
+export type { RecommendationDetail } from './use-recommendation-events-query';
+
+// ── Operator Actions ──────────────────────────────────────────────
+export { useOperatorActionsQuery, useRecordActionMutation } from './use-operator-actions-query';
+export type { OperatorActionsFilters, OperatorActionsResponse } from './use-operator-actions-query';
+
+// ── Risk Evaluations ──────────────────────────────────────────────
+export {
+  useRiskEvaluationsQuery,
+  useRecordRiskEvaluationMutation,
+} from './use-risk-evaluations-query';
+export type { RiskEvaluationsFilters } from './use-risk-evaluations-query';
+
+// ── Fills ─────────────────────────────────────────────────────────
+export { useFillsQuery, useRecordFillMutation } from './use-fills-query';
+export type { FillsFilters } from './use-fills-query';
+
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
 export { useApproveRecommendationMutation } from './use-approve-recommendation-mutation';

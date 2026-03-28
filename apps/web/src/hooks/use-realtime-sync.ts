@@ -28,6 +28,12 @@ const TABLE_INVALIDATION_MAP: Record<string, readonly (readonly string[])[]> = {
   data_quality_events: [queryKeys.dataQuality.all],
   catalyst_events: [queryKeys.catalysts.all],
   user_profiles: [queryKeys.roles.all(), queryKeys.roles.me()],
+  system_controls: [queryKeys.systemControls.all],
+  recommendation_events: [queryKeys.recommendationEvents.all],
+  risk_evaluations: [queryKeys.riskEvaluations.all],
+  fills: [queryKeys.fills.all, queryKeys.portfolio.orders.all()],
+  operator_actions: [queryKeys.operatorActions.all],
+  signal_runs: [queryKeys.signalRuns.all],
 };
 
 const SUBSCRIBED_TABLES = Object.keys(TABLE_INVALIDATION_MAP);
