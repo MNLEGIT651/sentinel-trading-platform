@@ -110,4 +110,40 @@ export const queryKeys = {
     all: () => ['roles'] as const,
     me: () => ['roles', 'me'] as const,
   },
+
+  // ── System Controls ──────────────────────────────────────────────
+  systemControls: {
+    all: ['system-controls'] as const,
+    current: () => ['system-controls', 'current'] as const,
+  },
+
+  // ── Recommendation Events ────────────────────────────────────────
+  recommendationEvents: {
+    all: ['recommendation-events'] as const,
+    byRec: (id: string) => ['recommendation-events', id] as const,
+  },
+
+  // ── Operator Actions ─────────────────────────────────────────────
+  operatorActions: {
+    all: ['operator-actions'] as const,
+    list: (filters?: object) => ['operator-actions', 'list', filters] as const,
+  },
+
+  // ── Risk Evaluations ─────────────────────────────────────────────
+  riskEvaluations: {
+    all: ['risk-evaluations'] as const,
+    list: (filters?: object) => ['risk-evaluations', 'list', filters] as const,
+  },
+
+  // ── Fills ────────────────────────────────────────────────────────
+  fills: {
+    all: ['fills'] as const,
+    list: (filters?: object) => ['fills', 'list', filters] as const,
+  },
+
+  // ── Signal Runs ──────────────────────────────────────────────────
+  signalRuns: {
+    all: ['signal-runs'] as const,
+    list: (filters?: object) => ['signal-runs', 'list', filters] as const,
+  },
 } as const;

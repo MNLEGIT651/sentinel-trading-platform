@@ -18,6 +18,7 @@ import {
   Clock,
   Calendar,
   Shield,
+  ClipboardList,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -40,6 +41,7 @@ const navItems = [
   { label: 'Backtest', href: '/backtest', icon: FlaskConical },
   { label: 'Agents', href: '/agents', icon: Bot },
   { label: 'Roles', href: '/roles', icon: Shield },
+  { label: 'Audit Log', href: '/audit-log', icon: ClipboardList },
   { label: 'Settings', href: '/settings', icon: Settings },
 ] as const;
 
