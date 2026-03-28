@@ -104,4 +104,10 @@ export const queryKeys = {
     all: ['catalysts'] as const,
     list: (filters?: object) => ['catalysts', 'list', filters] as const,
   },
+
+  // ── Roles ──────────────────────────────────────────────────────────
+  roles: {
+    all: () => ['roles'] as const,
+    me: () => ['roles', 'me'] as const,
+  },
 } as const;
