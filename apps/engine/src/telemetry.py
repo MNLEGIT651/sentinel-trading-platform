@@ -74,6 +74,7 @@ def get_tracer(name: str = _SERVICE_NAME) -> Tracer:
 # Minimal no-op fallback when opentelemetry-api is not installed
 # ---------------------------------------------------------------------------
 
+
 class _NoOpSpan:
     """Span that does nothing — used when OTel is not installed."""
 
