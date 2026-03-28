@@ -53,6 +53,19 @@ export type {
   RegimePlaybookCreate,
   RecordRegimeInput,
 } from './use-regime-query';
+export {
+  useDataQualityQuery,
+  useRecordDataQualityMutation,
+  useResolveEventsMutation,
+} from './use-data-quality-query';
+export type {
+  DataQualityEvent,
+  DataQualityEventType,
+  DataQualitySeverity,
+  DataQualityStats,
+  DataQualityResponse,
+  DataQualityFilters,
+} from './use-data-quality-query';
 
 // ── Mutation hooks ─────────────────────────────────────────────────
 export { useSubmitOrderMutation } from './use-submit-order-mutation';
