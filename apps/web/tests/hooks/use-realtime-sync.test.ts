@@ -89,6 +89,7 @@ describe('useRealtimeSync', () => {
       'market_regime_history',
       'regime_playbooks',
       'data_quality_events',
+      'catalyst_events',
     ];
 
     // One channel per table
@@ -106,7 +107,7 @@ describe('useRealtimeSync', () => {
     expect(mockSupabaseClient.removeChannel).not.toHaveBeenCalled();
     unmount();
     // One removeChannel call per subscribed table
-    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(13);
+    expect(mockSupabaseClient.removeChannel.mock.calls.length).toBeGreaterThanOrEqual(14);
   });
 
   it('invalidates portfolio queries when orders table changes', () => {
@@ -276,5 +277,18 @@ describe('useRealtimeSync', () => {
     dqSub!.callback({ eventType: 'INSERT', new: { id: 1, event_type: 'stale_quote' }, old: {} });
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['data-quality'] }));
+  });
+
+  it('invalidates catalysts queries when catalyst_events changes', () => {
+    const qc = makeQueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+
+    renderHook(() => useRealtimeSync(), { wrapper: wrapper(qc) });
+
+    const catSub = subscriptions.find((s) => s.table === 'catalyst_events');
+    expect(catSub).toBeDefined();
+    catSub!.callback({ eventType: 'INSERT', new: { id: '1', event_type: 'earnings' }, old: {} });
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['catalysts'] }));
   });
 });
