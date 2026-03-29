@@ -290,6 +290,7 @@ export default function ExperimentPage() {
               )}
               <Link
                 href={`/experiment/${active.id}`}
+                prefetch={false}
                 className="rounded bg-accent px-3 py-1.5 text-xs font-medium hover:bg-accent/80"
               >
                 Full Report →
@@ -476,6 +477,7 @@ export default function ExperimentPage() {
                 <Link
                   key={exp.id}
                   href={`/experiment/${exp.id}`}
+                  prefetch={false}
                   className="flex items-center justify-between rounded border border-border/50 p-3 hover:bg-accent/50"
                 >
                   <div className="flex items-center gap-3">

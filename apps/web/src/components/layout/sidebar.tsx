@@ -150,6 +150,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     className={cn(
                       'group flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-all duration-200',
                       isActive
