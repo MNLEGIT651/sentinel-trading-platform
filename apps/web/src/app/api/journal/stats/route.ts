@@ -23,10 +23,7 @@ export async function GET(): Promise<NextResponse> {
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Failed to fetch journal stats', details: error.message },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: 'Failed to fetch journal stats' }, { status: 500 });
     }
 
     // Return zero stats if no entries exist yet

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,10 @@ export async function GET(request: Request) {
 
   const { data: events, error } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch events') },
+      { status: 500 },
+    );
   }
 
   // Compute summary stats
@@ -86,7 +90,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const { event_type, severity, provider, ticker, message, metadata } = body;
 
   if (!event_type || !VALID_EVENT_TYPES.includes(event_type)) {
@@ -122,7 +130,10 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to create event') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data, { status: 201 });
@@ -139,7 +150,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const { ids, resolved } = body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -160,7 +175,10 @@ export async function PATCH(request: Request) {
     .eq('user_id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to update events') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ updated: ids.length });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,7 +79,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to update playbook') },
+      { status: 500 },
+    );
   }
 
   if (!data) {
@@ -103,7 +107,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     .eq('user_id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to delete playbook') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ deleted: true });

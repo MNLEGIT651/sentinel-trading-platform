@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { RecommendationEventType } from '@sentinel/shared';
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -124,7 +125,10 @@ export async function POST(
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to record event') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data, { status: 201 });

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 /**
  * GET /api/replay/recommendation?ticker=AAPL&from=ISO&to=ISO&status=filled&limit=50
@@ -48,7 +49,10 @@ export async function GET(request: Request) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch recommendation') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ recommendations: data ?? [], total: data?.length ?? 0 });
