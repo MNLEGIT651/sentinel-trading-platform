@@ -33,11 +33,14 @@ apps/agents/.tmp/
 # Claude Code local settings
 .claude/settings.local.json
 .claude/agents/
+.claude/worktrees/
+.claude/agent-memory/
 
 # Temporary / scratch directories
 tmp/
 Screenshots/
 CODEX.WEB.AUDIT/
+Codex/
 
 # Downloaded tool binaries
 actionlint
