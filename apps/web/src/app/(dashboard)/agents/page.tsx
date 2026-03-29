@@ -48,24 +48,28 @@ export default function AgentsPage() {
 
   const handleRunCycle = () => {
     cycleMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Agent cycle started'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to start cycle'),
     });
   };
 
   const handleHalt = () => {
     haltMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Agents halted'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to halt agents'),
     });
   };
 
   const handleResume = () => {
     resumeMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Agents resumed'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to resume agents'),
     });
   };
 
   const handleApprove = (id: string) => {
     approveMutation.mutate(id, {
+      onSuccess: () => toast.success('Recommendation approved'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Approve failed'),
     });
   };
@@ -74,6 +78,7 @@ export default function AgentsPage() {
     rejectMutation.mutate(
       { id },
       {
+        onSuccess: () => toast.success('Recommendation rejected'),
         onError: (err) => toast.error(err instanceof Error ? err.message : 'Reject failed'),
       },
     );

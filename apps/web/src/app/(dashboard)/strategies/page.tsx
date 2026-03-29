@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Brain, ChevronDown, ChevronRight, Loader2, Activity } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { familyConfig } from '@/components/strategies/family-config';
 import { useStrategiesQuery, useStrategyHealthQuery } from '@/hooks/queries';
 import { HealthBadge, HealthMetricsCard } from '@/components/strategies/strategy-health';
 import type { StrategyHealthSnapshot } from '@sentinel/shared';
+import { markPageVisited } from '@/components/dashboard/setup-progress';
 
 type TabId = 'strategies' | 'health';
 
@@ -35,6 +36,10 @@ function buildMetrics(s: StrategyHealthSnapshot) {
 }
 
 export default function StrategiesPage() {
+  useEffect(() => {
+    markPageVisited('strategies');
+  }, []);
+
   const { data: fetchedStrategies, isPending } = useStrategiesQuery();
   const { data: healthSnapshots, isPending: healthLoading } = useStrategyHealthQuery();
   const [activeTab, setActiveTab] = useState<TabId>('strategies');
