@@ -43,9 +43,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         'flex h-screen overflow-hidden',
-        device.isTouch && 'touch-device',
+        device.isHydrated && device.isTouch && 'touch-device',
       )}
-      data-device={device.type}
+      {...(device.isHydrated ? { 'data-device': device.type } : {})}
     >
       {/* Desktop sidebar — always visible on lg+ screens */}
       <div className="hidden lg:block">
@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           id="main-content"
           className={cn(
             'flex-1 overflow-auto',
-            device.isTouch && 'overscroll-contain',
+            device.isHydrated && device.isTouch && 'overscroll-contain',
           )}
         >
           {children}
