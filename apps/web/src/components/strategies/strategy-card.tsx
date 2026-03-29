@@ -35,7 +35,7 @@ export function StrategyCard({ strategy, accentColor }: StrategyCardProps) {
   };
 
   return (
-    <Card className="bg-card/50 border-border/50 transition-colors hover:border-border">
+    <Card className="@container/strategy bg-card/50 border-border/50 transition-colors hover:border-border">
       <CardHeader className="pb-3">
         <button
           type="button"
@@ -48,7 +48,9 @@ export function StrategyCard({ strategy, accentColor }: StrategyCardProps) {
         >
           <div className="space-y-1">
             <CardTitle className="text-sm font-semibold text-foreground">{strategy.name}</CardTitle>
-            <p className="text-xs text-muted-foreground leading-relaxed">{strategy.description}</p>
+            <p className="hidden text-xs text-muted-foreground leading-relaxed @[12rem]/strategy:block">
+              {strategy.description}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <SignalBadge isActive={strategy.is_active} />

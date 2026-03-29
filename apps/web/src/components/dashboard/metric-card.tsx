@@ -16,8 +16,8 @@ export const MetricCard = memo(function MetricCard({
   icon,
 }: MetricCardProps) {
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <Card className="@container/metric bg-card border-border">
+      <CardHeader className="flex flex-col items-start pb-2 @[10rem]/metric:flex-row @[10rem]/metric:items-center @[10rem]/metric:justify-between">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
         {icon}
       </CardHeader>
