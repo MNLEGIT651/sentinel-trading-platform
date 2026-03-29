@@ -207,7 +207,7 @@ export default function PortfolioPage() {
         <div className="flex items-center gap-3">
           <PieChart className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Portfolio</h1>
+            <h1 className="text-heading-page text-foreground">Portfolio</h1>
             <p className="text-xs text-muted-foreground">
               {positions.length} position{positions.length !== 1 ? 's' : ''} &middot;{' '}
               <span className={isLive ? 'text-profit' : 'text-muted-foreground'}>

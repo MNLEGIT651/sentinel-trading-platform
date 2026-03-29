@@ -30,10 +30,10 @@ const ROLE_ICONS: Record<OperatorRole, typeof Eye> = {
 };
 
 const ROLE_COLORS: Record<OperatorRole, string> = {
-  observer: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  reviewer: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  approver: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  operator: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  observer: 'bg-muted text-muted-foreground',
+  reviewer: 'bg-primary/15 text-primary',
+  approver: 'bg-profit/15 text-profit',
+  operator: 'bg-amber/15 text-amber',
 };
 
 const ALL_ROLES: OperatorRole[] = ['observer', 'reviewer', 'approver', 'operator'];
@@ -111,33 +111,30 @@ function RolePermissionsGrid() {
   ];
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 dark:bg-gray-800/50">
+        <thead className="bg-muted">
           <tr>
-            <th className="whitespace-nowrap p-2 text-left font-medium text-gray-600 dark:text-gray-400 sm:p-3">
+            <th className="whitespace-nowrap p-2 text-left font-medium text-muted-foreground sm:p-3">
               Permission
             </th>
             {ALL_ROLES.map((role) => (
-              <th
-                key={role}
-                className="p-2 text-center font-medium text-gray-600 dark:text-gray-400 sm:p-3"
-              >
+              <th key={role} className="p-2 text-center font-medium text-muted-foreground sm:p-3">
                 <RoleBadge role={role} />
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+        <tbody className="divide-y divide-border">
           {permissions.map((perm) => (
-            <tr key={perm.action} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-              <td className="p-2 text-gray-700 dark:text-gray-300 sm:p-3">{perm.action}</td>
+            <tr key={perm.action} className="hover:bg-muted">
+              <td className="p-2 text-foreground sm:p-3">{perm.action}</td>
               {ALL_ROLES.map((role) => (
                 <td key={role} className="p-2 text-center sm:p-3">
                   {perm[role] ? (
-                    <CheckCircle2 className="inline h-4 w-4 text-green-500" />
+                    <CheckCircle2 className="inline h-4 w-4 text-profit" />
                   ) : (
-                    <span className="inline-block h-4 w-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                    <span className="inline-block h-4 w-4 rounded-full border-2 border-border" />
                   )}
                 </td>
               ))}
@@ -164,25 +161,25 @@ function UserCard({
 
   return (
     <div
-      className={`rounded-lg border p-4 ${isCurrentUser ? 'border-purple-300 bg-purple-50/50 dark:border-purple-700 dark:bg-purple-900/10' : 'border-gray-200 dark:border-gray-700'}`}
+      className={`rounded-lg border p-4 ${isCurrentUser ? 'border-primary/40 bg-primary/5' : 'border-border'}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-            <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+            <User className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="font-medium text-foreground">
                 {profile.display_name ?? 'Unknown User'}
               </span>
               {isCurrentUser && (
-                <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">
                   You
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Joined {new Date(profile.created_at).toLocaleDateString()}
             </p>
           </div>
@@ -195,7 +192,7 @@ function UserCard({
               className="flex items-center gap-1"
             >
               <RoleBadge role={profile.role} />
-              <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           ) : (
             <RoleBadge role={profile.role} />
@@ -204,7 +201,7 @@ function UserCard({
           {showDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
-              <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+              <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-lg border border-border bg-card py-1 shadow-lg">
                 {ALL_ROLES.map((role) => (
                   <button
                     key={role}
@@ -213,12 +210,10 @@ function UserCard({
                       setShowDropdown(false);
                     }}
                     disabled={role === profile.role}
-                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${role === profile.role ? 'opacity-50' : ''}`}
+                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-muted ${role === profile.role ? 'opacity-50' : ''}`}
                   >
                     <RoleBadge role={role} />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {ROLE_DESCRIPTIONS[role]}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</span>
                   </button>
                 ))}
               </div>
@@ -235,10 +230,10 @@ function HistoryItem({ entry, profiles }: { entry: RoleChangeEntry; profiles: Us
   const target = profiles.find((p) => p.id === entry.target_user_id);
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-gray-100 p-3 dark:border-gray-800">
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+    <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-gray-700 dark:text-gray-300">
+        <p className="text-sm text-foreground">
           <span className="font-medium">{changedBy?.display_name ?? 'System'}</span>
           {' changed '}
           <span className="font-medium">{target?.display_name ?? 'Unknown'}</span>
@@ -248,9 +243,11 @@ function HistoryItem({ entry, profiles }: { entry: RoleChangeEntry; profiles: Us
           <RoleBadge role={entry.new_role} />
         </p>
         {entry.reason && (
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Reason: {entry.reason}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Reason: {entry.reason}</p>
         )}
-        <p className="mt-1 text-xs text-gray-400">{new Date(entry.created_at).toLocaleString()}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {new Date(entry.created_at).toLocaleString()}
+        </p>
       </div>
     </div>
   );
@@ -287,7 +284,7 @@ export default function OperatorRolesPage() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+      <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
         <AlertTriangle className="h-5 w-5" />
         Failed to load roles: {error.message}
       </div>
@@ -299,10 +296,10 @@ export default function OperatorRolesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-purple-500" />
+          <Shield className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Operator Roles</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <h1 className="text-heading-page text-foreground">Operator Roles</h1>
+            <p className="text-sm text-muted-foreground">
               Manage access levels and approval permissions
             </p>
           </div>
@@ -311,35 +308,27 @@ export default function OperatorRolesPage() {
       </div>
 
       {/* Your role summary */}
-      <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
+      <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-purple-500" />
-          <span className="font-medium text-purple-900 dark:text-purple-100">
-            Your Role: {ROLE_LABELS[myRole]}
-          </span>
+          <Shield className="h-5 w-5 text-primary" />
+          <span className="font-medium text-primary">Your Role: {ROLE_LABELS[myRole]}</span>
         </div>
-        <p className="mt-1 text-sm text-purple-700 dark:text-purple-300">
-          {ROLE_DESCRIPTIONS[myRole]}
-        </p>
+        <p className="mt-1 text-sm text-primary/80">{ROLE_DESCRIPTIONS[myRole]}</p>
       </div>
 
       {/* Permissions matrix */}
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Permission Matrix
-        </h2>
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Permission Matrix</h2>
         <RolePermissionsGrid />
       </div>
 
       {/* Team Members */}
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Team Members
-        </h2>
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Team Members</h2>
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
+              <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
             ))}
           </div>
         ) : (
@@ -354,7 +343,7 @@ export default function OperatorRolesPage() {
               />
             ))}
             {profiles.length === 0 && (
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 No team members found. Your profile will be created on first sign-in.
               </p>
             )}
@@ -365,9 +354,7 @@ export default function OperatorRolesPage() {
       {/* Role Change History */}
       {(data?.history?.length ?? 0) > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Role Change History
-          </h2>
+          <h2 className="mb-3 text-lg font-semibold text-foreground">Role Change History</h2>
           <div className="space-y-2">
             {data?.history?.map((entry) => (
               <HistoryItem key={entry.id} entry={entry} profiles={profiles} />
@@ -379,35 +366,35 @@ export default function OperatorRolesPage() {
       {/* Role change confirmation dialog */}
       {reasonDialogUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Change Role</h3>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground">Change Role</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Assigning role <RoleBadge role={reasonDialogUser.newRole} /> to this user.
             </p>
-            <label className="mt-4 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="mt-4 block text-sm font-medium text-foreground">
               Reason (optional)
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={2}
-              className="mt-1 w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              className="mt-1 w-full rounded-lg border border-border bg-muted p-2 text-sm text-foreground"
               placeholder="Why is this role being changed?"
             />
             {updateRole.error && (
-              <p className="mt-2 text-sm text-red-600">{updateRole.error.message}</p>
+              <p className="mt-2 text-sm text-destructive">{updateRole.error.message}</p>
             )}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setReasonDialogUser(null)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmRoleChange}
                 disabled={updateRole.isPending}
-                className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {updateRole.isPending ? 'Updating...' : 'Confirm'}
               </button>
@@ -418,7 +405,7 @@ export default function OperatorRolesPage() {
 
       {/* Mutation error toast */}
       {updateRole.isSuccess && (
-        <div className="fixed bottom-4 right-4 rounded-lg bg-green-600 px-4 py-2 text-sm text-white shadow-lg">
+        <div className="fixed bottom-4 right-4 rounded-lg bg-profit px-4 py-2 text-sm text-white shadow-lg">
           Role updated successfully
         </div>
       )}

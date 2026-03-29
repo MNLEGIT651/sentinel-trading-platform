@@ -305,7 +305,7 @@ export default function ApprovalsPage() {
       <div className="space-y-4 p-4">
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
+          <h1 className="text-heading-page text-foreground">Approval Queue</h1>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -334,7 +334,7 @@ export default function ApprovalsPage() {
       <div className="space-y-4 p-4">
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
+          <h1 className="text-heading-page text-foreground">Approval Queue</h1>
         </div>
         <Card className="border-red-500/30 bg-red-500/5">
           <CardContent className="flex items-center gap-3 py-6">
@@ -362,7 +362,7 @@ export default function ApprovalsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
+            <h1 className="text-heading-page text-foreground">Approval Queue</h1>
             {allRecs.length > 0 && isPending && (
               <Badge className="border bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">
                 {allRecs.length} awaiting review

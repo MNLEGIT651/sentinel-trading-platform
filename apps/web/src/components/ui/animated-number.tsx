@@ -55,7 +55,10 @@ function AnimatedNumber({
     };
   }, [value, duration]);
 
-  const formatted = displayValue.toFixed(decimals);
+  const formatted = displayValue.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 
   return (
     <span className={cn('animate-count-in tabular-nums', className)}>

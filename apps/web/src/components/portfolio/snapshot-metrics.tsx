@@ -2,6 +2,7 @@
 
 import { DollarSign, TrendingUp, TrendingDown, BarChart3, Percent } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { cn } from '@/lib/utils';
 
 interface SnapshotMetricsProps {
@@ -28,10 +29,13 @@ export function SnapshotMetrics({
       <Card className="bg-card border-border">
         <CardContent className="py-3 px-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Portfolio Value</span>
+            <span className="text-xs text-muted-foreground">
+              Portfolio Value{' '}
+              <InfoTooltip content="Total value of all assets including cash and open positions." />
+            </span>
             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
-          <p className="mt-1 text-xl font-bold text-foreground">
+          <p className="mt-1 text-data-primary text-foreground">
             $
             {portfolioTotal.toLocaleString('en-US', {
               minimumFractionDigits: 2,
@@ -43,14 +47,17 @@ export function SnapshotMetrics({
       <Card className="bg-card border-border">
         <CardContent className="py-3 px-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Unrealized P&L</span>
+            <span className="text-xs text-muted-foreground">
+              Unrealized P&L{' '}
+              <InfoTooltip content="Paper gains or losses on currently held positions. Only realized when positions are closed." />
+            </span>
             {totalPnl >= 0 ? (
               <TrendingUp className="h-3.5 w-3.5 text-profit" />
             ) : (
               <TrendingDown className="h-3.5 w-3.5 text-loss" />
             )}
           </div>
-          <p className={cn('mt-1 text-xl font-bold', totalPnl >= 0 ? 'text-profit' : 'text-loss')}>
+          <p className={cn('mt-1 text-data-primary', totalPnl >= 0 ? 'text-profit' : 'text-loss')}>
             {totalPnl >= 0 ? '+' : ''}$
             {totalPnl.toLocaleString('en-US', {
               minimumFractionDigits: 2,
@@ -68,10 +75,12 @@ export function SnapshotMetrics({
       <Card className="bg-card border-border">
         <CardContent className="py-3 px-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Cash Balance</span>
+            <span className="text-xs text-muted-foreground">
+              Cash Balance <InfoTooltip content="Uninvested cash available for new trades." />
+            </span>
             <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
-          <p className="mt-1 text-xl font-bold text-foreground">
+          <p className="mt-1 text-data-primary text-foreground">
             $
             {cashBalance.toLocaleString('en-US', {
               minimumFractionDigits: 2,

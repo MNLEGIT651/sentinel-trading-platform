@@ -1,8 +1,8 @@
 'use client';
 
-import { Bot, Play, Pause, RefreshCw, AlertTriangle, Loader2, WifiOff } from 'lucide-react';
+import { Bot, Play, Pause, RefreshCw, Loader2, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
@@ -93,7 +93,7 @@ export default function AgentsPage() {
         <div className="flex items-center gap-3">
           <Bot className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">AI Agents</h1>
+            <h1 className="text-heading-page text-foreground">AI Agents</h1>
             <p className="text-xs text-muted-foreground">
               {cycleCount} cycles completed &middot; 5 agents configured
               {status?.nextCycleAt && !isHalted && (
@@ -109,22 +109,11 @@ export default function AgentsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isOffline && (
-            <Badge className="border bg-muted text-muted-foreground border-border/50 mr-1 text-[10px]">
-              Offline
-            </Badge>
-          )}
+          {isOffline && <StatusBadge status="idle" label="Offline" className="mr-1" />}
           {status?.nextCycleAt && !isHalted && !isOffline && (
-            <Badge className="border bg-primary/10 text-primary border-primary/20 mr-1 text-[10px]">
-              Scheduled
-            </Badge>
+            <StatusBadge status="pending" label="Scheduled" className="mr-1" />
           )}
-          {isHalted && (
-            <Badge className="border bg-loss/15 text-loss border-loss/30 mr-2">
-              <AlertTriangle className="mr-1 h-3 w-3" />
-              HALTED
-            </Badge>
-          )}
+          {isHalted && <StatusBadge status="error" label="HALTED" className="mr-2" />}
           <Button
             onClick={isHalted ? handleResume : handleRunCycle}
             disabled={controlsDisabled || isRunning || cycleMutation.isPending}

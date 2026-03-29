@@ -522,7 +522,7 @@ export default function RecommendationDetailPage({ params }: { params: Promise<{
 
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold text-foreground">{rec.ticker}</h1>
+        <h1 className="text-heading-page text-foreground">{rec.ticker}</h1>
         <Badge className={SIDE_COLORS[rec.side] ?? 'bg-zinc-500/10 text-zinc-400'}>
           {rec.side?.toUpperCase()}
         </Badge>

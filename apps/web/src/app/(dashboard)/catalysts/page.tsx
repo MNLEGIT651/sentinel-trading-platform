@@ -103,7 +103,7 @@ export default function CatalystsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-heading-page text-white flex items-center gap-2">
             <Calendar className="h-6 w-6 text-orange-400" />
             Catalyst Overlay
           </h1>

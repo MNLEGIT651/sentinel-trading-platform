@@ -59,12 +59,12 @@ export function PriceChart({ data, className }: PriceChartProps) {
     chartRef.current = chart;
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#22c55e',
-      downColor: '#ef4444',
-      borderDownColor: '#ef4444',
-      borderUpColor: '#22c55e',
-      wickDownColor: '#ef4444',
-      wickUpColor: '#22c55e',
+      upColor: '#6fd68a',
+      downColor: '#e05252',
+      borderDownColor: '#e05252',
+      borderUpColor: '#6fd68a',
+      wickDownColor: '#e05252',
+      wickUpColor: '#6fd68a',
     });
     candleSeriesRef.current = candleSeries;
 
@@ -112,7 +112,7 @@ export function PriceChart({ data, className }: PriceChartProps) {
     const volumeData = data.map((d) => ({
       time: Math.floor(new Date(d.timestamp).getTime() / 1000) as number,
       value: d.volume,
-      color: d.close >= d.open ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+      color: d.close >= d.open ? 'rgba(111, 214, 138, 0.3)' : 'rgba(224, 82, 82, 0.3)',
     }));
 
     candleSeriesRef.current.setData(candleData as never);

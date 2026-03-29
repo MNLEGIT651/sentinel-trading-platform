@@ -2,7 +2,17 @@
 
 import { TrendingUp, TrendingDown, BarChart3, Target, Shield, Award, Timer } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { cn } from '@/lib/utils';
+
+const METRIC_TIPS: Record<string, string> = {
+  'Sharpe Ratio':
+    'Risk-adjusted return metric. Values above 1.0 indicate good risk-adjusted performance.',
+  'Win Rate': 'Percentage of trades that were profitable.',
+  'Max Drawdown': 'Largest peak-to-trough decline in portfolio value. Lower is better.',
+  'Profit Factor':
+    'Ratio of gross profits to gross losses. Values above 1.0 indicate profitability.',
+};
 
 export interface BacktestSummary {
   strategy: string;
@@ -83,6 +93,7 @@ export function MetricsTable({ summary: s }: MetricsTableProps) {
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
                 {label}
+                {METRIC_TIPS[label] ? <InfoTooltip content={METRIC_TIPS[label]} /> : null}
               </span>
               <Icon className={cn('h-3.5 w-3.5', color)} />
             </div>

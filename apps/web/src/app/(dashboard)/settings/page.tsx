@@ -188,7 +188,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3">
           <Settings className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Settings</h1>
+            <h1 className="text-heading-page text-foreground">Settings</h1>
             <p className="text-xs text-muted-foreground">
               Service connections, risk parameters, and preferences
             </p>

@@ -8,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface CollapsibleCardProps {
   title: string;
-  summary?: string;
-  defaultOpen?: boolean;
+  summary?: string | undefined;
+  defaultOpen?: boolean | undefined;
   children: React.ReactNode;
-  className?: string;
-  headerAction?: React.ReactNode;
+  className?: string | undefined;
+  headerAction?: React.ReactNode | undefined;
 }
 
 function CollapsibleCard({

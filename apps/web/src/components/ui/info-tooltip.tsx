@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { Info } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ function InfoTooltip({ content, className, iconClassName, side = 'top' }: InfoTo
   const [isVisible, setIsVisible] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const tooltipId = useId();
 
   useEffect(() => {
     if (!isVisible) return;
@@ -55,12 +56,14 @@ function InfoTooltip({ content, className, iconClassName, side = 'top' }: InfoTo
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
         aria-label="More information"
+        aria-describedby={isVisible ? tooltipId : undefined}
       >
         <Info className="h-3.5 w-3.5" />
       </button>
       {isVisible && (
         <div
           ref={tooltipRef}
+          id={tooltipId}
           role="tooltip"
           className={cn(
             'animate-tooltip absolute z-50 max-w-xs rounded-lg bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg ring-1 ring-foreground/10',

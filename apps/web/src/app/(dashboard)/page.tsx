@@ -16,9 +16,12 @@ import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
 import { PriceTicker } from '@/components/dashboard/price-ticker';
 import { IncidentControls } from '@/components/dashboard/incident-controls';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { SetupProgress } from '@/components/dashboard/setup-progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAppStore } from '@/stores/app-store';
 import type { Alert } from '@sentinel/shared';
 import { cn } from '@/lib/utils';
@@ -105,6 +108,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 p-4">
+      <h1 className="text-heading-page">Dashboard</h1>
+
       {engineOnline === false && <OfflineBanner service="engine" />}
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
@@ -165,24 +170,40 @@ export default function DashboardPage() {
       {/* Row 1: Metric Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
         <MetricCard
-          label="Total Equity"
-          value={`$${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          label={
+            <>
+              Total Equity{' '}
+              <InfoTooltip content="Total value of all assets including cash and open positions." />
+            </>
+          }
+          value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          label="Daily P&L"
-          value={`${pnl >= 0 ? '+' : ''}$${pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          label={
+            <>
+              Daily P&L{' '}
+              <InfoTooltip content="Today's profit or loss across all positions, updated in real-time during market hours." />
+            </>
+          }
+          value={
+            <AnimatedNumber value={Math.abs(pnl)} prefix={pnl >= 0 ? '+$' : '-$'} decimals={2} />
+          }
           change={pnlPct}
           icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
-          label="Cash Available"
-          value={`$${(account?.cash ?? 100_000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          label={
+            <>
+              Cash Available <InfoTooltip content="Uninvested cash available for new trades." />
+            </>
+          }
+          value={<AnimatedNumber value={account?.cash ?? 100_000} prefix="$" decimals={2} />}
           icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
         />
         <MetricCard
           label="Positions Value"
-          value={`$${(account?.positions_value ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={<AnimatedNumber value={account?.positions_value ?? 0} prefix="$" decimals={2} />}
           icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
@@ -250,6 +271,9 @@ export default function DashboardPage() {
         {/* Alert Feed */}
         <AlertFeed alerts={alerts} />
       </div>
+
+      {/* Setup Progress */}
+      <SetupProgress />
     </div>
   );
 }

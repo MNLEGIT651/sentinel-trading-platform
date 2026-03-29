@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { PieChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -16,19 +17,31 @@ function AllocationDonut({ allocations }: { allocations: AllocationEntry[] }) {
   const stroke = 18;
   const circumference = 2 * Math.PI * radius;
 
-  const segments = allocations.reduce<
-    { label: string; pct: number; color: string; dashLen: number; dashOffset: number }[]
-  >((acc, a) => {
-    const dashLen = (a.pct / 100) * circumference;
-    const last = acc[acc.length - 1];
-    const prevOffset = last !== undefined ? last.dashOffset + last.dashLen : 0;
-    acc.push({ ...a, dashLen, dashOffset: -prevOffset });
-    return acc;
-  }, []);
+  const segments = useMemo(
+    () =>
+      allocations.reduce<
+        { label: string; pct: number; color: string; dashLen: number; dashOffset: number }[]
+      >((acc, a) => {
+        const dashLen = (a.pct / 100) * circumference;
+        const last = acc[acc.length - 1];
+        const prevOffset = last !== undefined ? last.dashOffset + last.dashLen : 0;
+        acc.push({ ...a, dashLen, dashOffset: -prevOffset });
+        return acc;
+      }, []),
+    [allocations, circumference],
+  );
 
   return (
     <div className="flex items-center gap-6">
-      <svg width="160" height="160" viewBox="0 0 160 160" className="shrink-0">
+      <svg
+        width="160"
+        height="160"
+        viewBox="0 0 160 160"
+        className="shrink-0"
+        role="img"
+        aria-label="Portfolio allocation chart"
+      >
+        <title>Portfolio allocation</title>
         {segments.map((a) => (
           <circle
             key={a.label}

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { OfflineBanner } from '@/components/ui/offline-banner';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAppStore } from '@/stores/app-store';
 import type { SignalResult } from '@/lib/engine-client';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
@@ -139,7 +140,7 @@ export default function SignalsPage() {
         <div className="flex items-center gap-3">
           <Zap className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Signals</h1>
+            <h1 className="text-heading-page text-foreground">Signals</h1>
             <p className="text-xs text-muted-foreground">
               {signals.length > 0
                 ? `${signals.length} signal${signals.length !== 1 ? 's' : ''} from ${scanMeta?.tickers ?? 0} tickers · ${lastScanTime}`
@@ -234,7 +235,10 @@ export default function SignalsPage() {
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="flex items-center justify-between py-3 px-4">
-              <span className="text-xs text-muted-foreground">Avg Strength</span>
+              <span className="text-xs text-muted-foreground">
+                Avg Strength{' '}
+                <InfoTooltip content="Model confidence score from 0-100%. Scores above 70% indicate strong conviction." />
+              </span>
               <span className="text-lg font-bold text-foreground">{avgStrength}</span>
             </CardContent>
           </Card>

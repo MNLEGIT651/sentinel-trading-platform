@@ -193,7 +193,7 @@ export default function ReplayPage() {
     <div className="space-y-6 p-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-heading-page text-white flex items-center gap-2">
           <Clock className="h-6 w-6 text-indigo-400" />
           Replay &amp; Review
         </h1>

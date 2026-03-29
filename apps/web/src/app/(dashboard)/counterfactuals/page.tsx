@@ -38,7 +38,7 @@ function StatCard({
         <Icon className={`h-3.5 w-3.5 ${color}`} />
         {label}
       </div>
-      <div className="mt-1 text-xl font-semibold text-zinc-100">{value}</div>
+      <div className="mt-1 text-data-primary text-zinc-100">{value}</div>
       {subtext && <div className="mt-0.5 text-xs text-zinc-500">{subtext}</div>}
     </div>
   );
@@ -285,7 +285,7 @@ export default function CounterfactualsPage() {
       <div>
         <div className="flex items-center gap-3">
           <GitCompareArrows className="h-6 w-6 text-violet-400" />
-          <h1 className="text-2xl font-bold text-zinc-100">Counterfactuals</h1>
+          <h1 className="text-heading-page text-zinc-100">Counterfactuals</h1>
         </div>
         <p className="mt-1 text-sm text-zinc-400">
           What if you had approved these recommendations? Hypothetical outcomes based on market

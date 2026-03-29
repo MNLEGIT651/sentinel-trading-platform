@@ -3,11 +3,6 @@
 import { useState, useMemo } from 'react';
 import {
   Workflow,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Play,
-  RefreshCw,
   Loader2,
   ChevronDown,
   ChevronRight,
@@ -15,12 +10,11 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Ban,
   Activity,
   Timer,
   TrendingDown,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, type StatusType } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -59,58 +53,21 @@ type SortDirection = 'asc' | 'desc';
 
 /* ── Helpers ──────────────────────────────────────────────────────── */
 
-function statusColor(status: WorkflowJobStatus | string): string {
-  switch (status) {
-    case 'completed':
-      return 'bg-profit/15 text-profit';
-    case 'running':
-      return 'bg-primary/15 text-primary';
-    case 'pending':
-      return 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400';
-    case 'failed':
-      return 'bg-destructive/15 text-destructive';
-    case 'cancelled':
-      return 'bg-muted text-muted-foreground';
-    case 'retrying':
-      return 'bg-orange-500/15 text-orange-600 dark:text-orange-400';
-    default:
-      return 'bg-muted text-muted-foreground';
-  }
-}
+const JOB_STATUS_MAP: Record<string, StatusType> = {
+  completed: 'success',
+  running: 'active',
+  pending: 'pending',
+  failed: 'error',
+  retrying: 'warning',
+  cancelled: 'idle',
+};
 
-function stepStatusColor(status: string): string {
-  switch (status) {
-    case 'completed':
-      return 'bg-profit/15 text-profit';
-    case 'started':
-      return 'bg-primary/15 text-primary';
-    case 'failed':
-      return 'bg-destructive/15 text-destructive';
-    case 'skipped':
-      return 'bg-muted text-muted-foreground';
-    default:
-      return 'bg-muted text-muted-foreground';
-  }
-}
-
-function statusIcon(status: WorkflowJobStatus | string) {
-  switch (status) {
-    case 'completed':
-      return <CheckCircle2 className="h-3 w-3" />;
-    case 'running':
-      return <Play className="h-3 w-3" />;
-    case 'pending':
-      return <Clock className="h-3 w-3" />;
-    case 'failed':
-      return <XCircle className="h-3 w-3" />;
-    case 'cancelled':
-      return <Ban className="h-3 w-3" />;
-    case 'retrying':
-      return <RefreshCw className="h-3 w-3" />;
-    default:
-      return <Clock className="h-3 w-3" />;
-  }
-}
+const STEP_STATUS_MAP: Record<string, StatusType> = {
+  completed: 'success',
+  started: 'active',
+  failed: 'error',
+  skipped: 'idle',
+};
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -272,9 +229,11 @@ function StepTimeline({ jobId }: { jobId: string }) {
           className="grid grid-cols-[1fr_80px_80px_120px_1fr] gap-2 border-t border-border/30 px-4 py-2 text-xs"
         >
           <span className="font-medium text-foreground truncate">{step.step_name}</span>
-          <Badge className={cn('w-fit', stepStatusColor(step.status))} variant="secondary">
-            {step.status}
-          </Badge>
+          <StatusBadge
+            status={STEP_STATUS_MAP[step.status] ?? 'idle'}
+            label={step.status}
+            showDot={false}
+          />
           <span className="text-muted-foreground tabular-nums">
             {step.duration_ms != null ? formatDuration(step.duration_ms) : '—'}
           </span>
@@ -323,10 +282,7 @@ function JobRow({
         </span>
 
         {/* Status badge */}
-        <Badge className={cn('w-fit gap-1', statusColor(job.status))} variant="secondary">
-          {statusIcon(job.status)}
-          {job.status}
-        </Badge>
+        <StatusBadge status={JOB_STATUS_MAP[job.status] ?? 'idle'} label={job.status} />
 
         {/* Workflow type */}
         <span className="font-medium text-foreground truncate min-w-[120px]">
@@ -512,18 +468,13 @@ export default function WorkflowsPage() {
         <div className="flex items-center gap-3">
           <Workflow className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Workflows</h1>
+            <h1 className="text-heading-page text-foreground">Workflows</h1>
             <p className="text-xs text-muted-foreground">
               Durable workflow execution monitor • Auto-refreshes every 15s
             </p>
           </div>
         </div>
-        {isLoading && (
-          <Badge variant="secondary" className="gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Loading
-          </Badge>
-        )}
+        {isLoading && <StatusBadge status="pending" label="Loading" />}
       </div>
 
       {/* Stats bar */}

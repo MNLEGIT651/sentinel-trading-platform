@@ -309,7 +309,7 @@ export default function JournalPage() {
       {/* Page header */}
       <div className="flex items-center gap-3">
         <BookOpen className="h-6 w-6 text-zinc-400" />
-        <h1 className="text-2xl font-bold text-zinc-100">Decision Journal</h1>
+        <h1 className="text-heading-page text-zinc-100">Decision Journal</h1>
       </div>
 
       {/* Stats */}
@@ -387,7 +387,7 @@ export default function JournalPage() {
         <Card className="border-zinc-800 bg-zinc-900/50">
           <CardContent className="p-12 text-center">
             <BookOpen className="mx-auto h-10 w-10 text-zinc-700" />
-            <h3 className="mt-4 text-lg font-medium text-zinc-400">No journal entries yet</h3>
+            <h2 className="mt-4 text-lg font-medium text-zinc-400">No journal entries yet</h2>
             <p className="mt-1 text-sm text-zinc-600">
               Entries are created automatically when you approve, reject, or trade recommendations.
             </p>

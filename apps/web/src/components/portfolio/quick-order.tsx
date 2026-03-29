@@ -47,7 +47,7 @@ export function QuickOrder({
               onClick={() => onSideChange('buy')}
               aria-label="Buy"
               className={cn(
-                'rounded px-3 py-1 text-xs font-medium transition-colors',
+                'rounded px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 side === 'buy'
                   ? 'bg-profit/20 text-profit'
                   : 'text-muted-foreground hover:text-foreground',
@@ -59,7 +59,7 @@ export function QuickOrder({
               onClick={() => onSideChange('sell')}
               aria-label="Sell"
               className={cn(
-                'rounded px-3 py-1 text-xs font-medium transition-colors',
+                'rounded px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 side === 'sell'
                   ? 'bg-loss/20 text-loss'
                   : 'text-muted-foreground hover:text-foreground',
