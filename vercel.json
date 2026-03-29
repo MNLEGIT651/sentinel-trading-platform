@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "ignoreCommand": "npx turbo-ignore",
-  "buildCommand": "turbo run build --filter=@sentinel/web"
+  "buildCommand": "turbo run build --filter=@sentinel/web",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, DM_Sans } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -10,17 +10,41 @@ const dmSans = DM_Sans({
   variable: '--font-body',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0a0a0a',
+};
+
 export const metadata: Metadata = {
-  title: 'Sentinel Trading Platform',
+  title: {
+    default: 'Sentinel Trading Platform',
+    template: '%s | Sentinel',
+  },
   description: 'Autonomous stock trading command center',
+  icons: { icon: '/favicon.ico' },
+  openGraph: {
+    title: 'Sentinel Trading Platform',
+    description: 'Autonomous stock trading command center',
+    type: 'website',
+    siteName: 'Sentinel',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Sentinel Trading Platform',
+    description: 'Autonomous stock trading command center',
+  },
 };
 
 export default function RootLayout({

@@ -23,7 +23,7 @@
     },
     "typecheck": {
       "dependsOn": ["^build"],
-      "cache": false
+      "outputs": []
     },
     "test": {
       "cache": false
