@@ -31,7 +31,7 @@ interface SignalCardProps {
 
 export function SignalCard({ signal }: SignalCardProps) {
   return (
-    <tr className="transition-colors hover:bg-accent/30">
+    <tr className="@container/signal transition-colors hover:bg-accent/30">
       <td className="px-4 py-3">
         <span className="text-sm font-semibold text-foreground">{signal.ticker}</span>
       </td>
@@ -59,7 +59,7 @@ export function SignalCard({ signal }: SignalCardProps) {
         <span className="text-xs text-muted-foreground">{signal.strategy_name}</span>
       </td>
       <td className="px-4 py-3">
-        <span className="text-xs text-muted-foreground leading-relaxed line-clamp-2 max-w-xs">
+        <span className="text-xs text-muted-foreground leading-relaxed line-clamp-1 max-w-xs @[40rem]/signal:line-clamp-2">
           {signal.reason}
         </span>
       </td>

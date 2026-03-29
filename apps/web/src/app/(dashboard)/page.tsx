@@ -168,44 +168,46 @@ export default function DashboardPage() {
       <IncidentControls />
 
       {/* Row 1: Metric Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
-        <MetricCard
-          label={
-            <>
-              Total Equity{' '}
-              <InfoTooltip content="Total value of all assets including cash and open positions." />
-            </>
-          }
-          value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
-          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-        />
-        <MetricCard
-          label={
-            <>
-              Daily P&L{' '}
-              <InfoTooltip content="Today's profit or loss across all positions, updated in real-time during market hours." />
-            </>
-          }
-          value={
-            <AnimatedNumber value={Math.abs(pnl)} prefix={pnl >= 0 ? '+$' : '-$'} decimals={2} />
-          }
-          change={pnlPct}
-          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-        />
-        <MetricCard
-          label={
-            <>
-              Cash Available <InfoTooltip content="Uninvested cash available for new trades." />
-            </>
-          }
-          value={<AnimatedNumber value={account?.cash ?? 100_000} prefix="$" decimals={2} />}
-          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
-        />
-        <MetricCard
-          label="Positions Value"
-          value={<AnimatedNumber value={account?.positions_value ?? 0} prefix="$" decimals={2} />}
-          icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
-        />
+      <div className="@container">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
+          <MetricCard
+            label={
+              <>
+                Total Equity{' '}
+                <InfoTooltip content="Total value of all assets including cash and open positions." />
+              </>
+            }
+            value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
+            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          />
+          <MetricCard
+            label={
+              <>
+                Daily P&L{' '}
+                <InfoTooltip content="Today's profit or loss across all positions, updated in real-time during market hours." />
+              </>
+            }
+            value={
+              <AnimatedNumber value={Math.abs(pnl)} prefix={pnl >= 0 ? '+$' : '-$'} decimals={2} />
+            }
+            change={pnlPct}
+            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+          />
+          <MetricCard
+            label={
+              <>
+                Cash Available <InfoTooltip content="Uninvested cash available for new trades." />
+              </>
+            }
+            value={<AnimatedNumber value={account?.cash ?? 100_000} prefix="$" decimals={2} />}
+            icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+          />
+          <MetricCard
+            label="Positions Value"
+            value={<AnimatedNumber value={account?.positions_value ?? 0} prefix="$" decimals={2} />}
+            icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
       </div>
 
       {/* Row 2: Price Ticker */}

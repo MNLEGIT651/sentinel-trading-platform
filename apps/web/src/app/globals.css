@@ -450,6 +450,41 @@ tr:hover {
   animation: tooltip-fade 0.15s ease-out both;
 }
 
+/* ── Container Query Utilities ───────────────────────────────── */
+
+/* Auto-adapting grid: 1 → 2 → 4 columns based on container width.
+   Apply .cq-grid-auto to a grid inside a @container wrapper. */
+.cq-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@container (min-width: 36rem) {
+  .cq-grid-auto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 72rem) {
+  .cq-grid-auto {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Auto-adapting two-column grid based on container width */
+.cq-grid-halves {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@container (min-width: 40rem) {
+  .cq-grid-halves {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
