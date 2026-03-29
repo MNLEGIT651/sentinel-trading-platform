@@ -133,7 +133,7 @@ function StatsRow({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="border-zinc-800 bg-zinc-900/50">
             <CardContent className="p-4">
@@ -170,7 +170,7 @@ function StatsRow({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {cells.map((c) => {
         const Icon = c.icon;
         return (

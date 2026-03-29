@@ -210,7 +210,7 @@ function RiskEvaluations({ evaluations }: { evaluations: RiskEvaluation[] }) {
 
             {ev.reason && <p className="text-sm text-foreground">{ev.reason}</p>}
 
-            <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
               {ev.policy_version && (
                 <div>
                   <span className="text-muted-foreground">Policy</span>

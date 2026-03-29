@@ -480,7 +480,7 @@ function ReconstructionView({
       </div>
 
       {/* Summary cards row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         <MetricCard label="Quantity" value={String(Number(rec.quantity))} />
         <MetricCard label="Order Type" value={rec.order_type} />
         <MetricCard
@@ -548,7 +548,7 @@ function ReconstructionView({
                 <span className="text-xs text-gray-500">{formatTimestamp(ev.evaluated_at)}</span>
               </div>
               {ev.reason && <p className="text-sm text-gray-300">{ev.reason}</p>}
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 {ev.policy_version && (
                   <div>
                     <span className="text-gray-500">Policy</span>
@@ -963,7 +963,7 @@ function OutcomeAnalysis({
     >
       {isFilled && (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3">
               <span className="text-xs text-gray-500">P&amp;L</span>
               <p
@@ -1160,7 +1160,7 @@ function SystemReplayMode() {
       {data && !isLoading && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <SummaryCard
               label="Recommendations"
               count={data.summary.counts.recommendations}
@@ -1200,7 +1200,7 @@ function SystemReplayMode() {
                 <Shield className="h-4 w-4 text-indigo-400" />
                 Trading Policy at Snapshot
               </h3>
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <PolicyBadge
                   label="Paper Trading"
                   value={data.summary.trading_policy.paper_trading ? 'Yes' : 'No'}

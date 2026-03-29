@@ -226,3 +226,89 @@ tr:hover {
   background: oklch(0.72 0.17 195 / 25%);
   color: oklch(0.95 0 0);
 }
+
+/* ── Touch Device Optimizations ─────────────────────────────── */
+
+/* Set by AppShell when touch is detected (data-device + .touch-device) */
+.touch-device button,
+.touch-device a,
+.touch-device [role='button'],
+.touch-device [role='tab'],
+.touch-device [role='menuitem'] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Disable hover effects on touch — prevents sticky :hover */
+@media (hover: none) {
+  .touch-device button:hover,
+  .touch-device a:hover {
+    background-color: inherit;
+  }
+}
+
+/* Smooth momentum scrolling on touch */
+.touch-device .overflow-auto,
+.touch-device .overflow-x-auto,
+.touch-device .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent pull-to-refresh fighting with scroll containers */
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* ── Mobile-specific utilities ──────────────────────────────── */
+
+/* Safe-area padding for notched devices (iPhone etc.) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Responsive page padding — tighter on mobile */
+.page-padding {
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .page-padding {
+    padding: 1.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  .page-padding {
+    padding: 1.5rem;
+  }
+}
+
+/* Responsive text scaling */
+.text-responsive-heading {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+@media (min-width: 640px) {
+  .text-responsive-heading {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+
+/* ── Slide-in animation for mobile sidebar ──────────────────── */
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-in.slide-in-from-left {
+  animation: slide-in-from-left 0.2s ease-out both;
+}
