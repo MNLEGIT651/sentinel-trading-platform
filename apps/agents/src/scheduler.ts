@@ -6,6 +6,7 @@
  */
 
 import cron, { type ScheduledTask } from 'node-cron';
+import { logger } from './logger.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CycleRunner = () => Promise<any>;
@@ -67,23 +68,23 @@ export function startScheduler(
     if (!isMarketOpen()) return;
 
     if (options?.isHalted?.()) {
-      console.log('[Scheduler] Skipping cycle — trading halted');
+      logger.info('Skipping cycle — trading halted', { reason: 'halted' });
       return;
     }
 
     if (await options?.isRunning?.()) {
-      console.log('[Scheduler] Skipping cycle — previous cycle still running');
+      logger.info('Skipping cycle — previous cycle still running', { reason: 'busy' });
       return;
     }
 
-    console.log('[Scheduler] Market open — triggering agent cycle');
+    logger.info('Market open — triggering agent cycle');
     try {
       await runner();
     } catch (err) {
-      console.error('[Scheduler] Cycle error:', err);
+      logger.error('Cycle error', { error: err instanceof Error ? err.message : String(err) });
     }
   });
 
-  console.log('[Scheduler] Started — fires every 15 min during market hours (09:30–16:00 ET)');
+  logger.info('Scheduler started — fires every 15 min during market hours (09:30–16:00 ET)');
   return task;
 }

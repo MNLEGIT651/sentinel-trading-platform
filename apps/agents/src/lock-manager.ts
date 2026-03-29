@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { hostname } from 'node:os';
 import { getSupabaseClient } from './supabase-client.js';
+import { logger } from './logger.js';
 
 const DEFAULT_TTL_SECONDS = 300; // 5 min
 const HEARTBEAT_INTERVAL_MS = 60_000; // 1 min
@@ -32,7 +33,7 @@ export class LockManager {
     });
 
     if (error) {
-      console.error(`[LockManager] acquire_lock error: ${error.message}`);
+      logger.error('acquire_lock failed', { error: error.message });
       return false;
     }
 
@@ -56,7 +57,7 @@ export class LockManager {
     });
 
     if (error) {
-      console.error(`[LockManager] release_lock error: ${error.message}`);
+      logger.error('release_lock failed', { error: error.message });
       return false;
     }
 
@@ -73,7 +74,7 @@ export class LockManager {
     });
 
     if (error) {
-      console.error(`[LockManager] is_lock_held error: ${error.message}`);
+      logger.error('is_lock_held failed', { error: error.message });
       return false;
     }
 
@@ -102,7 +103,7 @@ export class LockManager {
         p_ttl_seconds: ttlSeconds,
       });
       if (error) {
-        console.error(`[LockManager] heartbeat error: ${error.message}`);
+        logger.error('heartbeat failed', { error: error.message });
       }
     }, HEARTBEAT_INTERVAL_MS);
 

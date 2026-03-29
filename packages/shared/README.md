@@ -16,9 +16,11 @@ import type { Strategy, Signal, PortfolioSummary } from '@sentinel/shared';
 
 ```text
 src/
-├── index.ts           # Barrel export
-├── types.ts           # Core domain types
-└── database.types.ts  # Supabase-generated types
+├── index.ts               # Barrel export
+├── types.ts               # Core domain types
+├── state-machine.ts       # Recommendation state machine
+└── types/
+    └── database.types.ts  # Supabase-generated types
 ```
 
 ## Updating Database Types
@@ -26,7 +28,7 @@ src/
 When the Supabase schema changes, regenerate types:
 
 ```bash
-npx supabase gen types typescript --project-id <project-id> > packages/shared/src/database.types.ts
+npx supabase gen types typescript --project-id <project-id> > packages/shared/src/types/database.types.ts
 ```
 
 ## Adding New Types

@@ -62,12 +62,16 @@ jobs:
             }
 
             // Add new size label
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              labels: [sizeLabel]
-            });
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: [sizeLabel]
+              });
+            } catch (e) {
+              core.warning(`Could not add label "${sizeLabel}": ${e.message}`);
+            }
 
       - name: Label PRs by changed files
         if: github.event_name == 'pull_request'
@@ -118,12 +122,16 @@ jobs:
             }
 
             if (labels.size > 0) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                labels: Array.from(labels)
-              });
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: Array.from(labels)
+                });
+              } catch (e) {
+                core.warning(`Could not add labels: ${e.message}`);
+              }
             }
 
       - name: Check PR description completeness
@@ -140,31 +148,39 @@ jobs:
             const hasValidation = body.toLowerCase().includes('validation') || body.toLowerCase().includes('test');
 
             if (!hasOutcome || !hasScope || !hasValidation) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                labels: ['needs-description']
-              });
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: ['needs-description']
+                });
+              } catch (e) {
+                core.warning(`Could not add label "needs-description": ${e.message}`);
+              }
 
               const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                body: [
-                  '⚠️ **PR Description Incomplete**',
-                  '',
-                  'Please update your PR description to include:',
-                  '',
-                  '1. **Outcome**: What user-visible or system-visible result does this PR provide?',
-                  '2. **Scope**: What files or modules are changed?',
-                  '3. **Validation**: What commands were run? Did they pass?',
-                  '4. **Forbidden changes**: What was intentionally NOT changed?',
-                  '',
-                  `See [docs/ai/working-agreement.md](${repoUrl}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
-                ].join('\n')
-              });
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: [
+                    '⚠️ **PR Description Incomplete**',
+                    '',
+                    'Please update your PR description to include:',
+                    '',
+                    '1. **Outcome**: What user-visible or system-visible result does this PR provide?',
+                    '2. **Scope**: What files or modules are changed?',
+                    '3. **Validation**: What commands were run? Did they pass?',
+                    '4. **Forbidden changes**: What was intentionally NOT changed?',
+                    '',
+                    `See [docs/ai/working-agreement.md](${repoUrl}/blob/main/docs/ai/working-agreement.md) for the task contract format.`
+                  ].join('\n')
+                });
+              } catch (e) {
+                core.warning(`Could not create comment: ${e.message}`);
+              }
             }
 
       - name: Auto-assign based on area
@@ -179,9 +195,13 @@ jobs:
             if (pr.assignees.length > 0) return;
 
             // Auto-assign to PR author as default
-            await github.rest.issues.addAssignees({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              assignees: [pr.user.login]
-            });
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                assignees: [pr.user.login]
+              });
+            } catch (e) {
+              core.warning(`Could not auto-assign: ${e.message}`);
+            }

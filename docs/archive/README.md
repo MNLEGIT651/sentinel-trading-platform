@@ -25,6 +25,6 @@ For current documentation, see:
 | OPTIMIZATION_SUMMARY.txt           | Optimization summary                  |
 | TEST_COVERAGE_SUMMARY.md           | Test coverage analysis                |
 | sentinel-dep-audit-2026-03-22.md   | Dependency audit (March 2026)         |
-| Claude Trading Spreadsheet.xlsx    | Trading analysis spreadsheet          |
-| Sentinel Audit Report.docx         | Formal audit report                   |
 | sentinel-architecture.mermaid      | Architecture diagram (Mermaid)        |
+| docker-commands.sh                 | Docker command reference              |
+| ENV_SETUP.md                       | Environment setup guide               |

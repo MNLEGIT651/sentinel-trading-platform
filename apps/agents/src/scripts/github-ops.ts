@@ -15,7 +15,7 @@
  *   tsx apps/agents/src/scripts/github-ops.ts report      # Post GitHub issue report
  *
  * Environment:
- *   GITHUB_REPO   — owner/repo slug (default: MNLEGIT651/sentinel-trading-platform)
+ *   GITHUB_REPO   — owner/repo slug (default: stevenschling13/sentinel-trading-platform)
  *   GITHUB_TOKEN  — PAT with repo + security_events scope (falls back to gh auth)
  */
 
@@ -28,7 +28,7 @@ import { tmpdir } from 'node:os';
 // Config
 // ---------------------------------------------------------------------------
 
-const REPO = process.env.GITHUB_REPO ?? 'MNLEGIT651/sentinel-trading-platform';
+const REPO = process.env.GITHUB_REPO ?? 'stevenschling13/sentinel-trading-platform';
 
 // Thresholds (days unless noted)
 const T = {

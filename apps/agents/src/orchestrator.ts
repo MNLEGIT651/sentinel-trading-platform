@@ -319,9 +319,13 @@ export class Orchestrator {
     }
 
     logger.info('orchestrator.start', { intervalMs });
-    this.runCycle().catch(console.error);
+    this.runCycle().catch((err) =>
+      logger.error('Cycle error', { error: err instanceof Error ? err.message : String(err) }),
+    );
     this.cycleInterval = setInterval(() => {
-      this.runCycle().catch(console.error);
+      this.runCycle().catch((err) =>
+        logger.error('Cycle error', { error: err instanceof Error ? err.message : String(err) }),
+      );
     }, intervalMs);
   }
 

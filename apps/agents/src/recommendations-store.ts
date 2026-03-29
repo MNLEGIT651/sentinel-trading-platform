@@ -1,5 +1,6 @@
 // apps/agents/src/recommendations-store.ts
 import { getSupabaseClient } from './supabase-client.js';
+import { logger } from './logger.js';
 
 async function emitEvent(
   recommendationId: string,
@@ -19,7 +20,10 @@ async function emitEvent(
     });
   } catch (err) {
     // Non-blocking — event emission should never break the main flow
-    console.warn('[recommendations-store] Failed to emit event:', eventType, err);
+    logger.warn('Failed to emit recommendation event', {
+      eventType,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 

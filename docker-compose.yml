@@ -39,7 +39,7 @@ services:
     environment:
       - ENGINE_URL=http://engine:8000
       - AGENTS_PORT=3001
-      - WEB_URL=http://localhost:3000
+      - WEB_URL=${WEB_URL:-http://localhost:3000}
     depends_on:
       engine:
         condition: service_healthy

@@ -63,14 +63,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
 
-      - name: Install Lighthouse CI
-        run: npm install -g @lhci/cli@0.13.x
-
       - name: Run Lighthouse CI
         id: lighthouse
         run: |
           cd apps/web
-          lhci autorun --collect.startServerCommand="pnpm start" --collect.url="http://localhost:3000" 2>&1 || {
+          npx @lhci/cli@0.13.x autorun --collect.startServerCommand="pnpm start" --collect.url="http://localhost:3000" 2>&1 || {
             exit_code=$?
             echo "::warning::Lighthouse CI exited with code $exit_code — scores may be below thresholds or config missing"
             echo "lighthouse_failed=true" >> "$GITHUB_OUTPUT"
