@@ -1180,3 +1180,82 @@ export const EXPERIMENT_VERDICT_THRESHOLDS = {
     max_error_rate: 0.2,
   },
 } as const;
+
+// ─── Customer Onboarding ────────────────────────────────────────────
+
+import type { OnboardingStep } from './onboarding-state';
+
+/** Customer identity and onboarding state from `customer_profiles` table. */
+export interface CustomerProfile {
+  user_id: string;
+  legal_name: string | null;
+  date_of_birth: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string;
+  phone: string | null;
+  tax_residency: string | null;
+  citizenship: string | null;
+  onboarding_step: OnboardingStep;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fields the client can update via the onboarding profile endpoint. */
+export type CustomerProfileUpdate = Partial<
+  Omit<CustomerProfile, 'user_id' | 'created_at' | 'updated_at'>
+>;
+
+/** Versioned consent record from `consents` table. */
+export interface Consent {
+  id: string;
+  user_id: string;
+  document_type: ConsentDocumentType;
+  document_version: string;
+  accepted_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  broker_account_id: string | null;
+  revoked_at: string | null;
+}
+
+/** Known consent document types. */
+export type ConsentDocumentType =
+  | 'terms_of_service'
+  | 'privacy_policy'
+  | 'electronic_delivery'
+  | 'customer_agreement'
+  | 'data_sharing'
+  | 'broker_disclosures';
+
+/** Payload for recording a new consent. */
+export interface ConsentRecord {
+  document_type: ConsentDocumentType;
+  document_version: string;
+}
+
+/** Read-only external portfolio link from `external_portfolio_links` table. */
+export interface ExternalPortfolioLink {
+  id: string;
+  user_id: string;
+  provider: string;
+  external_item_id: string;
+  institution_name: string | null;
+  status: 'active' | 'disconnected' | 'error';
+  read_only: boolean;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Onboarding audit log entry from `onboarding_audit_log` table. */
+export interface OnboardingAuditEntry {
+  id: string;
+  user_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}

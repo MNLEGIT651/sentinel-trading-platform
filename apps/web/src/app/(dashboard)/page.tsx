@@ -18,6 +18,7 @@ import { PriceTicker } from '@/components/dashboard/price-ticker';
 import { IncidentControls } from '@/components/dashboard/incident-controls';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { SetupProgress } from '@/components/dashboard/setup-progress';
+import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
@@ -33,6 +34,7 @@ import {
   useSystemControlsQuery,
   useAgentStatusQuery,
 } from '@/hooks/queries';
+import { useOnboardingProfile, useInvalidateOnboarding } from '@/hooks/use-onboarding';
 
 const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
 
@@ -58,6 +60,9 @@ export default function DashboardPage() {
   const { data: systemControls } = useSystemControlsQuery();
   const { data: pendingRecs } = useRecommendationsQuery('pending', 30_000);
   const { data: agentStatus } = useAgentStatusQuery();
+
+  const { data: onboardingProfile } = useOnboardingProfile();
+  const invalidateOnboarding = useInvalidateOnboarding();
 
   const isLive = engineOnline === true && !!quotes;
 
@@ -276,6 +281,14 @@ export default function DashboardPage() {
 
       {/* Setup Progress */}
       <SetupProgress />
+
+      {/* Onboarding Wizard (shows for new users) */}
+      {onboardingProfile && (
+        <OnboardingWizard
+          onboardingStep={onboardingProfile.onboarding_step}
+          onComplete={invalidateOnboarding}
+        />
+      )}
     </div>
   );
 }

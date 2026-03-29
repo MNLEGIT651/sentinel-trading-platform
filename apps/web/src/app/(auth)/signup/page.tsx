@@ -4,18 +4,42 @@ import { useState, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 
+const CURRENT_TERMS_VERSION = '1.0.0';
+const CURRENT_PRIVACY_VERSION = '1.0.0';
+
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  async function recordConsent(document_type: string, document_version: string) {
+    try {
+      await fetch('/api/onboarding/consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_type, document_version }),
+      });
+    } catch {
+      // Consent recording is best-effort during signup;
+      // the user can still proceed if the API call fails.
+    }
+  }
 
   async function handleSignUp(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (!acceptedTerms || !acceptedPrivacy) {
+      setError('You must accept the Terms of Service and Privacy Policy to continue.');
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
@@ -40,6 +64,12 @@ export default function SignUpPage() {
         setError(signUpError.message);
         return;
       }
+
+      // Record consents after successful signup
+      await Promise.all([
+        recordConsent('terms_of_service', CURRENT_TERMS_VERSION),
+        recordConsent('privacy_policy', CURRENT_PRIVACY_VERSION),
+      ]);
 
       setSuccess(true);
     } catch {
@@ -134,7 +164,43 @@ export default function SignUpPage() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <div className="space-y-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border"
+              />
+              <span className="text-muted-foreground">
+                I agree to the{' '}
+                <a href="/legal/terms" className="font-medium text-primary hover:underline">
+                  Terms of Service
+                </a>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={acceptedPrivacy}
+                onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border"
+              />
+              <span className="text-muted-foreground">
+                I agree to the{' '}
+                <a href="/legal/privacy" className="font-medium text-primary hover:underline">
+                  Privacy Policy
+                </a>
+              </span>
+            </label>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading || !acceptedTerms || !acceptedPrivacy}
+          >
             {loading ? 'Creating account…' : 'Create account'}
           </Button>
         </form>

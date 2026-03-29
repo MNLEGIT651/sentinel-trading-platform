@@ -4,6 +4,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { Check, Circle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useOnboardingProfile } from '@/hooks/use-onboarding';
 
 const DISMISSED_KEY = 'sentinel_setup_dismissed';
 
@@ -64,15 +65,21 @@ function subscribe(onStoreChange: () => void): () => void {
 
 export function SetupProgress() {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const { data: profile } = useOnboardingProfile();
 
   const dismissed = raw.includes('|dismissed');
   const completedIds = new Set(raw.replace('|dismissed', '').split(',').filter(Boolean));
 
   const handleDismiss = useCallback(() => {
     localStorage.setItem(DISMISSED_KEY, 'true');
-    // Force re-render via storage event won't fire same-window, so dispatch manually
     window.dispatchEvent(new Event('storage'));
   }, []);
+
+  // SSR: raw is '' from server snapshot, so nothing renders
+  if (!raw || dismissed) return null;
+
+  // Hide while onboarding wizard is active (user hasn't finished onboarding yet)
+  if (!profile || profile.onboarding_step === 'app_account_created') return null;
 
   // SSR: raw is '' from server snapshot, so nothing renders
   if (!raw || dismissed) return null;

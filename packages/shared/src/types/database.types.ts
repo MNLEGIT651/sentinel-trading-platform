@@ -391,6 +391,96 @@ export type Database = {
         };
         Relationships: [];
       };
+      consents: {
+        Row: {
+          accepted_at: string;
+          broker_account_id: string | null;
+          document_type: string;
+          document_version: string;
+          id: string;
+          ip_address: unknown;
+          revoked_at: string | null;
+          user_agent: string | null;
+          user_id: string;
+        };
+        Insert: {
+          accepted_at?: string;
+          broker_account_id?: string | null;
+          document_type: string;
+          document_version: string;
+          id?: string;
+          ip_address?: unknown;
+          revoked_at?: string | null;
+          user_agent?: string | null;
+          user_id: string;
+        };
+        Update: {
+          accepted_at?: string;
+          broker_account_id?: string | null;
+          document_type?: string;
+          document_version?: string;
+          id?: string;
+          ip_address?: unknown;
+          revoked_at?: string | null;
+          user_agent?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      customer_profiles: {
+        Row: {
+          address_line1: string | null;
+          address_line2: string | null;
+          citizenship: string | null;
+          city: string | null;
+          country: string;
+          created_at: string;
+          date_of_birth: string | null;
+          legal_name: string | null;
+          onboarding_step: string;
+          phone: string | null;
+          postal_code: string | null;
+          state: string | null;
+          tax_residency: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          address_line1?: string | null;
+          address_line2?: string | null;
+          citizenship?: string | null;
+          city?: string | null;
+          country?: string;
+          created_at?: string;
+          date_of_birth?: string | null;
+          legal_name?: string | null;
+          onboarding_step?: string;
+          phone?: string | null;
+          postal_code?: string | null;
+          state?: string | null;
+          tax_residency?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          address_line1?: string | null;
+          address_line2?: string | null;
+          citizenship?: string | null;
+          city?: string | null;
+          country?: string;
+          created_at?: string;
+          date_of_birth?: string | null;
+          legal_name?: string | null;
+          onboarding_step?: string;
+          phone?: string | null;
+          postal_code?: string | null;
+          state?: string | null;
+          tax_residency?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       cycle_history: {
         Row: {
           agents_run: string[] | null;
@@ -544,6 +634,314 @@ export type Database = {
           user_id?: string;
           user_notes?: string | null;
           vix_at_time?: number | null;
+        };
+        Relationships: [];
+      };
+      experiment_orders: {
+        Row: {
+          broker_order_id: string | null;
+          commission: number | null;
+          created_at: string;
+          experiment_id: string;
+          fill_price: number | null;
+          fill_quantity: number | null;
+          filled_at: string | null;
+          id: string;
+          is_shadow: boolean;
+          limit_price: number | null;
+          order_type: string;
+          phase: string;
+          quantity: number;
+          recommendation_id: string | null;
+          risk_check_result: Json | null;
+          risk_note: string | null;
+          shadow_fill_price: number | null;
+          shadow_pnl: number | null;
+          side: string;
+          slippage: number | null;
+          status: string;
+          submitted_at: string;
+          symbol: string;
+        };
+        Insert: {
+          broker_order_id?: string | null;
+          commission?: number | null;
+          created_at?: string;
+          experiment_id: string;
+          fill_price?: number | null;
+          fill_quantity?: number | null;
+          filled_at?: string | null;
+          id?: string;
+          is_shadow?: boolean;
+          limit_price?: number | null;
+          order_type?: string;
+          phase: string;
+          quantity: number;
+          recommendation_id?: string | null;
+          risk_check_result?: Json | null;
+          risk_note?: string | null;
+          shadow_fill_price?: number | null;
+          shadow_pnl?: number | null;
+          side: string;
+          slippage?: number | null;
+          status?: string;
+          submitted_at?: string;
+          symbol: string;
+        };
+        Update: {
+          broker_order_id?: string | null;
+          commission?: number | null;
+          created_at?: string;
+          experiment_id?: string;
+          fill_price?: number | null;
+          fill_quantity?: number | null;
+          filled_at?: string | null;
+          id?: string;
+          is_shadow?: boolean;
+          limit_price?: number | null;
+          order_type?: string;
+          phase?: string;
+          quantity?: number;
+          recommendation_id?: string | null;
+          risk_check_result?: Json | null;
+          risk_note?: string | null;
+          shadow_fill_price?: number | null;
+          shadow_pnl?: number | null;
+          side?: string;
+          slippage?: number | null;
+          status?: string;
+          submitted_at?: string;
+          symbol?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'experiment_orders_experiment_id_fkey';
+            columns: ['experiment_id'];
+            isOneToOne: false;
+            referencedRelation: 'experiments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'experiment_orders_recommendation_id_fkey';
+            columns: ['recommendation_id'];
+            isOneToOne: false;
+            referencedRelation: 'agent_recommendations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      experiment_snapshots: {
+        Row: {
+          avg_cycle_duration_ms: number | null;
+          avg_trade_return: number | null;
+          cash: number;
+          created_at: string;
+          cumulative_pnl: number;
+          cumulative_return_pct: number;
+          cycle_count: number;
+          daily_pnl: number;
+          daily_return_pct: number;
+          equity: number;
+          error_count: number;
+          experiment_id: string;
+          id: string;
+          max_drawdown_pct: number;
+          metadata: Json | null;
+          orders_filled: number;
+          orders_rejected: number;
+          orders_submitted: number;
+          phase: string;
+          positions_value: number;
+          profit_factor: number | null;
+          recommendations_blocked: number;
+          recommendations_executed: number;
+          recommendations_generated: number;
+          sharpe_ratio: number | null;
+          snapshot_date: string;
+          win_rate: number | null;
+        };
+        Insert: {
+          avg_cycle_duration_ms?: number | null;
+          avg_trade_return?: number | null;
+          cash?: number;
+          created_at?: string;
+          cumulative_pnl?: number;
+          cumulative_return_pct?: number;
+          cycle_count?: number;
+          daily_pnl?: number;
+          daily_return_pct?: number;
+          equity?: number;
+          error_count?: number;
+          experiment_id: string;
+          id?: string;
+          max_drawdown_pct?: number;
+          metadata?: Json | null;
+          orders_filled?: number;
+          orders_rejected?: number;
+          orders_submitted?: number;
+          phase: string;
+          positions_value?: number;
+          profit_factor?: number | null;
+          recommendations_blocked?: number;
+          recommendations_executed?: number;
+          recommendations_generated?: number;
+          sharpe_ratio?: number | null;
+          snapshot_date: string;
+          win_rate?: number | null;
+        };
+        Update: {
+          avg_cycle_duration_ms?: number | null;
+          avg_trade_return?: number | null;
+          cash?: number;
+          created_at?: string;
+          cumulative_pnl?: number;
+          cumulative_return_pct?: number;
+          cycle_count?: number;
+          daily_pnl?: number;
+          daily_return_pct?: number;
+          equity?: number;
+          error_count?: number;
+          experiment_id?: string;
+          id?: string;
+          max_drawdown_pct?: number;
+          metadata?: Json | null;
+          orders_filled?: number;
+          orders_rejected?: number;
+          orders_submitted?: number;
+          phase?: string;
+          positions_value?: number;
+          profit_factor?: number | null;
+          recommendations_blocked?: number;
+          recommendations_executed?: number;
+          recommendations_generated?: number;
+          sharpe_ratio?: number | null;
+          snapshot_date?: string;
+          win_rate?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'experiment_snapshots_experiment_id_fkey';
+            columns: ['experiment_id'];
+            isOneToOne: false;
+            referencedRelation: 'experiments';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      experiments: {
+        Row: {
+          config: Json;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          final_metrics: Json | null;
+          halt_reason: string | null;
+          halted: boolean;
+          halted_at: string | null;
+          id: string;
+          initial_capital: number;
+          max_daily_trades: number;
+          max_position_value: number;
+          max_total_exposure: number;
+          name: string;
+          signal_strength_threshold: number;
+          status: string;
+          updated_at: string;
+          verdict: string | null;
+          verdict_reason: string | null;
+          week1_end: string | null;
+          week1_start: string | null;
+          week2_end: string | null;
+          week2_start: string | null;
+        };
+        Insert: {
+          config?: Json;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          final_metrics?: Json | null;
+          halt_reason?: string | null;
+          halted?: boolean;
+          halted_at?: string | null;
+          id?: string;
+          initial_capital?: number;
+          max_daily_trades?: number;
+          max_position_value?: number;
+          max_total_exposure?: number;
+          name: string;
+          signal_strength_threshold?: number;
+          status?: string;
+          updated_at?: string;
+          verdict?: string | null;
+          verdict_reason?: string | null;
+          week1_end?: string | null;
+          week1_start?: string | null;
+          week2_end?: string | null;
+          week2_start?: string | null;
+        };
+        Update: {
+          config?: Json;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          final_metrics?: Json | null;
+          halt_reason?: string | null;
+          halted?: boolean;
+          halted_at?: string | null;
+          id?: string;
+          initial_capital?: number;
+          max_daily_trades?: number;
+          max_position_value?: number;
+          max_total_exposure?: number;
+          name?: string;
+          signal_strength_threshold?: number;
+          status?: string;
+          updated_at?: string;
+          verdict?: string | null;
+          verdict_reason?: string | null;
+          week1_end?: string | null;
+          week1_start?: string | null;
+          week2_end?: string | null;
+          week2_start?: string | null;
+        };
+        Relationships: [];
+      };
+      external_portfolio_links: {
+        Row: {
+          created_at: string;
+          external_item_id: string;
+          id: string;
+          institution_name: string | null;
+          last_synced_at: string | null;
+          provider: string;
+          read_only: boolean;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          external_item_id: string;
+          id?: string;
+          institution_name?: string | null;
+          last_synced_at?: string | null;
+          provider?: string;
+          read_only?: boolean;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          external_item_id?: string;
+          id?: string;
+          institution_name?: string | null;
+          last_synced_at?: string | null;
+          provider?: string;
+          read_only?: boolean;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
         };
         Relationships: [];
       };
@@ -763,6 +1161,30 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      onboarding_audit_log: {
+        Row: {
+          created_at: string;
+          event_type: string;
+          id: string;
+          payload: Json;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_type: string;
+          id?: string;
+          payload?: Json;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string;
+          id?: string;
+          payload?: Json;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       operator_actions: {
         Row: {
@@ -1080,7 +1502,15 @@ export type Database = {
           payload?: Json;
           recommendation_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'fk_recommendation_events_agent_recs';
+            columns: ['recommendation_id'];
+            isOneToOne: false;
+            referencedRelation: 'agent_recommendations';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       regime_playbooks: {
         Row: {
@@ -1566,6 +1996,7 @@ export type Database = {
       };
       strategies: {
         Row: {
+          autonomy_mode: string | null;
           created_at: string | null;
           description: string | null;
           family: string;
@@ -1577,6 +2008,7 @@ export type Database = {
           version: number | null;
         };
         Insert: {
+          autonomy_mode?: string | null;
           created_at?: string | null;
           description?: string | null;
           family: string;
@@ -1588,6 +2020,7 @@ export type Database = {
           version?: number | null;
         };
         Update: {
+          autonomy_mode?: string | null;
           created_at?: string | null;
           description?: string | null;
           family?: string;
@@ -1680,28 +2113,34 @@ export type Database = {
       };
       system_controls: {
         Row: {
+          autonomy_mode: string | null;
           global_mode: string;
           id: string;
           live_execution_enabled: boolean;
           max_daily_trades: number;
+          previous_autonomy_mode: string | null;
           trading_halted: boolean;
           updated_at: string;
           updated_by: string | null;
         };
         Insert: {
+          autonomy_mode?: string | null;
           global_mode?: string;
           id?: string;
           live_execution_enabled?: boolean;
           max_daily_trades?: number;
+          previous_autonomy_mode?: string | null;
           trading_halted?: boolean;
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
+          autonomy_mode?: string | null;
           global_mode?: string;
           id?: string;
           live_execution_enabled?: boolean;
           max_daily_trades?: number;
+          previous_autonomy_mode?: string | null;
           trading_halted?: boolean;
           updated_at?: string;
           updated_by?: string | null;
@@ -1809,6 +2248,42 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      universe_restrictions: {
+        Row: {
+          asset_classes: string[] | null;
+          created_at: string | null;
+          created_by: string | null;
+          enabled: boolean | null;
+          id: string;
+          reason: string | null;
+          restriction_type: string;
+          sectors: string[] | null;
+          symbols: string[];
+        };
+        Insert: {
+          asset_classes?: string[] | null;
+          created_at?: string | null;
+          created_by?: string | null;
+          enabled?: boolean | null;
+          id?: string;
+          reason?: string | null;
+          restriction_type: string;
+          sectors?: string[] | null;
+          symbols?: string[];
+        };
+        Update: {
+          asset_classes?: string[] | null;
+          created_at?: string | null;
+          created_by?: string | null;
+          enabled?: boolean | null;
+          id?: string;
+          reason?: string | null;
+          restriction_type?: string;
+          sectors?: string[] | null;
+          symbols?: string[];
+        };
+        Relationships: [];
       };
       user_profiles: {
         Row: {
@@ -2104,10 +2579,19 @@ export type Database = {
     Views: {
       journal_stats: {
         Row: {
+          approvals: number | null;
           avg_pnl: number | null;
+          avg_return_pct: number | null;
+          fills: number | null;
           grade_variety: number | null;
+          graded: number | null;
+          losing_trades: number | null;
           losses: number | null;
+          rejections: number | null;
+          risk_blocks: number | null;
           total_entries: number | null;
+          user_id: string | null;
+          winning_trades: number | null;
           wins: number | null;
         };
         Relationships: [];

@@ -6,6 +6,7 @@ import {
   Shield,
   Bell,
   Activity,
+  Lock,
   Save,
   Check,
   Info,
@@ -23,6 +24,7 @@ import {
 import { markPageVisited } from '@/components/dashboard/setup-progress';
 import { RiskSettings } from '@/components/settings/risk-settings';
 import { ScheduleSettings } from '@/components/settings/schedule-settings';
+import { SecuritySettings } from '@/components/settings/security-settings';
 import { ToggleField } from '@/components/settings/toggle-field';
 import { useTradingPolicy, policyValue } from '@/hooks/use-trading-policy';
 import { useSystemControlsQuery } from '@/hooks/queries/use-system-controls-query';
@@ -248,6 +250,10 @@ export default function SettingsPage() {
               <Activity className="h-3.5 w-3.5 mr-1.5" />
               Trading
             </TabsTrigger>
+            <TabsTrigger value="security">
+              <Lock className="h-3.5 w-3.5 mr-1.5" />
+              Security
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="risk">
@@ -377,6 +383,10 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="security">
+            <SecuritySettings />
           </TabsContent>
         </Tabs>
       )}
