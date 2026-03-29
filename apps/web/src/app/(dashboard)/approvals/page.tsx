@@ -129,7 +129,7 @@ function StatsBar({ recommendations }: StatsBarProps) {
   }, [recommendations]);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div className="rounded-lg border border-border bg-card px-4 py-3">
         <div className="text-[11px] text-muted-foreground">Total</div>
         <div className="mt-1 flex items-center gap-2">
@@ -304,7 +304,7 @@ export default function ApprovalsPage() {
           <Shield className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-semibold text-foreground">Approval Queue</h1>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}

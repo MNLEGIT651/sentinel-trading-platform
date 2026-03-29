@@ -7,6 +7,8 @@ import { Header } from '@/components/layout/header';
 import { useAppStore } from '@/stores/app-store';
 import { useServiceHealth } from '@/hooks/use-service-health';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+import { useDeviceDetect } from '@/hooks/use-device-detect';
+import { cn } from '@/lib/utils';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
@@ -14,7 +16,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mobileSidebarOpen = useAppStore((s) => s.mobileSidebarOpen);
   const toggleMobileSidebar = useAppStore((s) => s.toggleMobileSidebar);
   const closeMobileSidebar = useAppStore((s) => s.closeMobileSidebar);
+  const setDevice = useAppStore((s) => s.setDevice);
   const pathname = usePathname();
+
+  // Device detection — single instance, synced to Zustand for global access
+  const device = useDeviceDetect();
+
+  useEffect(() => {
+    if (device.isHydrated) {
+      setDevice(device.type, device.isTouch);
+    }
+  }, [device.type, device.isTouch, device.isHydrated, setDevice]);
 
   // Single global health pulse — all pages read from the store
   useServiceHealth();
@@ -28,7 +40,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, closeMobileSidebar]);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div
+      className={cn(
+        'flex h-screen overflow-hidden',
+        device.isTouch && 'touch-device',
+      )}
+      data-device={device.type}
+    >
       {/* Desktop sidebar — always visible on lg+ screens */}
       <div className="hidden lg:block">
         <Sidebar collapsed={!sidebarOpen} onToggle={toggleSidebar} />
@@ -40,9 +58,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div
             className="fixed inset-0 z-40 bg-black/50 lg:hidden"
             onClick={closeMobileSidebar}
+            onTouchEnd={closeMobileSidebar}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
+          <div className="fixed inset-y-0 left-0 z-50 w-56 lg:hidden animate-in slide-in-from-left duration-200">
             <Sidebar collapsed={false} onToggle={closeMobileSidebar} />
           </div>
         </>
@@ -50,7 +69,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header onMenuClick={toggleMobileSidebar} />
-        <main id="main-content" className="flex-1 overflow-auto">
+        <main
+          id="main-content"
+          className={cn(
+            'flex-1 overflow-auto',
+            device.isTouch && 'overscroll-contain',
+          )}
+        >
           {children}
         </main>
       </div>

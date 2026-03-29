@@ -115,13 +115,13 @@ function RolePermissionsGrid() {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 dark:bg-gray-800/50">
           <tr>
-            <th className="p-3 text-left font-medium text-gray-600 dark:text-gray-400">
+            <th className="whitespace-nowrap p-2 text-left font-medium text-gray-600 dark:text-gray-400 sm:p-3">
               Permission
             </th>
             {ALL_ROLES.map((role) => (
               <th
                 key={role}
-                className="p-3 text-center font-medium text-gray-600 dark:text-gray-400"
+                className="p-2 text-center font-medium text-gray-600 dark:text-gray-400 sm:p-3"
               >
                 <RoleBadge role={role} />
               </th>

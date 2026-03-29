@@ -68,10 +68,10 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors active:scale-95"
           aria-label="Toggle menu"
         >
-          <Menu className="h-4 w-4" />
+          <Menu className="h-5 w-5" />
         </button>
         <span className="font-mono text-sm font-bold tracking-[0.2em] text-foreground/80">
           SENTINEL

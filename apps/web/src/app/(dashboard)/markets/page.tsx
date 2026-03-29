@@ -103,11 +103,11 @@ export default function MarketsPage() {
   const selectedStock = watchlist.find((w) => w.ticker === selectedTicker);
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
+    <div className="flex h-full flex-col gap-4 p-3 sm:p-4">
       {engineOnline === false && <OfflineBanner service="engine" />}
-      <div className="flex flex-1 gap-4 min-h-0">
+      <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
         {/* Watchlist panel */}
-        <Card className="w-72 shrink-0 bg-card border-border">
+        <Card className="w-full shrink-0 bg-card border-border lg:w-72">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">Watchlist</CardTitle>
@@ -130,7 +130,7 @@ export default function MarketsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-12rem)]">
+            <ScrollArea className="h-48 lg:h-[calc(100vh-12rem)]">
               <div className="space-y-0.5 px-2 pb-2">
                 {watchlist.map((stock) => (
                   <button

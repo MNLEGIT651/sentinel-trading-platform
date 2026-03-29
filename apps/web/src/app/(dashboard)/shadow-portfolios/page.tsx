@@ -114,7 +114,7 @@ function CreateDialog({ open, onClose }: { open: boolean; onClose: () => void })
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium text-zinc-400">Initial Capital ($)</label>
               <input
@@ -269,7 +269,7 @@ function PortfolioCard({
       </div>
 
       {/* Metrics row */}
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded bg-zinc-800/50 p-2">
           <div className="flex items-center gap-1 text-xs text-zinc-500">
             <DollarSign className="h-3 w-3" />

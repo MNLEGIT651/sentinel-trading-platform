@@ -177,7 +177,7 @@ export default function CatalystsPage() {
 
       {/* Stats Summary */}
       {data?.stats && data.stats.total > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
           {Object.entries(data.stats.byType).map(([type, count]) => {
             const cfg = EVENT_TYPE_CONFIG[type as CatalystEventType];
             if (!cfg) return null;
@@ -315,7 +315,7 @@ export default function CatalystsPage() {
 
                             {/* Earnings data */}
                             {event.event_type === 'earnings' && (
-                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                                 <EarningsCell label="EPS Est" value={event.eps_estimate} />
                                 <EarningsCell label="EPS Act" value={event.eps_actual} />
                                 <EarningsCell

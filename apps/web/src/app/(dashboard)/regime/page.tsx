@@ -310,7 +310,7 @@ function PlaybookCard({
 
       {playbook.description && <p className="mt-2 text-xs text-zinc-500">{playbook.description}</p>}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded bg-zinc-800/50 p-2">
           <div className="text-zinc-500">Enabled</div>
           <div className="font-medium text-zinc-300">
@@ -456,7 +456,7 @@ function CreatePlaybookDialog({ open, onClose }: { open: boolean; onClose: () =>
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium text-zinc-400">Position Size Modifier</label>
               <input

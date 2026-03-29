@@ -67,7 +67,7 @@ function StatsGrid({
   const severityCounts = stats.by_severity;
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
         <div className="text-xs text-zinc-500">Total Events</div>
         <div className="mt-1 text-2xl font-bold text-zinc-100">{stats.total}</div>

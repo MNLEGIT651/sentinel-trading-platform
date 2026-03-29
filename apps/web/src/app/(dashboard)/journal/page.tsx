@@ -67,7 +67,7 @@ function StatsCards() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i} className="border-zinc-800 bg-zinc-900/50">
             <CardContent className="p-4">
@@ -100,7 +100,7 @@ function StatsCards() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {cells.map((c) => (
         <Card key={c.label} className="border-zinc-800 bg-zinc-900/50">
           <CardContent className="p-4">
