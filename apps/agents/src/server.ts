@@ -148,7 +148,9 @@ export function createApp(orchestrator: Orchestrator): Express {
         return lockManager.release(CYCLE_LOCK_NAME);
       })
       .catch((err: unknown) => {
-        console.error('[Server] Unhandled cycle error:', err);
+        logger.error('Unhandled cycle error', {
+          error: err instanceof Error ? (err as Error).message : String(err),
+        });
         return lockManager.release(CYCLE_LOCK_NAME);
       });
 

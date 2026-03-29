@@ -76,7 +76,7 @@ export const DEFAULT_AGENT_PROMPTS: Readonly<Record<string, string>> = {
  * GitHub repository slug used by the ops commander script and skill.
  * Can be overridden via GITHUB_REPO env var.
  */
-export const GITHUB_REPO = process.env.GITHUB_REPO ?? 'MNLEGIT651/sentinel-trading-platform';
+export const GITHUB_REPO = process.env.GITHUB_REPO ?? 'stevenschling13/sentinel-trading-platform';
 
 /**
  * Alert thresholds used by github-ops.ts. Centralised here so the skill

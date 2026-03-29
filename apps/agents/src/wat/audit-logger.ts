@@ -2,6 +2,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { getSupabaseClient } from '../supabase-client.js';
+import { logger } from '../logger.js';
 import type { ToolCallTrace, WorkflowRunTrace } from './types.js';
 
 const DEFAULT_RUNS_DIR = resolve(import.meta.dirname, '../../.tmp/runs');
@@ -70,10 +71,9 @@ export class AuditLogger {
     this.writeLocalTrace(record);
 
     this.writeSupabaseRecord(record).catch((err) => {
-      console.error(
-        '[AuditLogger] Supabase write failed:',
-        err instanceof Error ? err.message : err,
-      );
+      logger.error('Supabase write failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     });
 
     this.currentRun = null;

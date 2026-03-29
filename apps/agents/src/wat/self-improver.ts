@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from '
 import { join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import type { AgentRole } from '../types.js';
+import { logger } from '../logger.js';
 
 const DEFAULT_WORKFLOWS_DIR = resolve(import.meta.dirname, '../../workflows');
 const LOCK_DIR = resolve(import.meta.dirname, '../../.tmp');
@@ -59,10 +60,9 @@ export class SelfImprover {
         stdio: 'pipe',
       });
     } catch (err) {
-      console.error(
-        '[SelfImprover] Git commit failed (file write preserved):',
-        err instanceof Error ? err.message : err,
-      );
+      logger.error('Git commit failed (file write preserved)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
