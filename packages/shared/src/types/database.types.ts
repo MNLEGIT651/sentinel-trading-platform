@@ -325,6 +325,119 @@ export type Database = {
           },
         ];
       };
+      bank_links: {
+        Row: {
+          account_last4: string | null;
+          account_type: string | null;
+          bank_name: string | null;
+          broker_account_id: string | null;
+          created_at: string | null;
+          external_bank_link_id: string | null;
+          funding_enabled: boolean;
+          id: string;
+          plaid_item_id: string | null;
+          provider: string;
+          status: string;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          account_last4?: string | null;
+          account_type?: string | null;
+          bank_name?: string | null;
+          broker_account_id?: string | null;
+          created_at?: string | null;
+          external_bank_link_id?: string | null;
+          funding_enabled?: boolean;
+          id?: string;
+          plaid_item_id?: string | null;
+          provider?: string;
+          status?: string;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          account_last4?: string | null;
+          account_type?: string | null;
+          bank_name?: string | null;
+          broker_account_id?: string | null;
+          created_at?: string | null;
+          external_bank_link_id?: string | null;
+          funding_enabled?: boolean;
+          id?: string;
+          plaid_item_id?: string | null;
+          provider?: string;
+          status?: string;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bank_links_broker_account_id_fkey';
+            columns: ['broker_account_id'];
+            isOneToOne: false;
+            referencedRelation: 'broker_accounts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      broker_accounts: {
+        Row: {
+          account_type: string;
+          approved_at: string | null;
+          broker_provider: string;
+          cash_enabled: boolean;
+          created_at: string | null;
+          crypto_enabled: boolean;
+          external_account_id: string | null;
+          id: string;
+          margin_enabled: boolean;
+          metadata: Json | null;
+          options_level: number;
+          rejection_reason: string | null;
+          status: string;
+          submitted_at: string | null;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          account_type?: string;
+          approved_at?: string | null;
+          broker_provider?: string;
+          cash_enabled?: boolean;
+          created_at?: string | null;
+          crypto_enabled?: boolean;
+          external_account_id?: string | null;
+          id?: string;
+          margin_enabled?: boolean;
+          metadata?: Json | null;
+          options_level?: number;
+          rejection_reason?: string | null;
+          status?: string;
+          submitted_at?: string | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          account_type?: string;
+          approved_at?: string | null;
+          broker_provider?: string;
+          cash_enabled?: boolean;
+          created_at?: string | null;
+          crypto_enabled?: boolean;
+          external_account_id?: string | null;
+          id?: string;
+          margin_enabled?: boolean;
+          metadata?: Json | null;
+          options_level?: number;
+          rejection_reason?: string | null;
+          status?: string;
+          submitted_at?: string | null;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       catalyst_events: {
         Row: {
           created_at: string;
@@ -983,6 +1096,72 @@ export type Database = {
           venue?: string | null;
         };
         Relationships: [];
+      };
+      funding_transactions: {
+        Row: {
+          amount: number;
+          bank_link_id: string | null;
+          broker_account_id: string | null;
+          completed_at: string | null;
+          created_at: string | null;
+          currency: string;
+          direction: string;
+          external_transfer_id: string | null;
+          failure_reason: string | null;
+          id: string;
+          initiated_at: string | null;
+          status: string;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          bank_link_id?: string | null;
+          broker_account_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string | null;
+          currency?: string;
+          direction: string;
+          external_transfer_id?: string | null;
+          failure_reason?: string | null;
+          id?: string;
+          initiated_at?: string | null;
+          status?: string;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          bank_link_id?: string | null;
+          broker_account_id?: string | null;
+          completed_at?: string | null;
+          created_at?: string | null;
+          currency?: string;
+          direction?: string;
+          external_transfer_id?: string | null;
+          failure_reason?: string | null;
+          id?: string;
+          initiated_at?: string | null;
+          status?: string;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'funding_transactions_bank_link_id_fkey';
+            columns: ['bank_link_id'];
+            isOneToOne: false;
+            referencedRelation: 'bank_links';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'funding_transactions_broker_account_id_fkey';
+            columns: ['broker_account_id'];
+            isOneToOne: false;
+            referencedRelation: 'broker_accounts';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       instruments: {
         Row: {

@@ -1229,7 +1229,9 @@ export type ConsentDocumentType =
   | 'electronic_delivery'
   | 'customer_agreement'
   | 'data_sharing'
-  | 'broker_disclosures';
+  | 'broker_disclosures'
+  | 'margin_disclosure'
+  | 'risk_disclosure';
 
 /** Payload for recording a new consent. */
 export interface ConsentRecord {
@@ -1259,3 +1261,130 @@ export interface OnboardingAuditEntry {
   payload: Record<string, unknown>;
   created_at: string;
 }
+
+// ─── Phase 2: Live Trading Types ──────────────────────────────────────
+
+export type BrokerAccountStatus =
+  | 'pending'
+  | 'submitted'
+  | 'action_required'
+  | 'approved'
+  | 'rejected'
+  | 'disabled'
+  | 'closed';
+
+export interface BrokerAccount {
+  id: string;
+  user_id: string;
+  broker_provider: string;
+  external_account_id: string | null;
+  status: BrokerAccountStatus;
+  account_type: string;
+  cash_enabled: boolean;
+  margin_enabled: boolean;
+  options_level: number;
+  crypto_enabled: boolean;
+  rejection_reason: string | null;
+  approved_at: string | null;
+  submitted_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BankLinkStatus = 'pending' | 'queued' | 'approved' | 'failed' | 'cancelled';
+
+export interface BankLink {
+  id: string;
+  user_id: string;
+  broker_account_id: string | null;
+  provider: string;
+  external_bank_link_id: string | null;
+  plaid_item_id: string | null;
+  status: BankLinkStatus;
+  account_last4: string | null;
+  bank_name: string | null;
+  account_type: string | null;
+  funding_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FundingDirection = 'deposit' | 'withdrawal';
+export type FundingStatus = 'pending' | 'queued' | 'complete' | 'failed' | 'cancelled' | 'returned';
+
+export interface FundingTransaction {
+  id: string;
+  user_id: string;
+  broker_account_id: string | null;
+  bank_link_id: string | null;
+  direction: FundingDirection;
+  amount: number;
+  currency: string;
+  status: FundingStatus;
+  external_transfer_id: string | null;
+  failure_reason: string | null;
+  initiated_at: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Disclosure document definition for in-app rendering. */
+export interface DisclosureDocument {
+  type: ConsentDocumentType;
+  version: string;
+  title: string;
+  summary: string;
+  url?: string | undefined;
+  required: boolean;
+}
+
+/** Standard disclosures required for live trading. */
+export const LIVE_TRADING_DISCLOSURES: DisclosureDocument[] = [
+  {
+    type: 'terms_of_service',
+    version: '1.0',
+    title: 'Terms of Service',
+    summary: 'The terms governing your use of the Sentinel platform.',
+    required: true,
+  },
+  {
+    type: 'privacy_policy',
+    version: '1.0',
+    title: 'Privacy Policy',
+    summary: 'How we collect, use, and protect your personal information.',
+    required: true,
+  },
+  {
+    type: 'customer_agreement',
+    version: '1.0',
+    title: 'Customer Agreement',
+    summary: 'Your agreement with the brokerage for account services, trading, and custody.',
+    required: true,
+  },
+  {
+    type: 'margin_disclosure',
+    version: '1.0',
+    title: 'Margin Disclosure Statement',
+    summary:
+      'Risks and terms of margin trading, including potential for losses exceeding your deposit.',
+    required: false,
+  },
+  {
+    type: 'electronic_delivery',
+    version: '1.0',
+    title: 'Electronic Delivery Consent',
+    summary:
+      'Consent to receive account documents, statements, and regulatory communications electronically.',
+    required: true,
+  },
+  {
+    type: 'risk_disclosure',
+    version: '1.0',
+    title: 'Risk Disclosure',
+    summary:
+      'General risks of investing, including the possibility of losing your entire investment.',
+    required: true,
+  },
+];

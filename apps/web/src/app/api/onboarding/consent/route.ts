@@ -13,6 +13,8 @@ const VALID_DOCUMENT_TYPES: ConsentDocumentType[] = [
   'customer_agreement',
   'data_sharing',
   'broker_disclosures',
+  'margin_disclosure',
+  'risk_disclosure',
 ];
 
 // ─── GET: List user's consent records ───────────────────────────────

@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     alpaca_secret_key: str = ""
     alpaca_base_url: str = "https://paper-api.alpaca.markets"
 
+    # Alpaca Broker API (account creation, KYC, funding)
+    alpaca_broker_api_key: str = ""
+    alpaca_broker_api_secret: str = ""
+    alpaca_broker_api_url: str = "https://broker-api.sandbox.alpaca.markets"
+
     # CORS
     cors_origins: str = "http://localhost:3000"
 
@@ -57,4 +62,9 @@ class Settings(BaseSettings):
             logger.warning(
                 "Broker-backed trading features are disabled because broker "
                 "configuration is incomplete."
+            )
+        if not self.alpaca_broker_api_key or not self.alpaca_broker_api_secret:
+            logger.warning(
+                "Alpaca Broker API (account creation, KYC) is disabled because "
+                "ALPACA_BROKER_API_KEY or ALPACA_BROKER_API_SECRET is not set."
             )

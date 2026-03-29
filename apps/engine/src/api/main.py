@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from src.api.routes.backtest import router as backtest_router
 from src.api.routes.data import router as data_router
 from src.api.routes.health import router as health_router
+from src.api.routes.onboarding import router as onboarding_router
 from src.api.routes.portfolio import router as portfolio_router
 from src.api.routes.risk import router as risk_router
 from src.api.routes.signals import router as signals_router
@@ -129,6 +130,7 @@ app.include_router(risk_router, prefix="/api/v1")
 app.include_router(signals_router, prefix="/api/v1")
 app.include_router(strategies_router, prefix="/api/v1")
 app.include_router(backtest_router, prefix="/api/v1")
+app.include_router(onboarding_router, prefix="/api/v1")
 
 # OpenTelemetry auto-instrumentation (opt-in via OTEL_ENABLED=true)
 instrument_fastapi(app)
