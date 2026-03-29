@@ -95,7 +95,7 @@ export function NotificationCenter() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        className="relative flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-95"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
         <Bell className="h-4 w-4" />

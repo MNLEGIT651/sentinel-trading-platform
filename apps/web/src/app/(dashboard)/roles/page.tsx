@@ -131,9 +131,9 @@ function RolePermissionsGrid() {
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
           {permissions.map((perm) => (
             <tr key={perm.action} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-              <td className="p-3 text-gray-700 dark:text-gray-300">{perm.action}</td>
+              <td className="p-2 text-gray-700 dark:text-gray-300 sm:p-3">{perm.action}</td>
               {ALL_ROLES.map((role) => (
-                <td key={role} className="p-3 text-center">
+                <td key={role} className="p-2 text-center sm:p-3">
                   {perm[role] ? (
                     <CheckCircle2 className="inline h-4 w-4 text-green-500" />
                   ) : (
