@@ -1,0 +1,31 @@
+# Python artifacts
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+
+# Test suite (not needed in production image)
+tests/
+
+# Coverage and profiling
+.coverage
+htmlcov/
+coverage.xml
+
+# IDE and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+
+# Local env
+.env
+.env.*
+!.env.example

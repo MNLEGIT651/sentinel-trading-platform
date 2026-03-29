@@ -24,9 +24,9 @@ FROM base AS deps
 
 COPY pyproject.toml ./
 
-# Create venv and install all dependencies including Gunicorn
+# Create venv and install production dependencies only
 RUN uv venv .venv \
-  && uv pip install --python .venv/bin/python --no-cache ".[dev]"
+  && uv pip install --python .venv/bin/python --no-cache "."
 
 # ─── Runtime image ────────────────────────────────────────────────────────────
 FROM base AS runner
@@ -36,9 +36,13 @@ WORKDIR /app
 # Copy virtual environment from deps stage
 COPY --from=deps /app/.venv ./.venv
 
+# Put venv on PATH so gunicorn/uvicorn are directly invocable
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Copy application code
 COPY src ./src
-COPY gunicorn_conf.py ./
+COPY gunicorn_conf.py start.sh ./
+RUN chmod +x start.sh
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 sentinel \
@@ -51,12 +55,10 @@ USER sentinel
 
 EXPOSE 8000
 
-# Health check for container orchestration
+# Health check for container orchestration (shell form for PORT variable)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD sh -c "curl -f http://localhost:${PORT:-8000}/health || exit 1"
 
-# Production command: Gunicorn with Uvicorn workers
-# This automatically uses uvloop and httptools (installed via uvicorn[standard])
-# Workers are auto-calculated in gunicorn_conf.py based on CPU count
-CMD ["sh", "-c", ".venv/bin/gunicorn src.api.main:app -c gunicorn_conf.py"]
+# Exec form: signals propagate directly to gunicorn (no shell wrapper)
+CMD ["gunicorn", "src.api.main:app", "-c", "gunicorn_conf.py"]
 

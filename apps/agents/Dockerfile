@@ -10,7 +10,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/agents/package.json apps/agents/
 COPY apps/web/package.json apps/web/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild
 
 # ─── Build ────────────────────────────────────────────────────────────
 FROM deps AS build
@@ -25,7 +25,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/agents/package.json apps/agents/
 COPY apps/web/package.json apps/web/
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts && pnpm rebuild
 
 # ─── Runner ───────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
