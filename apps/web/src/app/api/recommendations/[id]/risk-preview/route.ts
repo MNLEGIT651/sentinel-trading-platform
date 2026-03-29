@@ -86,7 +86,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         positions = Array.isArray(posData) ? posData : (posData.positions ?? []);
       }
     } catch {
-      // Engine unavailable — compute with fallback values
+      // Engine is optional for this endpoint — when unavailable,
+      // fall through and compute risk preview with fallback values
     }
   }
 

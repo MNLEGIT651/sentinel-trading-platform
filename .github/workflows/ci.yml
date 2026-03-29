@@ -30,7 +30,7 @@ jobs:
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
 
       - name: Enable corepack and install pnpm
         run: corepack enable && corepack prepare pnpm@10.32.1 --activate
@@ -101,7 +101,7 @@ jobs:
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version-file: '.python-version'
 
       - name: Cache uv / pip
         uses: actions/cache@v4
@@ -150,7 +150,7 @@ jobs:
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
 
       - name: Enable corepack and install pnpm
         run: corepack enable && corepack prepare pnpm@10.32.1 --activate
@@ -181,6 +181,7 @@ jobs:
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
+    needs: [test-web, test-engine, test-agents]
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -190,7 +191,7 @@ jobs:
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
 
       - name: Enable corepack and install pnpm
         run: corepack enable && corepack prepare pnpm@10.32.1 --activate
@@ -213,7 +214,7 @@ jobs:
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version-file: '.python-version'
 
       - name: Install uv
         run: pip install uv
