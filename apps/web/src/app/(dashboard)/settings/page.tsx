@@ -12,6 +12,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +20,7 @@ import {
   ConnectionStatusPanel,
   type ServiceStatuses,
 } from '@/components/settings/connection-status';
+import { markPageVisited } from '@/components/dashboard/setup-progress';
 import { RiskSettings } from '@/components/settings/risk-settings';
 import { ScheduleSettings } from '@/components/settings/schedule-settings';
 import { ToggleField } from '@/components/settings/toggle-field';
@@ -107,6 +109,10 @@ export default function SettingsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    markPageVisited('settings');
+  }, []);
+
   // Load notification preferences from localStorage + check connections
   useEffect(() => {
     try {
@@ -170,6 +176,7 @@ export default function SettingsPage() {
       // Clean up old combined localStorage key
       localStorage.removeItem('sentinel:settings');
       setSaved(true);
+      toast.success('Settings saved');
       setTimeout(() => setSaved(false), 2000);
     }
   };

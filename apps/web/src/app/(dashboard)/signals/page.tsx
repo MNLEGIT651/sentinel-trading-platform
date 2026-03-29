@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Zap,
   Loader2,
@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { OfflineBanner } from '@/components/ui/offline-banner';
@@ -22,8 +23,13 @@ import {
 } from '@/components/signals/signal-filters';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
 import type { SignalRow } from '@/components/signals/signal-card';
+import { markPageVisited } from '@/components/dashboard/setup-progress';
 
 export default function SignalsPage() {
+  useEffect(() => {
+    markPageVisited('signals');
+  }, []);
+
   const engineOnline = useAppStore((s) => s.engineOnline);
   const [signals, setSignals] = useState<SignalRow[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -84,6 +90,7 @@ export default function SignalsPage() {
         errors: data.errors,
       });
       setLastScanTime(new Date().toLocaleTimeString());
+      toast.success(`Scan complete — ${rows.length} signal${rows.length !== 1 ? 's' : ''} found`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Scan failed';
       setError(

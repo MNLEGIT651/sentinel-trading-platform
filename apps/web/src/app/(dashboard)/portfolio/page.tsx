@@ -20,6 +20,7 @@ import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
 import { QuickOrder } from '@/components/portfolio/quick-order';
 import { RecentOrders } from '@/components/portfolio/recent-orders';
+import { markPageVisited } from '@/components/dashboard/setup-progress';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
 import {
   useAccountQuery,
@@ -55,6 +56,7 @@ export default function PortfolioPage() {
   const [pollingOrderId, setPollingOrderId] = useState<string | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => {
+    markPageVisited('portfolio');
     return () => {
       mountedRef.current = false;
     };

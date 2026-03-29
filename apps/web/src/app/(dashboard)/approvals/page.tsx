@@ -14,6 +14,7 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -287,7 +288,9 @@ export default function ApprovalsPage() {
 
   const handleReject = useCallback(
     (id: string, reason: string) => {
-      rejectMutation.mutate(reason ? { id, reason } : { id });
+      rejectMutation.mutate(reason ? { id, reason } : { id }, {
+        onSuccess: () => toast.success('Recommendation rejected'),
+      });
       setRejectingRec(null);
     },
     [rejectMutation],
@@ -649,7 +652,9 @@ export default function ApprovalsPage() {
           signalStrength={reviewingRec.signal_strength}
           isApproving={approveMutation.isPending && approveMutation.variables === reviewingRec.id}
           onConfirm={() => {
-            approveMutation.mutate(reviewingRec.id);
+            approveMutation.mutate(reviewingRec.id, {
+              onSuccess: () => toast.success('Recommendation approved'),
+            });
             setReviewingRec(null);
           }}
           onCancel={() => setReviewingRec(null)}
