@@ -1024,3 +1024,159 @@ export interface StrategyHealthSnapshot {
   computed_at: string;
   source: string;
 }
+
+// ─── Paper-Trading Experiment Types ─────────────────────────────────
+
+/** Status of a two-phase paper-trading experiment. */
+export type ExperimentStatus =
+  | 'pending'
+  | 'week1_shadow'
+  | 'week2_execution'
+  | 'completed'
+  | 'aborted';
+
+/** Phase within an experiment run. */
+export type ExperimentPhase = 'week1_shadow' | 'week2_execution';
+
+/** Go/No-Go verdict after experiment completion. */
+export type ExperimentVerdict = 'go' | 'no_go' | 'inconclusive';
+
+/**
+ * A structured two-phase paper-trading experiment.
+ * Week 1 runs in shadow mode, Week 2 runs bounded paper auto-execution.
+ * Mirrors the `experiments` table.
+ */
+export interface Experiment {
+  id: string;
+  name: string;
+  description: string | null;
+  status: ExperimentStatus;
+  config: Record<string, unknown>;
+
+  week1_start: string | null;
+  week1_end: string | null;
+  week2_start: string | null;
+  week2_end: string | null;
+
+  max_daily_trades: number;
+  max_position_value: number;
+  signal_strength_threshold: number;
+  max_total_exposure: number;
+  initial_capital: number;
+
+  halted: boolean;
+  halt_reason: string | null;
+  halted_at: string | null;
+
+  verdict: ExperimentVerdict | null;
+  verdict_reason: string | null;
+  final_metrics: Record<string, unknown> | null;
+
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fields the client can set when creating an experiment. */
+export type ExperimentCreate = Pick<
+  Experiment,
+  | 'name'
+  | 'description'
+  | 'max_daily_trades'
+  | 'max_position_value'
+  | 'signal_strength_threshold'
+  | 'max_total_exposure'
+  | 'initial_capital'
+>;
+
+/** Fields the client can update on an existing experiment. */
+export type ExperimentUpdate = Partial<ExperimentCreate>;
+
+/**
+ * Daily performance snapshot for an experiment.
+ * Mirrors the `experiment_snapshots` table.
+ */
+export interface ExperimentSnapshot {
+  id: string;
+  experiment_id: string;
+  snapshot_date: string;
+  phase: ExperimentPhase;
+
+  equity: number;
+  cash: number;
+  positions_value: number;
+  daily_pnl: number;
+  cumulative_pnl: number;
+  daily_return_pct: number;
+  cumulative_return_pct: number;
+  max_drawdown_pct: number;
+
+  recommendations_generated: number;
+  recommendations_executed: number;
+  recommendations_blocked: number;
+  orders_submitted: number;
+  orders_filled: number;
+  orders_rejected: number;
+
+  sharpe_ratio: number | null;
+  win_rate: number | null;
+  profit_factor: number | null;
+  avg_trade_return: number | null;
+
+  cycle_count: number;
+  error_count: number;
+  avg_cycle_duration_ms: number | null;
+
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+/**
+ * Durable order record within an experiment (shadow or real).
+ * Mirrors the `experiment_orders` table.
+ */
+export interface ExperimentOrder {
+  id: string;
+  experiment_id: string;
+  recommendation_id: string | null;
+  phase: ExperimentPhase;
+
+  symbol: string;
+  side: 'buy' | 'sell';
+  order_type: string;
+  quantity: number;
+  limit_price: number | null;
+
+  status: 'pending' | 'submitted' | 'filled' | 'partially_filled' | 'rejected' | 'cancelled';
+  fill_price: number | null;
+  fill_quantity: number | null;
+  commission: number;
+  slippage: number;
+  broker_order_id: string | null;
+
+  shadow_fill_price: number | null;
+  shadow_pnl: number | null;
+  is_shadow: boolean;
+
+  risk_check_result: Record<string, unknown> | null;
+  risk_note: string | null;
+
+  submitted_at: string;
+  filled_at: string | null;
+  created_at: string;
+}
+
+/** Verdict thresholds for go/no-go decision. */
+export const EXPERIMENT_VERDICT_THRESHOLDS = {
+  go: {
+    min_sharpe: 0.5,
+    max_drawdown_pct: 15,
+    min_win_rate: 0.4,
+    max_error_rate: 0.05,
+  },
+  no_go: {
+    min_sharpe: 0,
+    max_drawdown_pct: 25,
+    max_error_rate: 0.2,
+  },
+} as const;

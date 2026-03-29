@@ -19,6 +19,13 @@ import {
   fetchSystemControls,
   logAutoExecutionDecision,
 } from '../auto-execution.js';
+import {
+  getActiveExperiment,
+  isShadowPhase,
+  isExecutionPhase,
+  ShadowTracker,
+  BoundedExecutor,
+} from '../experiment/index.js';
 
 const engineClient = new EngineClient();
 
@@ -95,6 +102,92 @@ registerWorkflow({
           price?: number;
         };
         const adjustedShares = (stepOutput.adjusted_shares as number) ?? origQty;
+
+        // ── Experiment shadow mode: record shadow fill, skip real execution ──
+        const experiment = await getActiveExperiment();
+        if (experiment && isShadowPhase(experiment)) {
+          const tracker = new ShadowTracker(experiment.id);
+          const marketPrice = price ?? 100;
+
+          try {
+            const shadowOrderId = await tracker.recordShadowFill({
+              recommendationId: recommendation_id,
+              symbol: ticker,
+              side: ((input as Record<string, unknown>).side as 'buy' | 'sell') ?? 'buy',
+              quantity: adjustedShares,
+              marketPrice,
+            });
+
+            logger.info('workflow.shadow_fill.recorded', {
+              recommendation_id,
+              experimentId: experiment.id,
+              shadowOrderId,
+              ticker,
+              marketPrice,
+            });
+
+            return {
+              output: {
+                auto_executed: false,
+                auto_reason: `Shadow mode: recorded hypothetical fill at $${marketPrice}`,
+                shadow_order_id: shadowOrderId,
+                experiment_phase: 'week1_shadow',
+              },
+              nextStep: null, // workflow ends — no real execution
+            };
+          } catch (err) {
+            logger.error('workflow.shadow_fill.failed', {
+              recommendation_id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
+
+        // ── Experiment execution mode: use bounded executor ──
+        if (experiment && isExecutionPhase(experiment)) {
+          const executor = new BoundedExecutor(experiment.id, {
+            maxDailyTrades: experiment.max_daily_trades,
+            maxPositionValue: experiment.max_position_value,
+            signalStrengthThreshold: experiment.signal_strength_threshold,
+            maxTotalExposure: experiment.max_total_exposure,
+          });
+
+          const evaluation = await executor.evaluate({
+            id: recommendation_id,
+            signal_strength: (input as Record<string, unknown>).signal_strength as
+              | number
+              | undefined,
+            quantity: adjustedShares,
+            price: price ?? null,
+            ticker,
+          });
+
+          if (!evaluation.allowed) {
+            logger.info('workflow.bounded_exec.blocked', {
+              recommendation_id,
+              experimentId: experiment.id,
+              reason: evaluation.reason,
+            });
+
+            return {
+              output: {
+                auto_executed: false,
+                auto_reason: `Experiment bounds: ${evaluation.reason}`,
+                experiment_phase: 'week2_execution',
+                bounded_checks: evaluation.checks,
+              },
+              nextStep: null,
+            };
+          }
+
+          // Bounded check passed — proceed to normal auto-execution evaluation
+          logger.info('workflow.bounded_exec.passed', {
+            recommendation_id,
+            experimentId: experiment.id,
+          });
+        }
+
+        // ── Standard auto-execution evaluation ──
 
         // Fetch live policy and system controls
         const [policy, systemControls] = await Promise.all([
@@ -199,6 +292,35 @@ registerWorkflow({
           order_id: order.order_id,
           status: order.status,
         });
+
+        // Record to experiment_orders if an experiment is in execution phase
+        const experiment = await getActiveExperiment();
+        if (experiment && isExecutionPhase(experiment)) {
+          const executor = new BoundedExecutor(experiment.id, {
+            maxDailyTrades: experiment.max_daily_trades,
+            maxPositionValue: experiment.max_position_value,
+            signalStrengthThreshold: experiment.signal_strength_threshold,
+            maxTotalExposure: experiment.max_total_exposure,
+          });
+          try {
+            await executor.recordExecution({
+              recommendationId: recommendation_id,
+              symbol: ticker,
+              side,
+              quantity,
+              orderType: 'market',
+              brokerOrderId: order.order_id,
+              fillPrice: order.fill_price ?? undefined,
+              fillQuantity: order.fill_quantity ?? undefined,
+              status: order.status,
+            });
+          } catch (err) {
+            logger.warn('workflow.submit_order.experiment_record_failed', {
+              recommendation_id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
 
         return {
           output: {

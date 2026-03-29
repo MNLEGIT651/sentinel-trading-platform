@@ -27,6 +27,7 @@ import {
   CheckSquare,
   ArrowUpDown,
   Workflow,
+  Beaker,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,7 @@ const navSections: NavSection[] = [
     section: 'Operations',
     items: [
       { label: 'Agents', href: '/agents', icon: Bot },
+      { label: 'Experiment', href: '/experiment', icon: Beaker },
       { label: 'Approvals', href: '/approvals', icon: CheckSquare },
       { label: 'Workflows', href: '/workflows', icon: Workflow },
     ],

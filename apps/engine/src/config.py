@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:3000"
 
+    # Experiment
+    experiment_id: str = ""
+
     def validate(self) -> None:
         """Raise ValueError if any required environment variable is missing."""
         required = {

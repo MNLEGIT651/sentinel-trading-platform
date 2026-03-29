@@ -96,6 +96,24 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
         raise
     except Exception as exc:
         logger.warning("Could not check trading halt status: %s", exc)
+
+    # ── Experiment halt check ───────────────────────────────────────
+    try:
+        from src.config import Settings as _Settings
+
+        exp_id = _Settings().experiment_id
+        db = get_db()
+        if exp_id and db is not None:
+            exp_row = db.table("experiments").select("halted").eq("id", exp_id).single().execute()
+            if exp_row.data and exp_row.data.get("halted"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Experiment is halted. Cannot submit orders.",
+                )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Could not check experiment halt status: %s", exc)
     # ────────────────────────────────────────────────────────────────
 
     try:
@@ -205,11 +223,19 @@ async def get_orders(status: str = "open") -> list[OrderResponse]:
 
 
 @router.get("/orders/history", response_model=list[StoredOrderResponse])
-async def get_order_history(limit: int = 20) -> list[StoredOrderResponse]:
-    """Get recent order history from the in-memory store."""
+async def get_order_history(
+    limit: int = 20, experiment_id: str | None = None
+) -> list[StoredOrderResponse]:
+    """Get recent order history. Optionally filter by experiment_id."""
     capped = min(max(limit, 1), 100)
     store = get_order_store()
-    return [StoredOrderResponse(**dataclasses.asdict(o)) for o in store.recent(limit=capped)]
+    if experiment_id:
+        orders = store.list_orders(experiment_id=experiment_id)
+        orders.sort(key=lambda o: o.submitted_at, reverse=True)
+        orders = orders[:capped]
+    else:
+        orders = store.recent(limit=capped)
+    return [StoredOrderResponse(**dataclasses.asdict(o)) for o in orders]
 
 
 @router.get("/orders/{order_id}", response_model=StoredOrderResponse)
