@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { SystemControls, SystemControlsUpdate, SystemMode } from '@sentinel/shared';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,10 @@ export async function GET() {
   const { data, error } = await supabase.from('system_controls').select('*').limit(1).single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch controls') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ data: data as SystemControls });
@@ -38,7 +42,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = (await request.json()) as SystemControlsUpdate;
+  const rawBody = await request.json().catch(() => null);
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+  const body = rawBody as SystemControlsUpdate;
 
   // Validate fields when present
   if ('trading_halted' in body && typeof body.trading_halted !== 'boolean') {

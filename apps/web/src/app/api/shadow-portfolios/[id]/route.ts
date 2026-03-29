@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,7 +86,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to update portfolio') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data);
@@ -109,7 +113,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     .eq('user_id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to delete portfolio') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ deleted: true });

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 const VALID_SORT_FIELDS = new Set(['created_at', 'updated_at']);
 
@@ -47,7 +48,10 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch workflows') },
+      { status: 500 },
+    );
   }
 
   // Fetch summary stats: status counts + completed_at/created_at for avg duration

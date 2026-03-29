@@ -6,6 +6,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const VALID_GRADES = ['excellent', 'good', 'neutral', 'bad', 'terrible'] as const;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ─── GET: Fetch a single journal entry ──────────────────────────────
 
@@ -15,6 +16,11 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
+
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+    }
+
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -32,10 +38,7 @@ export async function GET(
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Failed to fetch entry', details: error.message },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: 'Failed to fetch entry' }, { status: 500 });
     }
 
     if (!data) {
@@ -56,6 +59,11 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
+
+    if (!UUID_RE.test(id)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+    }
+
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -137,10 +145,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Failed to update entry', details: error.message },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: 'Failed to update entry' }, { status: 500 });
     }
 
     return NextResponse.json(data as JournalEntry);

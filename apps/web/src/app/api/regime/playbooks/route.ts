@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,10 @@ export async function GET() {
     .order('name', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch playbooks') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ playbooks: data ?? [] });
@@ -54,7 +58,10 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
 
   if (!body.name?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -111,7 +118,10 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to create playbook') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data, { status: 201 });

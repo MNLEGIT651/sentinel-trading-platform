@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 /**
  * GET /api/catalysts?from=DATE&to=DATE&ticker=AAPL&type=earnings
@@ -32,7 +33,10 @@ export async function GET(request: Request) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch catalysts') },
+      { status: 500 },
+    );
   }
 
   // Group events by date for calendar view
@@ -71,7 +75,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient();
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const {
     event_type,
     ticker,
@@ -121,7 +129,10 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to create catalyst') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data, { status: 201 });

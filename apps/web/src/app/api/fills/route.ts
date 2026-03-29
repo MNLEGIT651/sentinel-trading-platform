@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 /**
  * GET /api/fills?order_id=UUID&limit=50&offset=0&from=ISO&to=ISO
@@ -37,7 +38,10 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch fills') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ data: data ?? [], total: count ?? 0 });
@@ -90,7 +94,10 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to record fill') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data, { status: 201 });

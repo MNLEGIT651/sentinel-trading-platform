@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,10 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch portfolios') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ shadow_portfolios: data ?? [] });
@@ -52,7 +56,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
 
   if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -89,7 +96,10 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase.from('shadow_portfolios').insert(insert).select().single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to create portfolio') },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json(data, { status: 201 });

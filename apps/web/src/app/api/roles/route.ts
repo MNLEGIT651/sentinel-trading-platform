@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,10 @@ export async function GET(request: Request) {
       });
     }
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { error: safeErrorMessage(error, 'Failed to fetch roles') },
+        { status: 500 },
+      );
     }
     return NextResponse.json({ profile: data });
   }
@@ -59,7 +63,10 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: safeErrorMessage(error, 'Failed to fetch role history') },
+      { status: 500 },
+    );
   }
 
   const { data: history } = await supabase
@@ -86,7 +93,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   const { targetUserId, newRole, reason } = body as {
     targetUserId: string;
     newRole: OperatorRole;
