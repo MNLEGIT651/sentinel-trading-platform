@@ -59,3 +59,26 @@ supabase/[0-9a-f]*/
 # Office lock files
 ~$*.docx
 ~$*.xlsx
+
+# Binary files — no office documents or images in source
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.pptx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+!apps/web/src/app/favicon.ico
+
+# Environment variants
+.env.*.local
+.env.production
+.env.staging
+
+# Vercel audit env
+.env.vercel-audit
