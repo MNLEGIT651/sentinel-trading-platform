@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Brain, ChevronDown, ChevronRight, Loader2, Activity } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { cn } from '@/lib/utils';
 import { StrategyCard, type StrategyEntry } from '@/components/strategies/strategy-card';
 import { strategyFamilies, type StrategyFamily } from '@/components/strategies/strategy-data';
@@ -109,7 +110,7 @@ export default function StrategiesPage() {
         <div className="flex items-center gap-3">
           <Brain className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Strategies</h1>
+            <h1 className="text-heading-page text-foreground">Strategies</h1>
             <p className="text-xs text-muted-foreground">
               {activeStrategies} active of {totalStrategies} total strategies across{' '}
               {displayFamilies.length} families
@@ -176,7 +177,7 @@ export default function StrategiesPage() {
                     {/* Family Header */}
                     <button
                       onClick={() => toggleFamily(family.family)}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/50"
+                      className="card-interactive flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-accent/50"
                     >
                       <Icon
                         className={cn('h-4 w-4 shrink-0', config?.color ?? 'text-muted-foreground')}
@@ -196,7 +197,7 @@ export default function StrategiesPage() {
                             {family.strategies.length === 1 ? 'y' : 'ies'}
                           </Badge>
                           {activeCount > 0 && (
-                            <span className="text-[10px] text-profit">{activeCount} active</span>
+                            <StatusBadge status="active" label={`${activeCount} active`} />
                           )}
                         </div>
                       </div>
@@ -246,19 +247,13 @@ export default function StrategiesPage() {
           {/* Health Summary Strip */}
           <div className="flex gap-3">
             <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-xs font-medium text-foreground">{healthyCount}</span>
-              <span className="text-[10px] text-muted-foreground">Healthy</span>
+              <StatusBadge status="success" label={`${healthyCount} Healthy`} />
             </div>
             <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2">
-              <span className="h-2 w-2 rounded-full bg-amber-400" />
-              <span className="text-xs font-medium text-foreground">{warningCount}</span>
-              <span className="text-[10px] text-muted-foreground">Warning</span>
+              <StatusBadge status="warning" label={`${warningCount} Warning`} />
             </div>
             <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2">
-              <span className="h-2 w-2 rounded-full bg-red-400" />
-              <span className="text-xs font-medium text-foreground">{criticalCount}</span>
-              <span className="text-[10px] text-muted-foreground">Critical</span>
+              <StatusBadge status="error" label={`${criticalCount} Critical`} />
             </div>
           </div>
 

@@ -180,7 +180,7 @@ function StatsRow({
                 <Icon className="h-3.5 w-3.5 text-zinc-500" />
                 <p className="text-xs text-zinc-500">{c.label}</p>
               </div>
-              <p className="mt-1 text-lg font-semibold text-zinc-100">{c.value}</p>
+              <p className="mt-1 text-data-primary text-zinc-100">{c.value}</p>
             </CardContent>
           </Card>
         );
@@ -800,7 +800,7 @@ export default function OrdersPage() {
       <div className="flex items-center gap-3">
         <ArrowUpDown className="h-6 w-6 text-zinc-400" />
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Orders &amp; Fills</h1>
+          <h1 className="text-heading-page text-zinc-100">Orders &amp; Fills</h1>
           <p className="text-sm text-zinc-500">Execution activity timeline</p>
         </div>
       </div>

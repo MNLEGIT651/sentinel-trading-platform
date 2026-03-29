@@ -141,7 +141,7 @@ function ConfirmDialog({
       <div className="mx-4 w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-xl">
         <div className="mb-4 flex items-center gap-3">
           <AlertTriangle className="h-6 w-6 text-amber-500" />
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         </div>
         <p className="mb-6 text-sm text-muted-foreground">{description}</p>
         <div className="flex justify-end gap-3">
@@ -734,7 +734,7 @@ export default function AutonomyPage() {
       <div className="flex items-center gap-3">
         <Shield className="h-5 w-5 text-primary" />
         <div>
-          <h1 className="text-lg font-bold text-foreground">Bounded Autonomy</h1>
+          <h1 className="text-heading-page text-foreground">Bounded Autonomy</h1>
           <p className="text-xs text-muted-foreground">
             Configure system and per-strategy autonomy levels, universe restrictions, and monitor
             auto-execution activity

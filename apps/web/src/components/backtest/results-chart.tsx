@@ -23,18 +23,33 @@ function EquityCurveChart({ curve, className }: { curve: number[]; className?: s
 
   return (
     <div className={cn('w-full', className)}>
-      <svg viewBox={`0 0 100 ${h}`} preserveAspectRatio="none" className="w-full h-40">
+      <svg
+        viewBox={`0 0 100 ${h}`}
+        preserveAspectRatio="none"
+        className="w-full h-40"
+        role="img"
+        aria-label="Backtest equity curve chart"
+      >
+        <title>Backtest equity curve</title>
         <defs>
           <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={isPositive ? '#22c55e' : '#ef4444'} stopOpacity="0" />
+            <stop
+              offset="0%"
+              stopColor={isPositive ? 'oklch(0.75 0.22 155)' : 'oklch(0.65 0.22 25)'}
+              stopOpacity="0.3"
+            />
+            <stop
+              offset="100%"
+              stopColor={isPositive ? 'oklch(0.75 0.22 155)' : 'oklch(0.65 0.22 25)'}
+              stopOpacity="0"
+            />
           </linearGradient>
         </defs>
         <polygon points={`0,${h} ${points} 100,${h}`} fill="url(#equityGrad)" />
         <polyline
           points={points}
           fill="none"
-          stroke={isPositive ? '#22c55e' : '#ef4444'}
+          stroke={isPositive ? 'oklch(0.75 0.22 155)' : 'oklch(0.65 0.22 25)'}
           strokeWidth="0.5"
           vectorEffect="non-scaling-stroke"
         />

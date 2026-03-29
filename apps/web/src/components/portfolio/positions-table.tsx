@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { ArrowUpDown, ChevronUp, ChevronDown, PieChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +50,7 @@ interface PositionsTableProps {
   onToggleSort: (field: SortField) => void;
 }
 
-export function PositionsTable({
+export const PositionsTable = memo(function PositionsTable({
   sortedPositions,
   sortField,
   sortDir,
@@ -206,4 +207,4 @@ export function PositionsTable({
       </CardContent>
     </Card>
   );
-}
+});

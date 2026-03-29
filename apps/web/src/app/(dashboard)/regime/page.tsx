@@ -613,7 +613,7 @@ export default function RegimePage() {
         <div>
           <div className="flex items-center gap-3">
             <Gauge className="h-6 w-6 text-violet-400" />
-            <h1 className="text-2xl font-bold text-zinc-100">Regime Detection</h1>
+            <h1 className="text-heading-page text-zinc-100">Regime Detection</h1>
           </div>
           <p className="mt-1 text-sm text-zinc-400">
             Classify the market regime and manage strategy playbooks for each condition.

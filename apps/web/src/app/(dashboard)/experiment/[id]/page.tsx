@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Activity,
 } from 'lucide-react';
+import { CollapsibleCard } from '@/components/ui/collapsible-card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -139,7 +141,7 @@ function StatRow({
   value,
   format,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: number | null | undefined;
   format?: string;
 }) {
@@ -221,7 +223,7 @@ export default function ExperimentDetailPage() {
         </Link>
         <Beaker className="h-5 w-5 text-primary" />
         <div>
-          <h1 className="text-xl font-bold">{exp.name}</h1>
+          <h1 className="text-heading-page">{exp.name}</h1>
           <p className="text-sm text-muted-foreground">
             Created {new Date(exp.created_at).toLocaleDateString()}
             {exp.description && ` — ${exp.description}`}
@@ -239,10 +241,32 @@ export default function ExperimentDetailPage() {
           <h3 className="mb-2 text-sm font-semibold">Profitability</h3>
           <StatRow label="Total P&L" value={summary.total_pnl} format="currency" />
           <StatRow label="Total Return" value={summary.total_return_pct} format="pct" />
-          <StatRow label="Max Drawdown" value={summary.max_drawdown_pct} format="pct" />
-          <StatRow label="Sharpe Ratio" value={summary.avg_sharpe} format="ratio" />
           <StatRow
-            label="Win Rate"
+            label={
+              <>
+                Max Drawdown{' '}
+                <InfoTooltip content="Largest peak-to-trough decline in portfolio value. Lower is better." />
+              </>
+            }
+            value={summary.max_drawdown_pct}
+            format="pct"
+          />
+          <StatRow
+            label={
+              <>
+                Sharpe Ratio{' '}
+                <InfoTooltip content="Risk-adjusted return metric. Values above 1.0 indicate good risk-adjusted performance." />
+              </>
+            }
+            value={summary.avg_sharpe}
+            format="ratio"
+          />
+          <StatRow
+            label={
+              <>
+                Win Rate <InfoTooltip content="Percentage of trades that were profitable." />
+              </>
+            }
             value={summary.avg_win_rate != null ? summary.avg_win_rate * 100 : null}
             format="pct"
           />
@@ -258,13 +282,12 @@ export default function ExperimentDetailPage() {
         </div>
 
         {/* Configuration */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-2 text-sm font-semibold">Risk Caps</h3>
+        <CollapsibleCard title="Risk Caps" defaultOpen={false} className="bg-card border-border">
           <StatRow label="Max Daily Trades" value={exp.max_daily_trades} />
           <StatRow label="Max Position Value" value={exp.max_position_value} format="currency" />
           <StatRow label="Signal Threshold" value={exp.signal_strength_threshold} format="ratio" />
           <StatRow label="Max Total Exposure" value={exp.max_total_exposure} format="currency" />
-        </div>
+        </CollapsibleCard>
       </div>
 
       {/* Phase Timeline */}
@@ -348,10 +371,13 @@ export default function ExperimentDetailPage() {
         </div>
       )}
 
-      {/* Equity Curve (text-based for now) */}
       {snapshots.length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-3 text-sm font-semibold">Daily Snapshots</h3>
+        <CollapsibleCard
+          title="Daily Snapshots"
+          summary={`${snapshots.length} days`}
+          defaultOpen={false}
+          className="bg-card border-border"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -396,13 +422,16 @@ export default function ExperimentDetailPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </CollapsibleCard>
       )}
 
-      {/* All Orders */}
       {orders.length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-3 text-sm font-semibold">All Orders ({orders.length})</h3>
+        <CollapsibleCard
+          title="All Orders"
+          summary={`${orders.length} orders`}
+          defaultOpen={false}
+          className="bg-card border-border"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -470,7 +499,7 @@ export default function ExperimentDetailPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </CollapsibleCard>
       )}
     </div>
   );

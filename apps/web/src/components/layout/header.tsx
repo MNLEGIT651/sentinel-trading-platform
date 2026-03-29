@@ -43,15 +43,27 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [marketOpen, setMarketOpen] = useState(false);
 
   useEffect(() => {
+    let frameId: number;
+    let lastTime = '';
+    let lastMarketOpen: boolean | undefined;
+
     function tick() {
       const et = getETTime();
-      setTime(formatETTime(et));
-      setMarketOpen(isMarketOpen());
+      const formatted = formatETTime(et);
+      if (formatted !== lastTime) {
+        lastTime = formatted;
+        setTime(formatted);
+        const open = isMarketOpen();
+        if (open !== lastMarketOpen) {
+          lastMarketOpen = open;
+          setMarketOpen(open);
+        }
+      }
+      frameId = requestAnimationFrame(tick);
     }
 
     tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   return (
@@ -68,7 +80,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors active:scale-95"
+          className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors active:scale-95"
           aria-label="Toggle menu"
         >
           <Menu className="h-5 w-5" />

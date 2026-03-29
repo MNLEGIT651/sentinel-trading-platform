@@ -1,16 +1,10 @@
 'use client';
 
-import { Circle, Zap, Clock } from 'lucide-react';
+import { Zap, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { cn } from '@/lib/utils';
-
-const STATUS_COLORS: Record<string, string> = {
-  idle: 'text-muted-foreground',
-  running: 'text-sky-400',
-  error: 'text-destructive',
-  cooldown: 'text-amber-400',
-};
 
 interface AgentStatusInfo {
   status: string;
@@ -39,7 +33,6 @@ export function AgentStatusCard({
   isOffline,
 }: AgentStatusCardProps) {
   const statusStr = agentStatus?.status ?? 'idle';
-  const isAgentRunning = statusStr === 'running';
 
   return (
     <Card
@@ -56,23 +49,19 @@ export function AgentStatusCard({
             </div>
             <div>
               <CardTitle className="text-sm font-semibold text-foreground">{name}</CardTitle>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <Circle
-                  className={cn(
-                    'h-2 w-2 fill-current',
-                    STATUS_COLORS[statusStr] ?? 'text-muted-foreground',
-                    isAgentRunning && 'animate-pulse',
-                  )}
-                />
-                <span
-                  className={cn(
-                    'text-[10px] font-medium capitalize',
-                    STATUS_COLORS[statusStr] ?? 'text-muted-foreground',
-                  )}
-                >
-                  {statusStr}
-                </span>
-              </div>
+              <StatusBadge
+                status={
+                  statusStr === 'running'
+                    ? 'active'
+                    : statusStr === 'error'
+                      ? 'error'
+                      : statusStr === 'cooldown'
+                        ? 'warning'
+                        : 'idle'
+                }
+                label={statusStr}
+                className="mt-0.5"
+              />
             </div>
           </div>
           <Badge className={cn('border text-[10px] shrink-0', badgeClass)}>

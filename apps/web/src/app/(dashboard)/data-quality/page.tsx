@@ -212,7 +212,7 @@ export default function DataQualityPage() {
         <div>
           <div className="flex items-center gap-3">
             <Database className="h-6 w-6 text-violet-400" />
-            <h1 className="text-2xl font-bold text-zinc-100">Data Quality</h1>
+            <h1 className="text-heading-page text-zinc-100">Data Quality</h1>
           </div>
           <p className="mt-1 text-sm text-zinc-400">
             Monitor feed health, data gaps, provider fallbacks, and cache performance.

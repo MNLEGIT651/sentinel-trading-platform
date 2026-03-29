@@ -118,7 +118,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         <button
           onClick={onToggle}
           className={cn(
-            'flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
+            'flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
             collapsed && 'mx-auto mt-1',
           )}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -132,7 +132,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
+      <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
         {navSections.map((section) => (
           <div key={section.section} className="mb-3">
             {!collapsed && (
@@ -141,38 +141,40 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
               </p>
             )}
             {collapsed && <div className="mx-auto my-1 h-px w-6 bg-border" />}
-            <div className="space-y-0.5">
+            <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive =
                   item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
 
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    prefetch={false}
-                    className={cn(
-                      'group flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-all duration-200',
-                      isActive
-                        ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border-l-2 border-transparent',
-                      collapsed && 'justify-center px-2 border-l-0',
-                    )}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <item.icon
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      prefetch={false}
+                      aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'h-4 w-4 shrink-0 transition-colors',
+                        'group flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                         isActive
-                          ? 'text-primary'
-                          : 'text-muted-foreground group-hover:text-foreground',
+                          ? 'bg-primary/10 text-primary border-l-2 border-primary'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border-l-2 border-transparent',
+                        collapsed && 'justify-center px-2 border-l-0',
                       )}
-                    />
-                    {!collapsed && <span>{item.label}</span>}
-                  </Link>
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <item.icon
+                        className={cn(
+                          'h-4 w-4 shrink-0 transition-colors',
+                          isActive
+                            ? 'text-primary'
+                            : 'text-muted-foreground group-hover:text-foreground',
+                        )}
+                      />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </div>
         ))}
       </nav>

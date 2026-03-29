@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { Alert, AlertSeverity } from '@sentinel/shared';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ interface AlertFeedProps {
   alerts: Alert[];
 }
 
-export function AlertFeed({ alerts }: AlertFeedProps) {
+export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -64,4 +65,4 @@ export function AlertFeed({ alerts }: AlertFeedProps) {
       </CardContent>
     </Card>
   );
-}
+});

@@ -19,7 +19,7 @@
   --color-secondary: oklch(0.19 0.008 260);
   --color-secondary-foreground: oklch(0.93 0.005 250);
   --color-muted: oklch(0.19 0.008 260);
-  --color-muted-foreground: oklch(0.52 0.015 260);
+  --color-muted-foreground: oklch(0.63 0.015 260);
   --color-accent: oklch(0.19 0.012 260);
   --color-accent-foreground: oklch(0.93 0.005 250);
   --color-destructive: oklch(0.65 0.22 25);
@@ -361,7 +361,7 @@ tr:hover {
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 500;
-  color: oklch(0.52 0.015 260);
+  color: var(--color-muted-foreground);
 }
 
 .text-data-primary {
@@ -448,4 +448,15 @@ tr:hover {
 
 .animate-tooltip {
   animation: tooltip-fade 0.15s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

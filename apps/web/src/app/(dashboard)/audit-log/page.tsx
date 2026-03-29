@@ -391,7 +391,7 @@ export default function AuditLogPage() {
               <ClipboardList className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
+              <h1 className="text-heading-page text-foreground">Audit Log</h1>
               <p className="text-sm text-muted-foreground">
                 Complete record of all operator actions
               </p>

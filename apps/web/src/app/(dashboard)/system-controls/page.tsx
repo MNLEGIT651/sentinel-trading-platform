@@ -295,7 +295,7 @@ export default function SystemControlsPage() {
       <div className="flex items-center gap-3">
         <Shield className="h-7 w-7 text-foreground" />
         <div>
-          <h1 className="text-2xl font-bold text-foreground">System Controls</h1>
+          <h1 className="text-heading-page text-foreground">System Controls</h1>
           <p className="text-sm text-muted-foreground">
             Manage trading state, execution mode, and emergency controls
           </p>

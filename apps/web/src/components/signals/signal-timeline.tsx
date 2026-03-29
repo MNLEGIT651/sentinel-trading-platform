@@ -2,6 +2,7 @@
 
 import { ArrowUpDown, Radar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { SignalCard, type SignalRow } from './signal-card';
 
 export type SortField = 'strength' | 'ticker' | 'direction';
@@ -47,6 +48,9 @@ export function SignalTimeline({ signals, onToggleSort }: SignalTimelineProps) {
                       className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {field}
+                      {field === 'strength' && (
+                        <InfoTooltip content="Model confidence score from 0-100%. Scores above 70% indicate strong conviction." />
+                      )}
                       <ArrowUpDown className="h-3 w-3" />
                     </button>
                   </th>

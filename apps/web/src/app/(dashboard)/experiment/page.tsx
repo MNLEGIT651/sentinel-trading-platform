@@ -16,6 +16,8 @@ import {
   Activity,
   ShieldAlert,
 } from 'lucide-react';
+import { CollapsibleCard } from '@/components/ui/collapsible-card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -121,14 +123,14 @@ function MetricCard({
   value,
   sub,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   sub?: string | undefined;
 }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
+      <p className="mt-1 text-data-primary">{value}</p>
       {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
@@ -239,7 +241,7 @@ export default function ExperimentPage() {
         <div className="flex items-center gap-3">
           <Beaker className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-xl font-bold">Paper Trading Experiment</h1>
+            <h1 className="text-heading-page">Paper Trading Experiment</h1>
             <p className="text-sm text-muted-foreground">
               Two-phase trial: shadow recommendations → bounded paper execution
             </p>
@@ -309,14 +311,24 @@ export default function ExperimentPage() {
               value={latestSnapshot ? `$${latestSnapshot.equity.toLocaleString()}` : '—'}
             />
             <MetricCard
-              label="Cumulative P&L"
+              label={
+                <>
+                  Cumulative P&L{' '}
+                  <InfoTooltip content="Total profit or loss since the experiment started." />
+                </>
+              }
               value={latestSnapshot ? `$${latestSnapshot.cumulative_pnl.toLocaleString()}` : '—'}
               sub={
                 latestSnapshot ? `${latestSnapshot.cumulative_return_pct.toFixed(2)}%` : undefined
               }
             />
             <MetricCard
-              label="Max Drawdown"
+              label={
+                <>
+                  Max Drawdown{' '}
+                  <InfoTooltip content="Largest peak-to-trough decline in portfolio value. Lower is better." />
+                </>
+              }
               value={latestSnapshot ? `${latestSnapshot.max_drawdown_pct.toFixed(2)}%` : '—'}
             />
             <MetricCard
@@ -332,10 +344,11 @@ export default function ExperimentPage() {
           </div>
 
           {/* Risk Caps */}
-          <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-              Experiment Risk Caps
-            </h3>
+          <CollapsibleCard
+            title="Experiment Risk Caps"
+            defaultOpen={false}
+            className="bg-card border-border"
+          >
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
                 <p className="text-xs text-muted-foreground">Max Daily Trades</p>
@@ -354,14 +367,16 @@ export default function ExperimentPage() {
                 <p className="font-mono text-sm">${active.max_total_exposure.toLocaleString()}</p>
               </div>
             </div>
-          </div>
+          </CollapsibleCard>
 
           {/* Recent Orders */}
           {orders.length > 0 && (
-            <div className="rounded-lg border border-border bg-card p-4">
-              <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-                Recent Orders ({orders.length})
-              </h3>
+            <CollapsibleCard
+              title="Recent Orders"
+              summary={`${orders.length} total`}
+              defaultOpen={true}
+              className="bg-card border-border"
+            >
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -420,7 +435,7 @@ export default function ExperimentPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </CollapsibleCard>
           )}
         </div>
       ) : (
@@ -469,7 +484,7 @@ export default function ExperimentPage() {
       {/* Past Experiments */}
       {experiments.filter((e) => ['completed', 'aborted'].includes(e.status)).length > 0 && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Past Experiments</h3>
+          <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Past Experiments</h2>
           <div className="space-y-2">
             {experiments
               .filter((e) => ['completed', 'aborted'].includes(e.status))

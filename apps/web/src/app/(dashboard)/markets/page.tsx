@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { PriceChart } from '@/components/charts/price-chart';
+import dynamic from 'next/dynamic';
+
+const PriceChart = dynamic(
+  () => import('@/components/charts/price-chart').then((m) => ({ default: m.PriceChart })),
+  { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-lg bg-muted" /> },
+);
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBanner } from '@/components/ui/offline-banner';
@@ -177,7 +182,7 @@ export default function MarketsPage() {
               {selectedStock && (
                 <>
                   <span className="text-sm text-muted-foreground">{selectedStock.name}</span>
-                  <span className="text-lg font-semibold">
+                  <span className="text-lg font-semibold text-data-primary">
                     {selectedStock.price > 0 ? `$${selectedStock.price.toFixed(2)}` : '--'}
                   </span>
                   {selectedStock.price > 0 && (

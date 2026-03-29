@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CollapsibleCard } from '@/components/ui/collapsible-card';
+import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAppStore } from '@/stores/app-store';
 import {
   BacktestForm,
@@ -99,7 +101,7 @@ export default function BacktestPage() {
         <div className="flex items-center gap-3">
           <FlaskConical className="h-5 w-5 text-primary" />
           <div>
-            <h1 className="text-lg font-bold text-foreground">Backtest</h1>
+            <h1 className="text-heading-page text-foreground">Backtest</h1>
             <p className="text-xs text-muted-foreground">
               Run strategy backtests on synthetic market data
               {engineOnline === false && ' (engine offline — using client-side simulation)'}
@@ -142,47 +144,55 @@ export default function BacktestPage() {
             </TabsContent>
 
             <TabsContent value="summary">
-              <Card className="bg-card border-border">
-                <CardContent className="py-4">
-                  <div className="rounded-md border border-border/50 overflow-hidden">
-                    <div className="bg-muted/30 px-4 py-2">
-                      <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-                        Full Backtest Report &mdash;{' '}
-                        {strategyOptions.find((o) => o.id === strategy)?.label}
-                      </p>
-                    </div>
-                    <div className="divide-y divide-border/50">
-                      {[
-                        ['Strategy', s.strategy],
-                        ['Initial Capital', `$${s.initial_capital.toLocaleString()}`],
-                        [
-                          'Final Equity',
-                          `$${s.final_equity.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
-                        ],
-                        ['Total Return', `${(s.total_return * 100).toFixed(2)}%`],
-                        ['Total Trades', String(s.total_trades)],
-                        ['Win Rate', `${(s.win_rate * 100).toFixed(1)}%`],
-                        ['Sharpe Ratio', s.sharpe_ratio.toFixed(3)],
-                        ['Sortino Ratio', s.sortino_ratio.toFixed(3)],
-                        ['Max Drawdown', `${(s.max_drawdown * 100).toFixed(2)}%`],
-                        [
-                          'Profit Factor',
-                          s.profit_factor >= 999 ? '∞' : s.profit_factor.toFixed(3),
-                        ],
-                        ['Avg Trade P&L', `$${s.avg_trade_pnl.toFixed(2)}`],
-                        ['Avg Holding Period', `${s.avg_holding_bars.toFixed(0)} bars`],
-                      ].map(([label, value]) => (
-                        <div key={label} className="flex items-center justify-between px-4 py-2">
-                          <span className="text-xs text-muted-foreground">{label}</span>
-                          <span className="text-xs font-mono font-medium text-foreground">
-                            {value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+              <CollapsibleCard
+                title="Full Backtest Report"
+                summary={strategyOptions.find((o) => o.id === strategy)?.label}
+                defaultOpen={true}
+                className="bg-card border-border"
+              >
+                <div className="rounded-md border border-border/50 overflow-hidden">
+                  <div className="divide-y divide-border/50">
+                    {[
+                      ['Strategy', s.strategy],
+                      ['Initial Capital', `$${s.initial_capital.toLocaleString()}`],
+                      [
+                        'Final Equity',
+                        `$${s.final_equity.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+                      ],
+                      ['Total Return', `${(s.total_return * 100).toFixed(2)}%`],
+                      ['Total Trades', String(s.total_trades)],
+                      ['Win Rate', `${(s.win_rate * 100).toFixed(1)}%`],
+                      ['Sharpe Ratio', s.sharpe_ratio.toFixed(3)],
+                      ['Sortino Ratio', s.sortino_ratio.toFixed(3)],
+                      ['Max Drawdown', `${(s.max_drawdown * 100).toFixed(2)}%`],
+                      ['Profit Factor', s.profit_factor >= 999 ? '∞' : s.profit_factor.toFixed(3)],
+                      ['Avg Trade P&L', `$${s.avg_trade_pnl.toFixed(2)}`],
+                      ['Avg Holding Period', `${s.avg_holding_bars.toFixed(0)} bars`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-center justify-between px-4 py-2">
+                        <span className="text-xs text-muted-foreground">
+                          {label}
+                          {label === 'Win Rate' && (
+                            <InfoTooltip content="Percentage of trades that were profitable." />
+                          )}
+                          {label === 'Sharpe Ratio' && (
+                            <InfoTooltip content="Risk-adjusted return metric. Values above 1.0 indicate good risk-adjusted performance." />
+                          )}
+                          {label === 'Sortino Ratio' && (
+                            <InfoTooltip content="Like Sharpe but only penalizes downside volatility. Higher is better." />
+                          )}
+                          {label === 'Max Drawdown' && (
+                            <InfoTooltip content="Largest peak-to-trough decline in portfolio value. Lower is better." />
+                          )}
+                        </span>
+                        <span className="text-xs font-mono font-medium text-foreground">
+                          {value}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CollapsibleCard>
             </TabsContent>
           </Tabs>
         </div>
