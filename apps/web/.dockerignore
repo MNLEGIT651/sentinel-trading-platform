@@ -1,0 +1,15 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+.vscode
+.idea
+*.md
+!README.md
+tests
+playwright-report
+test-results
+.env
+.env.*
+!.env.example

@@ -15,9 +15,18 @@ const disableReactRules = Object.fromEntries(
 
 const eslintConfig = defineConfig([...nextVitals, ...nextTs, { rules: disableReactRules }, {
   rules: {
+    // Accessibility
     "jsx-a11y/alt-text": "warn",
     "jsx-a11y/aria-props": "warn",
     "jsx-a11y/aria-role": "warn",
+    // Prevent console.log in production code (allow warn/error)
+    "no-console": ["warn", { allow: ["warn", "error"] }],
+    // Catch unreachable code
+    "no-unreachable": "error",
+    // Catch duplicate case labels
+    "no-duplicate-case": "error",
+    // Prefer const over let when variable is not reassigned
+    "prefer-const": "warn",
   },
 }, // Override default ignores of eslint-config-next.
 globalIgnores([

@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.turbo
+.vscode
+.idea
+*.md
+!README.md
+tests
+.env
+.env.*
+!.env.example

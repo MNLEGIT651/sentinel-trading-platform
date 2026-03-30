@@ -124,6 +124,7 @@ function waitWithJitter(attempt: number): Promise<void> {
 }
 
 function logProxySuccess(meta: Record<string, unknown>): void {
+  // eslint-disable-next-line no-console -- structured proxy log for observability
   console.log(
     JSON.stringify({
       scope: 'service-proxy',

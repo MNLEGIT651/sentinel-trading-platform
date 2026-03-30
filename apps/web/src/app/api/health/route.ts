@@ -38,16 +38,16 @@ export async function GET() {
 
   const status = hasDegraded ? 'degraded' : 'ok';
 
-  return NextResponse.json(
-    {
-      status,
-      service: 'sentinel-web',
-      timestamp: new Date().toISOString(),
-      dependencies: {
-        engine,
-        agents,
-      },
+  // Always return 200 — this service is healthy even when dependencies are not.
+  // Load balancers should keep this node in rotation; the `status` field
+  // communicates dependency health to monitoring systems.
+  return NextResponse.json({
+    status,
+    service: 'sentinel-web',
+    timestamp: new Date().toISOString(),
+    dependencies: {
+      engine,
+      agents,
     },
-    { status: hasDegraded ? 503 : 200 },
-  );
+  });
 }

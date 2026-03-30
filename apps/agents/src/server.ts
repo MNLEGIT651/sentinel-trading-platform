@@ -170,21 +170,23 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Cycle control ───────────────────────────────────────────────
 
-  app.post('/cycle', async (_req: Request, res: Response) => {
+  app.post('/cycle', async (_req: Request, res: Response): Promise<void> => {
     if (orchestrator.currentState.halted) {
-      return res.status(409).json({
+      res.status(409).json({
         error: 'halted',
         message: 'Trading is halted. Call POST /resume first.',
       });
+      return;
     }
 
     const lockManager = getLockManager();
     const acquired = await lockManager.acquire(CYCLE_LOCK_NAME);
     if (!acquired) {
-      return res.status(409).json({
+      res.status(409).json({
         error: 'cycle_in_progress',
         message: 'A cycle is already running. Try again after it completes.',
       });
+      return;
     }
 
     // Fire-and-forget — respond immediately, cycle runs async
@@ -225,21 +227,25 @@ export function createApp(orchestrator: Orchestrator): Express {
   ] as const;
   const VALID_REC_STATUS_SET = new Set<string>(VALID_REC_STATUSES);
 
-  app.get('/recommendations', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const status = (req.query.status as string) ?? 'pending';
-      if (!VALID_REC_STATUS_SET.has(status)) {
-        return res.status(400).json({
-          error: 'invalid_status',
-          message: `status must be one of: ${VALID_REC_STATUSES.join(', ')}`,
-        });
+  app.get(
+    '/recommendations',
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        const status = (req.query.status as string) ?? 'pending';
+        if (!VALID_REC_STATUS_SET.has(status)) {
+          res.status(400).json({
+            error: 'invalid_status',
+            message: `status must be one of: ${VALID_REC_STATUSES.join(', ')}`,
+          });
+          return;
+        }
+        const recommendations = await listRecommendations(status);
+        res.json({ recommendations });
+      } catch (err) {
+        next(err);
       }
-      const recommendations = await listRecommendations(status);
-      res.json({ recommendations });
-    } catch (err) {
-      next(err);
-    }
-  });
+    },
+  );
 
   /**
    * Approve a pending recommendation.
@@ -249,25 +255,28 @@ export function createApp(orchestrator: Orchestrator): Express {
    */
   app.post(
     '/recommendations/:id/approve',
-    async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+    async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
       try {
         const id = req.params['id'];
-        if (!id) return res.status(400).json({ error: 'missing_id' });
+        if (!id) {
+          res.status(400).json({ error: 'missing_id' });
+          return;
+        }
 
         const rec = await getRecommendation(id);
         if (!rec) {
-          return res
-            .status(404)
-            .json({ error: 'not_found', message: `Recommendation ${id} not found` });
+          res.status(404).json({ error: 'not_found', message: `Recommendation ${id} not found` });
+          return;
         }
 
         // Atomic claim — returns null if already processed (race-condition safe)
         const claimed = await atomicApprove(id);
         if (!claimed) {
-          return res.status(409).json({
+          res.status(409).json({
             error: 'not_pending',
             message: 'Recommendation is not in pending state',
           });
+          return;
         }
 
         // Submit to engine (which routes to Alpaca paper/live)
@@ -313,11 +322,13 @@ export function createApp(orchestrator: Orchestrator): Express {
           // 422 = engine risk-blocked the order
           if (msg.includes('422') || msg.toLowerCase().includes('risk')) {
             await markRiskBlocked(id, msg);
-            return res.status(422).json({ error: 'risk_blocked', detail: msg });
+            res.status(422).json({ error: 'risk_blocked', detail: msg });
+            return;
           }
 
           // Other engine failure — don't permanently mark; return 502 so UI can retry
-          return res.status(502).json({ error: 'engine_error', detail: msg });
+          res.status(502).json({ error: 'engine_error', detail: msg });
+          return;
         }
       } catch (err) {
         next(err);
@@ -327,24 +338,27 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   app.post(
     '/recommendations/:id/reject',
-    async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+    async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
       try {
         const id = req.params['id'];
-        if (!id) return res.status(400).json({ error: 'missing_id' });
+        if (!id) {
+          res.status(400).json({ error: 'missing_id' });
+          return;
+        }
 
         const rec = await getRecommendation(id);
         if (!rec) {
-          return res
-            .status(404)
-            .json({ error: 'not_found', message: `Recommendation ${id} not found` });
+          res.status(404).json({ error: 'not_found', message: `Recommendation ${id} not found` });
+          return;
         }
 
         const rejected = await rejectRecommendation(id);
         if (!rejected) {
-          return res.status(409).json({
+          res.status(409).json({
             error: 'not_pending',
             message: 'Recommendation is not in pending state',
           });
+          return;
         }
 
         res.json({ status: 'rejected' });
@@ -410,10 +424,13 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   app.get(
     '/agent-runs/:id',
-    async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+    async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
       try {
         const id = req.params['id'];
-        if (!id) return res.status(400).json({ error: 'missing_id' });
+        if (!id) {
+          res.status(400).json({ error: 'missing_id' });
+          return;
+        }
 
         const db = getSupabaseClient();
         const { data: run, error: runError } = await db
@@ -423,7 +440,8 @@ export function createApp(orchestrator: Orchestrator): Express {
           .single();
 
         if (runError || !run) {
-          return res.status(404).json({ error: 'not_found', message: `Agent run ${id} not found` });
+          res.status(404).json({ error: 'not_found', message: `Agent run ${id} not found` });
+          return;
         }
 
         // Fetch agent_logs created during this run's time window
@@ -466,46 +484,50 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Research ──────────────────────────────────────────────────────
 
-  app.post('/research/ticker', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { ticker, depth } = req.body as { ticker?: string; depth?: 'quick' | 'full' };
+  app.post(
+    '/research/ticker',
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        const { ticker, depth } = req.body as { ticker?: string; depth?: 'quick' | 'full' };
 
-      if (!ticker || typeof ticker !== 'string') {
-        return res.status(400).json({ error: 'missing_ticker', message: 'ticker is required' });
-      }
+        if (!ticker || typeof ticker !== 'string') {
+          res.status(400).json({ error: 'missing_ticker', message: 'ticker is required' });
+          return;
+        }
 
-      const jobId = randomUUID();
-      const resolvedDepth = depth === 'quick' ? 'quick' : 'full';
-      const normalizedTicker = ticker.toUpperCase();
+        const jobId = randomUUID();
+        const resolvedDepth = depth === 'quick' ? 'quick' : 'full';
+        const normalizedTicker = ticker.toUpperCase();
 
-      // Fire-and-forget — respond immediately, research runs async
-      const prompt =
-        resolvedDepth === 'quick'
-          ? `Provide a quick summary for ${normalizedTicker}: current price, trend direction, and key levels.`
-          : undefined;
+        // Fire-and-forget — respond immediately, research runs async
+        const prompt =
+          resolvedDepth === 'quick'
+            ? `Provide a quick summary for ${normalizedTicker}: current price, trend direction, and key levels.`
+            : undefined;
 
-      const researchPromise = prompt
-        ? orchestrator.runAgent('research', prompt)
-        : orchestrator.research(normalizedTicker);
+        const researchPromise = prompt
+          ? orchestrator.runAgent('research', prompt)
+          : orchestrator.research(normalizedTicker);
 
-      researchPromise.catch((err: unknown) => {
-        logger.error('research.job.failed', {
-          jobId,
-          ticker: normalizedTicker,
-          error: err instanceof Error ? err.message : String(err),
+        researchPromise.catch((err: unknown) => {
+          logger.error('research.job.failed', {
+            jobId,
+            ticker: normalizedTicker,
+            error: err instanceof Error ? err.message : String(err),
+          });
         });
-      });
 
-      res.json({
-        job_id: jobId,
-        status: 'started',
-        ticker: normalizedTicker,
-        depth: resolvedDepth,
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
+        res.json({
+          job_id: jobId,
+          status: 'started',
+          ticker: normalizedTicker,
+          depth: resolvedDepth,
+        });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
   // ── Global error handler ─────────────────────────────────────────
 

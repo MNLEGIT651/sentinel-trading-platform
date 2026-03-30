@@ -1,0 +1,8 @@
+# Sentinel Trading Platform
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /onboarding/
+
+Sitemap: https://sentinel-trading-platform-agents.vercel.app/sitemap.xml
