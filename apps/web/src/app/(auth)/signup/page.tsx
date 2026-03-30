@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getEmailRedirectUrl } from '@/lib/auth/url';
 import { Button } from '@/components/ui/button';
 
 const CURRENT_TERMS_VERSION = '1.0.0';
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   async function recordConsent(document_type: string, document_version: string) {
     try {
@@ -58,6 +60,9 @@ export default function SignUpPage() {
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: getEmailRedirectUrl(),
+        },
       });
 
       if (signUpError) {
@@ -79,6 +84,24 @@ export default function SignUpPage() {
     }
   }
 
+  async function handleResendConfirmation() {
+    setResendState('sending');
+    try {
+      const supabase = createClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      if (resendError) {
+        setResendState('error');
+        return;
+      }
+      setResendState('sent');
+    } catch {
+      setResendState('error');
+    }
+  }
+
   if (success) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center">
@@ -88,6 +111,35 @@ export default function SignUpPage() {
             We sent a confirmation link to <strong>{email}</strong>. Click it to activate your
             account.
           </p>
+          <p className="text-xs text-muted-foreground">
+            The link expires in 24 hours. Check your spam folder if you don&apos;t see it.
+          </p>
+
+          <div className="pt-2">
+            {resendState === 'idle' && (
+              <button
+                onClick={handleResendConfirmation}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Didn&apos;t receive the email? Resend
+              </button>
+            )}
+            {resendState === 'sending' && (
+              <p className="text-sm text-muted-foreground">Resending…</p>
+            )}
+            {resendState === 'sent' && (
+              <p className="text-sm text-green-600">✓ Confirmation email resent</p>
+            )}
+            {resendState === 'error' && (
+              <p className="text-sm text-destructive">
+                Could not resend.{' '}
+                <button onClick={handleResendConfirmation} className="font-medium underline">
+                  Try again
+                </button>
+              </p>
+            )}
+          </div>
+
           <a
             href="/login"
             className="inline-block text-sm font-medium text-primary hover:underline"
