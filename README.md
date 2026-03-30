@@ -1,8 +1,12 @@
 # Sentinel Trading Platform
 
 [![CI](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/ci.yml)
-[![Security](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/security-safety.yml/badge.svg)](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/security-safety.yml)
-[![Performance](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/performance-benchmarks.yml/badge.svg)](https://github.com/stevenschling13/sentinel-trading-platform/actions/workflows/performance-benchmarks.yml)
+[![Vercel](https://img.shields.io/badge/Vercel-deployed-brightgreen?logo=vercel)](https://sentinel-trading-platform-agents.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/Node-22-green?logo=node.js)](https://nodejs.org)
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_17-3ECF8E?logo=supabase)](https://supabase.com)
+[![Turborepo](https://img.shields.io/badge/Turborepo-monorepo-EF4444?logo=turborepo)](https://turbo.build)
 
 Systematic trading control plane built as a Turborepo monorepo: Next.js dashboard, Python quant engine, TypeScript agent orchestrator, and Supabase-backed state.
 

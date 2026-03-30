@@ -1,0 +1,35 @@
+# PR Size Labels
+# Automatically labels PRs based on diff size for quick triage.
+# XS: <10, S: <50, M: <200, L: <500, XL: 500+
+
+name: PR Size Labels
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label-size:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label PR by size
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_label: 'size/XS'
+          xs_max_size: 10
+          s_label: 'size/S'
+          s_max_size: 50
+          m_label: 'size/M'
+          m_max_size: 200
+          l_label: 'size/L'
+          l_max_size: 500
+          xl_label: 'size/XL'
+          fail_if_xl: false
+          files_to_ignore: |
+            pnpm-lock.yaml
+            package-lock.json
+            *.snap

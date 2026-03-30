@@ -1,0 +1,25 @@
+title: '❓ Help & Questions'
+labels: ['question', 'help wanted']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help getting started, understanding a feature, or debugging an issue?
+        Ask here and the community will help.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What do you need help with?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Describe what you've already attempted.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, OS, browser, etc.
