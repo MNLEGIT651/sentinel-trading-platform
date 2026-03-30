@@ -2,8 +2,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { safeErrorMessage } from '@/lib/api-error';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 /**
  * GET /api/catalysts?from=DATE&to=DATE&ticker=AAPL&type=earnings
@@ -11,14 +11,16 @@ import { safeErrorMessage } from '@/lib/api-error';
  */
 
 export async function GET(request: Request) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
+
   const { searchParams } = new URL(request.url);
   const from = searchParams.get('from');
   const to = searchParams.get('to');
   const ticker = searchParams.get('ticker');
   const eventType = searchParams.get('type');
   const impact = searchParams.get('impact');
-
-  const supabase = await createServerSupabaseClient();
 
   let query = supabase.from('catalyst_events').select('*').order('event_date', { ascending: true });
 
@@ -73,7 +75,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== 'object') {
@@ -103,10 +107,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { data, error } = await supabase
     .from('catalyst_events')
     .insert({
@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       source: source || 'manual',
       source_id: source_id || null,
       metadata: metadata || {},
-      user_id: user?.id || null,
+      user_id: user.id,
     })
     .select()
     .single();

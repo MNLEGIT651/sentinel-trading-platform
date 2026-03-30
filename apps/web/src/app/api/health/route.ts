@@ -33,13 +33,21 @@ export async function GET() {
     checkDependency('agents'),
   ]);
 
-  return NextResponse.json({
-    status: 'ok',
-    service: 'sentinel-web',
-    timestamp: new Date().toISOString(),
-    dependencies: {
-      engine,
-      agents,
+  // Return degraded status when any configured service is unreachable
+  const hasDegraded = engine === 'disconnected' || agents === 'disconnected';
+
+  const status = hasDegraded ? 'degraded' : 'ok';
+
+  return NextResponse.json(
+    {
+      status,
+      service: 'sentinel-web',
+      timestamp: new Date().toISOString(),
+      dependencies: {
+        engine,
+        agents,
+      },
     },
-  });
+    { status: hasDegraded ? 503 : 200 },
+  );
 }

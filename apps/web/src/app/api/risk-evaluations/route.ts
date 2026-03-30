@@ -2,20 +2,22 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { safeErrorMessage } from '@/lib/api-error';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 /**
  * GET /api/risk-evaluations?recommendation_id=UUID&limit=50&offset=0
  * Returns risk evaluations, optionally filtered by recommendation.
  */
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
+
   const { searchParams } = request.nextUrl;
   const recommendationId = searchParams.get('recommendation_id');
   const limit = Math.min(Number(searchParams.get('limit') ?? 50), 200);
   const offset = Number(searchParams.get('offset') ?? 0);
-
-  const supabase = await createServerSupabaseClient();
 
   let query = supabase
     .from('risk_evaluations')
@@ -44,6 +46,10 @@ export async function GET(request: NextRequest) {
  * Record a new risk evaluation for a recommendation.
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -68,8 +74,6 @@ export async function POST(request: NextRequest) {
   if (typeof allowed !== 'boolean') {
     return NextResponse.json({ error: 'allowed (boolean) is required' }, { status: 400 });
   }
-
-  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from('risk_evaluations')

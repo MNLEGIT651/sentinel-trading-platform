@@ -12,10 +12,12 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useJournalQuery, useJournalStatsQuery, useGradeJournalMutation } from '@/hooks/queries';
 import type { JournalEntry, TradeGrade } from '@sentinel/shared';
+import Link from 'next/link';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -176,6 +178,16 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <EventBadge type={entry.event_type} />
+            {entry.recommendation_id && (
+              <Link
+                href={`/recommendations/${entry.recommendation_id}`}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors"
+                title="View recommendation with explanation"
+              >
+                <Sparkles className="h-2.5 w-2.5" />
+                Why
+              </Link>
+            )}
             {entry.ticker && (
               <span className="text-sm font-semibold text-zinc-100">{entry.ticker}</span>
             )}

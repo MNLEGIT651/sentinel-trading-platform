@@ -5,7 +5,8 @@ import { useAppStore } from '@/stores/app-store';
 
 const ENGINE_HEALTH_URL = '/api/engine/health';
 const AGENTS_HEALTH_URL = '/api/agents/health';
-const POLL_INTERVAL = 15_000;
+const BASE_INTERVAL = 15_000;
+const MAX_INTERVAL = 60_000;
 
 async function checkEngine(): Promise<boolean> {
   try {
@@ -48,26 +49,43 @@ async function readHealth(): Promise<{ engine: boolean | null; agents: boolean |
 }
 
 /**
- * Polls engine and agents health every 15s and writes to Zustand.
+ * Polls engine and agents health with exponential backoff.
+ * Starts at 15s, backs off to 60s when services are down, resets on recovery.
  * Mount once in the app shell — all pages read from the store.
  */
 export function useServiceHealth() {
   const setEngineOnline = useAppStore((s) => s.setEngineOnline);
   const setAgentsOnline = useAppStore((s) => s.setAgentsOnline);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef(BASE_INTERVAL);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function probe() {
       const { engine, agents } = await readHealth();
+      if (cancelled) return;
+
       setEngineOnline(engine);
-      // null = intentionally unconfigured in local development — hide the banner
       setAgentsOnline(agents);
+
+      // Back off when services are down, reset when healthy
+      const allHealthy =
+        (engine === true || engine === null) && (agents === true || agents === null);
+
+      if (allHealthy) {
+        intervalRef.current = BASE_INTERVAL;
+      } else {
+        intervalRef.current = Math.min(intervalRef.current * 2, MAX_INTERVAL);
+      }
+
+      timerRef.current = setTimeout(probe, intervalRef.current);
     }
 
     probe();
-    intervalRef.current = setInterval(probe, POLL_INTERVAL);
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      cancelled = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [setEngineOnline, setAgentsOnline]);
 }

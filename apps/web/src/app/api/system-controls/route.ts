@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { SystemControls, SystemControlsUpdate, SystemMode } from '@sentinel/shared';
 import { safeErrorMessage } from '@/lib/api-error';
+import { requireAuth, requireRole } from '@/lib/auth/require-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,14 +10,9 @@ const VALID_MODES: SystemMode[] = ['paper', 'live', 'backtest'];
 
 // GET /api/system-controls — fetch the single system controls row
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
 
   const { data, error } = await supabase.from('system_controls').select('*').limit(1).single();
 
@@ -31,16 +26,11 @@ export async function GET() {
   return NextResponse.json({ data: data as SystemControls });
 }
 
-// PATCH /api/system-controls — update system controls
+// PATCH /api/system-controls — update system controls (operator role required)
 export async function PATCH(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireRole('operator');
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
   const rawBody = await request.json().catch(() => null);
   if (!rawBody || typeof rawBody !== 'object') {

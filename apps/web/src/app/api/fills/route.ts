@@ -2,22 +2,24 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { safeErrorMessage } from '@/lib/api-error';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 /**
  * GET /api/fills?order_id=UUID&limit=50&offset=0&from=ISO&to=ISO
  * Returns fill records, optionally filtered by order and date range.
  */
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
+
   const { searchParams } = request.nextUrl;
   const orderId = searchParams.get('order_id');
   const limit = Math.min(Number(searchParams.get('limit') ?? 50), 200);
   const offset = Number(searchParams.get('offset') ?? 0);
   const from = searchParams.get('from');
   const to = searchParams.get('to');
-
-  const supabase = await createServerSupabaseClient();
 
   let query = supabase
     .from('fills')
@@ -52,6 +54,10 @@ export async function GET(request: NextRequest) {
  * Record a new fill for an order execution.
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase } = auth;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -76,8 +82,6 @@ export async function POST(request: NextRequest) {
   if (typeof fill_qty !== 'number' || fill_qty <= 0) {
     return NextResponse.json({ error: 'fill_qty (positive number) is required' }, { status: 400 });
   }
-
-  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from('fills')
