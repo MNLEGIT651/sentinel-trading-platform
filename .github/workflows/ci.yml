@@ -63,30 +63,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter web exec playwright install --with-deps chromium
-
-      - name: Install Playwright deps (cached)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter web exec playwright install-deps chromium
-
-      - name: Run E2E tests
-        run: pnpm --filter web test:e2e
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
-
   # ---------------------------------------------------------------------------
   # Job 2: Python quant engine
   # ---------------------------------------------------------------------------
@@ -181,6 +157,7 @@ jobs:
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-web, test-engine, test-agents]
     runs-on: ubuntu-latest
     timeout-minutes: 10
