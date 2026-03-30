@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Experiment, ExperimentCreate } from '@sentinel/shared';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,9 @@ function supabaseAdmin() {
 /*  GET /api/experiments — list all experiments                       */
 /* ------------------------------------------------------------------ */
 export async function GET() {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const sb = supabaseAdmin();
 
@@ -40,6 +44,9 @@ export async function GET() {
 /*  POST /api/experiments — create a new experiment                   */
 /* ------------------------------------------------------------------ */
 export async function POST(request: Request) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') {

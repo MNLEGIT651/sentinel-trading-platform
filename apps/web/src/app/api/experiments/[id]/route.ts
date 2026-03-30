@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Experiment, ExperimentUpdate } from '@sentinel/shared';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,9 @@ function supabaseAdmin() {
 /*  GET /api/experiments/[id] — fetch a single experiment             */
 /* ------------------------------------------------------------------ */
 export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
 
@@ -50,6 +54,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 /*  Cannot update status (use halt / advance endpoints).              */
 /* ------------------------------------------------------------------ */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
 

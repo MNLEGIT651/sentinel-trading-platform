@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Experiment, ExperimentStatus } from '@sentinel/shared';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,9 @@ function transitionPayload(current: ExperimentStatus, now: string): Record<strin
 /*  POST /api/experiments/[id]/advance — advance to the next phase    */
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest, { params }: RouteParams) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
 

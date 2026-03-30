@@ -25,10 +25,10 @@ def _authed_client() -> TestClient:
 
 
 def test_health_no_key_required():
-    """GET /health should succeed without any API key."""
+    """GET /health should succeed without any API key (200 or 503 degraded)."""
     client = _unauthed_client()
     resp = client.get("/health")
-    assert resp.status_code == 200
+    assert resp.status_code in (200, 503)
 
 
 def test_docs_no_key_required():

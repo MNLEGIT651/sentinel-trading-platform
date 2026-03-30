@@ -1,11 +1,11 @@
 """Integration tests for the health route."""
 
 
-async def test_health_returns_ok(client):
+async def test_health_returns_valid_status(client):
     response = await client.get("/health")
-    assert response.status_code == 200
+    assert response.status_code in (200, 503)
     body = response.json()
-    assert body["status"] == "ok"
+    assert body["status"] in ("ok", "degraded")
 
 
 async def test_health_includes_service_name(client):

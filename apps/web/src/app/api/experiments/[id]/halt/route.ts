@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Experiment } from '@sentinel/shared';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,9 @@ function supabaseAdmin() {
 /*  POST /api/experiments/[id]/halt — halt an experiment              */
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest, { params }: RouteParams) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
 

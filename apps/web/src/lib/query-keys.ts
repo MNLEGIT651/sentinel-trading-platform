@@ -156,4 +156,33 @@ export const queryKeys = {
     all: ['signal-runs'] as const,
     list: (filters?: object) => ['signal-runs', 'list', filters] as const,
   },
+
+  // ── Advisor Memory ────────────────────────────────────────────────
+  advisor: {
+    all: ['advisor'] as const,
+    profile: () => ['advisor', 'profile'] as const,
+    threads: {
+      all: () => ['advisor', 'threads'] as const,
+      list: () => ['advisor', 'threads', 'list'] as const,
+      detail: (id: string) => ['advisor', 'threads', id] as const,
+      messages: (threadId: string) => ['advisor', 'threads', threadId, 'messages'] as const,
+    },
+    preferences: {
+      all: () => ['advisor', 'preferences'] as const,
+      list: (filters?: { status?: string; category?: string }) =>
+        ['advisor', 'preferences', 'list', filters] as const,
+    },
+    memoryEvents: {
+      all: () => ['advisor', 'memory-events'] as const,
+      list: (filters?: { preferenceId?: string }) =>
+        ['advisor', 'memory-events', 'list', filters] as const,
+    },
+    context: () => ['advisor', 'context'] as const,
+  },
+
+  // ── Recommendation Explanations ──────────────────────────────────
+  explanations: {
+    all: ['explanations'] as const,
+    byRec: (recommendationId: string) => ['explanations', recommendationId] as const,
+  },
 } as const;

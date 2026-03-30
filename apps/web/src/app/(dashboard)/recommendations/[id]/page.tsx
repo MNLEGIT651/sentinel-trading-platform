@@ -20,6 +20,7 @@ import {
 } from '@/hooks/queries/use-recommendation-events-query';
 import { useApproveRecommendationMutation } from '@/hooks/queries/use-approve-recommendation-mutation';
 import { useRejectRecommendationMutation } from '@/hooks/queries/use-reject-recommendation-mutation';
+import { ExplanationSection } from '@/components/advisor/explanation-section';
 
 /* ------------------------------------------------------------------ */
 /*  Status / event-type colour helpers                                */
@@ -537,6 +538,9 @@ export default function RecommendationDetailPage({ params }: { params: Promise<{
 
       {/* Summary */}
       <SummaryCard rec={rec} />
+
+      {/* Why this suggestion */}
+      <ExplanationSection recommendationId={rec.id} />
 
       {/* Timeline */}
       <EventTimeline events={events} />

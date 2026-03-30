@@ -1,21 +1,54 @@
+import logging
+
+import httpx
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from src.api.models.responses import DependencyStatus, HealthResponse
 from src.config import Settings
 
 router = APIRouter()
+_logger = logging.getLogger(__name__)
 
 
-@router.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """Return service health status."""
+@router.get("/health")
+async def health_check() -> JSONResponse:
+    """Return service health status with live connectivity probes."""
     settings = Settings()
-    return HealthResponse(
-        status="ok",
+
+    supabase_configured = bool(settings.supabase_url and settings.supabase_service_role_key)
+    supabase_reachable = False
+    if supabase_configured:
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(
+                    f"{settings.supabase_url}/rest/v1/",
+                    headers={
+                        "apikey": settings.supabase_service_role_key,
+                        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+                    },
+                )
+                supabase_reachable = resp.is_success
+        except Exception:
+            _logger.debug("Supabase health probe failed", exc_info=True)
+
+    polygon_ok = bool(settings.polygon_api_key)
+    alpaca_ok = bool(settings.alpaca_api_key and settings.alpaca_secret_key)
+
+    degraded = supabase_configured and not supabase_reachable
+    status = "degraded" if degraded else "ok"
+
+    body = HealthResponse(
+        status=status,
         service="sentinel-engine",
         dependencies=DependencyStatus(
-            polygon=bool(settings.polygon_api_key),
-            alpaca=bool(settings.alpaca_api_key and settings.alpaca_secret_key),
-            supabase=bool(settings.supabase_url and settings.supabase_service_role_key),
+            polygon=polygon_ok,
+            alpaca=alpaca_ok,
+            supabase=supabase_reachable if supabase_configured else False,
         ),
+    )
+
+    return JSONResponse(
+        content=body.model_dump(),
+        status_code=503 if degraded else 200,
     )

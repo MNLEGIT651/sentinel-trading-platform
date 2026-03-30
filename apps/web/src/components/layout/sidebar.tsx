@@ -29,6 +29,7 @@ import {
   Workflow,
   Beaker,
   LogOut,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -52,6 +53,7 @@ const navSections: NavSection[] = [
       { label: 'Portfolio', href: '/portfolio', icon: PieChart },
       { label: 'Orders', href: '/orders', icon: ArrowUpDown },
       { label: 'Journal', href: '/journal', icon: BookOpen },
+      { label: 'Advisor', href: '/advisor', icon: Sparkles },
     ],
   },
   {
