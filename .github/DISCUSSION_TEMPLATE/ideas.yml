@@ -1,0 +1,32 @@
+title: '💡 Ideas & Feature Discussion'
+labels: ['discussion', 'idea']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share ideas, propose features, or discuss the direction of Sentinel.
+        This is a space for open-ended conversation — not a bug report or task.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's your idea?
+      description: Describe the idea, feature, or improvement you'd like to discuss.
+      placeholder: I think it would be useful if...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any additional context, screenshots, or references.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard / UI
+        - Engine / Strategies
+        - Agents / AI
+        - Database / Schema
+        - Infrastructure / DevOps
+        - Other
