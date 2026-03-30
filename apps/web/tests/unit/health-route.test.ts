@@ -75,7 +75,7 @@ describe('/api/health', () => {
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({
-      status: 'ok',
+      status: 'degraded',
       dependencies: {
         engine: 'disconnected',
         agents: 'connected',
