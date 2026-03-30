@@ -1,32 +1,91 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { sanitizeRedirectPath } from '@/lib/auth/url';
 
-/** Ensure the redirect target is a safe, same-origin path. */
-function sanitizeRedirectPath(next: string | null): string {
-  if (!next) return '/';
-  if (!next.startsWith('/')) return '/';
-  if (next.includes('//') || next.includes('://') || next.includes('\\')) return '/';
-  return next;
+/**
+ * Auth failure reason codes — used in URL params and logs.
+ * Each code maps to user-facing copy on the auth-error page.
+ */
+type AuthFailureReason =
+  | 'missing_params'
+  | 'code_exchange_failed'
+  | 'token_verification_failed'
+  | 'unknown';
+
+function buildErrorRedirect(origin: string, reason: AuthFailureReason): Response {
+  return NextResponse.redirect(`${origin}/auth/error?reason=${reason}`);
 }
 
 /**
  * Supabase auth callback handler.
- * Handles email confirmation links and OAuth redirects by exchanging the
- * authorization code for a session, then redirecting to the dashboard.
+ *
+ * Handles two link formats Supabase may send:
+ *
+ * 1. **PKCE code exchange** (default for email confirmation):
+ *    `/auth/callback?code=<code>&next=/`
+ *
+ * 2. **Token hash verification** (magic links, some email templates):
+ *    `/auth/callback?token_hash=<hash>&type=email`
+ *
+ * Both patterns are supported to prevent user-facing failures if the
+ * Supabase email template or auth config changes.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const tokenHash = searchParams.get('token_hash');
+  const type = searchParams.get('type');
   const safePath = sanitizeRedirectPath(searchParams.get('next'));
 
+  // ── PKCE code exchange (primary path) ───────────────────────────────
   if (code) {
-    const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}${safePath}`);
+    try {
+      const supabase = await createServerSupabaseClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error) {
+        return NextResponse.redirect(`${origin}${safePath}`);
+      }
+      console.error('[auth/callback] code exchange failed:', {
+        reason: error.message,
+        status: error.status,
+      });
+      return buildErrorRedirect(origin, 'code_exchange_failed');
+    } catch (err) {
+      console.error('[auth/callback] unexpected error during code exchange:', err);
+      return buildErrorRedirect(origin, 'code_exchange_failed');
     }
   }
 
-  // If something went wrong, redirect to login with an error hint
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  // ── Token hash verification (magic link / alternate email template) ─
+  if (tokenHash && type) {
+    try {
+      const supabase = await createServerSupabaseClient();
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as 'email' | 'recovery' | 'email_change',
+      });
+      if (!error) {
+        // For recovery tokens, redirect to the reset-password page
+        const redirectPath = type === 'recovery' ? '/reset-password' : safePath;
+        return NextResponse.redirect(`${origin}${redirectPath}`);
+      }
+      console.error('[auth/callback] token verification failed:', {
+        reason: error.message,
+        status: error.status,
+        type,
+      });
+      return buildErrorRedirect(origin, 'token_verification_failed');
+    } catch (err) {
+      console.error('[auth/callback] unexpected error during token verification:', err);
+      return buildErrorRedirect(origin, 'token_verification_failed');
+    }
+  }
+
+  // ── No valid params at all ──────────────────────────────────────────
+  console.warn('[auth/callback] missing params:', {
+    hasCode: !!code,
+    hasTokenHash: !!tokenHash,
+    hasType: !!type,
+  });
+  return buildErrorRedirect(origin, 'missing_params');
 }

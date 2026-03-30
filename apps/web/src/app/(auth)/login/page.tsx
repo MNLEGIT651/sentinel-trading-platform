@@ -5,19 +5,31 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 
+/** Maps URL error params from callback/middleware to user-facing messages. */
+const URL_ERROR_MESSAGES: Record<string, string> = {
+  auth_callback_failed:
+    'We could not complete your sign-in. The link may have expired or already been used.',
+  session_expired: 'Your session has expired. Please sign in again.',
+  unauthorized: 'You must be signed in to access that page.',
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') ?? '/';
+  const urlError = searchParams.get('error');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState(false);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [loading, setLoading] = useState(false);
 
   async function handleSignIn(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setUnconfirmedEmail(false);
     setLoading(true);
 
     try {
@@ -28,7 +40,13 @@ function LoginForm() {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        // Supabase returns this for unconfirmed email accounts
+        if (signInError.message.toLowerCase().includes('email not confirmed')) {
+          setUnconfirmedEmail(true);
+          setError('Your email address has not been confirmed yet.');
+        } else {
+          setError(signInError.message);
+        }
         return;
       }
 
@@ -41,11 +59,67 @@ function LoginForm() {
     }
   }
 
+  async function handleResendConfirmation() {
+    if (!email) {
+      setError('Enter your email address above, then click resend.');
+      return;
+    }
+    setResendState('sending');
+    try {
+      const supabase = createClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      if (resendError) {
+        setResendState('error');
+        return;
+      }
+      setResendState('sent');
+    } catch {
+      setResendState('error');
+    }
+  }
+
+  const urlErrorMessage = urlError ? URL_ERROR_MESSAGES[urlError] : null;
+
   return (
     <form onSubmit={handleSignIn} className="space-y-4">
+      {urlErrorMessage && (
+        <div className="rounded-md border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          {urlErrorMessage}
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {unconfirmedEmail && (
+        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+          {resendState === 'idle' && (
+            <button
+              type="button"
+              onClick={handleResendConfirmation}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Resend confirmation email
+            </button>
+          )}
+          {resendState === 'sending' && <p className="text-sm text-muted-foreground">Resending…</p>}
+          {resendState === 'sent' && (
+            <p className="text-sm text-green-600">✓ Confirmation email resent. Check your inbox.</p>
+          )}
+          {resendState === 'error' && (
+            <p className="text-sm text-destructive">
+              Could not resend.{' '}
+              <button type="button" onClick={handleResendConfirmation} className="underline">
+                Try again
+              </button>
+            </p>
+          )}
         </div>
       )}
 
@@ -66,9 +140,17 @@ function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-medium">
+            Password
+          </label>
+          <a
+            href="/forgot-password"
+            className="text-xs text-muted-foreground hover:text-primary hover:underline"
+          >
+            Forgot password?
+          </a>
+        </div>
         <input
           id="password"
           type="password"

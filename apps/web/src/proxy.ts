@@ -12,7 +12,7 @@ export const config = {
 // ─── Route classification ──────────────────────────────────────────────────
 
 /** Page routes that are accessible without authentication. */
-const PUBLIC_ROUTES = new Set(['/login', '/signup']);
+const PUBLIC_ROUTES = new Set(['/login', '/signup', '/forgot-password', '/reset-password']);
 
 /**
  * Path prefixes that bypass the auth gate.
