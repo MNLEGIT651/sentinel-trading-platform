@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { getPlaidClient } from '@/lib/plaid-client';
 import { Products, CountryCode } from 'plaid';
 
@@ -12,16 +13,14 @@ export const dynamic = 'force-dynamic';
  * Creates a Plaid Link token for the Investments product (read-only).
  * The frontend uses this token to launch Plaid Link.
  */
-export async function POST(): Promise<NextResponse> {
+export async function POST(): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const plaid = getPlaidClient();
     if (!plaid) {

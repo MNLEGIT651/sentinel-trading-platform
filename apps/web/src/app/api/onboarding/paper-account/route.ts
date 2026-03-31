@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -11,16 +12,14 @@ export const dynamic = 'force-dynamic';
  * Creates a paper trading account for the user if one doesn't exist.
  * Called during onboarding wizard completion.
  */
-export async function POST(): Promise<NextResponse> {
+export async function POST(): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     // Check if user already has a paper account
     const { data: existing } = await supabase

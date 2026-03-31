@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,14 +12,12 @@ export const dynamic = 'force-dynamic';
  * joined with recommendation tickers for the activity feed.
  */
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { data, error } = await supabase
     .from('recommendation_events')

@@ -1,34 +1,36 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
-import type { Consent, ConsentRecord, ConsentDocumentType } from '@sentinel/shared';
+import type { Consent } from '@sentinel/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const VALID_DOCUMENT_TYPES: ConsentDocumentType[] = [
-  'terms_of_service',
-  'privacy_policy',
-  'electronic_delivery',
-  'customer_agreement',
-  'data_sharing',
-  'broker_disclosures',
-  'margin_disclosure',
-  'risk_disclosure',
-];
+const ConsentRecordSchema = z.object({
+  document_type: z.enum([
+    'terms_of_service',
+    'privacy_policy',
+    'electronic_delivery',
+    'customer_agreement',
+    'data_sharing',
+    'broker_disclosures',
+    'margin_disclosure',
+    'risk_disclosure',
+  ]),
+  document_version: z.string().trim().min(1, 'document_version is required'),
+});
 
-// ─── GET: List user's consent records ───────────────────────────────
-
-export async function GET(): Promise<NextResponse> {
+export async function GET(): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const { data, error } = await supabase
       .from('consents')
@@ -49,57 +51,17 @@ export async function GET(): Promise<NextResponse> {
   }
 }
 
-// ─── POST: Record a new consent acceptance ──────────────────────────
-
-function validateConsentRecord(
-  body: unknown,
-): { valid: true; data: ConsentRecord } | { valid: false; error: string } {
-  if (!body || typeof body !== 'object') {
-    return { valid: false, error: 'Request body must be a JSON object' };
-  }
-
-  const raw = body as Record<string, unknown>;
-
-  if (
-    typeof raw.document_type !== 'string' ||
-    !VALID_DOCUMENT_TYPES.includes(raw.document_type as ConsentDocumentType)
-  ) {
-    return {
-      valid: false,
-      error: `document_type must be one of: ${VALID_DOCUMENT_TYPES.join(', ')}`,
-    };
-  }
-
-  if (typeof raw.document_version !== 'string' || raw.document_version.trim().length === 0) {
-    return { valid: false, error: 'document_version is required' };
-  }
-
-  return {
-    valid: true,
-    data: {
-      document_type: raw.document_type as ConsentDocumentType,
-      document_version: raw.document_version.trim(),
-    },
-  };
-}
-
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    const body = await request.json().catch(() => null);
-    const validation = validateConsentRecord(body);
-
-    if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
-    }
+    const body = await parseBody(request, ConsentRecordSchema);
+    if (body instanceof NextResponse) return body;
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
     const ua = request.headers.get('user-agent') ?? null;
@@ -109,8 +71,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       .upsert(
         {
           user_id: user.id,
-          document_type: validation.data.document_type,
-          document_version: validation.data.document_version,
+          document_type: body.document_type,
+          document_version: body.document_version,
           ip_address: ip,
           user_agent: ua,
           accepted_at: new Date().toISOString(),
@@ -132,8 +94,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       user_id: user.id,
       event_type: 'consent_accepted',
       payload: {
-        document_type: validation.data.document_type,
-        document_version: validation.data.document_version,
+        document_type: body.document_type,
+        document_version: body.document_version,
       },
     });
 

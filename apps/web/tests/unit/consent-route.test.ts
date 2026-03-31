@@ -1,22 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NextResponse } from 'next/server';
+import type { User, SupabaseClient } from '@supabase/supabase-js';
 
-// ─── Mock Supabase before route import ──────────────────────────────
+// ─── Shared mocks ────────────────────────────────────────────────────
 
-const mockUser = { id: 'user-123', email: 'test@example.com' };
+const mockUser = { id: 'user-123', email: 'test@example.com' } as unknown as User;
 const mockFrom = vi.fn();
-const mockGetUser = vi.fn();
 
-vi.mock('@/lib/supabase/server', () => ({
-  createServerSupabaseClient: vi.fn(async () => ({
-    auth: { getUser: mockGetUser },
-    from: mockFrom,
-  })),
+const mockSupabase = {
+  auth: { getUser: vi.fn().mockResolvedValue({ data: { user: mockUser } }) },
+  from: mockFrom,
+} as unknown as SupabaseClient;
+
+vi.mock('@/lib/auth/require-auth', () => ({
+  requireAuth: vi.fn(async () => ({ user: mockUser, supabase: mockSupabase })),
+}));
+
+vi.mock('@/lib/server/rate-limiter', () => ({
+  checkApiRateLimit: vi.fn(() => null),
 }));
 
 vi.mock('@/lib/api-error', () => ({
   safeErrorMessage: (_e: unknown, fallback: string) => fallback,
 }));
 
+import { requireAuth } from '@/lib/auth/require-auth';
 import { GET, POST } from '@/app/api/onboarding/consent/route';
 
 function makeRequest(body: unknown, headers: Record<string, string> = {}): Request {
@@ -30,18 +38,20 @@ function makeRequest(body: unknown, headers: Record<string, string> = {}): Reque
 describe('/api/onboarding/consent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetUser.mockResolvedValue({ data: { user: mockUser } });
+    vi.mocked(requireAuth).mockResolvedValue({ user: mockUser, supabase: mockSupabase });
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─── GET tests ──────────────────────────────────────────────────
 
   describe('GET', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+      vi.mocked(requireAuth).mockResolvedValueOnce(
+        NextResponse.json({ error: 'unauthorized' }, { status: 401 }),
+      );
       const res = await GET();
       expect(res.status).toBe(401);
     });
@@ -81,7 +91,9 @@ describe('/api/onboarding/consent', () => {
 
   describe('POST', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+      vi.mocked(requireAuth).mockResolvedValueOnce(
+        NextResponse.json({ error: 'unauthorized' }, { status: 401 }),
+      );
       const req = makeRequest({ document_type: 'terms_of_service', document_version: '1.0' });
       const res = await POST(req);
       expect(res.status).toBe(401);
@@ -92,7 +104,7 @@ describe('/api/onboarding/consent', () => {
       const res = await POST(req);
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toContain('document_type must be one of');
+      expect(body.error).toBe('validation_error');
     });
 
     it('rejects missing document_version', async () => {
@@ -100,13 +112,15 @@ describe('/api/onboarding/consent', () => {
       const res = await POST(req);
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toContain('document_version is required');
+      expect(body.error).toBe('validation_error');
     });
 
     it('rejects empty document_version', async () => {
       const req = makeRequest({ document_type: 'terms_of_service', document_version: '  ' });
       const res = await POST(req);
       expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe('validation_error');
     });
 
     it('rejects non-object body', async () => {
@@ -133,7 +147,7 @@ describe('/api/onboarding/consent', () => {
 
       for (const type of validTypes) {
         vi.clearAllMocks();
-        mockGetUser.mockResolvedValue({ data: { user: mockUser } });
+        vi.mocked(requireAuth).mockResolvedValue({ user: mockUser, supabase: mockSupabase });
 
         const mockConsentData = {
           id: 'c-new',

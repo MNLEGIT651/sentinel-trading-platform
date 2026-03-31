@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { dbError, badRequest, safeParseBody } from '@/lib/api-error';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
+import { dbError } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,6 +16,9 @@ export async function GET(req: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -46,11 +52,16 @@ export async function POST(req: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const ThreadCreateSchema = z.object({
+    title: z.string().min(1).optional(),
+  });
+
   try {
-    const body = await safeParseBody<{ title?: string }>(req);
-    if (!body || typeof body !== 'object') {
-      return badRequest('Invalid JSON body');
-    }
+    const body = await parseBody(req, ThreadCreateSchema);
+    if (body instanceof NextResponse) return body;
     const title = body.title ?? 'New conversation';
 
     const { data, error } = await supabase

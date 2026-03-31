@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import type { Experiment, ExperimentCreate } from '@sentinel/shared';
+import type { Experiment } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,11 +17,15 @@ function supabaseAdmin() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  GET /api/experiments — list all experiments                       */
+/*  GET /api/experiments ΓÇö list all experiments                       */
 /* ------------------------------------------------------------------ */
 export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const sb = supabaseAdmin();
@@ -41,28 +48,32 @@ export async function GET() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  POST /api/experiments — create a new experiment                   */
+/*  POST /api/experiments ΓÇö create a new experiment                   */
 /* ------------------------------------------------------------------ */
 export async function POST(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const ExperimentCreateSchema = z.object({
+    name: z.string().min(1, 'name is required and must be a non-empty string'),
+    description: z.string().optional(),
+    max_daily_trades: z.number().int().positive().optional(),
+    max_position_value: z.number().positive().optional(),
+    signal_strength_threshold: z.number().optional(),
+    max_total_exposure: z.number().positive().optional(),
+    initial_capital: z.number().positive().optional(),
+  });
 
   try {
-    const body = await request.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-    }
-
-    const { name } = body as Partial<ExperimentCreate>;
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'name is required and must be a non-empty string' },
-        { status: 400 },
-      );
-    }
+    const body = await parseBody(request, ExperimentCreateSchema);
+    if (body instanceof NextResponse) return body;
 
     const insert: Record<string, unknown> = {
-      name: name.trim(),
+      name: body.name.trim(),
       status: 'pending',
     };
 

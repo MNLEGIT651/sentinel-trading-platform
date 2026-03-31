@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import type { AdvisorProfilePatch } from '@sentinel/shared';
-import { dbError, badRequest, safeParseBody } from '@/lib/api-error';
+import { z } from 'zod';
+import { dbError } from '@/lib/api-error';
+import { parseBody } from '@/lib/api/validation';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +16,9 @@ export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     // Upsert: return existing or create default
@@ -54,10 +59,17 @@ export async function PATCH(req: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const patch = await safeParseBody<AdvisorProfilePatch>(req);
-  if (!patch || typeof patch !== 'object') {
-    return badRequest('Invalid JSON body');
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const ProfilePatchSchema = z
+    .record(z.string(), z.unknown())
+    .refine((data) => Object.keys(data).length > 0, {
+      message: 'Patch body must contain at least one field',
+    });
+
+  const patch = await parseBody(req, ProfilePatchSchema);
+  if (patch instanceof NextResponse) return patch;
 
   try {
     // Fetch current profile

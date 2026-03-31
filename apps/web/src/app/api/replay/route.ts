@@ -2,7 +2,15 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseSearchParams } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+
+const ReplayQuery = z.object({
+  timestamp: z.string().min(1, 'timestamp query parameter is required (ISO 8601 format)'),
+  window: z.coerce.number().int().min(1).max(1440).optional().default(60),
+});
 
 /**
  * GET /api/replay?timestamp=ISO8601
@@ -17,29 +25,26 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
  * - System mode (trading policy) at that time
  */
 export async function GET(request: Request) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase, user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const query = parseSearchParams(request, ReplayQuery);
+  if (query instanceof NextResponse) return query;
+
+  const timestamp = new Date(query.timestamp);
+  if (isNaN(timestamp.getTime())) {
+    return NextResponse.json(
+      { error: 'validation_error', message: 'Invalid timestamp format. Use ISO 8601.' },
+      { status: 400 },
+    );
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const timestampStr = searchParams.get('timestamp');
-
-    if (!timestampStr) {
-      return NextResponse.json(
-        { error: 'timestamp query parameter is required (ISO 8601 format)' },
-        { status: 400 },
-      );
-    }
-
-    const timestamp = new Date(timestampStr);
-    if (isNaN(timestamp.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid timestamp format. Use ISO 8601.' },
-        { status: 400 },
-      );
-    }
-
-    const supabase = await createServerSupabaseClient();
-
-    // Define a window around the timestamp (±1 hour by default, configurable)
-    const windowMinutes = parseInt(searchParams.get('window') || '60', 10);
+    const windowMinutes = query.window;
     const windowStart = new Date(timestamp.getTime() - windowMinutes * 60 * 1000).toISOString();
     const windowEnd = new Date(timestamp.getTime() + windowMinutes * 60 * 1000).toISOString();
     const ts = timestamp.toISOString();
@@ -136,7 +141,7 @@ export async function GET(request: Request) {
         type: 'recommendation',
         timestamp: rec.created_at,
         title: `${rec.side?.toUpperCase() || 'TRADE'} ${rec.ticker}`,
-        detail: `${rec.strategy_name || 'Unknown strategy'} — strength ${(rec.signal_strength * 100).toFixed(0)}% — ${rec.status}`,
+        detail: `${rec.strategy_name || 'Unknown strategy'} ΓÇö strength ${(rec.signal_strength * 100).toFixed(0)}% ΓÇö ${rec.status}`,
         severity:
           rec.status === 'filled'
             ? 'success'
@@ -188,7 +193,7 @@ export async function GET(request: Request) {
         type: 'order',
         timestamp: order.created_at,
         title: `Order: ${order.side?.toUpperCase() || ''} ${order.symbol || ''}`,
-        detail: `Status: ${order.status} — Broker ID: ${order.broker_order_id || 'N/A'}`,
+        detail: `Status: ${order.status} ΓÇö Broker ID: ${order.broker_order_id || 'N/A'}`,
         severity:
           order.status === 'filled'
             ? 'success'
@@ -206,7 +211,7 @@ export async function GET(request: Request) {
         type: 'data_quality',
         timestamp: dq.created_at,
         title: `Data: ${dq.event_type}`,
-        detail: `${dq.provider || ''} ${dq.ticker || ''} — ${dq.message || ''}`.trim(),
+        detail: `${dq.provider || ''} ${dq.ticker || ''} ΓÇö ${dq.message || ''}`.trim(),
         severity:
           dq.severity === 'critical' || dq.severity === 'error'
             ? 'error'

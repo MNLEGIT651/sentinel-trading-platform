@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import type { Experiment, ExperimentStatus } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,21 +36,32 @@ function transitionPayload(current: ExperimentStatus, now: string): Record<strin
 }
 
 /* ------------------------------------------------------------------ */
-/*  POST /api/experiments/[id]/advance — advance to the next phase    */
+/*  POST /api/experiments/[id]/advance ΓÇö advance to the next phase    */
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const AdvanceSchema = z.object({
+    resume: z.boolean().optional(),
+  });
 
   try {
     const { id } = await params;
 
-    if (!UUID_RE.test(id)) {
+    const uuidSchema = z.string().uuid('Invalid experiment id');
+    const idResult = uuidSchema.safeParse(id);
+    if (!idResult.success) {
       return NextResponse.json({ error: 'Invalid experiment id' }, { status: 400 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const resume = body?.resume === true;
+    const body = await parseBody(req, AdvanceSchema);
+    if (body instanceof NextResponse) return body;
+    const resume = body.resume === true;
 
     const sb = supabaseAdmin();
 

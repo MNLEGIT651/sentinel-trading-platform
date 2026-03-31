@@ -1,92 +1,51 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import type { TradingPolicy, TradingPolicyUpdate } from '@sentinel/shared';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import type { TradingPolicy } from '@sentinel/shared';
 import { DEFAULT_TRADING_POLICY } from '@sentinel/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// ─── Validation ─────────────────────────────────────────────────────
+// ─── Zod Schemas ────────────────────────────────────────────────────────
 
-const NUMERIC_FIELDS = [
-  'max_position_pct',
-  'max_sector_pct',
-  'daily_loss_limit_pct',
-  'soft_drawdown_pct',
-  'hard_drawdown_pct',
-] as const;
-
-const BOOLEAN_FIELDS = ['paper_trading', 'auto_trading', 'require_confirmation'] as const;
-
-function validatePolicyUpdate(body: unknown):
-  | {
-      valid: true;
-      data: TradingPolicyUpdate;
-    }
-  | {
-      valid: false;
-      error: string;
-    } {
-  if (!body || typeof body !== 'object') {
-    return { valid: false, error: 'Request body must be a JSON object' };
-  }
-
-  const update: TradingPolicyUpdate = {};
-  const raw = body as Record<string, unknown>;
-
-  for (const field of NUMERIC_FIELDS) {
-    if (field in raw) {
-      const val = Number(raw[field]);
-      if (isNaN(val) || val <= 0 || val > 100) {
-        return { valid: false, error: `${field} must be a number between 0 and 100` };
+const PolicyUpdateSchema = z
+  .object({
+    max_position_pct: z.number().gt(0).lte(100).optional(),
+    max_sector_pct: z.number().gt(0).lte(100).optional(),
+    daily_loss_limit_pct: z.number().gt(0).lte(100).optional(),
+    soft_drawdown_pct: z.number().gt(0).lte(100).optional(),
+    hard_drawdown_pct: z.number().gt(0).lte(100).optional(),
+    max_open_positions: z.number().int().min(1).max(1000).optional(),
+    paper_trading: z.boolean().optional(),
+    auto_trading: z.boolean().optional(),
+    require_confirmation: z.boolean().optional(),
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
+    message: 'No valid fields provided',
+  })
+  .refine(
+    (data) => {
+      if (data.soft_drawdown_pct !== undefined && data.hard_drawdown_pct !== undefined) {
+        return data.soft_drawdown_pct <= data.hard_drawdown_pct;
       }
-      (update as Record<string, number>)[field] = val;
-    }
-  }
-
-  if ('max_open_positions' in raw) {
-    const val = Number(raw.max_open_positions);
-    if (isNaN(val) || val < 1 || val > 1000 || !Number.isInteger(val)) {
-      return { valid: false, error: 'max_open_positions must be an integer between 1 and 1000' };
-    }
-    update.max_open_positions = val;
-  }
-
-  for (const field of BOOLEAN_FIELDS) {
-    if (field in raw) {
-      if (typeof raw[field] !== 'boolean') {
-        return { valid: false, error: `${field} must be a boolean` };
-      }
-      (update as Record<string, boolean>)[field] = raw[field] as boolean;
-    }
-  }
-
-  // Cross-field validation: soft drawdown must be ≤ hard drawdown
-  const soft = update.soft_drawdown_pct;
-  const hard = update.hard_drawdown_pct;
-  if (soft !== undefined && hard !== undefined && soft > hard) {
-    return { valid: false, error: 'soft_drawdown_pct must be ≤ hard_drawdown_pct' };
-  }
-
-  if (Object.keys(update).length === 0) {
-    return { valid: false, error: 'No valid fields provided' };
-  }
-
-  return { valid: true, data: update };
-}
+      return true;
+    },
+    { message: 'soft_drawdown_pct must be ≤ hard_drawdown_pct' },
+  );
 
 // ─── GET: Fetch user policy (upserts default if none exists) ────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     // Try to fetch existing policy
     const { data: existing, error: fetchError } = await supabase
@@ -126,30 +85,24 @@ export async function GET(): Promise<NextResponse> {
   }
 }
 
-// ─── PUT: Update user policy ────────────────────────────────────────
+// ─── PUT: Update user policy ──────────────────────────────────────────
 
-export async function PUT(request: Request): Promise<NextResponse> {
+export async function PUT(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    const body = await request.json().catch(() => null);
-    const validation = validatePolicyUpdate(body);
-
-    if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
-    }
+    const body = await parseBody(request, PolicyUpdateSchema);
+    if (body instanceof NextResponse) return body;
 
     // Upsert: insert if not exists, update if exists
     const { data: updated, error: upsertError } = await supabase
       .from('user_trading_policy')
-      .upsert({ user_id: user.id, ...validation.data }, { onConflict: 'user_id' })
+      .upsert({ user_id: user.id, ...body }, { onConflict: 'user_id' })
       .select()
       .single();
 
@@ -166,7 +119,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
       action_type: 'update_policy',
       target_type: 'user_trading_policy',
       target_id: user.id,
-      metadata: validation.data,
+      metadata: body,
     });
 
     return NextResponse.json(updated as TradingPolicy);

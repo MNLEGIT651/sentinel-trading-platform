@@ -2,8 +2,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { safeErrorMessage } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 /**
  * GET /api/fills?order_id=UUID&limit=50&offset=0&from=ISO&to=ISO
@@ -12,7 +15,10 @@ import { requireAuth } from '@/lib/auth/require-auth';
 export async function GET(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { searchParams } = request.nextUrl;
   const orderId = searchParams.get('order_id');
@@ -56,43 +62,34 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  const { order_id, fill_price, fill_qty, commission, slippage, venue, broker_fill_id } =
-    body as Record<string, unknown>;
+  const FillCreateSchema = z.object({
+    order_id: z.string().min(1, 'order_id is required'),
+    fill_price: z.number().positive('fill_price (positive number) is required'),
+    fill_qty: z.number().positive('fill_qty (positive number) is required'),
+    commission: z.number().optional(),
+    slippage: z.number().nullable().optional(),
+    venue: z.string().nullable().optional(),
+    broker_fill_id: z.string().nullable().optional(),
+  });
 
-  if (!order_id || typeof order_id !== 'string') {
-    return NextResponse.json({ error: 'order_id is required' }, { status: 400 });
-  }
-
-  if (typeof fill_price !== 'number' || fill_price <= 0) {
-    return NextResponse.json(
-      { error: 'fill_price (positive number) is required' },
-      { status: 400 },
-    );
-  }
-
-  if (typeof fill_qty !== 'number' || fill_qty <= 0) {
-    return NextResponse.json({ error: 'fill_qty (positive number) is required' }, { status: 400 });
-  }
+  const body = await parseBody(request, FillCreateSchema);
+  if (body instanceof NextResponse) return body;
 
   const { data, error } = await supabase
     .from('fills')
     .insert({
-      order_id,
-      fill_price,
-      fill_qty,
-      commission: (commission as number) ?? 0,
-      slippage: (slippage as number) ?? null,
-      venue: (venue as string) ?? null,
-      broker_fill_id: (broker_fill_id as string) ?? null,
+      order_id: body.order_id,
+      fill_price: body.fill_price,
+      fill_qty: body.fill_qty,
+      commission: body.commission ?? 0,
+      slippage: body.slippage ?? null,
+      venue: body.venue ?? null,
+      broker_fill_id: body.broker_fill_id ?? null,
     })
     .select()
     .single();

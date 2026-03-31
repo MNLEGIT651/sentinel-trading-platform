@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 import { getPlaidClient } from '@/lib/plaid-client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const ExchangeSchema = z.object({
+  public_token: z.string().min(1, 'public_token is required'),
+  institution_name: z.string().optional(),
+});
 
 /**
  * POST /api/plaid/exchange
@@ -15,30 +23,22 @@ export const dynamic = 'force-dynamic';
  * A production implementation would encrypt and store the access_token
  * in a secrets vault for recurring data pulls.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const plaid = getPlaidClient();
     if (!plaid) {
       return NextResponse.json({ error: 'Plaid is not configured' }, { status: 503 });
     }
 
-    const body = (await request.json().catch(() => null)) as {
-      public_token?: string;
-      institution_name?: string;
-    } | null;
-
-    if (!body?.public_token || typeof body.public_token !== 'string') {
-      return NextResponse.json({ error: 'public_token is required' }, { status: 400 });
-    }
+    const body = await parseBody(request, ExchangeSchema);
+    if (body instanceof NextResponse) return body;
 
     // Exchange public token for access token (server-side only)
     const exchangeResponse = await plaid.itemPublicTokenExchange({

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import type { RecommendationEventType } from '@sentinel/shared';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -23,13 +26,22 @@ const ALLOWED_EVENT_TYPES: RecommendationEventType[] = [
   'reviewed',
 ];
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-): Promise<NextResponse> {
+const postBodySchema = z.object({
+  event_type: z.enum(ALLOWED_EVENT_TYPES as [string, ...string[]]),
+  actor_type: z.string().optional().default('system'),
+  actor_id: z.string().nullish(),
+  payload: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const supabase = await createServerSupabaseClient();
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const [recResult, eventsResult, riskResult, operatorActionsResult] = await Promise.all([
     supabase.from('agent_recommendations').select('*').eq('id', id).single(),
@@ -81,45 +93,27 @@ export async function GET(
   });
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-): Promise<NextResponse> {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let body: {
-    event_type: string;
-    actor_type?: string | undefined;
-    actor_id?: string | undefined;
-    payload?: Record<string, unknown> | undefined;
-  };
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  if (
-    !body.event_type ||
-    !ALLOWED_EVENT_TYPES.includes(body.event_type as RecommendationEventType)
-  ) {
-    return NextResponse.json(
-      { error: `Invalid event_type. Allowed: ${ALLOWED_EVENT_TYPES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  const supabase = await createServerSupabaseClient();
+  const parsed = await parseBody(request, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
   const { data, error } = await supabase
     .from('recommendation_events')
     .insert({
       recommendation_id: id,
-      event_type: body.event_type,
-      actor_type: body.actor_type ?? 'system',
-      actor_id: body.actor_id ?? null,
-      payload: body.payload ?? {},
+      event_type: parsed.event_type,
+      actor_type: parsed.actor_type,
+      actor_id: parsed.actor_id ?? null,
+      payload: parsed.payload,
     })
     .select()
     .single();

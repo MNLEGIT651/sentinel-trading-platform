@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -19,16 +22,28 @@ const VALID_EVENT_TYPES = [
 
 const VALID_SEVERITIES = ['info', 'warning', 'error', 'critical'] as const;
 
-// GET — list data quality events with filters
+const postBodySchema = z.object({
+  event_type: z.enum(VALID_EVENT_TYPES),
+  severity: z.enum(VALID_SEVERITIES).optional().default('info'),
+  provider: z.string().nullish(),
+  ticker: z.string().nullish(),
+  message: z.string().min(1, 'message is required'),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+const patchBodySchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'ids array is required'),
+  resolved: z.boolean({ message: 'resolved must be a boolean' }),
+});
+
+// GET ΓÇö list data quality events with filters
 export async function GET(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const url = new URL(request.url);
   const eventType = url.searchParams.get('event_type');
@@ -79,52 +94,30 @@ export async function GET(request: Request) {
   });
 }
 
-// POST — record a new data quality event
+// POST ΓÇö record a new data quality event
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  const { event_type, severity, provider, ticker, message, metadata } = body;
+  const parsed = await parseBody(request, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
-  if (!event_type || !VALID_EVENT_TYPES.includes(event_type)) {
-    return NextResponse.json(
-      { error: `Invalid event_type. Must be one of: ${VALID_EVENT_TYPES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  if (severity && !VALID_SEVERITIES.includes(severity)) {
-    return NextResponse.json(
-      { error: `Invalid severity. Must be one of: ${VALID_SEVERITIES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  if (!message || typeof message !== 'string') {
-    return NextResponse.json({ error: 'message is required' }, { status: 400 });
-  }
+  const { event_type, severity, provider, ticker, message, metadata } = parsed;
 
   const { data, error } = await supabase
     .from('data_quality_events')
     .insert({
       user_id: user.id,
       event_type,
-      severity: severity ?? 'info',
+      severity,
       provider: provider ?? null,
       ticker: ticker ?? null,
       message,
-      metadata: metadata ?? {},
+      metadata,
     })
     .select()
     .single();
@@ -139,31 +132,19 @@ export async function POST(request: Request) {
   return NextResponse.json(data, { status: 201 });
 }
 
-// PATCH — bulk resolve events
+// PATCH ΓÇö bulk resolve events
 export async function PATCH(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  const { ids, resolved } = body;
+  const parsed = await parseBody(request, patchBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return NextResponse.json({ error: 'ids array is required' }, { status: 400 });
-  }
-
-  if (typeof resolved !== 'boolean') {
-    return NextResponse.json({ error: 'resolved must be a boolean' }, { status: 400 });
-  }
+  const { ids, resolved } = parsed;
 
   const { error } = await supabase
     .from('data_quality_events')

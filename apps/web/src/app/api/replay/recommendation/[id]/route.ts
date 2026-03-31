@@ -2,7 +2,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 
 /**
  * GET /api/replay/recommendation/[id]
@@ -19,9 +20,15 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-): Promise<NextResponse> {
+): Promise<Response> {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase, user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
 
   // Phase 1: Fetch recommendation and related data in parallel
   const [recResult, eventsResult, riskResult, operatorActionsResult, journalResult] =

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { dbError, badRequest, notFound, safeParseBody } from '@/lib/api-error';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
+import { dbError, notFound } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +17,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { data, error } = await supabase
@@ -44,18 +50,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const ThreadUpdateSchema = z
+    .object({
+      title: z.string().min(1).optional(),
+      rolling_summary: z.string().optional(),
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+      message: 'No fields to update',
+    });
+
   try {
-    const body = await safeParseBody<{ title?: string; rolling_summary?: string }>(req);
-    if (!body || typeof body !== 'object') {
-      return badRequest('Invalid JSON body');
-    }
+    const body = await parseBody(req, ThreadUpdateSchema);
+    if (body instanceof NextResponse) return body;
     const update: Record<string, unknown> = {};
     if (body.title !== undefined) update.title = body.title;
     if (body.rolling_summary !== undefined) update.rolling_summary = body.rolling_summary;
-
-    if (Object.keys(update).length === 0) {
-      return badRequest('No fields to update');
-    }
 
     const { data, error } = await supabase
       .from('advisor_threads')
@@ -85,6 +97,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { error } = await supabase
