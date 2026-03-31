@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { apiError, dbError, badRequest, notFound, safeParseBody } from '@/lib/api-error';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { apiError, dbError, notFound } from '@/lib/api-error';
 import type { ExplanationPayload } from '@sentinel/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const postBodySchema = z.object({
+  summary: z.string().min(1, 'summary is required'),
+  explanation: z.record(z.string(), z.unknown()),
+});
 
 /**
  * GET /api/recommendations/[id]/explanation
@@ -15,6 +23,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { data, error } = await supabase
@@ -47,17 +58,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  try {
-    const body = await safeParseBody<{ summary?: string; explanation?: ExplanationPayload }>(req);
-    if (!body || typeof body !== 'object') {
-      return badRequest('Invalid JSON body');
-    }
-    const summary = body.summary;
-    const explanation = body.explanation;
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-    if (!summary || !explanation) {
-      return badRequest('summary and explanation are required');
-    }
+  try {
+    const parsed = await parseBody(req, postBodySchema);
+    if (parsed instanceof NextResponse) return parsed;
+    const summary = parsed.summary;
+    const explanation = parsed.explanation as unknown as ExplanationPayload;
 
     // Atomic version increment with retry on conflict
     let attempts = 0;

@@ -43,7 +43,7 @@ describe('/api/webhooks/alpaca', () => {
     const res = await POST(makeWebhookRequest({}));
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain('Missing event type');
+    expect(body.error).toBe('validation_error');
   });
 
   it('returns 400 for unknown event type', async () => {

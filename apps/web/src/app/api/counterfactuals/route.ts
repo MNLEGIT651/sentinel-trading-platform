@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseSearchParams } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { getServiceConfig } from '@/lib/server/service-config';
 
 export const runtime = 'nodejs';
@@ -50,18 +53,22 @@ export interface CounterfactualStats {
   win_rate_pct: number;
 }
 
-export async function GET(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+const counterfactualQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+});
 
-  const limit = parseInt(req.nextUrl.searchParams.get('limit') ?? '50', 10);
-  const offset = parseInt(req.nextUrl.searchParams.get('offset') ?? '0', 10);
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const parsed = parseSearchParams(req, counterfactualQuery);
+  if (parsed instanceof NextResponse) return parsed;
+  const { limit, offset } = parsed;
 
   // Fetch rejected and risk_blocked recommendations
   const {
@@ -124,7 +131,7 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch {
-      // Engine offline — prices unavailable
+      // Engine offline ΓÇö prices unavailable
     }
   }
 

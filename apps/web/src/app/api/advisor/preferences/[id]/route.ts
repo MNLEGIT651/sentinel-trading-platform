@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { dbError, badRequest, notFound, safeParseBody } from '@/lib/api-error';
-import type { AdvisorPreferenceUpdate } from '@sentinel/shared';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
+import { dbError, notFound } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,6 +19,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
   try {
     // Fetch current
     const { data: current } = await supabase
@@ -30,19 +35,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return notFound('Preference not found');
     }
 
-    const body = await safeParseBody<AdvisorPreferenceUpdate>(req);
-    if (!body || typeof body !== 'object') {
-      return badRequest('Invalid JSON body');
-    }
+    const PreferenceUpdateSchema = z
+      .object({
+        category: z.string().min(1).optional(),
+        content: z.string().min(1).optional(),
+        context: z.string().nullish(),
+        confidence: z.number().min(0).max(1).optional(),
+      })
+      .refine((data) => Object.keys(data).length > 0, {
+        message: 'No fields to update',
+      });
+
+    const body = await parseBody(req, PreferenceUpdateSchema);
+    if (body instanceof NextResponse) return body;
+
     const update: Record<string, unknown> = {};
     if (body.category !== undefined) update.category = body.category;
     if (body.content !== undefined) update.content = body.content;
     if (body.context !== undefined) update.context = body.context;
     if (body.confidence !== undefined) update.confidence = body.confidence;
-
-    if (Object.keys(update).length === 0) {
-      return badRequest('No fields to update');
-    }
 
     const { data: updated, error: updateErr } = await supabase
       .from('advisor_preferences')
@@ -82,6 +93,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     // Fetch current for audit

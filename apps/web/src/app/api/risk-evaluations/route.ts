@@ -2,8 +2,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { safeErrorMessage } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 /**
  * GET /api/risk-evaluations?recommendation_id=UUID&limit=50&offset=0
@@ -12,7 +15,10 @@ import { requireAuth } from '@/lib/auth/require-auth';
 export async function GET(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { searchParams } = request.nextUrl;
   const recommendationId = searchParams.get('recommendation_id');
@@ -48,43 +54,34 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  const {
-    recommendation_id,
-    policy_version,
-    allowed,
-    original_quantity,
-    adjusted_quantity,
-    checks_performed,
-    reason,
-  } = body as Record<string, unknown>;
+  const RiskEvalCreateSchema = z.object({
+    recommendation_id: z.string().min(1, 'recommendation_id is required'),
+    allowed: z.boolean({ error: 'allowed (boolean) is required' }),
+    policy_version: z.string().nullable().optional(),
+    original_quantity: z.number().nullable().optional(),
+    adjusted_quantity: z.number().nullable().optional(),
+    checks_performed: z.array(z.unknown()).optional(),
+    reason: z.string().nullable().optional(),
+  });
 
-  if (!recommendation_id || typeof recommendation_id !== 'string') {
-    return NextResponse.json({ error: 'recommendation_id is required' }, { status: 400 });
-  }
-
-  if (typeof allowed !== 'boolean') {
-    return NextResponse.json({ error: 'allowed (boolean) is required' }, { status: 400 });
-  }
+  const body = await parseBody(request, RiskEvalCreateSchema);
+  if (body instanceof NextResponse) return body;
 
   const { data, error } = await supabase
     .from('risk_evaluations')
     .insert({
-      recommendation_id,
-      policy_version: (policy_version as string) ?? null,
-      allowed,
-      original_quantity: (original_quantity as number) ?? null,
-      adjusted_quantity: (adjusted_quantity as number) ?? null,
-      checks_performed: (checks_performed as unknown[]) ?? [],
-      reason: (reason as string) ?? null,
+      recommendation_id: body.recommendation_id,
+      policy_version: body.policy_version ?? null,
+      allowed: body.allowed,
+      original_quantity: body.original_quantity ?? null,
+      adjusted_quantity: body.adjusted_quantity ?? null,
+      checks_performed: body.checks_performed ?? [],
+      reason: body.reason ?? null,
     })
     .select()
     .single();

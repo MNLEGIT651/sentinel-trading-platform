@@ -135,6 +135,27 @@ export class RateLimiter {
  */
 export const proxyRateLimiter = new RateLimiter(120, 60_000);
 
+/**
+ * Rate limiter applied to all direct API routes (non-proxy).
+ *
+ * Limit: 60 requests per minute per user ID.
+ * Rationale: most dashboard interactions are < 10 req/min.
+ * 60/min gives 6× headroom while blocking abuse.
+ */
+export const apiRateLimiter = new RateLimiter(60, 60_000);
+
+/**
+ * Check the API rate limit for an authenticated user.
+ * Returns null if allowed, or a 429 Response if rate-limited.
+ */
+export function checkApiRateLimit(userId: string): Response | null {
+  const result = apiRateLimiter.check(userId);
+  if (!result.allowed) {
+    return rateLimitResponse(result.resetAtMs);
+  }
+  return null;
+}
+
 // ─── Helper ───────────────────────────────────────────────────────────────
 
 /**

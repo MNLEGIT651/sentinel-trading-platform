@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
-import type { SystemControls, SystemControlsUpdate, SystemMode } from '@sentinel/shared';
+import { z } from 'zod';
+import type { SystemControls } from '@sentinel/shared';
 import { safeErrorMessage } from '@/lib/api-error';
 import { requireAuth, requireRole } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const VALID_MODES: SystemMode[] = ['paper', 'live', 'backtest'];
-
-// GET /api/system-controls — fetch the single system controls row
+// GET /api/system-controls ΓÇö fetch the single system controls row
 export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { data, error } = await supabase.from('system_controls').select('*').limit(1).single();
 
@@ -26,46 +30,28 @@ export async function GET() {
   return NextResponse.json({ data: data as SystemControls });
 }
 
-// PATCH /api/system-controls — update system controls (operator role required)
+// PATCH /api/system-controls ΓÇö update system controls (operator role required)
 export async function PATCH(request: Request) {
   const auth = await requireRole('operator');
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rawBody = await request.json().catch(() => null);
-  if (!rawBody || typeof rawBody !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-  const body = rawBody as SystemControlsUpdate;
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  // Validate fields when present
-  if ('trading_halted' in body && typeof body.trading_halted !== 'boolean') {
-    return NextResponse.json({ error: 'trading_halted must be a boolean' }, { status: 400 });
-  }
+  const SystemControlsUpdateSchema = z.object({
+    trading_halted: z.boolean().optional(),
+    live_execution_enabled: z.boolean().optional(),
+    global_mode: z.enum(['paper', 'live', 'backtest'] as const).optional(),
+    max_daily_trades: z
+      .number()
+      .int()
+      .min(1, 'max_daily_trades must be a positive integer')
+      .optional(),
+  });
 
-  if ('live_execution_enabled' in body && typeof body.live_execution_enabled !== 'boolean') {
-    return NextResponse.json(
-      { error: 'live_execution_enabled must be a boolean' },
-      { status: 400 },
-    );
-  }
-
-  if ('global_mode' in body && !VALID_MODES.includes(body.global_mode as SystemMode)) {
-    return NextResponse.json(
-      { error: `global_mode must be one of: ${VALID_MODES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  if ('max_daily_trades' in body) {
-    const val = body.max_daily_trades;
-    if (typeof val !== 'number' || !Number.isInteger(val) || val < 1) {
-      return NextResponse.json(
-        { error: 'max_daily_trades must be a positive integer' },
-        { status: 400 },
-      );
-    }
-  }
+  const body = await parseBody(request, SystemControlsUpdateSchema);
+  if (body instanceof NextResponse) return body;
 
   // Get the single row's id
   const { data: current, error: fetchError } = await supabase

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -22,17 +25,45 @@ const VALID_STRATEGIES = [
 
 const VALID_REGIMES = ['bull', 'bear', 'sideways', 'volatile', 'crisis'] as const;
 
+const postBodySchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .transform((s) => s.trim()),
+  regime: z.enum(VALID_REGIMES),
+  description: z.string().nullish(),
+  enabled_strategies: z
+    .array(z.enum(VALID_STRATEGIES as unknown as [string, ...string[]]))
+    .optional()
+    .default([]),
+  disabled_strategies: z
+    .array(z.enum(VALID_STRATEGIES as unknown as [string, ...string[]]))
+    .optional()
+    .default([]),
+  strategy_weights: z
+    .record(z.enum(VALID_STRATEGIES as unknown as [string, ...string[]]), z.number())
+    .optional()
+    .default({}),
+  max_position_pct: z.number().nullish(),
+  max_sector_pct: z.number().nullish(),
+  daily_loss_limit_pct: z.number().nullish(),
+  position_size_modifier: z.number().optional().default(1.0),
+  auto_approve: z.boolean().optional().default(false),
+  require_confirmation: z.boolean().optional().default(true),
+});
+
 /**
- * GET /api/regime/playbooks — List all playbooks
- * POST /api/regime/playbooks — Create a playbook
+ * GET /api/regime/playbooks ΓÇö List all playbooks
+ * POST /api/regime/playbooks ΓÇö Create a playbook
  */
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { data, error } = await supabase
     .from('regime_playbooks')
@@ -52,61 +83,32 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-  }
-
-  if (!body.regime || !VALID_REGIMES.includes(body.regime)) {
-    return NextResponse.json(
-      { error: `Invalid regime. Must be one of: ${VALID_REGIMES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  // Validate strategies
-  const enabled = body.enabled_strategies ?? [];
-  const disabled = body.disabled_strategies ?? [];
-  for (const s of [...enabled, ...disabled]) {
-    if (!VALID_STRATEGIES.includes(s)) {
-      return NextResponse.json({ error: `Invalid strategy: ${s}` }, { status: 400 });
-    }
-  }
-
-  // Validate strategy_weights keys
-  const weights = body.strategy_weights ?? {};
-  for (const key of Object.keys(weights)) {
-    if (!VALID_STRATEGIES.includes(key as (typeof VALID_STRATEGIES)[number])) {
-      return NextResponse.json({ error: `Invalid strategy in weights: ${key}` }, { status: 400 });
-    }
-  }
+  const parsed = await parseBody(request, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
   const { data, error } = await supabase
     .from('regime_playbooks')
     .insert({
       user_id: user.id,
-      name: body.name.trim(),
-      regime: body.regime,
-      description: body.description ?? null,
-      enabled_strategies: enabled,
-      disabled_strategies: disabled,
-      strategy_weights: weights,
-      max_position_pct: body.max_position_pct ?? null,
-      max_sector_pct: body.max_sector_pct ?? null,
-      daily_loss_limit_pct: body.daily_loss_limit_pct ?? null,
-      position_size_modifier: body.position_size_modifier ?? 1.0,
-      auto_approve: body.auto_approve ?? false,
-      require_confirmation: body.require_confirmation ?? true,
+      name: parsed.name,
+      regime: parsed.regime,
+      description: parsed.description ?? null,
+      enabled_strategies: parsed.enabled_strategies,
+      disabled_strategies: parsed.disabled_strategies,
+      strategy_weights: parsed.strategy_weights,
+      max_position_pct: parsed.max_position_pct ?? null,
+      max_sector_pct: parsed.max_sector_pct ?? null,
+      daily_loss_limit_pct: parsed.daily_loss_limit_pct ?? null,
+      position_size_modifier: parsed.position_size_modifier,
+      auto_approve: parsed.auto_approve,
+      require_confirmation: parsed.require_confirmation,
     })
     .select()
     .single();

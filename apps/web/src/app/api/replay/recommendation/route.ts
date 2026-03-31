@@ -2,8 +2,20 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseSearchParams } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
+
+const SearchQuery = z.object({
+  id: z.string().uuid().optional(),
+  ticker: z.string().optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  status: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+});
 
 /**
  * GET /api/replay/recommendation?ticker=AAPL&from=ISO&to=ISO&status=filled&limit=50
@@ -12,15 +24,15 @@ import { safeErrorMessage } from '@/lib/api-error';
  * Returns a compact list of matching recommendations for the picker.
  */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const ticker = searchParams.get('ticker');
-  const recId = searchParams.get('id');
-  const from = searchParams.get('from');
-  const to = searchParams.get('to');
-  const status = searchParams.get('status');
-  const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { supabase, user } = auth;
 
-  const supabase = await createServerSupabaseClient();
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
+
+  const params = parseSearchParams(request, SearchQuery);
+  if (params instanceof NextResponse) return params;
 
   let query = supabase
     .from('agent_recommendations')
@@ -28,22 +40,22 @@ export async function GET(request: Request) {
       'id, ticker, side, quantity, order_type, strategy_name, signal_strength, status, reason, created_at, order_id',
     )
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(params.limit);
 
-  if (recId) {
-    query = query.eq('id', recId);
+  if (params.id) {
+    query = query.eq('id', params.id);
   }
-  if (ticker) {
-    query = query.ilike('ticker', `%${ticker}%`);
+  if (params.ticker) {
+    query = query.ilike('ticker', `%${params.ticker}%`);
   }
-  if (from) {
-    query = query.gte('created_at', new Date(from).toISOString());
+  if (params.from) {
+    query = query.gte('created_at', new Date(params.from).toISOString());
   }
-  if (to) {
-    query = query.lte('created_at', new Date(to).toISOString());
+  if (params.to) {
+    query = query.lte('created_at', new Date(params.to).toISOString());
   }
-  if (status && status !== 'all') {
-    query = query.eq('status', status);
+  if (params.status && params.status !== 'all') {
+    query = query.eq('status', params.status);
   }
 
   const { data, error } = await query;

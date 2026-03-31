@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { dbError, badRequest, safeParseBody } from '@/lib/api-error';
-import type { AdvisorPreferenceCreate } from '@sentinel/shared';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
+import { dbError } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +16,9 @@ export async function GET(req: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -58,15 +63,22 @@ export async function POST(req: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  try {
-    const body = await safeParseBody<AdvisorPreferenceCreate>(req);
-    if (!body || typeof body !== 'object') {
-      return badRequest('Invalid JSON body');
-    }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-    if (!body.category || !body.content) {
-      return badRequest('category and content are required');
-    }
+  const PreferenceCreateSchema = z.object({
+    category: z.string().min(1, 'category is required'),
+    content: z.string().min(1, 'content is required'),
+    context: z.string().nullish(),
+    source: z.enum(['explicit', 'inferred']).optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    status: z.string().optional(),
+    originating_message_id: z.string().nullish(),
+  });
+
+  try {
+    const body = await parseBody(req, PreferenceCreateSchema);
+    if (body instanceof NextResponse) return body;
 
     // Inferred preferences default to pending_confirmation
     const source = body.source ?? 'explicit';

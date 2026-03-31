@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { dbError, badRequest, notFound } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/advisor/preferences/[id]/dismiss
- * Dismiss a pending preference → sets status to 'dismissed'.
+ * Dismiss a pending preference ΓåÆ sets status to 'dismissed'.
  * Logs a `preference_dismissed` memory event.
  */
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +16,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     // Fetch current

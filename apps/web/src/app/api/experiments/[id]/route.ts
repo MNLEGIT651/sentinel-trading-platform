@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import type { Experiment, ExperimentUpdate } from '@sentinel/shared';
+import type { Experiment } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -18,16 +19,22 @@ function supabaseAdmin() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  GET /api/experiments/[id] — fetch a single experiment             */
+/*  GET /api/experiments/[id] ΓÇö fetch a single experiment             */
 /* ------------------------------------------------------------------ */
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { id } = await params;
 
-    if (!UUID_RE.test(id)) {
+    const uuidSchema = z.string().uuid('Invalid experiment id');
+    const idResult = uuidSchema.safeParse(id);
+    if (!idResult.success) {
       return NextResponse.json({ error: 'Invalid experiment id' }, { status: 400 });
     }
 
@@ -50,52 +57,52 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  PATCH /api/experiments/[id] — update experiment fields            */
+/*  PATCH /api/experiments/[id] ΓÇö update experiment fields            */
 /*  Cannot update status (use halt / advance endpoints).              */
 /* ------------------------------------------------------------------ */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   try {
     const { id } = await params;
 
-    if (!UUID_RE.test(id)) {
+    const uuidSchema = z.string().uuid('Invalid experiment id');
+    const idResult = uuidSchema.safeParse(id);
+    if (!idResult.success) {
       return NextResponse.json({ error: 'Invalid experiment id' }, { status: 400 });
     }
 
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-    }
+    const ExperimentUpdateSchema = z
+      .object({
+        name: z.string().min(1, 'name must be a non-empty string').optional(),
+        description: z.string().optional(),
+        max_daily_trades: z.number().int().positive().optional(),
+        max_position_value: z.number().positive().optional(),
+        signal_strength_threshold: z.number().optional(),
+        max_total_exposure: z.number().positive().optional(),
+        initial_capital: z.number().positive().optional(),
+      })
+      .refine((data) => Object.keys(data).length > 0, {
+        message: 'No valid fields to update',
+      });
 
-    const allowed: (keyof ExperimentUpdate)[] = [
-      'name',
-      'description',
-      'max_daily_trades',
-      'max_position_value',
-      'signal_strength_threshold',
-      'max_total_exposure',
-      'initial_capital',
-    ];
+    const body = await parseBody(req, ExperimentUpdateSchema);
+    if (body instanceof NextResponse) return body;
 
     const updates: Record<string, unknown> = {};
-    for (const key of allowed) {
-      if (body[key] !== undefined) {
-        updates[key] = body[key];
-      }
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
-    }
-
-    if (updates.name !== undefined) {
-      if (typeof updates.name !== 'string' || (updates.name as string).trim().length === 0) {
-        return NextResponse.json({ error: 'name must be a non-empty string' }, { status: 400 });
-      }
-      updates.name = (updates.name as string).trim();
-    }
+    if (body.name !== undefined) updates.name = body.name.trim();
+    if (body.description !== undefined) updates.description = body.description;
+    if (body.max_daily_trades !== undefined) updates.max_daily_trades = body.max_daily_trades;
+    if (body.max_position_value !== undefined) updates.max_position_value = body.max_position_value;
+    if (body.signal_strength_threshold !== undefined)
+      updates.signal_strength_threshold = body.signal_strength_threshold;
+    if (body.max_total_exposure !== undefined) updates.max_total_exposure = body.max_total_exposure;
+    if (body.initial_capital !== undefined) updates.initial_capital = body.initial_capital;
 
     updates.updated_at = new Date().toISOString();
 

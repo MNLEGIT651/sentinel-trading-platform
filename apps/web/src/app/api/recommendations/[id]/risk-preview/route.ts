@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { getServiceConfig } from '@/lib/server/service-config';
 
 export const runtime = 'nodejs';
@@ -24,14 +25,12 @@ interface AccountInfo {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   // Fetch recommendation from agent_recommendations table
   const { data: rec, error: recErr } = await supabase
@@ -86,7 +85,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         positions = Array.isArray(posData) ? posData : (posData.positions ?? []);
       }
     } catch {
-      // Engine is optional for this endpoint — when unavailable,
+      // Engine is optional for this endpoint ΓÇö when unavailable,
       // fall through and compute risk preview with fallback values
     }
   }

@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/regime — Get current regime + recent history
- * POST /api/regime — Record a new regime classification
+ * GET /api/regime ΓÇö Get current regime + recent history
+ * POST /api/regime ΓÇö Record a new regime classification
  */
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   // Get latest regime
   const { data: latest, error: latestErr } = await supabase
@@ -66,44 +70,34 @@ export async function GET() {
 const VALID_REGIMES = ['bull', 'bear', 'sideways', 'volatile', 'crisis'] as const;
 const VALID_SOURCES = ['manual', 'agent', 'algorithm'] as const;
 
+const postBodySchema = z.object({
+  regime: z.enum(VALID_REGIMES),
+  confidence: z.number().min(0).max(1).optional().default(0.5),
+  indicators: z.record(z.string(), z.unknown()).optional().default({}),
+  source: z.enum(VALID_SOURCES).optional().default('manual'),
+  notes: z.string().nullish(),
+});
+
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  if (!body.regime || !VALID_REGIMES.includes(body.regime)) {
-    return NextResponse.json(
-      { error: `Invalid regime. Must be one of: ${VALID_REGIMES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  if (body.source && !VALID_SOURCES.includes(body.source)) {
-    return NextResponse.json(
-      { error: `Invalid source. Must be one of: ${VALID_SOURCES.join(', ')}` },
-      { status: 400 },
-    );
-  }
-
-  const confidence =
-    typeof body.confidence === 'number' ? Math.max(0, Math.min(1, body.confidence)) : 0.5;
+  const parsed = await parseBody(request, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
   const { data, error } = await supabase
     .from('market_regime_history')
     .insert({
       user_id: user.id,
-      regime: body.regime,
-      confidence,
-      indicators: body.indicators ?? {},
-      source: body.source ?? 'manual',
-      notes: body.notes ?? null,
+      regime: parsed.regime,
+      confidence: parsed.confidence,
+      indicators: parsed.indicators,
+      source: parsed.source,
+      notes: parsed.notes ?? null,
     })
     .select()
     .single();

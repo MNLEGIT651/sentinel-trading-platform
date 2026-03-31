@@ -2,18 +2,24 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { safeErrorMessage } from '@/lib/api-error';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import { parseBody } from '@/lib/api/validation';
 
 /**
  * GET /api/catalysts?from=DATE&to=DATE&ticker=AAPL&type=earnings
- * POST /api/catalysts — create a custom catalyst event
+ * POST /api/catalysts ΓÇö create a custom catalyst event
  */
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { supabase } = auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { searchParams } = new URL(request.url);
   const from = searchParams.get('from');
@@ -79,50 +85,44 @@ export async function POST(request: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  const {
-    event_type,
-    ticker,
-    sector,
-    event_date,
-    event_time,
-    title,
-    description,
-    impact,
-    eps_estimate,
-    revenue_estimate,
-    source,
-    source_id,
-    metadata,
-  } = body;
+  const CatalystCreateSchema = z.object({
+    event_type: z.string().min(1, 'event_type is required'),
+    event_date: z.string().min(1, 'event_date is required'),
+    title: z.string().min(1, 'title is required'),
+    ticker: z.string().nullable().optional(),
+    sector: z.string().nullable().optional(),
+    event_time: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    impact: z.string().optional(),
+    eps_estimate: z.number().nullable().optional(),
+    revenue_estimate: z.number().nullable().optional(),
+    source: z.string().optional(),
+    source_id: z.string().nullable().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  });
 
-  if (!event_type || !event_date || !title) {
-    return NextResponse.json(
-      { error: 'event_type, event_date, and title are required' },
-      { status: 400 },
-    );
-  }
+  const body = await parseBody(request, CatalystCreateSchema);
+  if (body instanceof NextResponse) return body;
 
   const { data, error } = await supabase
     .from('catalyst_events')
     .insert({
-      event_type,
-      ticker: ticker || null,
-      sector: sector || null,
-      event_date,
-      event_time: event_time || null,
-      title,
-      description: description || null,
-      impact: impact || 'medium',
-      eps_estimate: eps_estimate || null,
-      revenue_estimate: revenue_estimate || null,
-      source: source || 'manual',
-      source_id: source_id || null,
-      metadata: metadata || {},
+      event_type: body.event_type,
+      ticker: body.ticker || null,
+      sector: body.sector || null,
+      event_date: body.event_date,
+      event_time: body.event_time || null,
+      title: body.title,
+      description: body.description || null,
+      impact: body.impact || 'medium',
+      eps_estimate: body.eps_estimate || null,
+      revenue_estimate: body.revenue_estimate || null,
+      source: body.source || 'manual',
+      source_id: body.source_id || null,
+      metadata: body.metadata || {},
       user_id: user.id,
     })
     .select()

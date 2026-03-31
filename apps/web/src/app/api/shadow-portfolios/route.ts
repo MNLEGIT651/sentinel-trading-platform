@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -20,15 +23,33 @@ const VALID_STRATEGIES = [
   'pairs_spread',
 ];
 
+const postBodySchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .transform((s) => s.trim()),
+  description: z.string().nullish(),
+  max_position_pct: z.number().nullish(),
+  max_sector_pct: z.number().nullish(),
+  daily_loss_limit_pct: z.number().nullish(),
+  soft_drawdown_pct: z.number().nullish(),
+  hard_drawdown_pct: z.number().nullish(),
+  max_open_positions: z.number().int().nullish(),
+  enabled_strategies: z
+    .array(z.enum(VALID_STRATEGIES as unknown as [string, ...string[]]))
+    .optional()
+    .default([]),
+  disabled_strategies: z.array(z.string()).optional().default([]),
+  initial_capital: z.number().optional().default(100000),
+});
+
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { data, error } = await supabase
     .from('shadow_portfolios')
@@ -47,50 +68,29 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authErr,
-  } = await supabase.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const body = await req.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
-    return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-  }
-
-  // Validate strategies if provided
-  if (body.enabled_strategies) {
-    const invalid = (body.enabled_strategies as string[]).filter(
-      (s) => !VALID_STRATEGIES.includes(s),
-    );
-    if (invalid.length > 0) {
-      return NextResponse.json(
-        { error: `Invalid strategies: ${invalid.join(', ')}` },
-        { status: 400 },
-      );
-    }
-  }
+  const parsed = await parseBody(req, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
   const insert = {
     user_id: user.id,
-    name: body.name.trim(),
-    description: body.description ?? null,
-    max_position_pct: body.max_position_pct ?? null,
-    max_sector_pct: body.max_sector_pct ?? null,
-    daily_loss_limit_pct: body.daily_loss_limit_pct ?? null,
-    soft_drawdown_pct: body.soft_drawdown_pct ?? null,
-    hard_drawdown_pct: body.hard_drawdown_pct ?? null,
-    max_open_positions: body.max_open_positions ?? null,
-    enabled_strategies: body.enabled_strategies ?? [],
-    disabled_strategies: body.disabled_strategies ?? [],
-    initial_capital: body.initial_capital ?? 100000,
+    name: parsed.name,
+    description: parsed.description ?? null,
+    max_position_pct: parsed.max_position_pct ?? null,
+    max_sector_pct: parsed.max_sector_pct ?? null,
+    daily_loss_limit_pct: parsed.daily_loss_limit_pct ?? null,
+    soft_drawdown_pct: parsed.soft_drawdown_pct ?? null,
+    hard_drawdown_pct: parsed.hard_drawdown_pct ?? null,
+    max_open_positions: parsed.max_open_positions ?? null,
+    enabled_strategies: parsed.enabled_strategies,
+    disabled_strategies: parsed.disabled_strategies,
+    initial_capital: parsed.initial_capital,
   };
 
   const { data, error } = await supabase.from('shadow_portfolios').insert(insert).select().single();

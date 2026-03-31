@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { parseBody } from '@/lib/api/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const WebhookBody = z
+  .object({
+    event: z.string().min(1, 'Missing event type'),
+    account_id: z.string().optional(),
+    transfer_id: z.string().optional(),
+    relationship_id: z.string().optional(),
+    status: z.string().optional(),
+    reason: z.string().optional(),
+  })
+  .passthrough();
+
 /**
- * POST /api/webhooks/alpaca — Handle Alpaca Broker API webhooks.
+ * POST /api/webhooks/alpaca ΓÇö Handle Alpaca Broker API webhooks.
  *
  * Alpaca sends webhook events for:
  *   - Account status changes (approved, rejected, action_required)
@@ -17,12 +30,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as Record<string, unknown>;
-    const event = body.event as string | undefined;
+    const body = await parseBody(request, WebhookBody);
+    if (body instanceof NextResponse) return body;
 
-    if (!event) {
-      return NextResponse.json({ error: 'Missing event type' }, { status: 400 });
-    }
+    const event = body.event;
 
     // Use service role for webhook updates (no user session)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -35,10 +46,10 @@ export async function POST(request: Request) {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     switch (event) {
-      // ─── Account Status Changes ─────────────────────────────────
+      // ΓöÇΓöÇΓöÇ Account Status Changes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
       case 'account_status': {
-        const accountId = body.account_id as string | undefined;
-        const accountStatus = body.status as string | undefined;
+        const accountId = body.account_id;
+        const accountStatus = body.status;
 
         if (!accountId || !accountStatus) {
           return NextResponse.json({ error: 'Missing account_id or status' }, { status: 400 });
@@ -63,7 +74,7 @@ export async function POST(request: Request) {
             status: mappedStatus,
             ...(mappedStatus === 'approved' ? { approved_at: new Date().toISOString() } : {}),
             ...(mappedStatus === 'rejected' && body.reason
-              ? { rejection_reason: body.reason as string }
+              ? { rejection_reason: body.reason }
               : {}),
           })
           .eq('external_account_id', accountId)
@@ -110,10 +121,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, status: mappedStatus });
       }
 
-      // ─── Transfer Status Changes ────────────────────────────────
+      // ΓöÇΓöÇΓöÇ Transfer Status Changes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
       case 'transfer_status': {
-        const transferId = body.transfer_id as string | undefined;
-        const transferStatus = body.status as string | undefined;
+        const transferId = body.transfer_id;
+        const transferStatus = body.status;
 
         if (!transferId || !transferStatus) {
           return NextResponse.json({ error: 'Missing transfer_id or status' }, { status: 400 });
@@ -134,9 +145,7 @@ export async function POST(request: Request) {
           .update({
             status: mappedTxnStatus,
             ...(mappedTxnStatus === 'complete' ? { completed_at: new Date().toISOString() } : {}),
-            ...(mappedTxnStatus === 'failed' && body.reason
-              ? { failure_reason: body.reason as string }
-              : {}),
+            ...(mappedTxnStatus === 'failed' && body.reason ? { failure_reason: body.reason } : {}),
           })
           .eq('external_transfer_id', transferId)
           .select('user_id, id, direction, amount')
@@ -172,10 +181,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, status: mappedTxnStatus });
       }
 
-      // ─── Bank Relationship Status ───────────────────────────────
+      // ΓöÇΓöÇΓöÇ Bank Relationship Status ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
       case 'ach_relationship_status': {
-        const relationshipId = body.relationship_id as string | undefined;
-        const relStatus = body.status as string | undefined;
+        const relationshipId = body.relationship_id;
+        const relStatus = body.status;
 
         if (!relationshipId || !relStatus) {
           return NextResponse.json({ error: 'Missing relationship_id or status' }, { status: 400 });

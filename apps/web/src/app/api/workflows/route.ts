@@ -2,7 +2,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 const VALID_SORT_FIELDS = new Set(['created_at', 'updated_at']);
@@ -12,14 +13,12 @@ const VALID_SORT_FIELDS = new Set(['created_at', 'updated_at']);
  * Returns workflow jobs with optional filters, sorting, and summary stats.
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { searchParams } = request.nextUrl;
   const workflowType = searchParams.get('workflow_type');
@@ -79,7 +78,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Failure rate: failed / (completed + failed) — excludes pending/running
+  // Failure rate: failed / (completed + failed) ΓÇö excludes pending/running
   const resolved = completed + failed;
   const failureRate = resolved > 0 ? Math.round((failed / resolved) * 10000) / 100 : null;
 

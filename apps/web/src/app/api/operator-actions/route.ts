@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import type { OperatorActionType } from '@sentinel/shared';
 import { safeErrorMessage } from '@/lib/api-error';
 
@@ -20,16 +23,22 @@ const VALID_ACTION_TYPES: OperatorActionType[] = [
   'system_config_change',
 ];
 
-/** GET /api/operator-actions — list operator actions with optional filters */
+const postBodySchema = z.object({
+  action_type: z.enum(VALID_ACTION_TYPES as [string, ...string[]]),
+  target_type: z.string().optional(),
+  target_id: z.string().optional(),
+  reason: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+/** GET /api/operator-actions ΓÇö list operator actions with optional filters */
 export async function GET(request: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
+
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
   const { searchParams } = new URL(request.url);
   const limit = Math.min(Math.max(Number(searchParams.get('limit') ?? 50), 1), 200);
@@ -79,43 +88,19 @@ export async function GET(request: NextRequest) {
   });
 }
 
-/** POST /api/operator-actions — record a new operator action */
+/** POST /api/operator-actions ΓÇö record a new operator action */
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  let body: {
-    action_type?: string;
-    target_type?: string | undefined;
-    target_id?: string | undefined;
-    reason?: string | undefined;
-    metadata?: Record<string, unknown> | undefined;
-  };
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const parsed = await parseBody(request, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
 
-  const { action_type, target_type, target_id, reason, metadata } = body;
-
-  if (!action_type) {
-    return NextResponse.json({ error: 'action_type is required' }, { status: 400 });
-  }
-
-  if (!VALID_ACTION_TYPES.includes(action_type as OperatorActionType)) {
-    return NextResponse.json(
-      { error: `Invalid action_type. Must be one of: ${VALID_ACTION_TYPES.join(', ')}` },
-      { status: 400 },
-    );
-  }
+  const { action_type, target_type, target_id, reason, metadata } = parsed;
 
   const { data, error } = await supabase
     .from('operator_actions')
@@ -125,7 +110,7 @@ export async function POST(request: NextRequest) {
       target_type: target_type ?? null,
       target_id: target_id ?? null,
       reason: reason ?? null,
-      metadata: metadata ?? {},
+      metadata,
     })
     .select()
     .single();
