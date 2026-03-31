@@ -93,9 +93,9 @@ describe('GET /health', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.dependencies).toEqual({
-      engine: false,
-      anthropic: false,
-      supabase: false,
+      engine: 'not_configured',
+      anthropic: 'not_configured',
+      supabase: 'not_configured',
     });
   });
 });
