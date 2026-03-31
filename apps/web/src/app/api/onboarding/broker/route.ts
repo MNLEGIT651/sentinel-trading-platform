@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
@@ -11,13 +14,30 @@ export const dynamic = 'force-dynamic';
  * PUT /api/onboarding/broker — Update broker account status after KYC submission.
  */
 
+// ─── Zod Schemas ────────────────────────────────────────────────────────
+
+const BrokerUpdateSchema = z
+  .object({
+    external_account_id: z.string().optional(),
+    status: z.string().optional(),
+    submitted_at: z.string().optional(),
+  })
+  .refine(
+    (data) =>
+      data.external_account_id !== undefined ||
+      data.status !== undefined ||
+      data.submitted_at !== undefined,
+    { message: 'No valid fields to update' },
+  );
+
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
+
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const { data, error } = await supabase
       .from('broker_accounts')
@@ -39,11 +59,12 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
+
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     // Check for existing broker account
     const { data: existing } = await supabase
@@ -88,28 +109,19 @@ export async function POST() {
 
 export async function PUT(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    const body = (await request.json()) as Record<string, unknown>;
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    // Only allow updating specific fields from client side
-    const allowedFields: Record<string, unknown> = {};
-    if (typeof body.external_account_id === 'string')
-      allowedFields.external_account_id = body.external_account_id;
-    if (typeof body.status === 'string') allowedFields.status = body.status;
-    if (typeof body.submitted_at === 'string') allowedFields.submitted_at = body.submitted_at;
-
-    if (Object.keys(allowedFields).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
-    }
+    const body = await parseBody(request, BrokerUpdateSchema);
+    if (body instanceof NextResponse) return body;
 
     const { data, error } = await supabase
       .from('broker_accounts')
-      .update(allowedFields)
+      .update(body)
       .eq('user_id', user.id)
       .select()
       .single();

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody, parseSearchParams } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type OperatorRole = 'observer' | 'reviewer' | 'approver' | 'operator';
-
-const VALID_ROLES: OperatorRole[] = ['observer', 'reviewer', 'approver', 'operator'];
 
 const ROLE_LEVELS: Record<OperatorRole, number> = {
   observer: 1,
@@ -16,21 +17,31 @@ const ROLE_LEVELS: Record<OperatorRole, number> = {
   operator: 4,
 };
 
+// ─── Zod Schemas ────────────────────────────────────────────────────────
+
+const RolesQuerySchema = z.object({
+  scope: z.enum(['all', 'me']).optional().default('all'),
+});
+
+const RoleUpdateSchema = z.object({
+  targetUserId: z.string().min(1, 'targetUserId is required'),
+  newRole: z.enum(['observer', 'reviewer', 'approver', 'operator']),
+  reason: z.string().optional(),
+});
+
 // GET /api/roles — list all user profiles or own profile
 export async function GET(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const { searchParams } = new URL(request.url);
-  const scope = searchParams.get('scope') ?? 'all';
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  if (scope === 'me') {
+  const params = parseSearchParams(request, RolesQuerySchema);
+  if (params instanceof NextResponse) return params;
+
+  if (params.scope === 'me') {
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -84,36 +95,17 @@ export async function GET(request: Request) {
 
 // PATCH /api/roles — update a user's role (operator only)
 export async function PATCH(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { user, supabase } = auth;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+  const rl = checkApiRateLimit(user.id);
+  if (rl) return rl;
 
-  const { targetUserId, newRole, reason } = body as {
-    targetUserId: string;
-    newRole: OperatorRole;
-    reason?: string | undefined;
-  };
+  const body = await parseBody(request, RoleUpdateSchema);
+  if (body instanceof NextResponse) return body;
 
-  if (!targetUserId || !newRole) {
-    return NextResponse.json({ error: 'targetUserId and newRole are required' }, { status: 400 });
-  }
-
-  if (!VALID_ROLES.includes(newRole)) {
-    return NextResponse.json(
-      { error: `Invalid role. Must be: ${VALID_ROLES.join(', ')}` },
-      { status: 400 },
-    );
-  }
+  const { targetUserId, newRole, reason } = body;
 
   // Check requester is operator
   const { data: requesterProfile } = await supabase

@@ -1,25 +1,30 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const DeleteLinkSchema = z.object({
+  id: z.string().min(1, 'id is required'),
+});
 
 /**
  * GET /api/portfolio/external
  *
  * Lists the user's linked external portfolio accounts (read-only).
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const { data, error } = await supabase
       .from('external_portfolio_links')
@@ -46,21 +51,17 @@ export async function GET(): Promise<NextResponse> {
  * Disconnects an external portfolio link.
  * Expects { id: string } in the request body.
  */
-export async function DELETE(request: Request): Promise<NextResponse> {
+export async function DELETE(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    const body = (await request.json().catch(() => null)) as { id?: string } | null;
-    if (!body?.id || typeof body.id !== 'string') {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 });
-    }
+    const body = await parseBody(request, DeleteLinkSchema);
+    if (body instanceof NextResponse) return body;
 
     const { error } = await supabase
       .from('external_portfolio_links')

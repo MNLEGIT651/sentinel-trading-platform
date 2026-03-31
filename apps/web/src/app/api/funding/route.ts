@@ -1,9 +1,37 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody, parseSearchParams } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// ─── Zod Schemas ────────────────────────────────────────────────────────
+
+const FundingQuerySchema = z.object({
+  view: z.enum(['all', 'bank-links', 'transactions']).optional().default('all'),
+});
+
+const BankLinkSchema = z.object({
+  action: z.literal('create_bank_link'),
+  broker_account_id: z.string().min(1, 'broker_account_id is required'),
+  plaid_item_id: z.string().optional(),
+  bank_name: z.string().optional(),
+  account_last4: z.string().optional(),
+  account_type: z.string().optional(),
+});
+
+const TransferSchema = z.object({
+  action: z.literal('transfer'),
+  direction: z.enum(['deposit', 'withdrawal']),
+  amount: z.number().positive('amount must be a positive number'),
+  bank_link_id: z.string().min(1, 'bank_link_id is required'),
+  broker_account_id: z.string().min(1, 'broker_account_id is required'),
+});
+
+const FundingPostSchema = z.discriminatedUnion('action', [BankLinkSchema, TransferSchema]);
 
 /**
  * GET /api/funding — Fetch bank links and recent funding transactions.
@@ -12,16 +40,17 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    const { searchParams } = new URL(request.url);
-    const view = searchParams.get('view') ?? 'all';
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    if (view === 'bank-links') {
+    const params = parseSearchParams(request, FundingQuerySchema);
+    if (params instanceof NextResponse) return params;
+
+    if (params.view === 'bank-links') {
       const { data, error } = await supabase
         .from('bank_links')
         .select('*')
@@ -36,7 +65,7 @@ export async function GET(request: Request) {
       return NextResponse.json(data);
     }
 
-    if (view === 'transactions') {
+    if (params.view === 'transactions') {
       const { data, error } = await supabase
         .from('funding_transactions')
         .select('*')
@@ -78,36 +107,27 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    const body = (await request.json()) as Record<string, unknown>;
-    const action = body.action as string | undefined;
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
+
+    const body = await parseBody(request, FundingPostSchema);
+    if (body instanceof NextResponse) return body;
 
     // ─── Create bank link record ────────────────────────────────
-    if (action === 'create_bank_link') {
-      const broker_account_id = body.broker_account_id as string | undefined;
-      const plaid_item_id = body.plaid_item_id as string | undefined;
-      const bank_name = body.bank_name as string | undefined;
-      const account_last4 = body.account_last4 as string | undefined;
-      const account_type = body.account_type as string | undefined;
-
-      if (!broker_account_id) {
-        return NextResponse.json({ error: 'broker_account_id is required' }, { status: 400 });
-      }
-
+    if (body.action === 'create_bank_link') {
       const { data, error } = await supabase
         .from('bank_links')
         .insert({
           user_id: user.id,
-          broker_account_id,
-          plaid_item_id: plaid_item_id ?? null,
-          bank_name: bank_name ?? null,
-          account_last4: account_last4 ?? null,
-          account_type: account_type ?? null,
+          broker_account_id: body.broker_account_id,
+          plaid_item_id: body.plaid_item_id ?? null,
+          bank_name: body.bank_name ?? null,
+          account_last4: body.account_last4 ?? null,
+          account_type: body.account_type ?? null,
           status: 'pending',
         })
         .select()
@@ -122,71 +142,43 @@ export async function POST(request: Request) {
       await supabase.from('onboarding_audit_log').insert({
         user_id: user.id,
         event_type: 'bank_link_created',
-        payload: { bank_link_id: data.id, bank_name },
+        payload: { bank_link_id: data.id, bank_name: body.bank_name },
       });
 
       return NextResponse.json(data, { status: 201 });
     }
 
-    // ─── Initiate deposit or withdrawal ─────────────────────────
-    if (action === 'transfer') {
-      const direction = body.direction as string | undefined;
-      const amount = Number(body.amount);
-      const bank_link_id = body.bank_link_id as string | undefined;
-      const broker_account_id = body.broker_account_id as string | undefined;
-
-      if (!direction || !['deposit', 'withdrawal'].includes(direction)) {
-        return NextResponse.json(
-          { error: 'direction must be deposit or withdrawal' },
-          { status: 400 },
-        );
-      }
-      if (!amount || amount <= 0) {
-        return NextResponse.json({ error: 'amount must be a positive number' }, { status: 400 });
-      }
-      if (!bank_link_id || !broker_account_id) {
-        return NextResponse.json(
-          { error: 'bank_link_id and broker_account_id are required' },
-          { status: 400 },
-        );
-      }
-
-      const { data, error } = await supabase
-        .from('funding_transactions')
-        .insert({
-          user_id: user.id,
-          broker_account_id,
-          bank_link_id,
-          direction,
-          amount,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (error)
-        return NextResponse.json(
-          { error: safeErrorMessage(error, 'Database error') },
-          { status: 500 },
-        );
-
-      await supabase.from('onboarding_audit_log').insert({
+    // ─── Initiate deposit or withdrawal ───────────────────────────
+    const { data, error } = await supabase
+      .from('funding_transactions')
+      .insert({
         user_id: user.id,
-        event_type: 'transfer_initiated',
-        payload: {
-          funding_transaction_id: data.id,
-          direction,
-          amount,
-        },
-      });
+        broker_account_id: body.broker_account_id,
+        bank_link_id: body.bank_link_id,
+        direction: body.direction,
+        amount: body.amount,
+        status: 'pending',
+      })
+      .select()
+      .single();
 
-      return NextResponse.json(data, { status: 201 });
-    }
+    if (error)
+      return NextResponse.json(
+        { error: safeErrorMessage(error, 'Database error') },
+        { status: 500 },
+      );
 
-    return NextResponse.json(
-      { error: 'Invalid action. Use create_bank_link or transfer.' },
-      { status: 400 },
-    );
+    await supabase.from('onboarding_audit_log').insert({
+      user_id: user.id,
+      event_type: 'transfer_initiated',
+      payload: {
+        funding_transaction_id: data.id,
+        direction: body.direction,
+        amount: body.amount,
+      },
+    });
+
+    return NextResponse.json(data, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

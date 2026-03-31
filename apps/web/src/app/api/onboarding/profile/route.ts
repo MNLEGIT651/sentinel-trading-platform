@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
 import type { CustomerProfile, CustomerProfileUpdate } from '@sentinel/shared';
 import { ONBOARDING_STEPS, canOnboardingTransition } from '@sentinel/shared';
@@ -9,16 +10,14 @@ export const dynamic = 'force-dynamic';
 
 // ─── GET: Fetch customer profile ────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const { data, error } = await supabase
       .from('customer_profiles')
@@ -116,16 +115,14 @@ function validateProfileUpdate(
   return { valid: true, data: update as CustomerProfileUpdate };
 }
 
-export async function PUT(request: Request): Promise<NextResponse> {
+export async function PUT(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
     const body = await request.json().catch(() => null);
 

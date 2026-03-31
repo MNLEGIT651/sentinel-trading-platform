@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import type { JournalEntryCreate, JournalEntry } from '@sentinel/shared';
+import { z } from 'zod';
+import { requireAuth } from '@/lib/auth/require-auth';
+import { parseBody, parseSearchParams } from '@/lib/api/validation';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
+import type { JournalEntry } from '@sentinel/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,49 +21,61 @@ const VALID_EVENT_TYPES = [
 
 const VALID_GRADES = ['excellent', 'good', 'neutral', 'bad', 'terrible'] as const;
 
+// ─── Zod Schemas ────────────────────────────────────────────────────
+
+const JournalQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  event_type: z.enum(VALID_EVENT_TYPES).optional(),
+  ticker: z.string().optional(),
+  grade: z.enum(VALID_GRADES).optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+});
+
+const JournalCreateSchema = z
+  .object({
+    event_type: z.enum(VALID_EVENT_TYPES),
+    confidence: z.number().min(0).max(1).nullable().optional(),
+    user_grade: z.enum(VALID_GRADES).nullable().optional(),
+  })
+  .passthrough();
+
 // ─── GET: List journal entries (paginated, filterable) ──────────────
 
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    const url = new URL(request.url);
-    const limit = Math.min(Number(url.searchParams.get('limit') ?? 50), 200);
-    const offset = Math.max(Number(url.searchParams.get('offset') ?? 0), 0);
-    const eventType = url.searchParams.get('event_type');
-    const ticker = url.searchParams.get('ticker');
-    const grade = url.searchParams.get('grade');
-    const from = url.searchParams.get('from');
-    const to = url.searchParams.get('to');
+    const params = parseSearchParams(request, JournalQuerySchema);
+    if (params instanceof NextResponse) return params;
 
     let query = supabase
       .from('decision_journal')
       .select('*', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .range(params.offset, params.offset + params.limit - 1);
 
-    if (eventType && VALID_EVENT_TYPES.includes(eventType as (typeof VALID_EVENT_TYPES)[number])) {
-      query = query.eq('event_type', eventType);
+    if (params.event_type) {
+      query = query.eq('event_type', params.event_type);
     }
-    if (ticker) {
-      query = query.eq('ticker', ticker.toUpperCase());
+    if (params.ticker) {
+      query = query.eq('ticker', params.ticker.toUpperCase());
     }
-    if (grade && VALID_GRADES.includes(grade as (typeof VALID_GRADES)[number])) {
-      query = query.eq('user_grade', grade);
+    if (params.grade) {
+      query = query.eq('user_grade', params.grade);
     }
-    if (from) {
-      query = query.gte('created_at', from);
+    if (params.from) {
+      query = query.gte('created_at', params.from);
     }
-    if (to) {
-      query = query.lte('created_at', to);
+    if (params.to) {
+      query = query.lte('created_at', params.to);
     }
 
     const { data, count, error } = await query;
@@ -75,8 +90,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({
       entries: (data ?? []) as JournalEntry[],
       total: count ?? 0,
-      limit,
-      offset,
+      limit: params.limit,
+      offset: params.offset,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -85,56 +100,21 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 // ─── POST: Create a journal entry ──────────────────────────────────
 
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const rl = checkApiRateLimit(user.id);
+    if (rl) return rl;
 
-    const body = await request.json().catch(() => null);
-    if (!body || typeof body !== 'object') {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    }
-
-    const entry = body as Partial<JournalEntryCreate>;
-
-    if (
-      !entry.event_type ||
-      !VALID_EVENT_TYPES.includes(entry.event_type as (typeof VALID_EVENT_TYPES)[number])
-    ) {
-      return NextResponse.json(
-        { error: `event_type must be one of: ${VALID_EVENT_TYPES.join(', ')}` },
-        { status: 400 },
-      );
-    }
-
-    if (
-      entry.confidence !== undefined &&
-      entry.confidence !== null &&
-      (entry.confidence < 0 || entry.confidence > 1)
-    ) {
-      return NextResponse.json({ error: 'confidence must be between 0 and 1' }, { status: 400 });
-    }
-
-    if (
-      entry.user_grade !== undefined &&
-      entry.user_grade !== null &&
-      !VALID_GRADES.includes(entry.user_grade as (typeof VALID_GRADES)[number])
-    ) {
-      return NextResponse.json(
-        { error: `user_grade must be one of: ${VALID_GRADES.join(', ')}` },
-        { status: 400 },
-      );
-    }
+    const body = await parseBody(request, JournalCreateSchema);
+    if (body instanceof NextResponse) return body;
 
     const { data, error } = await supabase
       .from('decision_journal')
-      .insert({ ...entry, user_id: user.id })
+      .insert({ ...body, user_id: user.id })
       .select()
       .single();
 
