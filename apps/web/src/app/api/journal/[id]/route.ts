@@ -61,7 +61,8 @@ export async function GET(
     }
 
     return NextResponse.json(data as JournalEntry);
-  } catch {
+  } catch (error) {
+    console.error('journal.[id].GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -108,7 +109,8 @@ export async function PATCH(
     }
 
     return NextResponse.json(data as JournalEntry);
-  } catch {
+  } catch (error) {
+    console.error('journal.[id].PATCH', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

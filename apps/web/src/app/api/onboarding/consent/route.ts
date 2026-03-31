@@ -46,7 +46,8 @@ export async function GET(): Promise<Response> {
     }
 
     return NextResponse.json(data as Consent[]);
-  } catch {
+  } catch (error) {
+    console.error('onboarding.consent.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -100,7 +101,8 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     return NextResponse.json(data as Consent, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('onboarding.consent.POST', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

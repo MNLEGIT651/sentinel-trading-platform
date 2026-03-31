@@ -39,7 +39,8 @@ export async function POST(): Promise<Response> {
     });
 
     return NextResponse.json({ link_token: response.data.link_token });
-  } catch {
+  } catch (error) {
+    console.error('plaid.link-token.POST', error);
     return NextResponse.json({ error: 'Failed to create link token' }, { status: 500 });
   }
 }

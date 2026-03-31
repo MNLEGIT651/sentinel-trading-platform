@@ -84,7 +84,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         const posData = await posRes.json();
         positions = Array.isArray(posData) ? posData : (posData.positions ?? []);
       }
-    } catch {
+    } catch (error) {
+      console.error('recommendations.risk-preview.GET', error);
       // Engine is optional for this endpoint ΓÇö when unavailable,
       // fall through and compute risk preview with fallback values
     }

@@ -29,7 +29,8 @@ async function getUserToken(): Promise<string | null> {
       data: { session },
     } = await supabase.auth.getSession();
     return session?.access_token ?? null;
-  } catch {
+  } catch (error) {
+    console.error('agents-proxy.handler', error);
     return null;
   }
 }

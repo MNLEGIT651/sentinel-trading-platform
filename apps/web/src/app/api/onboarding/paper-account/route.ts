@@ -62,7 +62,8 @@ export async function POST(): Promise<Response> {
     });
 
     return NextResponse.json({ id: data.id, already_existed: false }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('onboarding.paper-account.POST', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -53,7 +53,8 @@ async function fetchConfiguredServiceJson<T>(
     });
     if (!response.ok) throw new Error(`${response.status}`);
     return { status: 'connected', data: (await response.json()) as T };
-  } catch {
+  } catch (error) {
+    console.error('settings.status.GET', error);
     return { status: 'disconnected', data: null };
   }
 }

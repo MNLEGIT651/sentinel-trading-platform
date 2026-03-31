@@ -100,7 +100,8 @@ export async function GET(request: Request) {
       bank_links: bankRes.data ?? [],
       transactions: txnRes.data ?? [],
     });
-  } catch {
+  } catch (error) {
+    console.error('funding.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -179,7 +180,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(data, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('funding.POST', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -40,7 +40,8 @@ export async function GET(): Promise<Response> {
     }
 
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    console.error('portfolio.external.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -84,7 +85,8 @@ export async function DELETE(request: Request): Promise<Response> {
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    console.error('portfolio.external.DELETE', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

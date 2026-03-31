@@ -130,7 +130,8 @@ export async function GET(req: NextRequest) {
           }
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('counterfactuals.GET', error);
       // Engine offline ΓÇö prices unavailable
     }
   }

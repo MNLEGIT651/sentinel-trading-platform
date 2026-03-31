@@ -51,7 +51,8 @@ export async function GET(): Promise<Response> {
     }
 
     return NextResponse.json(data as CustomerProfile);
-  } catch {
+  } catch (error) {
+    console.error('onboarding.profile.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -173,7 +174,8 @@ export async function PUT(request: Request): Promise<Response> {
     });
 
     return NextResponse.json(data as CustomerProfile);
-  } catch {
+  } catch (error) {
+    console.error('onboarding.profile.PUT', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

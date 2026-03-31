@@ -93,7 +93,8 @@ export async function GET(request: Request): Promise<Response> {
       limit: params.limit,
       offset: params.offset,
     });
-  } catch {
+  } catch (error) {
+    console.error('journal.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -126,7 +127,8 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     return NextResponse.json(data as JournalEntry, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('journal.POST', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
