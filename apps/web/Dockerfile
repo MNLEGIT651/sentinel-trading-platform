@@ -1,8 +1,7 @@
-# ─── Sentinel Web — Next.js 15 ───────────────────────────────────────────────
+# ─── Sentinel Web — Next.js 16 ───────────────────────────────────────────────
 # Build context: monorepo root  (docker build -f apps/web/Dockerfile .)
 FROM node:22-alpine AS base
-
-RUN npm install --global pnpm@10.32.1
+RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 
 # ─── Dependencies layer ───────────────────────────────────────────────────────
 FROM base AS deps
@@ -31,11 +30,11 @@ ENV STANDALONE_BUILD=1
 
 ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
-ARG SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
 
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+
+# SUPABASE_SERVICE_ROLE_KEY is runtime-only — never bake into image layers
 
 # Warn if build args contain placeholders (real values required for production)
 ARG VALIDATE_BUILD_ARGS=false
@@ -67,6 +66,6 @@ USER nextjs
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -qO- http://localhost:3000 || exit 1
+  CMD node -e "const http = require('http'); http.get('http://localhost:' + (process.env.PORT || 3000) + '/', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 CMD ["node", "apps/web/server.js"]
