@@ -22,7 +22,8 @@ async function checkDependency(service: ServiceName): Promise<DependencyStatus> 
     });
 
     return response.ok ? 'connected' : 'disconnected';
-  } catch {
+  } catch (error) {
+    console.error('health.GET', error);
     return 'disconnected';
   }
 }

@@ -37,7 +37,8 @@ async function handle(request: Request, context: RouteContext): Promise<Response
         { status: 401 },
       );
     }
-  } catch {
+  } catch (error) {
+    console.error('engine-proxy.handler', error);
     return NextResponse.json(
       { error: 'unauthorized', message: 'Not authenticated' },
       { status: 401 },

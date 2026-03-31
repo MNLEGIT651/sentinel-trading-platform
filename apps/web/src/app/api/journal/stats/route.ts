@@ -39,7 +39,8 @@ export async function GET(): Promise<Response> {
     };
 
     return NextResponse.json(stats);
-  } catch {
+  } catch (error) {
+    console.error('journal.stats.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

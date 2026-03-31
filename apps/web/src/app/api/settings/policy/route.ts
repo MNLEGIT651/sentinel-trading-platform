@@ -80,7 +80,8 @@ export async function GET(): Promise<Response> {
     }
 
     return NextResponse.json(created as TradingPolicy);
-  } catch {
+  } catch (error) {
+    console.error('settings.policy.GET', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -123,7 +124,8 @@ export async function PUT(request: Request): Promise<Response> {
     });
 
     return NextResponse.json(updated as TradingPolicy);
-  } catch {
+  } catch (error) {
+    console.error('settings.policy.PUT', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

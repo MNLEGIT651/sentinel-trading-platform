@@ -79,7 +79,8 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     return NextResponse.json(data, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('plaid.exchange.POST', error);
     return NextResponse.json({ error: 'Failed to exchange token' }, { status: 500 });
   }
 }

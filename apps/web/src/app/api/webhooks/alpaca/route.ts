@@ -240,7 +240,8 @@ export async function POST(request: Request) {
       default:
         return NextResponse.json({ error: `Unknown event type: ${event}` }, { status: 400 });
     }
-  } catch {
+  } catch (error) {
+    console.error('webhooks.alpaca.POST', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

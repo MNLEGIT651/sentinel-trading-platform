@@ -244,7 +244,8 @@ export async function GET(request: Request) {
       summary,
       timeline,
     });
-  } catch {
+  } catch (error) {
+    console.error('replay.GET', error);
     return NextResponse.json({ error: 'Failed to load replay data' }, { status: 500 });
   }
 }
