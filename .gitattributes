@@ -6,3 +6,6 @@
 *.jpg binary
 *.ico binary
 *.woff2 binary
+
+# Lock files – treat as generated (excluded from GitHub language stats)
+pnpm-lock.yaml    linguist-generated
