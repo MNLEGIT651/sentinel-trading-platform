@@ -1,16 +1,19 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local", ".env"],
   "globalPassThroughEnv": [
     "NODE_ENV",
     "ENGINE_URL",
     "ENGINE_API_KEY",
     "AGENTS_URL",
+    "AGENTS_API_KEY",
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
     "ANTHROPIC_API_KEY",
     "ANALYZE",
     "STANDALONE_BUILD"
   ],
+  "ui": "tui",
   "tasks": {
     "dev": {
       "persistent": true,
@@ -18,7 +21,7 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+      "env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SITE_URL"],
       "outputs": [".next/**", "dist/**"]
     },
     "typecheck": {
