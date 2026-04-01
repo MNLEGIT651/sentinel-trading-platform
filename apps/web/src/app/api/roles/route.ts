@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { parseBody, parseSearchParams } from '@/lib/api/validation';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
@@ -7,6 +8,14 @@ import { safeErrorMessage } from '@/lib/api-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/** Service-role client that bypasses RLS — used only for operator admin queries */
+function supabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 type OperatorRole = 'observer' | 'reviewer' | 'approver' | 'operator';
 
@@ -29,7 +38,7 @@ const RoleUpdateSchema = z.object({
   reason: z.string().optional(),
 });
 
-// GET /api/roles — list all user profiles or own profile
+// GET /api/roles — list own profile (scope=me) or all profiles (scope=all, operator only)
 export async function GET(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
@@ -68,7 +77,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ profile: data });
   }
 
-  const { data: profiles, error } = await supabase
+  // scope=all requires operator role — verified via user's own profile
+  const { data: callerProfile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const callerRole = (callerProfile?.role ?? 'operator') as OperatorRole;
+  if (ROLE_LEVELS[callerRole] < ROLE_LEVELS['operator']) {
+    return NextResponse.json({ error: 'Only operators can list all profiles' }, { status: 403 });
+  }
+
+  // Use service_role to bypass RLS for legitimate operator admin query
+  const admin = supabaseAdmin();
+
+  const { data: profiles, error } = await admin
     .from('user_profiles')
     .select('*')
     .order('created_at', { ascending: true });
@@ -80,7 +104,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const { data: history } = await supabase
+  const { data: history } = await admin
     .from('role_change_log')
     .select('*')
     .order('created_at', { ascending: false })
@@ -107,7 +131,7 @@ export async function PATCH(request: Request) {
 
   const { targetUserId, newRole, reason } = body;
 
-  // Check requester is operator
+  // Check requester is operator (via user's own RLS-scoped client)
   const { data: requesterProfile } = await supabase
     .from('user_profiles')
     .select('role')
@@ -119,8 +143,11 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Only operators can change roles' }, { status: 403 });
   }
 
+  // Use service_role for cross-user operations (bypasses user-scoped RLS)
+  const admin = supabaseAdmin();
+
   // Get current role of target user
-  const { data: targetProfile } = await supabase
+  const { data: targetProfile } = await admin
     .from('user_profiles')
     .select('role')
     .eq('id', targetUserId)
@@ -134,7 +161,7 @@ export async function PATCH(request: Request) {
 
   // Prevent removing the last operator
   if (targetUserId === user.id && newRole !== 'operator') {
-    const { count } = await supabase
+    const { count } = await admin
       .from('user_profiles')
       .select('id', { count: 'exact', head: true })
       .eq('role', 'operator');
@@ -144,8 +171,8 @@ export async function PATCH(request: Request) {
     }
   }
 
-  // Update role
-  const { error: updateError } = await supabase.from('user_profiles').upsert({
+  // Update role via admin client
+  const { error: updateError } = await admin.from('user_profiles').upsert({
     id: targetUserId,
     role: newRole,
     updated_at: new Date().toISOString(),
@@ -156,7 +183,7 @@ export async function PATCH(request: Request) {
   }
 
   // Log the change
-  await supabase.from('role_change_log').insert({
+  await admin.from('role_change_log').insert({
     target_user_id: targetUserId,
     changed_by: user.id,
     old_role: oldRole,
