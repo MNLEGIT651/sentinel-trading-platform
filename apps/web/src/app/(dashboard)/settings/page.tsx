@@ -363,7 +363,7 @@ export default function SettingsPage() {
                         ['Agents', 'Claude SDK (TypeScript)'],
                         ['Database', 'Supabase (PostgreSQL 15)'],
                         ['Broker', 'Alpaca Markets API'],
-                        ['Market Data', 'Polygon.io REST + WS'],
+                        ['Market Data', 'Polygon.io REST + WebSocket'],
                       ].map(([label, value]) => (
                         <div
                           key={label}

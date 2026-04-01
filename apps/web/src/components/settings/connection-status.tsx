@@ -86,7 +86,9 @@ function ConnectionStatusCell({
         <Icon className={cn('h-3.5 w-3.5 shrink-0', c.color)} />
       )}
       <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-foreground">{label}</p>
+        <p className="truncate text-xs font-medium text-foreground" title={label}>
+          {label}
+        </p>
         <p className={cn('text-[10px]', c.color)}>{c.text}</p>
       </div>
     </div>
