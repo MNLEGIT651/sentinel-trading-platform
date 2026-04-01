@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import type { Experiment, ExperimentSnapshot, ExperimentOrder } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
@@ -10,13 +9,6 @@ export const dynamic = 'force-dynamic';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type RouteParams = { params: Promise<{ id: string }> };
-
-function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 interface ReportSummary {
   total_snapshots: number;
@@ -64,7 +56,7 @@ function computeSummary(snapshots: ExperimentSnapshot[], orders: ExperimentOrder
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
@@ -76,17 +68,16 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid experiment id' }, { status: 400 });
     }
 
-    const sb = supabaseAdmin();
-
-    // Fetch experiment, snapshots, and orders in parallel
+    // RLS enforces created_by = auth.uid() on experiments and scopes
+    // snapshots/orders through experiment_id FK automatically
     const [experimentRes, snapshotsRes, ordersRes] = await Promise.all([
-      sb.from('experiments').select('*').eq('id', id).single(),
-      sb
+      supabase.from('experiments').select('*').eq('id', id).eq('created_by', user.id).single(),
+      supabase
         .from('experiment_snapshots')
         .select('*')
         .eq('experiment_id', id)
         .order('snapshot_date', { ascending: true }),
-      sb
+      supabase
         .from('experiment_orders')
         .select('*')
         .eq('experiment_id', id)

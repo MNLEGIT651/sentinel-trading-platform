@@ -62,11 +62,31 @@ export async function PATCH(req: Request) {
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
 
+  const ALLOWED_PROFILE_FIELDS = [
+    'risk_tolerance',
+    'investment_horizon',
+    'preferred_sectors',
+    'preferred_strategies',
+    'max_position_size',
+    'trading_style',
+    'experience_level',
+    'goals',
+    'constraints',
+    'notes',
+  ] as const;
+
   const ProfilePatchSchema = z
     .record(z.string(), z.unknown())
     .refine((data) => Object.keys(data).length > 0, {
       message: 'Patch body must contain at least one field',
-    });
+    })
+    .refine(
+      (data) =>
+        Object.keys(data).every((k) => (ALLOWED_PROFILE_FIELDS as readonly string[]).includes(k)),
+      {
+        message: `Only these profile fields are allowed: ${ALLOWED_PROFILE_FIELDS.join(', ')}`,
+      },
+    );
 
   const patch = await parseBody(req, ProfilePatchSchema);
   if (patch instanceof NextResponse) return patch;

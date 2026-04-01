@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 import type { Experiment, ExperimentStatus } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
@@ -10,13 +9,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type RouteParams = { params: Promise<{ id: string }> };
-
-function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 /**
  * Build the update payload for advancing to the next phase.
@@ -36,12 +28,12 @@ function transitionPayload(current: ExperimentStatus, now: string): Record<strin
 }
 
 /* ------------------------------------------------------------------ */
-/*  POST /api/experiments/[id]/advance ΓÇö advance to the next phase    */
+/*  POST /api/experiments/[id]/advance — advance to the next phase    */
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
@@ -63,13 +55,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     if (body instanceof NextResponse) return body;
     const resume = body.resume === true;
 
-    const sb = supabaseAdmin();
-
-    // Fetch current state
-    const { data: experiment, error: fetchErr } = await sb
+    // Fetch current state (RLS + defense-in-depth filter)
+    const { data: experiment, error: fetchErr } = await supabase
       .from('experiments')
       .select('id, status, halted')
       .eq('id', id)
+      .eq('created_by', user.id)
       .single();
 
     if (fetchErr || !experiment) {
@@ -108,10 +99,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     payload.halted_at = null;
     payload.updated_at = now;
 
-    const { data: updated, error: updateErr } = await sb
+    const { data: updated, error: updateErr } = await supabase
       .from('experiments')
       .update(payload)
       .eq('id', id)
+      .eq('created_by', user.id)
       .select()
       .single();
 
