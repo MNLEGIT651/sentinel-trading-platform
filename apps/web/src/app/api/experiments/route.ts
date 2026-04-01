@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 import type { Experiment } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
@@ -9,30 +8,22 @@ import { parseBody } from '@/lib/api/validation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
-
 /* ------------------------------------------------------------------ */
-/*  GET /api/experiments ΓÇö list all experiments                       */
+/*  GET /api/experiments — list user's experiments                    */
 /* ------------------------------------------------------------------ */
 export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
 
   try {
-    const sb = supabaseAdmin();
-
-    const { data, error } = await sb
+    const { data, error } = await supabase
       .from('experiments')
       .select('*')
+      .eq('created_by', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -48,12 +39,12 @@ export async function GET() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  POST /api/experiments ΓÇö create a new experiment                   */
+/*  POST /api/experiments — create a new experiment                   */
 /* ------------------------------------------------------------------ */
 export async function POST(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
@@ -75,6 +66,7 @@ export async function POST(request: Request) {
     const insert: Record<string, unknown> = {
       name: body.name.trim(),
       status: 'pending',
+      created_by: user.id,
     };
 
     if (body.description !== undefined) insert.description = body.description;
@@ -85,8 +77,7 @@ export async function POST(request: Request) {
     if (body.max_total_exposure !== undefined) insert.max_total_exposure = body.max_total_exposure;
     if (body.initial_capital !== undefined) insert.initial_capital = body.initial_capital;
 
-    const sb = supabaseAdmin();
-    const { data, error } = await sb.from('experiments').insert(insert).select().single();
+    const { data, error } = await supabase.from('experiments').insert(insert).select().single();
 
     if (error) {
       console.error('experiments.POST insert', error);

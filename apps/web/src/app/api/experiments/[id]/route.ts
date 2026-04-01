@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 import type { Experiment } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
@@ -11,20 +10,13 @@ export const dynamic = 'force-dynamic';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
-
 /* ------------------------------------------------------------------ */
-/*  GET /api/experiments/[id] ΓÇö fetch a single experiment             */
+/*  GET /api/experiments/[id] — fetch a single experiment             */
 /* ------------------------------------------------------------------ */
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
@@ -38,8 +30,12 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid experiment id' }, { status: 400 });
     }
 
-    const sb = supabaseAdmin();
-    const { data, error } = await sb.from('experiments').select('*').eq('id', id).single();
+    const { data, error } = await supabase
+      .from('experiments')
+      .select('*')
+      .eq('id', id)
+      .eq('created_by', user.id)
+      .single();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -57,13 +53,13 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  PATCH /api/experiments/[id] ΓÇö update experiment fields            */
+/*  PATCH /api/experiments/[id] — update experiment fields            */
 /*  Cannot update status (use halt / advance endpoints).              */
 /* ------------------------------------------------------------------ */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
@@ -106,11 +102,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     updates.updated_at = new Date().toISOString();
 
-    const sb = supabaseAdmin();
-    const { data, error } = await sb
+    const { data, error } = await supabase
       .from('experiments')
       .update(updates)
       .eq('id', id)
+      .eq('created_by', user.id)
       .select()
       .single();
 

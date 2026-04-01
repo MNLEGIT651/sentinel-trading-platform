@@ -73,6 +73,12 @@ export function SecuritySettings() {
       setQrUri(data.totp.qr_code);
       setTotpSecret(data.totp.secret);
       setFactorId(data.id);
+      // Validate data URI before rendering (defense-in-depth)
+      if (!/^data:image\/[a-z]+;base64,/.test(data.totp.qr_code)) {
+        toast.error('Invalid QR code format');
+        setEnrollState('idle');
+        return;
+      }
       setEnrollState('show_qr');
     } catch {
       toast.error('Failed to start MFA enrollment');

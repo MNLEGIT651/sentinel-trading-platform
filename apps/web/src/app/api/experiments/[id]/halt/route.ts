@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 import type { Experiment } from '@sentinel/shared';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
@@ -11,20 +10,13 @@ export const dynamic = 'force-dynamic';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
-
 /* ------------------------------------------------------------------ */
-/*  POST /api/experiments/[id]/halt ΓÇö halt an experiment              */
+/*  POST /api/experiments/[id]/halt — halt an experiment              */
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
-  const { user } = auth;
+  const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
@@ -46,13 +38,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     if (body instanceof NextResponse) return body;
     const reason: string | null = body.reason?.trim() || null;
 
-    const sb = supabaseAdmin();
-
-    // Fetch current experiment state
-    const { data: experiment, error: fetchErr } = await sb
+    // Fetch current experiment state (RLS + defense-in-depth filter)
+    const { data: experiment, error: fetchErr } = await supabase
       .from('experiments')
       .select('id, status, halted')
       .eq('id', id)
+      .eq('created_by', user.id)
       .single();
 
     if (fetchErr || !experiment) {
@@ -76,7 +67,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { data: updated, error: updateErr } = await sb
+    const { data: updated, error: updateErr } = await supabase
       .from('experiments')
       .update({
         halted: true,
@@ -85,6 +76,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
+      .eq('created_by', user.id)
       .select()
       .single();
 
