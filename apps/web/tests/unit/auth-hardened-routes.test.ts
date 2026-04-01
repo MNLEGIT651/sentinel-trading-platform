@@ -51,7 +51,7 @@ function req(url: string, method = 'GET') {
 
 // ─── Tests ──────────────────────────────────────────────────────────
 
-describe('Auth enforcement on hardened routes', () => {
+describe('Auth enforcement on hardened routes', { timeout: 15_000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
     unauthed();

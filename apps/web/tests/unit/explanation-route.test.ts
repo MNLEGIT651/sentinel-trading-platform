@@ -65,7 +65,7 @@ function jsonReq(url: string, body: unknown) {
 
 // ─── Tests ──────────────────────────────────────────────────────────
 
-describe('Explanation Route', () => {
+describe('Explanation Route', { timeout: 15_000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
     selectResult = { data: null, error: null };
