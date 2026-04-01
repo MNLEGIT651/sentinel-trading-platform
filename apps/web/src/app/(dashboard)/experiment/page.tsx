@@ -349,7 +349,7 @@ export default function ExperimentPage() {
             defaultOpen={false}
             className="bg-card border-border"
           >
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
               <div>
                 <p className="text-xs text-muted-foreground">Max Daily Trades</p>
                 <p className="font-mono text-sm">{active.max_daily_trades}</p>

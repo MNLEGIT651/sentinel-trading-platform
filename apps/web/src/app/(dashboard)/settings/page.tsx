@@ -238,21 +238,21 @@ export default function SettingsPage() {
       ) : (
         <Tabs defaultValue="risk" className="space-y-3">
           <TabsList className="w-full bg-muted/50 sm:w-fit">
-            <TabsTrigger value="risk">
-              <Shield className="h-3.5 w-3.5 sm:mr-1.5" />
-              <span className="hidden sm:inline">Risk</span>
+            <TabsTrigger value="risk" className="gap-1 text-xs sm:text-sm">
+              <Shield className="h-3.5 w-3.5" />
+              <span className="sm:inline">Risk</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications">
-              <Bell className="h-3.5 w-3.5 sm:mr-1.5" />
-              <span className="hidden sm:inline">Notifications</span>
+            <TabsTrigger value="notifications" className="gap-1 text-xs sm:text-sm">
+              <Bell className="h-3.5 w-3.5" />
+              <span className="sm:inline">Alerts</span>
             </TabsTrigger>
-            <TabsTrigger value="trading">
-              <Activity className="h-3.5 w-3.5 sm:mr-1.5" />
-              <span className="hidden sm:inline">Trading</span>
+            <TabsTrigger value="trading" className="gap-1 text-xs sm:text-sm">
+              <Activity className="h-3.5 w-3.5" />
+              <span className="sm:inline">Trading</span>
             </TabsTrigger>
-            <TabsTrigger value="security">
-              <Lock className="h-3.5 w-3.5 sm:mr-1.5" />
-              <span className="hidden sm:inline">Security</span>
+            <TabsTrigger value="security" className="gap-1 text-xs sm:text-sm">
+              <Lock className="h-3.5 w-3.5" />
+              <span className="sm:inline">Security</span>
             </TabsTrigger>
           </TabsList>
 
@@ -296,7 +296,7 @@ export default function SettingsPage() {
             {systemControls && (
               <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
                 <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-xs leading-relaxed text-muted-foreground sm:text-[11px]">
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   System-wide mode is{' '}
                   <span className="font-semibold text-foreground">
                     {systemControls.global_mode.toUpperCase()}

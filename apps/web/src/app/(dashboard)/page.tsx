@@ -119,7 +119,7 @@ export default function DashboardPage() {
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
       {/* System Health Strip */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-4 py-2 text-sm">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm sm:px-4">
         <div className="flex items-center gap-1.5">
           <Shield className="h-3.5 w-3.5" />
           {systemControls?.trading_halted ? (
@@ -128,14 +128,14 @@ export default function DashboardPage() {
             <span className="font-medium text-profit">Active</span>
           )}
         </div>
-        <span className="text-border">|</span>
+        <span className="hidden sm:inline text-border">|</span>
         <div className="flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium uppercase">
             {systemControls?.global_mode ?? 'paper'}
           </span>
         </div>
-        <span className="text-border">|</span>
+        <span className="hidden sm:inline text-border">|</span>
         <div className="flex items-center gap-1.5">
           <Clock className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-muted-foreground">Pending:</span>
@@ -148,7 +148,7 @@ export default function DashboardPage() {
             {pendingRecs?.length ?? 0}
           </span>
         </div>
-        <span className="text-border">|</span>
+        <span className="hidden sm:inline text-border">|</span>
         <div className="flex items-center gap-1.5">
           <Bot className="h-3.5 w-3.5 text-muted-foreground" />
           <span
@@ -174,7 +174,7 @@ export default function DashboardPage() {
 
       {/* Row 1: Metric Cards */}
       <div className="@container">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 stagger-grid">
           <MetricCard
             label={
               <>
