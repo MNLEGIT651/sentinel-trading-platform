@@ -237,22 +237,22 @@ export default function SettingsPage() {
         </div>
       ) : (
         <Tabs defaultValue="risk" className="space-y-3">
-          <TabsList className="bg-muted/50">
+          <TabsList className="w-full bg-muted/50 sm:w-fit">
             <TabsTrigger value="risk">
-              <Shield className="h-3.5 w-3.5 mr-1.5" />
-              Risk
+              <Shield className="h-3.5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Risk</span>
             </TabsTrigger>
             <TabsTrigger value="notifications">
-              <Bell className="h-3.5 w-3.5 mr-1.5" />
-              Notifications
+              <Bell className="h-3.5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Notifications</span>
             </TabsTrigger>
             <TabsTrigger value="trading">
-              <Activity className="h-3.5 w-3.5 mr-1.5" />
-              Trading
+              <Activity className="h-3.5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Trading</span>
             </TabsTrigger>
             <TabsTrigger value="security">
-              <Lock className="h-3.5 w-3.5 mr-1.5" />
-              Security
+              <Lock className="h-3.5 w-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Security</span>
             </TabsTrigger>
           </TabsList>
 
@@ -294,9 +294,9 @@ export default function SettingsPage() {
           <TabsContent value="trading">
             {/* System-wide mode banner */}
             {systemControls && (
-              <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
                 <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs leading-relaxed text-muted-foreground sm:text-[11px]">
                   System-wide mode is{' '}
                   <span className="font-semibold text-foreground">
                     {systemControls.global_mode.toUpperCase()}
@@ -363,11 +363,16 @@ export default function SettingsPage() {
                         ['Agents', 'Claude SDK (TypeScript)'],
                         ['Database', 'Supabase (PostgreSQL 15)'],
                         ['Broker', 'Alpaca Markets API'],
-                        ['Market Data', 'Polygon.io REST + WebSocket'],
+                        ['Market Data', 'Polygon.io REST + WS'],
                       ].map(([label, value]) => (
-                        <div key={label} className="flex items-center justify-between px-3 py-2">
+                        <div
+                          key={label}
+                          className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                        >
                           <span className="text-xs text-muted-foreground">{label}</span>
-                          <span className="text-xs font-mono text-foreground">{value}</span>
+                          <span className="text-xs font-mono text-foreground sm:text-right">
+                            {value}
+                          </span>
                         </div>
                       ))}
                     </div>
