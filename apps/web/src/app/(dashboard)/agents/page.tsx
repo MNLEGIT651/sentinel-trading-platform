@@ -89,16 +89,16 @@ export default function AgentsPage() {
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Bot className="h-5 w-5 text-primary" />
-          <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <Bot className="h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0">
             <h1 className="text-heading-page text-foreground">AI Agents</h1>
-            <p className="text-xs text-muted-foreground">
-              {cycleCount} cycles completed &middot; 5 agents configured
+            <p className="text-xs text-muted-foreground truncate">
+              {cycleCount} cycles &middot; 5 agents
               {status?.nextCycleAt && !isHalted && (
-                <span className="ml-2">
-                  &middot; next cycle{' '}
+                <span className="ml-1">
+                  &middot; next{' '}
                   {new Date(status.nextCycleAt).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -113,7 +113,7 @@ export default function AgentsPage() {
           {status?.nextCycleAt && !isHalted && !isOffline && (
             <StatusBadge status="pending" label="Scheduled" className="mr-1" />
           )}
-          {isHalted && <StatusBadge status="error" label="HALTED" className="mr-2" />}
+          {isHalted && <StatusBadge status="error" label="HALTED" className="mr-1" />}
           <Button
             onClick={isHalted ? handleResume : handleRunCycle}
             disabled={controlsDisabled || isRunning || cycleMutation.isPending}

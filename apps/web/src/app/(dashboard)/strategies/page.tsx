@@ -210,7 +210,7 @@ export default function StrategiesPage() {
 
                     {/* Strategy Cards */}
                     {isExpanded && (
-                      <div className="grid grid-cols-1 gap-3 pl-4 lg:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-3 pl-0 sm:pl-4 lg:grid-cols-2 xl:grid-cols-3">
                         {family.strategies.map((strategy) => {
                           const health = healthMap.get(strategy.id);
                           return (
@@ -245,7 +245,7 @@ export default function StrategiesPage() {
       {activeTab === 'health' && (
         <div className="space-y-4">
           {/* Health Summary Strip */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2">
               <StatusBadge status="success" label={`${healthyCount} Healthy`} />
             </div>

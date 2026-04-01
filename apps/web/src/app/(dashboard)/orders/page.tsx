@@ -133,7 +133,7 @@ function StatsRow({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="border-zinc-800 bg-zinc-900/50">
             <CardContent className="p-4">
@@ -170,7 +170,7 @@ function StatsRow({
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
       {cells.map((c) => {
         const Icon = c.icon;
         return (
@@ -229,7 +229,9 @@ function RiskCheckRow({ check }: { check: RiskCheck }) {
           ({check.actual} / {check.limit})
         </span>
       )}
-      {check.message && <span className="text-zinc-600 truncate max-w-xs">{check.message}</span>}
+      {check.message && (
+        <span className="text-zinc-600 truncate max-w-[150px] sm:max-w-xs">{check.message}</span>
+      )}
     </div>
   );
 }
@@ -239,7 +241,7 @@ function RiskCheckRow({ check }: { check: RiskCheck }) {
 function FillDetail({ fill }: { fill: Fill }) {
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3 sm:gap-x-6">
         <div>
           <span className="text-zinc-500">Order ID</span>
           <p className="text-zinc-300 font-mono text-[11px] truncate">{fill.order_id}</p>
@@ -284,7 +286,7 @@ function FillDetail({ fill }: { fill: Fill }) {
 function RiskEvalDetail({ evaluation }: { evaluation: RiskEvaluation }) {
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3 sm:gap-x-6">
         <div>
           <span className="text-zinc-500">Recommendation</span>
           <div className="flex items-center gap-1">
@@ -451,14 +453,14 @@ function OrderDetail({ order }: { order: OrderHistoryEntry }) {
           Order Lifecycle
         </p>
         <OrderLifecycleBar status={order.status} />
-        <div className="flex gap-3 mt-1 text-[10px] text-zinc-600">
+        <div className="flex gap-2 sm:gap-3 mt-1 text-[10px] text-zinc-600">
           {ORDER_STATUS_STEPS.map((s) => (
             <span key={s}>{s}</span>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3 sm:gap-x-6">
         <div>
           <span className="text-zinc-500">Order ID</span>
           <p className="text-zinc-300 font-mono text-[11px] truncate">{order.order_id}</p>
@@ -560,12 +562,14 @@ function TimelineCard({ entry }: { entry: TimelineEntry }) {
     <Card className="border-zinc-800 bg-zinc-900/50">
       <CardContent className="p-4">
         {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <EntryBadge entry={entry} />
             <span className="text-sm font-semibold text-zinc-100">{summary.primary}</span>
             {summary.secondary && (
-              <span className="text-xs text-zinc-500 truncate max-w-xs">{summary.secondary}</span>
+              <span className="text-xs text-zinc-500 truncate max-w-[200px] sm:max-w-xs">
+                {summary.secondary}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0 text-xs text-zinc-500">
@@ -795,13 +799,13 @@ export default function OrdersPage() {
   const hasFilters = dateRange !== 'all' || typeFilter !== 'all' || symbolSearch !== '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page header */}
       <div className="flex items-center gap-3">
-        <ArrowUpDown className="h-6 w-6 text-zinc-400" />
+        <ArrowUpDown className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" />
         <div>
           <h1 className="text-heading-page text-zinc-100">Orders &amp; Fills</h1>
-          <p className="text-sm text-zinc-500">Execution activity timeline</p>
+          <p className="text-xs sm:text-sm text-zinc-500">Execution activity timeline</p>
         </div>
       </div>
 
@@ -809,62 +813,66 @@ export default function OrdersPage() {
       <StatsRow fills={fills} riskEvals={riskEvals} orders={orders} isLoading={isLoading} />
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Date range */}
-        <div className="flex rounded-md border border-zinc-700 overflow-hidden">
-          {DATE_RANGE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleDateRange(opt.value)}
-              className={`px-3 py-1.5 text-xs transition-colors ${
-                dateRange === opt.value
-                  ? 'bg-zinc-700 text-zinc-100 font-medium'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {/* Date range */}
+          <div className="flex shrink-0 rounded-md border border-zinc-700 overflow-hidden">
+            {DATE_RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleDateRange(opt.value)}
+                className={`px-3 py-1.5 text-xs transition-colors ${
+                  dateRange === opt.value
+                    ? 'bg-zinc-700 text-zinc-100 font-medium'
+                    : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Type filter */}
-        <select
-          value={typeFilter}
-          onChange={(e) => handleTypeFilter(e.target.value as TypeFilter)}
-          className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 focus:border-zinc-500 focus:outline-none"
-        >
-          {TYPE_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Symbol / ID search */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Search ID or reason…"
-            value={symbolSearch}
-            onChange={(e) => {
-              setSymbolSearch(e.target.value);
-              setPage(0);
-            }}
-            className="rounded-md border border-zinc-700 bg-zinc-900 py-1.5 pl-8 pr-3 text-sm text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none w-48"
-          />
-        </div>
-
-        {hasFilters && (
-          <button
-            onClick={handleClearFilters}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          {/* Type filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => handleTypeFilter(e.target.value as TypeFilter)}
+            className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 focus:border-zinc-500 focus:outline-none"
           >
-            Clear filters
-          </button>
-        )}
+            {TYPE_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <span className="ml-auto text-xs text-zinc-600">
+        <div className="flex items-center gap-2">
+          {/* Symbol / ID search */}
+          <div className="relative flex-1 sm:flex-initial">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search ID or reason…"
+              value={symbolSearch}
+              onChange={(e) => {
+                setSymbolSearch(e.target.value);
+                setPage(0);
+              }}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-900 py-1.5 pl-8 pr-3 text-sm text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none sm:w-48"
+            />
+          </div>
+
+          {hasFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <span className="text-xs text-zinc-600 sm:ml-auto">
           {totalEntries} {totalEntries === 1 ? 'event' : 'events'}
         </span>
       </div>

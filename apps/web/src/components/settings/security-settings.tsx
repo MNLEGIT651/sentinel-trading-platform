@@ -237,7 +237,7 @@ export function SecuritySettings() {
               </p>
               <div className="flex justify-center rounded-md border border-border bg-white p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrUri} alt="MFA QR Code" className="h-48 w-48" />
+                <img src={qrUri} alt="MFA QR Code" className="h-40 w-40 sm:h-48 sm:w-48" />
               </div>
               <div className="rounded-md bg-muted/50 px-3 py-2">
                 <p className="text-xs text-muted-foreground mb-1">Or enter this secret manually:</p>

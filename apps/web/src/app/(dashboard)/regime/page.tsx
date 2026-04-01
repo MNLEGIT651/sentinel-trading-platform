@@ -175,7 +175,7 @@ function RegimeSelector({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-4 p-4">
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {REGIMES.map((r) => {
               const Icon = r.icon;
               return (
@@ -424,7 +424,7 @@ function CreatePlaybookDialog({ open, onClose }: { open: boolean; onClose: () =>
 
           <div>
             <label className="text-xs font-medium text-zinc-400">Target Regime *</label>
-            <div className="mt-1 grid grid-cols-5 gap-2">
+            <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-5">
               {REGIMES.map((r) => {
                 const RIcon = r.icon;
                 return (
