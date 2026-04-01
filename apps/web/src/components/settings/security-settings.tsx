@@ -247,7 +247,7 @@ export function SecuritySettings() {
                 <label htmlFor="totp-verify" className="text-sm font-medium">
                   Enter the 6-digit code from your app:
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <input
                     id="totp-verify"
                     type="text"
@@ -256,18 +256,26 @@ export function SecuritySettings() {
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="flex h-10 w-32 rounded-md border border-border bg-background px-3 py-2 text-center text-sm font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-center text-sm font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-32"
                   />
-                  <Button
-                    size="sm"
-                    onClick={verifyEnrollment}
-                    disabled={verifyCode.length !== 6 || verifying}
-                  >
-                    {verifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Verify'}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={cancelEnroll}>
-                    Cancel
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={verifyEnrollment}
+                      disabled={verifyCode.length !== 6 || verifying}
+                      className="flex-1 sm:flex-initial"
+                    >
+                      {verifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Verify'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={cancelEnroll}
+                      className="flex-1 sm:flex-initial"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
