@@ -28,7 +28,11 @@ export async function GET(request: Request) {
   const eventType = searchParams.get('type');
   const impact = searchParams.get('impact');
 
-  let query = supabase.from('catalyst_events').select('*').order('event_date', { ascending: true });
+  let query = supabase
+    .from('catalyst_events')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('event_date', { ascending: true });
 
   if (from) query = query.gte('event_date', from);
   if (to) query = query.lte('event_date', to);
