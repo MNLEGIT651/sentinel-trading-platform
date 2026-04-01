@@ -2,6 +2,17 @@ import { create } from 'zustand';
 
 import type { DeviceType } from '@/hooks/use-device-detect';
 
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+
+export interface StoreAlert {
+  id: string;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  acknowledged: boolean;
+  created_at: string;
+}
+
 interface AppState {
   selectedTicker: string | null;
   sidebarOpen: boolean;
@@ -16,6 +27,9 @@ interface AppState {
   deviceType: DeviceType;
   isTouch: boolean;
 
+  /* ── Alerts ── */
+  alerts: StoreAlert[];
+
   setSelectedTicker: (ticker: string | null) => void;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
@@ -24,6 +38,8 @@ interface AppState {
   setEngineOnline: (online: boolean | null) => void;
   setAgentsOnline: (online: boolean | null) => void;
   setDevice: (type: DeviceType, touch: boolean) => void;
+  setAlerts: (alerts: StoreAlert[]) => void;
+  acknowledgeAlert: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -35,6 +51,7 @@ export const useAppStore = create<AppState>((set) => ({
   agentsOnline: null,
   deviceType: 'desktop',
   isTouch: false,
+  alerts: [],
   setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleMobileSidebar: () => set((s) => ({ mobileSidebarOpen: !s.mobileSidebarOpen })),
@@ -43,4 +60,9 @@ export const useAppStore = create<AppState>((set) => ({
   setEngineOnline: (online) => set({ engineOnline: online }),
   setAgentsOnline: (online) => set({ agentsOnline: online }),
   setDevice: (type, touch) => set({ deviceType: type, isTouch: touch }),
+  setAlerts: (alerts) => set({ alerts }),
+  acknowledgeAlert: (id) =>
+    set((s) => ({
+      alerts: s.alerts.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)),
+    })),
 }));
