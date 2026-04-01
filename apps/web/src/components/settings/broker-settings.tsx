@@ -31,6 +31,7 @@ function SettingsField({
           <button
             onClick={() => setShowValue((v) => !v)}
             className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={showValue ? 'Hide value' : 'Show value'}
           >
             {showValue ? 'Hide' : 'Show'}
           </button>

@@ -176,7 +176,7 @@ export function KycForm({ onSubmitted, onCancel }: KycFormProps) {
       const result = (await engineRes.json()) as { account_id: string; status: string };
 
       // 3. Update our broker_accounts record with the Alpaca account ID
-      await fetch('/api/onboarding/broker', {
+      const brokerUpdateRes = await fetch('/api/onboarding/broker', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -185,13 +185,19 @@ export function KycForm({ onSubmitted, onCancel }: KycFormProps) {
           submitted_at: new Date().toISOString(),
         }),
       });
+      if (!brokerUpdateRes.ok) {
+        console.warn('Failed to update broker record after submission');
+      }
 
       // 4. Update onboarding step
-      await fetch('/api/onboarding/profile', {
+      const profileRes = await fetch('/api/onboarding/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ onboarding_step: 'kyc_submitted' }),
       });
+      if (!profileRes.ok) {
+        console.warn('Failed to update onboarding step after submission');
+      }
 
       toast.success('Application submitted successfully');
       onSubmitted?.(result);
