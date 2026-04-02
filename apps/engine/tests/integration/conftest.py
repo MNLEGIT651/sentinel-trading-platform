@@ -18,6 +18,7 @@ def _stub_required_env(monkeypatch):
         "SUPABASE_SERVICE_ROLE_KEY",
         os.getenv("SUPABASE_SERVICE_ROLE_KEY", "stub-service-role-key"),
     )
+    monkeypatch.setenv("ENGINE_API_KEY", os.getenv("ENGINE_API_KEY", "test-api-key"))
     monkeypatch.setenv("POLYGON_API_KEY", "")
 
 

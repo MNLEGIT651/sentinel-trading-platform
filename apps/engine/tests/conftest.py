@@ -1,5 +1,8 @@
 import os
 
+# Set test defaults BEFORE importing app (Settings is evaluated at import time)
+os.environ.setdefault("ENGINE_API_KEY", "test-api-key")
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -14,6 +17,7 @@ def _stub_required_env(monkeypatch):
         "SUPABASE_SERVICE_ROLE_KEY",
         os.getenv("SUPABASE_SERVICE_ROLE_KEY", "stub-service-role-key"),
     )
+    monkeypatch.setenv("ENGINE_API_KEY", os.getenv("ENGINE_API_KEY", "test-api-key"))
 
 
 @pytest.fixture
