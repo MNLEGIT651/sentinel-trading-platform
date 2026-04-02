@@ -184,7 +184,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="w-full space-y-4 p-4">
+    <div className="space-y-4 px-4 py-3 md:p-4">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -236,8 +236,8 @@ export default function SettingsPage() {
           <span className="text-sm">Loading settings…</span>
         </div>
       ) : (
-        <Tabs defaultValue="risk" className="w-full space-y-3">
-          <TabsList className="w-full bg-muted/50 sm:w-fit">
+        <Tabs defaultValue="risk" className="space-y-3 px-4 md:px-0">
+          <TabsList className="w-full bg-muted/50 md:w-fit">
             <TabsTrigger value="risk" className="gap-1 text-xs sm:text-sm">
               <Shield className="h-3.5 w-3.5" />
               <span className="sm:inline">Risk</span>
@@ -315,10 +315,10 @@ export default function SettingsPage() {
                 </p>
               </div>
             )}
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+                  <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
                     Trading Mode
                   </CardTitle>
                 </CardHeader>
@@ -344,9 +344,9 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+              <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+                  <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
                     Environment
                   </CardTitle>
                 </CardHeader>

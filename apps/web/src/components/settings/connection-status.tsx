@@ -59,7 +59,7 @@ function ConnectionStatusRow({
         ) : (
           <Icon className={cn('h-4 w-4', c.color)} />
         )}
-        <span className="text-[1.125rem] leading-tight text-foreground sm:text-base">{label}</span>
+        <span className="text-base leading-tight text-foreground sm:text-[1.125rem]">{label}</span>
       </div>
       <Badge className={cn('border text-[10px]', c.badge)}>{c.text}</Badge>
     </div>

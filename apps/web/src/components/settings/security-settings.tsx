@@ -161,11 +161,11 @@ export function SecuritySettings() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* MFA Card */}
-      <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+      <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
             <Smartphone className="h-4 w-4" />
             Two-Factor Authentication (TOTP)
           </CardTitle>
@@ -184,7 +184,7 @@ export function SecuritySettings() {
                     className="flex items-center justify-between rounded-md border border-border/30 px-3 py-3"
                   >
                     <div>
-                      <p className="text-[1.125rem] font-medium leading-tight sm:text-base">
+                      <p className="text-base font-medium leading-tight sm:text-[1.125rem]">
                         {f.friendly_name ?? 'Authenticator App'}
                       </p>
                       <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
@@ -248,7 +248,7 @@ export function SecuritySettings() {
               <div className="space-y-2">
                 <label
                   htmlFor="totp-verify"
-                  className="text-[1.125rem] font-medium leading-tight sm:text-base"
+                  className="text-base font-medium leading-tight sm:text-[1.125rem]"
                 >
                   Enter the 6-digit code from your app:
                 </label>
@@ -289,9 +289,9 @@ export function SecuritySettings() {
       </Card>
 
       {/* Account Security Info Card */}
-      <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+      <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
             <Shield className="h-4 w-4" />
             Account Security
           </CardTitle>

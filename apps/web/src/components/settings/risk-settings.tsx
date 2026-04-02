@@ -18,7 +18,7 @@ function SettingsField({
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-[1.125rem] font-medium leading-tight text-foreground sm:text-base">
+      <label className="text-base font-medium leading-tight text-foreground sm:text-[1.125rem]">
         {label}
       </label>
       {description && (
@@ -66,10 +66,10 @@ export function RiskSettings({
   onMaxPositions,
 }: RiskSettingsProps) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
-          <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+          <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
             Position Limits
           </CardTitle>
         </CardHeader>
@@ -98,11 +98,11 @@ export function RiskSettings({
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+      <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400" />
-            <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+            <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
               Circuit Breakers
             </CardTitle>
           </div>

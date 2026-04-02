@@ -37,7 +37,8 @@ class TestListSignals:
         rows = [_make_signal_row(), _make_signal_row(id="sig-2", direction="short")]
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = _FakeExecuteResult(
+        chain = mock_db.table.return_value.select.return_value
+        chain.order.return_value.range.return_value.execute.return_value = _FakeExecuteResult(
             data=rows, count=2
         )
 
@@ -86,7 +87,8 @@ class TestListSignals:
     def test_returns_empty_list(self, mock_get_db, client):
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = _FakeExecuteResult(
+        chain = mock_db.table.return_value.select.return_value
+        chain.order.return_value.range.return_value.execute.return_value = _FakeExecuteResult(
             data=[], count=0
         )
 
@@ -106,7 +108,8 @@ class TestListSignals:
         )
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.order.return_value.range.return_value.execute.return_value = _FakeExecuteResult(
+        chain = mock_db.table.return_value.select.return_value
+        chain.order.return_value.range.return_value.execute.return_value = _FakeExecuteResult(
             data=[row], count=1
         )
 
@@ -124,7 +127,8 @@ class TestGetSignal:
     def test_returns_single_signal(self, mock_get_db, client):
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = _FakeExecuteResult(
+        chain = mock_db.table.return_value.select.return_value.eq.return_value
+        chain.maybe_single.return_value.execute.return_value = _FakeExecuteResult(
             data=_make_signal_row()
         )
 
@@ -137,9 +141,8 @@ class TestGetSignal:
     def test_returns_404_when_not_found(self, mock_get_db, client):
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = _FakeExecuteResult(
-            data=None
-        )
+        chain = mock_db.table.return_value.select.return_value.eq.return_value
+        chain.maybe_single.return_value.execute.return_value = _FakeExecuteResult(data=None)
 
         resp = client.get("/api/v1/signals/nonexistent")
         assert resp.status_code == 404

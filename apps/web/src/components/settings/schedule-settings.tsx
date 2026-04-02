@@ -33,9 +33,9 @@ export function ScheduleSettings({
   onTradeNotifications,
 }: ScheduleSettingsProps) {
   return (
-    <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
+    <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
       <CardHeader className="pb-3">
-        <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+        <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
           Alert Preferences
         </CardTitle>
       </CardHeader>
