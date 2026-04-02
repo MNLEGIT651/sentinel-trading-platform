@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
@@ -42,6 +42,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     closeMobileSidebar();
   }, [pathname, closeMobileSidebar]);
 
+  const shellLayoutVars = {
+    '--shell-nav-height': '4rem',
+    '--shell-bottom-offset': 'var(--shell-nav-height)',
+  } as CSSProperties;
+
   return (
     <div
       className={cn(
@@ -70,14 +75,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden" style={shellLayoutVars}>
         <Header onMenuClick={toggleMobileSidebar} onCommandPalette={() => setCmdOpen(true)} />
         <main
           id="main-content"
           className={cn(
             'flex-1 overflow-auto',
             device.isHydrated && device.isTouch && 'overscroll-contain',
-            'pb-16 lg:pb-0',
+            'pb-[var(--shell-bottom-offset)] lg:pb-0',
           )}
         >
           <div className="animate-sentinel-in">{children}</div>
