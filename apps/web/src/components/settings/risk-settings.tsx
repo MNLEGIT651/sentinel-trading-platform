@@ -17,14 +17,20 @@ function SettingsField({
   type?: string;
 }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-foreground">{label}</label>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <div className="space-y-2">
+      <label className="text-[1.125rem] font-medium leading-tight text-foreground sm:text-base">
+        {label}
+      </label>
+      {description && (
+        <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+          {description}
+        </p>
+      )}
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-10 sm:h-9 rounded-md border border-input bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        className="h-10 w-full rounded-md border border-input/70 bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:h-9"
       />
     </div>
   );
@@ -61,9 +67,11 @@ export function RiskSettings({
 }: RiskSettingsProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="bg-card border-border">
+      <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-foreground">Position Limits</CardTitle>
+          <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+            Position Limits
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <SettingsField
@@ -90,11 +98,13 @@ export function RiskSettings({
         </CardContent>
       </Card>
 
-      <Card className="bg-card border-border">
+      <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400" />
-            <CardTitle className="text-sm font-medium text-foreground">Circuit Breakers</CardTitle>
+            <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
+              Circuit Breakers
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

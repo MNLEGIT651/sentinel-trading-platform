@@ -52,14 +52,14 @@ function ConnectionStatusRow({
   const c = statusConfig[status];
 
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+    <div className="flex items-center justify-between border-b border-border/25 py-3 last:border-0">
       <div className="flex items-center gap-2.5">
         {status === 'checking' ? (
           <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
         ) : (
           <Icon className={cn('h-4 w-4', c.color)} />
         )}
-        <span className="text-sm text-foreground">{label}</span>
+        <span className="text-[1.125rem] leading-tight text-foreground sm:text-base">{label}</span>
       </div>
       <Badge className={cn('border text-[10px]', c.badge)}>{c.text}</Badge>
     </div>
@@ -79,17 +79,17 @@ function ConnectionStatusCell({
   const c = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-2 rounded-md border border-border/40 px-2.5 py-2">
+    <div className="flex items-center gap-2 rounded-md border border-border/25 bg-muted/15 px-3 py-3">
       {status === 'checking' ? (
         <Loader2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground animate-spin" />
       ) : (
         <Icon className={cn('h-3.5 w-3.5 shrink-0', c.color)} />
       )}
       <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-foreground" title={label}>
+        <p className="truncate text-sm font-medium leading-tight text-foreground" title={label}>
           {label}
         </p>
-        <p className={cn('text-[10px]', c.color)}>{c.text}</p>
+        <p className={cn('text-xs leading-relaxed', c.color)}>{c.text}</p>
       </div>
     </div>
   );
@@ -107,10 +107,10 @@ export function ConnectionStatusPanel({
   onCheckConnections,
 }: ConnectionStatusPanelProps) {
   return (
-    <Card className="bg-card border-border">
+    <Card className="border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-[1.375rem] font-semibold leading-tight text-foreground sm:text-xl">
             Service Status
           </CardTitle>
           <button
