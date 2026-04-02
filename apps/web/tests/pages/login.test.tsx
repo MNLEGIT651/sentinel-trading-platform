@@ -50,7 +50,7 @@ describe('LoginPage', () => {
 
   it('renders sign-up and forgot-password links', () => {
     renderWithProviders(<LoginPage />);
-    expect(screen.getByText('Sign up')).toHaveAttribute('href', '/signup');
+    expect(screen.getByText('Create one')).toHaveAttribute('href', '/signup');
     expect(screen.getByText('Forgot password?')).toHaveAttribute('href', '/forgot-password');
   });
 

@@ -20,6 +20,7 @@ import { AnimatedNumber } from '@/components/ui/animated-number';
 import { SetupProgress } from '@/components/dashboard/setup-progress';
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
@@ -242,9 +243,12 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentSignals.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">
-                No recent signals. Strategies generate signals during market hours.
-              </p>
+              <EmptyState
+                icon={Zap}
+                title="No Recent Signals"
+                description="Strategies generate signals during market hours."
+                className="border-0 bg-transparent py-6"
+              />
             ) : (
               <div className="space-y-2">
                 {recentSignals.map((s, i) => (

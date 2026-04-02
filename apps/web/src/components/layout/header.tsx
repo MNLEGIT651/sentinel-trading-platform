@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Activity, Menu } from 'lucide-react';
+import { Activity, Menu, Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationCenter } from '@/components/notification-center';
+import { Breadcrumbs } from '@/components/layout/breadcrumbs';
 
 function getETTime(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
@@ -36,9 +37,10 @@ function formatETTime(date: Date): string {
 
 interface HeaderProps {
   onMenuClick?: () => void;
+  onCommandPalette?: () => void;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
   const [time, setTime] = useState<string>('');
   const [marketOpen, setMarketOpen] = useState(false);
 
@@ -85,18 +87,33 @@ export function Header({ onMenuClick }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <span className="font-mono text-sm font-bold tracking-[0.2em] text-foreground/80">
+        <span className="font-mono text-sm font-bold tracking-[0.2em] text-foreground/80 sm:hidden">
           SENTINEL
         </span>
-        <span className="hidden font-mono text-[10px] tracking-wider text-muted-foreground/60 uppercase sm:inline">
-          Trading Platform
-        </span>
+        {/* Breadcrumbs - desktop only */}
+        <Breadcrumbs className="hidden sm:flex" />
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Command palette trigger */}
+        {onCommandPalette && (
+          <button
+            onClick={onCommandPalette}
+            className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            aria-label="Open command palette"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Search…</span>
+            <kbd className="hidden md:inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1 py-0.5 text-[10px] font-mono">
+              ⌘K
+            </kbd>
+          </button>
+        )}
+
         <NotificationCenter />
+
         {/* Market status indicator */}
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <Activity className="h-3 w-3 text-muted-foreground/60" />
           <div className="flex items-center gap-1.5">
             <div
@@ -106,20 +123,25 @@ export function Header({ onMenuClick }: HeaderProps) {
               )}
             />
             <span className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
-              {marketOpen ? 'MKT OPEN' : 'MKT CLOSED'}
+              {marketOpen ? 'OPEN' : 'CLOSED'}
             </span>
           </div>
         </div>
 
         {/* Separator */}
-        <div className="hidden h-4 w-px bg-border sm:block" />
+        <div className="hidden h-4 w-px bg-border lg:block" />
 
         {/* Current ET time */}
-        <div className="hidden items-center gap-1.5 sm:flex">
+        <div className="hidden items-center gap-1.5 lg:flex">
           <span className="font-mono text-[11px] font-medium tabular-nums text-muted-foreground">
             {time}
           </span>
           <span className="font-mono text-[9px] text-muted-foreground/50 tracking-wider">ET</span>
+        </div>
+
+        {/* User avatar */}
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/25">
+          <User className="h-3.5 w-3.5 text-primary" />
         </div>
       </div>
     </header>
