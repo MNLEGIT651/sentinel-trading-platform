@@ -162,9 +162,9 @@ describe('SettingsPage', () => {
   it('shows tab navigation', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /Risk/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /Notifications/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /Trading/i })).toBeInTheDocument();
+      expect(screen.getByText('Risk')).toBeInTheDocument();
+      expect(screen.getByText('Alerts')).toBeInTheDocument();
+      expect(screen.getByText('Trading')).toBeInTheDocument();
     });
   });
 
@@ -188,20 +188,18 @@ describe('SettingsPage', () => {
 
   it('can switch to Risk tab', async () => {
     renderWithProviders(<SettingsPage />);
-    await waitFor(() => expect(screen.getByRole('tab', { name: /Risk/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('tab', { name: /Risk/i }));
+    await waitFor(() => expect(screen.getByText('Risk')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Risk'));
     await waitFor(() => {
       expect(screen.getByText('Position Limits')).toBeInTheDocument();
       expect(screen.getByText('Circuit Breakers')).toBeInTheDocument();
     });
   });
 
-  it('can switch to Notifications tab', async () => {
+  it('can switch to Alerts tab', async () => {
     renderWithProviders(<SettingsPage />);
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: /Notifications/i })).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole('tab', { name: /Notifications/i }));
+    await waitFor(() => expect(screen.getByText('Alerts')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Alerts'));
     await waitFor(() => {
       expect(screen.getByText('Critical Alerts')).toBeInTheDocument();
       expect(screen.getByText('Warning Alerts')).toBeInTheDocument();
