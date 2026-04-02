@@ -14,5 +14,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
     pool: 'threads',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: ['src/**/*.d.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+      thresholds: {
+        statements: 60,
+        branches: 50,
+        functions: 55,
+        lines: 60,
+      },
+    },
   },
 });
