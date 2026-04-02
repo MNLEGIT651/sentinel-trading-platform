@@ -194,19 +194,20 @@ class TestRiskState:
         mock_get_db.return_value = mock_db
 
         # Mock system_controls query
-        mock_db.table.return_value.select.return_value.limit.return_value.single.return_value.execute.return_value = MagicMock(
+        chain = mock_db.table.return_value.select.return_value
+        chain.limit.return_value.single.return_value.execute.return_value = MagicMock(
             data={"trading_halted": False, "live_execution_enabled": True, "global_mode": "paper"}
         )
 
         # Mock portfolio_snapshots (drawdown)
-        mock_db.table.return_value.select.return_value.order.return_value.limit.return_value.maybe_single.return_value.execute.return_value = MagicMock(
+        snap = chain.order.return_value.limit.return_value
+        snap.maybe_single.return_value.execute.return_value = MagicMock(
             data={"drawdown": 0.02, "max_drawdown": 0.05}
         )
 
         # Mock risk_evaluations (recent blocks)
-        mock_db.table.return_value.select.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-            data=[]
-        )
+        evals = chain.eq.return_value.order.return_value.limit.return_value
+        evals.execute.return_value = MagicMock(data=[])
 
         resp = client.get("/api/v1/risk/state")
         assert resp.status_code == 200
@@ -238,9 +239,9 @@ class TestGetRiskPolicy:
     def test_returns_404_when_no_active_policy(self, mock_get_db, client):
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.is_.return_value.order.return_value.limit.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-            data=None
-        )
+        chain = mock_db.table.return_value.select.return_value
+        tail = chain.is_.return_value.order.return_value.limit.return_value
+        tail.maybe_single.return_value.execute.return_value = MagicMock(data=None)
 
         resp = client.get("/api/v1/risk/policy")
         assert resp.status_code == 404
@@ -249,7 +250,9 @@ class TestGetRiskPolicy:
     def test_returns_active_policy(self, mock_get_db, client):
         mock_db = MagicMock()
         mock_get_db.return_value = mock_db
-        mock_db.table.return_value.select.return_value.is_.return_value.order.return_value.limit.return_value.maybe_single.return_value.execute.return_value = MagicMock(
+        chain = mock_db.table.return_value.select.return_value
+        tail = chain.is_.return_value.order.return_value.limit.return_value
+        tail.maybe_single.return_value.execute.return_value = MagicMock(
             data={
                 "id": "pol-1",
                 "version": 3,
