@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -92,15 +92,44 @@ const navSections: NavSection[] = [
   },
 ];
 
+const COLLAPSE_KEY = 'sentinel-sidebar-collapsed';
+
 interface SidebarProps {
   collapsed?: boolean;
   onToggle?: () => void;
 }
 
-export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
+
+  // Persist collapse state in localStorage
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(COLLAPSE_KEY);
+      if (saved === 'true') setInternalCollapsed(true);
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const collapsed = controlledCollapsed ?? internalCollapsed;
+
+  const handleToggle = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      const next = !internalCollapsed;
+      setInternalCollapsed(next);
+      try {
+        localStorage.setItem(COLLAPSE_KEY, String(next));
+      } catch {
+        /* noop */
+      }
+    }
+  };
 
   return (
     <aside
@@ -124,7 +153,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}
         {collapsed && <div className="h-2 w-2 rounded-full bg-primary animate-pulse mx-auto" />}
         <button
-          onClick={onToggle}
+          onClick={handleToggle}
           className={cn(
             'flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
             collapsed && 'mx-auto mt-1',
@@ -142,30 +171,30 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Navigation */}
       <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
         {navSections.map((section) => (
-          <div key={section.section} className="mb-3">
+          <div key={section.section} className="mb-4">
             {!collapsed && (
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                 {section.section}
               </p>
             )}
-            {collapsed && <div className="mx-auto my-1 h-px w-6 bg-border" />}
+            {collapsed && <div className="mx-auto my-2 h-px w-6 bg-border/60" />}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive =
                   item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
 
                 return (
-                  <li key={item.href}>
+                  <li key={item.href} className="relative group">
                     <Link
                       href={item.href}
                       prefetch={false}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'group flex items-center gap-3 rounded px-3 py-2 text-sm font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                         isActive
-                          ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border-l-2 border-transparent',
-                        collapsed && 'justify-center px-2 border-l-0',
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                        collapsed && 'justify-center px-2',
                       )}
                       title={collapsed ? item.label : undefined}
                     >
@@ -179,6 +208,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                       />
                       {!collapsed && <span>{item.label}</span>}
                     </Link>
+                    {/* Tooltip for collapsed mode */}
+                    {collapsed && (
+                      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover:flex items-center">
+                        <div className="whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg animate-tooltip">
+                          {item.label}
+                        </div>
+                      </div>
+                    )}
                   </li>
                 );
               })}

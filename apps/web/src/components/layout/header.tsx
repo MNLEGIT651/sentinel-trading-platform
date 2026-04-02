@@ -140,9 +140,12 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
         </div>
 
         {/* User avatar */}
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/25">
+        <button
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/25 hover:ring-primary/50 hover:bg-primary/20 transition-all cursor-pointer"
+          aria-label="Account"
+        >
           <User className="h-3.5 w-3.5 text-primary" />
-        </div>
+        </button>
       </div>
     </header>
   );

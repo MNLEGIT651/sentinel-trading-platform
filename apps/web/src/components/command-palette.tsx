@@ -27,6 +27,7 @@ import {
   Beaker,
   CheckSquare,
   Sparkles,
+  CornerDownLeft,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -199,6 +200,49 @@ const COMMANDS: CommandItem[] = [
   },
 ];
 
+const RECENTS_KEY = 'sentinel-cmd-recents';
+const MAX_RECENTS = 5;
+
+function loadRecents(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    return raw ? (JSON.parse(raw) as string[]).slice(0, MAX_RECENTS) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(id: string): void {
+  try {
+    const prev = loadRecents().filter((r) => r !== id);
+    localStorage.setItem(RECENTS_KEY, JSON.stringify([id, ...prev].slice(0, MAX_RECENTS)));
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+/** Simple fuzzy scoring — returns 0 (no match) or positive score (higher = better) */
+function fuzzyScore(text: string, query: string): number {
+  const t = text.toLowerCase();
+  const q = query.toLowerCase();
+  // Exact substring match — high score
+  if (t.includes(q)) return 100 + (q.length / t.length) * 50;
+  // Character-by-character fuzzy
+  let qi = 0;
+  let score = 0;
+  let consecutive = 0;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) {
+      qi++;
+      consecutive++;
+      score += consecutive * 2 + (ti === 0 ? 10 : 0);
+    } else {
+      consecutive = 0;
+    }
+  }
+  return qi === q.length ? score : 0;
+}
+
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -211,26 +255,48 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const recentIds = useMemo(() => (open ? loadRecents() : []), [open]);
+
   const filtered = useMemo(() => {
-    if (!query.trim()) return COMMANDS;
-    const q = query.toLowerCase();
-    return COMMANDS.filter(
-      (c) =>
-        c.label.toLowerCase().includes(q) ||
-        c.section.toLowerCase().includes(q) ||
-        c.keywords?.some((k) => k.includes(q)),
-    );
-  }, [query]);
+    if (!query.trim()) {
+      // Show recents first, then all commands
+      const recents = recentIds
+        .map((id) => COMMANDS.find((c) => c.id === id))
+        .filter(Boolean) as CommandItem[];
+      return { items: COMMANDS, recents };
+    }
+    const q = query.trim();
+    const scored = COMMANDS.map((c) => {
+      const labelScore = fuzzyScore(c.label, q);
+      const sectionScore = fuzzyScore(c.section, q) * 0.5;
+      const keywordScore = Math.max(0, ...(c.keywords?.map((k) => fuzzyScore(k, q)) ?? [0])) * 0.7;
+      return { item: c, score: Math.max(labelScore, sectionScore, keywordScore) };
+    })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score);
+    return { items: scored.map((s) => s.item), recents: [] };
+  }, [query, recentIds]);
 
   const groupedResults = useMemo(() => {
     const groups: Record<string, CommandItem[]> = {};
-    for (const item of filtered) {
+    if (filtered.recents.length > 0) {
+      groups['Recent'] = filtered.recents;
+    }
+    for (const item of filtered.items) {
+      // Skip items already shown in recents when no query
+      if (!query.trim() && filtered.recents.some((r) => r.id === item.id)) continue;
       (groups[item.section] ??= []).push(item);
     }
     return groups;
-  }, [filtered]);
+  }, [filtered, query]);
 
-  const flatItems = filtered;
+  const flatItems = useMemo(() => {
+    const items: CommandItem[] = [];
+    for (const group of Object.values(groupedResults)) {
+      items.push(...group);
+    }
+    return items;
+  }, [groupedResults]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -240,15 +306,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     if (open) {
       setQuery('');
       setActiveIndex(0);
-      // Focus input after render
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [open]);
 
   const navigate = useCallback(
-    (href: string) => {
+    (item: CommandItem) => {
+      saveRecent(item.id);
       onOpenChange(false);
-      router.push(href);
+      router.push(item.href);
     },
     [onOpenChange, router],
   );
@@ -263,7 +329,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         setActiveIndex((i) => Math.max(i - 1, 0));
       } else if (e.key === 'Enter' && flatItems[activeIndex]) {
         e.preventDefault();
-        navigate(flatItems[activeIndex].href);
+        navigate(flatItems[activeIndex]);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onOpenChange(false);
@@ -305,7 +371,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search pages…"
+            placeholder="Search pages and actions\u2026"
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
             aria-label="Search pages"
             autoComplete="off"
@@ -333,11 +399,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   const idx = itemIndex;
                   return (
                     <button
-                      key={item.id}
+                      key={`${section}-${item.id}`}
                       data-index={idx}
                       role="option"
                       aria-selected={idx === activeIndex}
-                      onClick={() => navigate(item.href)}
+                      onClick={() => navigate(item)}
                       onMouseEnter={() => setActiveIndex(idx)}
                       className={cn(
                         'flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors',
@@ -347,7 +413,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       )}
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
-                      <span className="font-medium">{item.label}</span>
+                      <span className="flex-1 font-medium">{item.label}</span>
+                      {idx === activeIndex && (
+                        <CornerDownLeft className="h-3 w-3 text-muted-foreground/40" />
+                      )}
                     </button>
                   );
                 })}
@@ -360,14 +429,21 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <div className="flex items-center justify-between border-t border-border px-4 py-2">
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">↑↓</kbd>
+              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">
+                &uarr;&darr;
+              </kbd>
               navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">↵</kbd>
+              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">
+                &crarr;
+              </kbd>
               open
             </span>
           </div>
+          <span className="text-[10px] text-muted-foreground/40">
+            {flatItems.length} result{flatItems.length !== 1 ? 's' : ''}
+          </span>
         </div>
       </div>
     </>

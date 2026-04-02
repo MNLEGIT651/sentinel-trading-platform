@@ -5,6 +5,7 @@ import type { Alert, AlertSeverity } from '@sentinel/shared';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EmptyStatePreset } from '@/components/ui/empty-state';
 import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,14 +37,14 @@ export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
       </CardHeader>
       <CardContent>
         {alerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">No alerts</p>
+          <EmptyStatePreset preset="no-alerts" className="border-0 bg-transparent py-8" />
         ) : (
           <ScrollArea className="h-[300px]">
-            <div className="space-y-3">
+            <div className="space-y-2">
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="flex items-start gap-3 rounded-md border border-border p-3"
+                  className="flex items-start gap-3 rounded-lg border border-border/60 p-3 hover:bg-accent/30 transition-colors"
                 >
                   <Badge
                     className={cn('text-[10px] uppercase shrink-0', severityStyles[alert.severity])}
@@ -54,7 +55,7 @@ export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
                     <p className="text-sm font-medium truncate">{alert.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">{alert.message}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
+                  <span className="text-[10px] text-muted-foreground/60 shrink-0 font-mono">
                     {formatTime(alert.triggered_at)}
                   </span>
                 </div>

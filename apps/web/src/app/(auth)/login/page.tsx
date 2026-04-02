@@ -4,6 +4,7 @@ import { Suspense, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
+import { AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 /** Maps URL error params from callback/middleware to user-facing messages. */
 const URL_ERROR_MESSAGES: Record<string, string> = {
@@ -87,19 +88,21 @@ function LoginForm() {
   return (
     <form onSubmit={handleSignIn} className="space-y-4">
       {urlErrorMessage && (
-        <div className="rounded-md border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-          {urlErrorMessage}
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{urlErrorMessage}</span>
         </div>
       )}
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
+        <div className="flex items-start gap-2.5 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
       {unconfirmedEmail && (
-        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
           {resendState === 'idle' && (
             <button
               type="button"
@@ -111,7 +114,10 @@ function LoginForm() {
           )}
           {resendState === 'sending' && <p className="text-sm text-muted-foreground">Resending…</p>}
           {resendState === 'sent' && (
-            <p className="text-sm text-green-600">✓ Confirmation email resent. Check your inbox.</p>
+            <p className="flex items-center gap-1.5 text-sm text-profit">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Confirmation email resent. Check your inbox.
+            </p>
           )}
           {resendState === 'error' && (
             <p className="text-sm text-destructive">
@@ -136,7 +142,7 @@ function LoginForm() {
           placeholder="you@example.com"
           required
           autoComplete="email"
-          className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
       </div>
 
@@ -160,7 +166,7 @@ function LoginForm() {
           placeholder="••••••••"
           required
           autoComplete="current-password"
-          className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
       </div>
 

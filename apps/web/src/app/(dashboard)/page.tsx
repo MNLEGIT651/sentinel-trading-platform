@@ -113,7 +113,7 @@ export default function DashboardPage() {
   const pnlPct = account?.initial_capital ? (pnl / account.initial_capital) * 100 : 0;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 page-enter">
       <h1 className="text-heading-page">Dashboard</h1>
 
       {engineOnline === false && <OfflineBanner service="engine" />}

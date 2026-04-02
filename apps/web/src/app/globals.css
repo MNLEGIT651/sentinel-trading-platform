@@ -485,6 +485,62 @@ tr:hover {
   }
 }
 
+/* ── Page section entrance (Psychology: Guided Attention) ────── */
+
+.page-enter > * {
+  animation: sentinel-fade-up 0.35s ease-out both;
+}
+.page-enter > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.page-enter > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.page-enter > *:nth-child(3) {
+  animation-delay: 120ms;
+}
+.page-enter > *:nth-child(4) {
+  animation-delay: 180ms;
+}
+.page-enter > *:nth-child(5) {
+  animation-delay: 240ms;
+}
+.page-enter > *:nth-child(6) {
+  animation-delay: 300ms;
+}
+.page-enter > *:nth-child(7) {
+  animation-delay: 360ms;
+}
+.page-enter > *:nth-child(8) {
+  animation-delay: 420ms;
+}
+
+/* ── Password strength meter ────────────────────────────────── */
+
+.strength-meter {
+  display: flex;
+  gap: 4px;
+  height: 3px;
+}
+.strength-meter > span {
+  flex: 1;
+  border-radius: 2px;
+  background: oklch(1 0 0 / 8%);
+  transition: background 0.2s ease;
+}
+.strength-meter[data-strength='1'] > span:nth-child(-n + 1) {
+  background: oklch(0.65 0.22 25);
+}
+.strength-meter[data-strength='2'] > span:nth-child(-n + 2) {
+  background: oklch(0.8 0.18 85);
+}
+.strength-meter[data-strength='3'] > span:nth-child(-n + 3) {
+  background: oklch(0.75 0.22 155);
+}
+.strength-meter[data-strength='4'] > span:nth-child(-n + 4) {
+  background: oklch(0.75 0.22 155);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -314,7 +314,7 @@ describe('NotificationCenter', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
 
-      expect(screen.getByText('No notifications')).toBeInTheDocument();
+      expect(screen.getByText('All clear')).toBeInTheDocument();
     });
   });
 
@@ -904,7 +904,7 @@ describe('NotificationCenter', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
 
-      expect(screen.getByText('No notifications')).toBeInTheDocument();
+      expect(screen.getByText('All clear')).toBeInTheDocument();
     });
 
     it('handles null alert values', async () => {
@@ -921,7 +921,7 @@ describe('NotificationCenter', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /notifications/i }));
 
-      expect(screen.getByText('No notifications')).toBeInTheDocument();
+      expect(screen.getByText('All clear')).toBeInTheDocument();
     });
 
     it('limits message display with line-clamp', async () => {
