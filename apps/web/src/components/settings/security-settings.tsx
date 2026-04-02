@@ -161,11 +161,11 @@ export function SecuritySettings() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* MFA Card */}
-      <Card className="bg-card border-border">
+      <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
             <Smartphone className="h-4 w-4" />
             Two-Factor Authentication (TOTP)
           </CardTitle>
@@ -177,17 +177,17 @@ export function SecuritySettings() {
                 <Check className="h-4 w-4 text-profit" />
                 <span className="text-foreground">MFA is enabled</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {verifiedFactors.map((f) => (
                   <div
                     key={f.id}
-                    className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                    className="flex items-center justify-between rounded-md border border-border/30 px-3 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium">
+                      <p className="text-base font-medium leading-tight sm:text-[1.125rem]">
                         {f.friendly_name ?? 'Authenticator App'}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                         Added {new Date(f.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -210,7 +210,7 @@ export function SecuritySettings() {
             </>
           ) : enrollState === 'idle' ? (
             <>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                 Add an extra layer of security by requiring a code from your authenticator app when
                 signing in.
               </p>
@@ -231,20 +231,25 @@ export function SecuritySettings() {
 
           {enrollState === 'show_qr' && (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                 Scan this QR code with your authenticator app (Google Authenticator, Authy,
                 1Password, etc.):
               </p>
-              <div className="flex justify-center rounded-md border border-border bg-white p-4">
+              <div className="flex justify-center rounded-md border border-border/40 bg-white p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qrUri} alt="MFA QR Code" className="h-40 w-40 sm:h-48 sm:w-48" />
               </div>
               <div className="rounded-md bg-muted/50 px-3 py-2">
-                <p className="text-xs text-muted-foreground mb-1">Or enter this secret manually:</p>
+                <p className="mb-1 text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                  Or enter this secret manually:
+                </p>
                 <code className="text-xs font-mono break-all select-all">{totpSecret}</code>
               </div>
               <div className="space-y-2">
-                <label htmlFor="totp-verify" className="text-sm font-medium">
+                <label
+                  htmlFor="totp-verify"
+                  className="text-base font-medium leading-tight sm:text-[1.125rem]"
+                >
                   Enter the 6-digit code from your app:
                 </label>
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -256,7 +261,7 @@ export function SecuritySettings() {
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-center text-sm font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-32"
+                    className="flex h-10 w-full rounded-md border border-border/70 bg-background px-3 py-2 text-center text-sm font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-32"
                   />
                   <div className="flex gap-2">
                     <Button
@@ -284,42 +289,48 @@ export function SecuritySettings() {
       </Card>
 
       {/* Account Security Info Card */}
-      <Card className="bg-card border-border">
+      <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
             <Shield className="h-4 w-4" />
             Account Security
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="rounded-md border border-border/50 overflow-hidden">
+          <div className="overflow-hidden rounded-md border border-border/30">
             <div className="bg-muted/30 px-3 py-1.5">
               <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                 Security Status
               </p>
             </div>
-            <div className="divide-y divide-border/50">
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-xs text-muted-foreground">Two-Factor Auth</span>
+            <div className="divide-y divide-border/25">
+              <div className="flex items-center justify-between px-3 py-3">
+                <span className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                  Two-Factor Auth
+                </span>
                 <span
-                  className={`text-xs font-medium ${verifiedFactors.length > 0 ? 'text-profit' : 'text-amber-500'}`}
+                  className={`text-sm font-medium ${verifiedFactors.length > 0 ? 'text-profit' : 'text-amber-500'}`}
                 >
                   {verifiedFactors.length > 0 ? '✓ Enabled' : '○ Not enabled'}
                 </span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-xs text-muted-foreground">Password</span>
-                <span className="text-xs font-medium text-profit">✓ Set</span>
+              <div className="flex items-center justify-between px-3 py-3">
+                <span className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                  Password
+                </span>
+                <span className="text-sm font-medium text-profit">✓ Set</span>
               </div>
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-xs text-muted-foreground">Email Verified</span>
-                <span className="text-xs font-medium text-profit">✓ Verified</span>
+              <div className="flex items-center justify-between px-3 py-3">
+                <span className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                  Email Verified
+                </span>
+                <span className="text-sm font-medium text-profit">✓ Verified</span>
               </div>
             </div>
           </div>
           <div className="flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2">
             <AlertCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
               We strongly recommend enabling two-factor authentication, especially before activating
               live trading. Passkey support will be available in a future update.
             </p>

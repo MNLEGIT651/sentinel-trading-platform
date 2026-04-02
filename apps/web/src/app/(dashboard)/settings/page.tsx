@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Settings,
   Shield,
@@ -185,7 +186,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-4 p-3 sm:p-4">
+    <div className="space-y-4 px-4 py-3 md:p-4">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -237,10 +238,14 @@ export default function SettingsPage() {
           <span className="text-sm">Loading settings…</span>
         </div>
       ) : (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 px-4 md:px-0">
           <div className="md:hidden">
             <div className="-mx-3 overflow-x-auto px-3 pb-1 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="inline-flex min-w-full gap-2">
+              <div
+                role="tablist"
+                aria-label="Settings categories"
+                className="inline-flex min-w-full gap-2"
+              >
                 {[
                   { value: 'risk', label: 'Risk', icon: Shield },
                   { value: 'notifications', label: 'Alerts', icon: Bell },
@@ -252,12 +257,15 @@ export default function SettingsPage() {
                     <button
                       key={value}
                       type="button"
+                      role="tab"
+                      aria-selected={isActive}
                       onClick={() => setActiveTab(value)}
-                      className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={cn(
+                        'inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         isActive
                           ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border/70 bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                      }`}
+                          : 'border-border/70 bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                      )}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{label}</span>
@@ -325,9 +333,9 @@ export default function SettingsPage() {
           <TabsContent value="trading">
             {/* System-wide mode banner */}
             {systemControls && (
-              <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-border/40 bg-muted/30 px-3 py-3">
                 <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                   System-wide mode is{' '}
                   <span className="font-semibold text-foreground">
                     {systemControls.global_mode.toUpperCase()}
@@ -346,14 +354,14 @@ export default function SettingsPage() {
                 </p>
               </div>
             )}
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Card className="bg-card border-border">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-foreground">
+                  <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
                     Trading Mode
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 divide-y divide-border/50">
+                <CardContent className="space-y-1 divide-y divide-border/25">
                   <ToggleField
                     label="Paper Trading Mode"
                     description="Use simulated orders instead of real broker. Recommended during development."
@@ -375,18 +383,20 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border">
+              <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-foreground">Environment</CardTitle>
+                  <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
+                    Environment
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="rounded-md border border-border/50 overflow-hidden">
+                  <div className="overflow-hidden rounded-md border border-border/30">
                     <div className="bg-muted/30 px-3 py-1.5">
                       <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                         System Information
                       </p>
                     </div>
-                    <div className="divide-y divide-border/50">
+                    <div className="divide-y divide-border/25">
                       {[
                         ['Platform', 'Sentinel Trading v0.1.0'],
                         ['Engine', 'FastAPI (Python 3.12)'],
@@ -400,8 +410,10 @@ export default function SettingsPage() {
                           key={label}
                           className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                         >
-                          <span className="text-xs text-muted-foreground">{label}</span>
-                          <span className="text-xs font-mono text-foreground sm:text-right">
+                          <span className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                            {label}
+                          </span>
+                          <span className="text-sm font-mono leading-relaxed text-foreground sm:text-right sm:text-[0.9375rem]">
                             {value}
                           </span>
                         </div>
@@ -410,7 +422,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                       API keys are configured via environment variables in{' '}
                       <code className="font-mono text-foreground">.env</code>. Risk limits and
                       trading mode are saved to the database and synced across devices.
