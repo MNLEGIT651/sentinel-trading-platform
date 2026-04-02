@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { MobileNav } from '@/components/layout/mobile-nav';
+import { CommandPalette, useCommandPalette } from '@/components/command-palette';
 import { useAppStore } from '@/stores/app-store';
 import { useServiceHealth } from '@/hooks/use-service-health';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
@@ -18,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const closeMobileSidebar = useAppStore((s) => s.closeMobileSidebar);
   const setDevice = useAppStore((s) => s.setDevice);
   const pathname = usePathname();
+  const { open: cmdOpen, setOpen: setCmdOpen } = useCommandPalette();
 
   // Device detection — single instance, synced to Zustand for global access
   const device = useDeviceDetect();
@@ -68,17 +71,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onMenuClick={toggleMobileSidebar} />
+        <Header onMenuClick={toggleMobileSidebar} onCommandPalette={() => setCmdOpen(true)} />
         <main
           id="main-content"
           className={cn(
             'flex-1 overflow-auto',
             device.isHydrated && device.isTouch && 'overscroll-contain',
+            'pb-16 lg:pb-0',
           )}
         >
-          {children}
+          <div className="animate-sentinel-in">{children}</div>
         </main>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <MobileNav />
+
+      {/* Command palette (Cmd+K) */}
+      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
     </div>
   );
 }

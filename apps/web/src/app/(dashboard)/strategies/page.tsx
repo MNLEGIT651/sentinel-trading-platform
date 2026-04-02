@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Brain, ChevronDown, ChevronRight, Loader2, Activity } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { StrategyCard, type StrategyEntry } from '@/components/strategies/strategy-card';
 import { strategyFamilies, type StrategyFamily } from '@/components/strategies/strategy-data';
@@ -277,14 +278,11 @@ export default function StrategiesPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16">
-              <Activity className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-sm font-medium text-foreground">No Health Data Yet</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm text-center">
-                Strategy health snapshots are computed from trading outcomes and signal history. Run
-                scans and execute trades to begin building health metrics.
-              </p>
-            </div>
+            <EmptyState
+              icon={Activity}
+              title="No Health Data Yet"
+              description="Strategy health snapshots are computed from trading outcomes and signal history. Run scans and execute trades to begin building health metrics."
+            />
           )}
         </div>
       )}
