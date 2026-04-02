@@ -155,7 +155,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
         <button
           onClick={handleToggle}
           className={cn(
-            'flex h-9 w-9 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
+            'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
             collapsed && 'mx-auto mt-1',
           )}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -241,7 +241,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
             }
             window.location.href = '/login';
           }}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
           title="Sign out"
         >
           {signingOut ? (

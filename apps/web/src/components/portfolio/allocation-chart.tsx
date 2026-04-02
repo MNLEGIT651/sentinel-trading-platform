@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { PieChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyStatePreset } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { marketValue, type Position } from './positions-table';
 
@@ -89,18 +90,57 @@ interface AllocationChartProps {
   positions: Position[];
   allocations: AllocationEntry[];
   totalValue: number;
+  loading?: boolean;
 }
 
-export function AllocationChart({ positions, allocations, totalValue }: AllocationChartProps) {
-  if (positions.length === 0) {
-    return (
+function AllocationChartSkeleton() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
       <Card className="bg-card border-border">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <PieChart className="h-8 w-8 text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">No positions to analyze</p>
+        <CardHeader className="pb-3">
+          <Skeleton variant="text" className="w-28" />
+        </CardHeader>
+        <CardContent className="flex items-center gap-6">
+          <Skeleton className="h-40 w-40 rounded-full shrink-0" />
+          <div className="space-y-2 flex-1">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} variant="text" className="w-full" />
+            ))}
+          </div>
         </CardContent>
       </Card>
-    );
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <Skeleton variant="text" className="w-24" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Skeleton variant="text" className="w-12" />
+                <Skeleton variant="text" className="w-10" />
+              </div>
+              <Skeleton className="h-1.5 w-full rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function AllocationChart({
+  positions,
+  allocations,
+  totalValue,
+  loading,
+}: AllocationChartProps) {
+  if (loading) {
+    return <AllocationChartSkeleton />;
+  }
+
+  if (positions.length === 0) {
+    return <EmptyStatePreset preset="no-positions" />;
   }
 
   return (

@@ -10,13 +10,16 @@ import {
   type ISeriesApi,
   ColorType,
 } from 'lightweight-charts';
+import { SkeletonChart } from '@/components/ui/skeleton';
+import { EmptyStatePreset } from '@/components/ui/empty-state';
 
 interface PriceChartProps {
   data: OHLCV[];
+  loading?: boolean;
   className?: string;
 }
 
-export function PriceChart({ data, className }: PriceChartProps) {
+export function PriceChart({ data, loading, className }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -120,6 +123,16 @@ export function PriceChart({ data, className }: PriceChartProps) {
 
     chartRef.current?.timeScale().fitContent();
   }, [data]);
+
+  if (loading) {
+    return <SkeletonChart {...(className !== undefined ? { className } : {})} />;
+  }
+
+  if (data.length === 0) {
+    return (
+      <EmptyStatePreset preset="no-data" {...(className !== undefined ? { className } : {})} />
+    );
+  }
 
   return (
     <div

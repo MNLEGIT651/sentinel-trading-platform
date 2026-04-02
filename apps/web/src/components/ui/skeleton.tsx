@@ -102,7 +102,7 @@ function SkeletonAlertFeed({ className }: { className?: string }) {
       </div>
       <div className="space-y-2">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex items-start gap-3 rounded-md border border-foreground/5 p-3">
+          <div key={i} className="flex items-start gap-3 rounded-lg border border-foreground/5 p-3">
             <Skeleton className="h-5 w-14 rounded-full shrink-0" />
             <div className="flex-1 space-y-1.5">
               <Skeleton variant="text" className="w-3/4" />

@@ -32,7 +32,7 @@ export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">Recent Alerts</CardTitle>
+        <CardTitle className="text-heading-card">Recent Alerts</CardTitle>
         <Bell className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -44,7 +44,7 @@ export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="flex items-start gap-3 rounded-lg border border-border/60 p-3 hover:bg-accent/30 transition-colors"
+                  className="flex items-start gap-3 rounded-lg border border-border/60 p-3 hover:bg-accent/50 transition-colors"
                 >
                   <Badge
                     className={cn('text-[10px] uppercase shrink-0', severityStyles[alert.severity])}

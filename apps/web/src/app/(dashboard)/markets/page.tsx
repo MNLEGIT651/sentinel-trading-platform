@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 const PriceChart = dynamic(
   () => import('@/components/charts/price-chart').then((m) => ({ default: m.PriceChart })),
-  { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-lg bg-muted" /> },
+  { ssr: false },
 );
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -205,13 +205,7 @@ export default function MarketsPage() {
             </div>
           </CardHeader>
           <CardContent className="h-[calc(100vh-14rem)] p-0 px-4 pb-4">
-            {chartData.length > 0 ? (
-              <PriceChart data={chartData} className="rounded-md" />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {loading ? 'Connecting to engine...' : 'No chart data available'}
-              </div>
-            )}
+            <PriceChart data={chartData} loading={chartLoading || loading} className="rounded-md" />
           </CardContent>
         </Card>
       </div>
