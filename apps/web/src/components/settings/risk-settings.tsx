@@ -60,8 +60,8 @@ export function RiskSettings({
   onMaxPositions,
 }: RiskSettingsProps) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="bg-card border-border">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Card className="w-full max-w-none bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-foreground">Position Limits</CardTitle>
         </CardHeader>
@@ -90,7 +90,7 @@ export function RiskSettings({
         </CardContent>
       </Card>
 
-      <Card className="bg-card border-border">
+      <Card className="w-full max-w-none bg-card border-border">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400" />

@@ -161,9 +161,9 @@ export function SecuritySettings() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* MFA Card */}
-      <Card className="bg-card border-border">
+      <Card className="w-full max-w-none bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
             <Smartphone className="h-4 w-4" />
@@ -284,7 +284,7 @@ export function SecuritySettings() {
       </Card>
 
       {/* Account Security Info Card */}
-      <Card className="bg-card border-border">
+      <Card className="w-full max-w-none bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
             <Shield className="h-4 w-4" />
