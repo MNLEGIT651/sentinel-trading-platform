@@ -294,9 +294,9 @@ export default function SettingsPage() {
           <TabsContent value="trading">
             {/* System-wide mode banner */}
             {systemControls && (
-              <div className="mb-4 flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-border/40 bg-muted/30 px-3 py-3">
                 <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                   System-wide mode is{' '}
                   <span className="font-semibold text-foreground">
                     {systemControls.global_mode.toUpperCase()}
@@ -316,13 +316,13 @@ export default function SettingsPage() {
               </div>
             )}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Card className="w-full max-w-none bg-card border-border">
+              <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-foreground">
+                  <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
                     Trading Mode
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 divide-y divide-border/50">
+                <CardContent className="space-y-1 divide-y divide-border/25">
                   <ToggleField
                     label="Paper Trading Mode"
                     description="Use simulated orders instead of real broker. Recommended during development."
@@ -344,18 +344,20 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="w-full max-w-none bg-card border-border">
+              <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-foreground">Environment</CardTitle>
+                  <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
+                    Environment
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="rounded-md border border-border/50 overflow-hidden">
+                  <div className="overflow-hidden rounded-md border border-border/30">
                     <div className="bg-muted/30 px-3 py-1.5">
                       <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                         System Information
                       </p>
                     </div>
-                    <div className="divide-y divide-border/50">
+                    <div className="divide-y divide-border/25">
                       {[
                         ['Platform', 'Sentinel Trading v0.1.0'],
                         ['Engine', 'FastAPI (Python 3.12)'],
@@ -369,8 +371,10 @@ export default function SettingsPage() {
                           key={label}
                           className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                         >
-                          <span className="text-xs text-muted-foreground">{label}</span>
-                          <span className="text-xs font-mono text-foreground sm:text-right">
+                          <span className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+                            {label}
+                          </span>
+                          <span className="text-sm font-mono leading-relaxed text-foreground sm:text-right sm:text-[0.9375rem]">
                             {value}
                           </span>
                         </div>
@@ -379,7 +383,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-start gap-2 rounded-md bg-muted/30 px-3 py-2">
                     <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
                       API keys are configured via environment variables in{' '}
                       <code className="font-mono text-foreground">.env</code>. Risk limits and
                       trading mode are saved to the database and synced across devices.
