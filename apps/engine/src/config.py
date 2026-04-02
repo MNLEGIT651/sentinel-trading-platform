@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     polygon_api_key: str = ""
 
     # Engine
-    engine_api_key: str = "sentinel-dev-key"
+    engine_api_key: str = ""
 
     # Broker
     broker_mode: str = "paper"
@@ -46,6 +46,7 @@ class Settings(BaseSettings):
         required = {
             "SUPABASE_URL": self.supabase_url,
             "SUPABASE_SERVICE_ROLE_KEY": self.supabase_service_role_key,
+            "ENGINE_API_KEY": self.engine_api_key,
         }
         missing = [name for name, value in required.items() if not value]
         if missing:

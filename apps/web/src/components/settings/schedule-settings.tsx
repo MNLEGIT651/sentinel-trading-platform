@@ -33,11 +33,13 @@ export function ScheduleSettings({
   onTradeNotifications,
 }: ScheduleSettingsProps) {
   return (
-    <Card className="bg-card border-border">
+    <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-foreground">Alert Preferences</CardTitle>
+        <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">
+          Alert Preferences
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1 divide-y divide-border/50">
+      <CardContent className="space-y-1 divide-y divide-border/25">
         <ToggleField
           label="Critical Alerts"
           description="Risk limit breaches, circuit breaker activations, system failures."

@@ -61,6 +61,9 @@ Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`
 - `git diff --check`
 - Run the closest local command to the workflow steps you changed
 - `node scripts/security-audit.mjs` when workflow permissions or dependency-audit automation changes
+- CI `security-audit` gate runs after `test-web`, `test-engine`, and `test-agents` on:
+  - pushes to `main`
+  - pull requests targeting `main` or `release/*` branches
 - State clearly what you could not verify locally
 
 ## Handoff Format

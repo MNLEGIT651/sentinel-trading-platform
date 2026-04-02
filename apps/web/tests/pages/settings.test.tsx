@@ -58,14 +58,21 @@ vi.mock('@/components/ui/tabs', async () => {
 
   function Tabs({
     defaultValue,
+    value: valueProp,
+    onValueChange,
     className,
     children,
   }: {
-    defaultValue: string;
+    defaultValue?: string;
+    value?: string;
+    onValueChange?: (v: string) => void;
     className?: string;
     children: React.ReactNode;
   }) {
-    const [value, setValue] = React.useState(defaultValue);
+    const isControlled = valueProp !== undefined;
+    const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue ?? '');
+    const value = isControlled ? valueProp : uncontrolledValue;
+    const setValue = isControlled ? (v: string) => onValueChange?.(v) : setUncontrolledValue;
     return (
       <TabsContext.Provider value={{ value, setValue }}>
         <div className={className}>{children}</div>
@@ -162,9 +169,9 @@ describe('SettingsPage', () => {
   it('shows tab navigation', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Risk')).toBeInTheDocument();
-      expect(screen.getByText('Alerts')).toBeInTheDocument();
-      expect(screen.getByText('Trading')).toBeInTheDocument();
+      expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument();
+      expect(screen.getAllByRole('tab', { name: /Alerts/i })[0]).toBeInTheDocument();
+      expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument();
     });
   });
 
@@ -188,8 +195,10 @@ describe('SettingsPage', () => {
 
   it('can switch to Risk tab', async () => {
     renderWithProviders(<SettingsPage />);
-    await waitFor(() => expect(screen.getByText('Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Risk'));
+    await waitFor(() =>
+      expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /Risk/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Position Limits')).toBeInTheDocument();
       expect(screen.getByText('Circuit Breakers')).toBeInTheDocument();
@@ -198,8 +207,10 @@ describe('SettingsPage', () => {
 
   it('can switch to Alerts tab', async () => {
     renderWithProviders(<SettingsPage />);
-    await waitFor(() => expect(screen.getByText('Alerts')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Alerts'));
+    await waitFor(() =>
+      expect(screen.getAllByRole('tab', { name: /Alerts/i })[0]).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /Alerts/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Critical Alerts')).toBeInTheDocument();
       expect(screen.getByText('Warning Alerts')).toBeInTheDocument();
@@ -208,8 +219,10 @@ describe('SettingsPage', () => {
 
   it('can switch to Trading tab', async () => {
     renderWithProviders(<SettingsPage />);
-    await waitFor(() => expect(screen.getByRole('tab', { name: /Trading/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('tab', { name: /Trading/i }));
+    await waitFor(() =>
+      expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Paper Trading Mode')).toBeInTheDocument();
       expect(screen.getByText('Auto Trading')).toBeInTheDocument();
@@ -218,8 +231,10 @@ describe('SettingsPage', () => {
 
   it('shows system information on Trading tab', async () => {
     renderWithProviders(<SettingsPage />);
-    await waitFor(() => expect(screen.getByRole('tab', { name: /Trading/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('tab', { name: /Trading/i }));
+    await waitFor(() =>
+      expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
     await waitFor(() => expect(screen.getByText('Sentinel Trading v0.1.0')).toBeInTheDocument());
   });
 });

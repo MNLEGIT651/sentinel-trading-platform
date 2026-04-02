@@ -43,12 +43,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, closeMobileSidebar]);
 
   const shellLayoutVars = {
-    '--shell-header-height': '3rem',
     '--shell-nav-height': '4rem',
-    '--shell-safe-top': 'env(safe-area-inset-top, 0px)',
-    '--shell-safe-bottom': 'env(safe-area-inset-bottom, 0px)',
-    '--shell-top-offset': 'calc(var(--shell-header-height) + var(--shell-safe-top))',
-    '--shell-bottom-offset': 'calc(var(--shell-nav-height) + var(--shell-safe-bottom))',
+    '--shell-bottom-offset': 'var(--shell-nav-height)',
   } as CSSProperties;
 
   return (
@@ -86,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className={cn(
             'flex-1 overflow-auto',
             device.isHydrated && device.isTouch && 'overscroll-contain',
-            'h-[calc(100dvh-var(--shell-top-offset)-var(--shell-bottom-offset))] pb-[var(--shell-bottom-offset)] lg:h-auto lg:pb-0',
+            'pb-[var(--shell-bottom-offset)] lg:pb-0',
           )}
         >
           <div className="animate-sentinel-in">{children}</div>
