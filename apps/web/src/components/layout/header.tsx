@@ -82,7 +82,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors active:scale-95"
+          className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors active:scale-95"
           aria-label="Toggle menu"
         >
           <Menu className="h-5 w-5" />
@@ -99,7 +99,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
         {onCommandPalette && (
           <button
             onClick={onCommandPalette}
-            className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+            className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
             aria-label="Open command palette"
           >
             <Search className="h-3.5 w-3.5" />
@@ -140,9 +140,12 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
         </div>
 
         {/* User avatar */}
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/25">
+        <button
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/25 hover:ring-primary/50 hover:bg-primary/20 transition-all cursor-pointer"
+          aria-label="Account"
+        >
           <User className="h-3.5 w-3.5 text-primary" />
-        </div>
+        </button>
       </div>
     </header>
   );

@@ -1,12 +1,26 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useMemo, type FormEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getEmailRedirectUrl } from '@/lib/auth/url';
 import { Button } from '@/components/ui/button';
+import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 
 const CURRENT_TERMS_VERSION = '1.0.0';
 const CURRENT_PRIVACY_VERSION = '1.0.0';
+
+function getPasswordStrength(pw: string): number {
+  if (!pw) return 0;
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return score;
+}
+
+const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+const STRENGTH_COLORS = ['', 'text-loss', 'text-amber', 'text-profit', 'text-profit'];
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -18,6 +32,8 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   async function recordConsent(document_type: string, document_version: string) {
     try {
@@ -105,17 +121,24 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <div className="space-y-4 text-center animate-sentinel-in">
-        <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
-        <p className="text-sm text-muted-foreground">
-          We sent a confirmation link to <strong>{email}</strong>. Click it to activate your
-          account.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          The link expires in 24 hours. Check your spam folder if you don&apos;t see it.
-        </p>
+      <div className="space-y-5 text-center animate-sentinel-in">
+        <div className="flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Mail className="h-7 w-7 text-primary" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
+          <p className="text-sm text-muted-foreground">
+            We sent a confirmation link to <strong>{email}</strong>. Click it to activate your
+            account.
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            The link expires in 24 hours. Check your spam folder if you don&apos;t see it.
+          </p>
+        </div>
 
-        <div className="pt-2">
+        <div className="pt-1">
           {resendState === 'idle' && (
             <button
               onClick={handleResendConfirmation}
@@ -126,7 +149,10 @@ export default function SignUpPage() {
           )}
           {resendState === 'sending' && <p className="text-sm text-muted-foreground">Resending…</p>}
           {resendState === 'sent' && (
-            <p className="text-sm text-green-600">✓ Confirmation email resent</p>
+            <p className="flex items-center justify-center gap-1.5 text-sm text-profit">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Confirmation email resent
+            </p>
           )}
           {resendState === 'error' && (
             <p className="text-sm text-destructive">
@@ -156,8 +182,9 @@ export default function SignUpPage() {
 
       <form onSubmit={handleSignUp} className="space-y-4">
         {error && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
+          <div className="flex items-start gap-2.5 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -173,7 +200,7 @@ export default function SignUpPage() {
             placeholder="you@example.com"
             required
             autoComplete="email"
-            className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
 
@@ -189,8 +216,21 @@ export default function SignUpPage() {
             placeholder="••••••••"
             required
             autoComplete="new-password"
-            className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
+          {password.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <div className="strength-meter" data-strength={strength}>
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+              <p className={`text-[11px] font-medium ${STRENGTH_COLORS[strength]}`}>
+                {STRENGTH_LABELS[strength]}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -205,12 +245,12 @@ export default function SignUpPage() {
             placeholder="••••••••"
             required
             autoComplete="new-password"
-            className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
 
         <div className="space-y-3">
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2.5 text-sm">
             <input
               type="checkbox"
               checked={acceptedTerms}
@@ -225,7 +265,7 @@ export default function SignUpPage() {
             </span>
           </label>
 
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2.5 text-sm">
             <input
               type="checkbox"
               checked={acceptedPrivacy}

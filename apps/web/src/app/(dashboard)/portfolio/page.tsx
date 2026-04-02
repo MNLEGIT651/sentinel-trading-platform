@@ -293,6 +293,7 @@ export default function PortfolioPage() {
             positions={positions}
             allocations={allocations}
             totalValue={totalValue}
+            loading={loading}
           />
         </TabsContent>
 

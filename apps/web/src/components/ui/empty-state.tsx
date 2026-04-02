@@ -1,6 +1,14 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import type { LucideIcon } from 'lucide-react';
+import {
+  Zap,
+  Bell,
+  PieChart,
+  ArrowUpDown,
+  BarChart3,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react';
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -10,6 +18,49 @@ interface EmptyStateProps {
     label: string;
     onClick: () => void;
   };
+  className?: string;
+}
+
+const PRESETS = {
+  'no-signals': {
+    icon: Zap,
+    title: 'No active signals',
+    description: 'Signals appear here when strategies detect opportunities during market hours.',
+  },
+  'no-alerts': {
+    icon: Bell,
+    title: 'All clear',
+    description:
+      'No alerts right now. You\u2019ll see system and trading alerts here when they fire.',
+  },
+  'no-positions': {
+    icon: PieChart,
+    title: 'No open positions',
+    description: 'Your portfolio is empty. Positions will appear here once trades are executed.',
+  },
+  'no-orders': {
+    icon: ArrowUpDown,
+    title: 'No orders yet',
+    description: 'Order history will populate as you execute trades through the platform.',
+  },
+  'no-data': {
+    icon: BarChart3,
+    title: 'No data available',
+    description:
+      'Data for this view isn\u2019t available yet. Check back later or adjust your filters.',
+  },
+  'setup-required': {
+    icon: Settings,
+    title: 'Setup required',
+    description: 'Complete your account setup to unlock this feature.',
+  },
+} as const;
+
+type EmptyStatePreset = keyof typeof PRESETS;
+
+interface EmptyStateWithPresetProps {
+  preset: EmptyStatePreset;
+  action?: EmptyStateProps['action'];
   className?: string;
 }
 
@@ -32,5 +83,18 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         </Button>
       )}
     </div>
+  );
+}
+
+export function EmptyStatePreset({ preset, action, className }: EmptyStateWithPresetProps) {
+  const config = PRESETS[preset];
+  return (
+    <EmptyState
+      icon={config.icon}
+      title={config.title}
+      description={config.description}
+      {...(action !== undefined ? { action } : {})}
+      {...(className !== undefined ? { className } : {})}
+    />
   );
 }

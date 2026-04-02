@@ -6,7 +6,7 @@ import { LayoutDashboard, TrendingUp, Brain, PieChart, Settings } from 'lucide-r
 import { cn } from '@/lib/utils';
 
 const items = [
-  { label: 'Home', href: '/', icon: LayoutDashboard },
+  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Markets', href: '/markets', icon: TrendingUp },
   { label: 'Strategies', href: '/strategies', icon: Brain },
   { label: 'Portfolio', href: '/portfolio', icon: PieChart },
@@ -19,9 +19,9 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-md safe-area-bottom lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur-md safe-area-bottom lg:hidden"
     >
-      <div className="flex h-14 items-center justify-around px-2">
+      <div className="flex h-16 items-center justify-around px-2">
         {items.map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
@@ -29,9 +29,12 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               prefetch={false}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 rounded-lg px-3 py-1.5 transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground',
+                'flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-colors min-w-[56px]',
+                isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground active:bg-accent/50',
               )}
             >
               <item.icon

@@ -67,6 +67,86 @@ function SkeletonCard({ className }: { className?: string }) {
   );
 }
 
+/** Matches the MetricCard component shape exactly */
+function SkeletonMetricCard({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10 relative overflow-hidden',
+        className,
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/5 to-transparent" />
+      <div className="flex items-center justify-between">
+        <Skeleton variant="text" className="w-24 h-3" />
+        <Skeleton variant="avatar" className="h-4 w-4 rounded" />
+      </div>
+      <Skeleton className="h-7 w-28" />
+      <Skeleton variant="text" className="w-16 h-3" />
+    </div>
+  );
+}
+
+/** Matches the AlertFeed card shape */
+function SkeletonAlertFeed({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10',
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <Skeleton variant="text" className="w-28" />
+        <Skeleton variant="avatar" className="h-4 w-4 rounded" />
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="flex items-start gap-3 rounded-lg border border-foreground/5 p-3">
+            <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton variant="text" className="w-3/4" />
+              <Skeleton variant="text" className="w-1/2 h-3" />
+            </div>
+            <Skeleton className="h-3 w-12 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Matches signal card items */
+function SkeletonSignalCard({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10',
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <Skeleton variant="text" className="w-28" />
+        <Skeleton variant="avatar" className="h-4 w-4 rounded" />
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-between py-1.5 border-b border-foreground/5 last:border-0"
+          >
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-10 rounded" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <Skeleton className="h-3 w-8" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
@@ -106,4 +186,12 @@ function SkeletonChart({ className }: { className?: string }) {
   );
 }
 
-export { Skeleton, SkeletonCard, SkeletonTable, SkeletonChart };
+export {
+  Skeleton,
+  SkeletonCard,
+  SkeletonMetricCard,
+  SkeletonAlertFeed,
+  SkeletonSignalCard,
+  SkeletonTable,
+  SkeletonChart,
+};
