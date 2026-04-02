@@ -1,0 +1,17 @@
+[
+  {
+    "viewport": "360x800",
+    "component": "apps/web/src/app/(dashboard)/settings/page.tsx",
+    "issue": "Bottom trading item may sit under mobile bottom nav"
+  },
+  {
+    "viewport": "390x844",
+    "component": "apps/web/src/app/(dashboard)/settings/page.tsx",
+    "issue": "Bottom trading item may sit under mobile bottom nav"
+  },
+  {
+    "viewport": "412x915",
+    "component": "apps/web/src/app/(dashboard)/settings/page.tsx",
+    "issue": "Bottom trading item may sit under mobile bottom nav"
+  }
+]

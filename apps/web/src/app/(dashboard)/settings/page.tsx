@@ -184,7 +184,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-4 p-3 sm:p-4">
+    <div className="space-y-4 p-3 pb-28 sm:p-4 sm:pb-32 lg:pb-4">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
