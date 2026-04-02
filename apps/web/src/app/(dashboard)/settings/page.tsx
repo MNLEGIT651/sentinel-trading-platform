@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import {
   Settings,
   Shield,
@@ -35,6 +36,7 @@ const NOTIFICATION_STORAGE_KEY = 'sentinel:notification-prefs';
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [checkingConnections, setCheckingConnections] = useState(false);
+  const [activeTab, setActiveTab] = useState('risk');
 
   const [serviceStatus, setServiceStatus] = useState<ServiceStatuses>({
     engine: 'checking',
@@ -236,8 +238,45 @@ export default function SettingsPage() {
           <span className="text-sm">Loading settings…</span>
         </div>
       ) : (
-        <Tabs defaultValue="risk" className="space-y-3 px-4 md:px-0">
-          <TabsList className="w-full bg-muted/50 md:w-fit">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 px-4 md:px-0">
+          <div className="md:hidden">
+            <div className="-mx-3 overflow-x-auto px-3 pb-1 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div
+                role="tablist"
+                aria-label="Settings categories"
+                className="inline-flex min-w-full gap-2"
+              >
+                {[
+                  { value: 'risk', label: 'Risk', icon: Shield },
+                  { value: 'notifications', label: 'Alerts', icon: Bell },
+                  { value: 'trading', label: 'Trading', icon: Activity },
+                  { value: 'security', label: 'Security', icon: Lock },
+                ].map(({ value, label, icon: Icon }) => {
+                  const isActive = activeTab === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActiveTab(value)}
+                      className={cn(
+                        'inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        isActive
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border/70 bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <TabsList className="hidden w-full bg-muted/50 md:inline-flex md:w-fit">
             <TabsTrigger value="risk" className="gap-1 text-xs sm:text-sm">
               <Shield className="h-3.5 w-3.5" />
               <span className="sm:inline">Risk</span>
