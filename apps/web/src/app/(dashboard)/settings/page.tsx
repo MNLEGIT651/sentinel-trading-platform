@@ -184,7 +184,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-4 p-3 sm:p-4">
+    <div className="space-y-4 p-3 pb-[calc(var(--shell-bottom-offset,4rem)+0.75rem)] sm:p-4 sm:pb-[calc(var(--shell-bottom-offset,4rem)+1rem)]">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export default function SettingsPage() {
         </div>
       ) : (
         <Tabs defaultValue="risk" className="space-y-3">
-          <TabsList className="w-full bg-muted/50 sm:w-fit">
+          <TabsList className="sticky top-[max(0.5rem,var(--shell-top-offset,3rem))] z-20 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:w-fit">
             <TabsTrigger value="risk" className="gap-1 text-xs sm:text-sm">
               <Shield className="h-3.5 w-3.5" />
               <span className="sm:inline">Risk</span>
