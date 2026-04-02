@@ -28,6 +28,7 @@ function LoginForm() {
 
   async function handleSignIn(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setUnconfirmedEmail(false);
     setLoading(true);

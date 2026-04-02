@@ -58,15 +58,22 @@ export async function GET(request: Request) {
 
   // ── Token hash verification (magic link / alternate email template) ─
   if (tokenHash && type) {
+    const validTypes = ['email', 'recovery', 'email_change'] as const;
+    type OtpType = (typeof validTypes)[number];
+    const otpType: OtpType | undefined = validTypes.find((t) => t === type);
+    if (!otpType) {
+      console.warn('[auth/callback] invalid OTP type:', type);
+      return buildErrorRedirect(origin, 'missing_params');
+    }
     try {
       const supabase = await createServerSupabaseClient();
       const { error } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
-        type: type as 'email' | 'recovery' | 'email_change',
+        type: otpType,
       });
       if (!error) {
         // For recovery tokens, redirect to the reset-password page
-        const redirectPath = type === 'recovery' ? '/reset-password' : safePath;
+        const redirectPath = otpType === 'recovery' ? '/reset-password' : safePath;
         return NextResponse.redirect(`${origin}${redirectPath}`);
       }
       console.error('[auth/callback] token verification failed:', {

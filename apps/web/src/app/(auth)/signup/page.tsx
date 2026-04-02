@@ -34,6 +34,7 @@ export default function SignUpPage() {
 
   async function handleSignUp(e: FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setLoading(true);
 

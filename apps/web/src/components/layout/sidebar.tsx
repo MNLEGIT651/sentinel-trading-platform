@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -29,9 +30,11 @@ import {
   Workflow,
   Beaker,
   LogOut,
+  Loader2,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
 type NavItem = { label: string; href: string; icon: LucideIcon };
@@ -96,6 +99,8 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
+  const [signingOut, setSigningOut] = useState(false);
 
   return (
     <aside
@@ -185,17 +190,29 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Footer */}
       <div className="border-t border-border p-4 space-y-3">
         <button
+          disabled={signingOut}
           onClick={async () => {
-            const { createClient } = await import('@/lib/supabase/client');
-            const supabase = createClient();
-            await supabase.auth.signOut();
+            if (signingOut) return;
+            setSigningOut(true);
+            try {
+              const { createClient } = await import('@/lib/supabase/client');
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              queryClient.clear();
+            } catch {
+              // Even if signOut fails, redirect to login to force re-auth
+            }
             window.location.href = '/login';
           }}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
           title="Sign out"
         >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Sign out</span>}
+          {signingOut ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          ) : (
+            <LogOut className="h-4 w-4 shrink-0" />
+          )}
+          {!collapsed && <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>}
         </button>
         {!collapsed && (
           <div className="flex items-center gap-2">
