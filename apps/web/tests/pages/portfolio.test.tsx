@@ -250,6 +250,152 @@ describe('PortfolioPage', () => {
     );
   }, 10_000);
 
+  it('surfaces meaningful error message on submit failure', async () => {
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 422,
+          statusText: 'Unprocessable Entity',
+          json: () => Promise.resolve({ error: 'Insufficient buying power' }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'TSLA' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '100' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Order failed/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles rejected order status with meaningful message', async () => {
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ order_id: 'rej-1', status: 'rejected' }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'TSLA' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Rejected/)).toBeInTheDocument();
+    });
+  });
+
+  it('sends order_type and time_in_force in submit payload', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        capturedBody = JSON.parse(init?.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ order_id: 'ord-tif', status: 'filled' }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('Limit order'));
+    const tifSelect = screen.getByLabelText('Time in Force') as HTMLSelectElement;
+    fireEvent.change(tifSelect, { target: { value: 'gtc' } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Limit Price')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'AAPL' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '10' } });
+    fireEvent.change(screen.getByPlaceholderText('Price'), { target: { value: '150.50' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(capturedBody).not.toBeNull();
+    });
+
+    expect(capturedBody).toMatchObject({
+      symbol: 'AAPL',
+      side: 'buy',
+      qty: 10,
+      type: 'limit',
+      time_in_force: 'gtc',
+      limit_price: 150.5,
+    });
+  });
+
   it('shows empty state when no positions from engine (live mode)', async () => {
     global.fetch = vi.fn((url: string | URL | Request) => {
       const urlStr = typeof url === 'string' ? url : url.toString();

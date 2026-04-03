@@ -9,6 +9,7 @@ interface SubmitOrderParams {
   side: 'buy' | 'sell';
   qty: number;
   type?: 'market' | 'limit';
+  time_in_force?: 'day' | 'gtc' | 'ioc' | 'fok';
   limit_price?: number;
 }
 

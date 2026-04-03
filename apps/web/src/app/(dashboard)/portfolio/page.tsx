@@ -20,7 +20,7 @@ import {
 } from '@/components/portfolio/positions-table';
 import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
-import { QuickOrder } from '@/components/portfolio/quick-order';
+import { QuickOrder, type OrderType, type TimeInForce } from '@/components/portfolio/quick-order';
 import { RecentOrders } from '@/components/portfolio/recent-orders';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
@@ -43,6 +43,8 @@ const FALLBACK_ACCOUNT: BrokerAccount = {
   initial_capital: 100_000,
 };
 
+const ORDER_TERMINAL_STATUSES = new Set(['filled', 'rejected', 'cancelled', 'expired']);
+
 export default function PortfolioPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
   const queryClient = useQueryClient();
@@ -54,6 +56,9 @@ export default function PortfolioPage() {
   const [orderSymbol, setOrderSymbol] = useState('');
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
   const [orderQty, setOrderQty] = useState('');
+  const [orderType, setOrderType] = useState<OrderType>('market');
+  const [timeInForce, setTimeInForce] = useState<TimeInForce>('day');
+  const [limitPrice, setLimitPrice] = useState('');
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [pollingOrderId, setPollingOrderId] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -127,6 +132,21 @@ export default function PortfolioPage() {
 
   const effectiveAccount = account ?? (engineOnline !== true ? FALLBACK_ACCOUNT : null);
 
+  const formatTerminalStatus = useCallback((status: string, orderId: string): string => {
+    switch (status) {
+      case 'filled':
+        return `Filled @ order ${orderId}`;
+      case 'rejected':
+        return `Rejected — order ${orderId} was not accepted by broker`;
+      case 'cancelled':
+        return `Cancelled — order ${orderId}`;
+      case 'expired':
+        return `Expired — order ${orderId} time-in-force elapsed`;
+      default:
+        return `Order ${status}`;
+    }
+  }, []);
+
   const handleSubmitOrder = useCallback(async () => {
     if (engineOnline !== true) {
       setOrderStatus('Order failed — engine offline');
@@ -134,27 +154,61 @@ export default function PortfolioPage() {
     }
 
     if (!orderSymbol || !orderQty || Number(orderQty) <= 0) return;
+    if (orderType === 'limit' && (!limitPrice || Number(limitPrice) <= 0)) return;
+
     setOrderStatus(null);
     try {
-      const result = await submitOrder.mutateAsync({
+      const params: {
+        symbol: string;
+        side: 'buy' | 'sell';
+        qty: number;
+        type: OrderType;
+        time_in_force: TimeInForce;
+        limit_price?: number;
+      } = {
         symbol: orderSymbol.toUpperCase(),
         side: orderSide,
         qty: Number(orderQty),
-      });
-      setOrderStatus(
-        result.status === 'filled' ? `Filled @ order ${result.order_id}` : `Order ${result.status}`,
-      );
+        type: orderType,
+        time_in_force: timeInForce,
+      };
+      if (orderType === 'limit') {
+        params.limit_price = Number(limitPrice);
+      }
+
+      const result = await submitOrder.mutateAsync(params);
+
+      if (ORDER_TERMINAL_STATUSES.has(result.status)) {
+        setOrderStatus(formatTerminalStatus(result.status, result.order_id));
+      } else {
+        setOrderStatus(`Order ${result.status}`);
+      }
+
       setOrderSymbol('');
       setOrderQty('');
+      setLimitPrice('');
 
       // Start polling if order isn't already terminal
-      if (result.order_id && result.status !== 'filled' && result.status !== 'rejected') {
+      if (result.order_id && !ORDER_TERMINAL_STATUSES.has(result.status)) {
         setPollingOrderId(result.order_id);
       }
-    } catch {
-      if (mountedRef.current) setOrderStatus('Order failed — check engine');
+    } catch (err) {
+      if (mountedRef.current) {
+        const message = err instanceof Error ? err.message : 'check engine';
+        setOrderStatus(`Order failed — ${message}`);
+      }
     }
-  }, [engineOnline, orderSymbol, orderQty, orderSide, submitOrder]);
+  }, [
+    engineOnline,
+    orderSymbol,
+    orderQty,
+    orderSide,
+    orderType,
+    timeInForce,
+    limitPrice,
+    submitOrder,
+    formatTerminalStatus,
+  ]);
 
   const totalValue = positions.reduce((s, p) => s + marketValue(p), 0);
   const totalPnl = positions.reduce((s, p) => s + pnl(p), 0);
@@ -263,12 +317,18 @@ export default function PortfolioPage() {
         symbol={orderSymbol}
         side={orderSide}
         qty={orderQty}
+        orderType={orderType}
+        timeInForce={timeInForce}
+        limitPrice={limitPrice}
         status={orderStatus}
         submitting={submitOrder.isPending}
         disabled={engineOnline !== true}
         onSymbolChange={setOrderSymbol}
         onSideChange={setOrderSide}
         onQtyChange={setOrderQty}
+        onOrderTypeChange={setOrderType}
+        onTimeInForceChange={setTimeInForce}
+        onLimitPriceChange={setLimitPrice}
         onSubmit={handleSubmitOrder}
       />
 

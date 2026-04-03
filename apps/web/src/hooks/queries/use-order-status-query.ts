@@ -15,7 +15,7 @@ export interface OrderStatus {
   submitted_at: string;
 }
 
-const TERMINAL_STATUSES = new Set(['filled', 'rejected', 'cancelled']);
+const TERMINAL_STATUSES = new Set(['filled', 'rejected', 'cancelled', 'expired']);
 
 async function fetchOrderStatus(orderId: string): Promise<OrderStatus> {
   const res = await fetch(engineUrl(`/api/v1/portfolio/orders/${orderId}`), {
