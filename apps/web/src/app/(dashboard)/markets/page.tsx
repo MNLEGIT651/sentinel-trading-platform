@@ -10,7 +10,7 @@ const PriceChart = dynamic(
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBanner } from '@/components/ui/offline-banner';
-import { SimulatedBadge } from '@/components/ui/simulated-badge';
+import { DataProvenance } from '@/components/ui/data-provenance';
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import type { OHLCV } from '@sentinel/shared';
@@ -81,11 +81,14 @@ export default function MarketsPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
   const [selectedTicker, setSelectedTicker] = useState('AAPL');
 
-  const { data: quotes, isPending: quotesLoading } = useQuotesQuery(TICKER_NAMES);
-  const { data: bars, isPending: chartLoading } = useBarsQuery(selectedTicker);
+  const { data: quotes, isPending: quotesLoading, dataUpdatedAt: quotesUpdatedAt } = useQuotesQuery(TICKER_NAMES);
+  const { data: bars, isPending: chartLoading, isFetching: chartFetching, dataUpdatedAt: barsUpdatedAt } = useBarsQuery(selectedTicker);
 
   const isLive = engineOnline === true && !!quotes;
   const loading = engineOnline === null || (engineOnline === true && quotesLoading);
+
+  const quotesMode = isLive ? 'live' : engineOnline === false ? 'offline' : 'cached';
+  const chartMode = bars && bars.length > 0 ? 'live' : 'simulated';
 
   const watchlist: WatchlistItem[] = useMemo(() => {
     if (!quotes)
@@ -117,20 +120,11 @@ export default function MarketsPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">Watchlist</CardTitle>
               {!loading && (
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase',
-                    isLive ? 'bg-profit/15 text-profit' : 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'h-1.5 w-1.5 rounded-full',
-                      isLive ? 'bg-profit animate-pulse' : 'bg-muted-foreground',
-                    )}
-                  />
-                  {isLive ? 'Live' : 'Offline'}
-                </span>
+                <DataProvenance
+                  mode={quotesMode}
+                  lastUpdated={quotesUpdatedAt ? new Date(quotesUpdatedAt) : null}
+                  staleThresholdMs={60_000}
+                />
               )}
             </div>
           </CardHeader>
@@ -198,10 +192,16 @@ export default function MarketsPage() {
                   )}
                 </>
               )}
-              {chartLoading && (
+              {chartFetching && (
                 <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>
               )}
-              {!isLive && !chartLoading && <SimulatedBadge />}
+              {!chartFetching && (
+                <DataProvenance
+                  mode={chartMode}
+                  lastUpdated={barsUpdatedAt ? new Date(barsUpdatedAt) : null}
+                  staleThresholdMs={120_000}
+                />
+              )}
             </div>
           </CardHeader>
           <CardContent className="h-[calc(100vh-14rem)] p-0 px-4 pb-4">

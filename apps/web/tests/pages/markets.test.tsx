@@ -232,14 +232,19 @@ describe('MarketsPage', () => {
     expect(nvdaElements.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows Offline badge when engine is unavailable', async () => {
+  it('shows Offline provenance badge when engine is unavailable', async () => {
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
       expect(screen.getByText('Offline')).toBeInTheDocument();
     });
+    // Chart shows simulated since synthetic data is displayed
+    expect(screen.getByText('Simulated')).toBeInTheDocument();
+    // Both badges use the accessible DataProvenance component
+    const statusEls = screen.getAllByRole('status');
+    expect(statusEls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows Live badge when engine returns quotes', async () => {
+  it('shows Live provenance badges when engine returns quotes and bars', async () => {
     useAppStore.setState({ engineOnline: true });
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
@@ -253,7 +258,36 @@ describe('MarketsPage', () => {
 
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Live')).toBeInTheDocument();
+      const liveBadges = screen.getAllByText('Live');
+      expect(liveBadges.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it('renders DataProvenance with accessible status role and aria-label', async () => {
+    renderWithProviders(<MarketsPage />);
+    await waitFor(() => {
+      const statusElements = screen.getAllByRole('status');
+      expect(statusElements.length).toBeGreaterThanOrEqual(1);
+      const ariaLabels = statusElements.map((el) => el.getAttribute('aria-label'));
+      expect(ariaLabels.some((label) => label?.includes('Data source'))).toBe(true);
+    });
+  });
+
+  it('shows Simulated for chart when engine online but bars empty', async () => {
+    useAppStore.setState({ engineOnline: true });
+    (fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockQuotes,
+      })
+      .mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      });
+
+    renderWithProviders(<MarketsPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Simulated')).toBeInTheDocument();
     });
   });
 
