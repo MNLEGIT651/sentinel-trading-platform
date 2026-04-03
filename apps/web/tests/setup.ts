@@ -13,3 +13,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 if (typeof Element !== 'undefined' && !Element.prototype.getAnimations) {
   Element.prototype.getAnimations = () => [];
 }
+
+// Polyfill Element.prototype.scrollIntoView for jsdom (needed by thread-messages auto-scroll)
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}

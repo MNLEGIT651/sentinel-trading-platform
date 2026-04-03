@@ -10,7 +10,7 @@ import {
   useDeleteThreadMutation,
 } from '@/hooks/mutations/use-advisor-thread-mutations';
 import { toast } from 'sonner';
-import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, RotateCcw, Inbox } from 'lucide-react';
 import type { AdvisorThread } from '@sentinel/shared';
 
 function formatRelativeTime(dateStr: string): string {
@@ -25,6 +25,35 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
+function ThreadListSkeleton({ className }: { className?: string }) {
+  return (
+    <Card className={cn('animate-pulse', className)} data-testid="thread-list-skeleton">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded bg-muted" />
+            <div className="h-5 w-28 rounded bg-muted" />
+            <div className="h-4 w-6 rounded bg-muted" />
+          </div>
+          <div className="h-7 w-16 rounded bg-muted" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-md px-2.5 py-2">
+              <div className="flex-1 space-y-1.5">
+                <div className="h-4 w-3/4 rounded bg-muted" />
+                <div className="h-3 w-1/2 rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface ThreadListProps {
   selectedThreadId?: string | null | undefined;
   onSelectThread: (thread: AdvisorThread) => void;
@@ -32,7 +61,7 @@ interface ThreadListProps {
 }
 
 export function ThreadList({ selectedThreadId, onSelectThread, className }: ThreadListProps) {
-  const { data, isLoading } = useAdvisorThreadsQuery();
+  const { data, isLoading, isError, refetch } = useAdvisorThreadsQuery();
   const createMutation = useCreateThreadMutation();
   const deleteMutation = useDeleteThreadMutation();
 
@@ -60,17 +89,18 @@ export function ThreadList({ selectedThreadId, onSelectThread, className }: Thre
   }
 
   if (isLoading) {
+    return <ThreadListSkeleton className={className} />;
+  }
+
+  if (isError) {
     return (
-      <Card className={cn('animate-pulse', className)}>
-        <CardHeader>
-          <div className="h-5 w-36 rounded bg-muted" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-12 rounded bg-muted" />
-            ))}
-          </div>
+      <Card className={className}>
+        <CardContent className="flex flex-col items-center gap-3 py-8">
+          <p className="text-sm text-destructive">Failed to load conversations</p>
+          <Button size="xs" variant="outline" onClick={() => refetch()} className="gap-1.5">
+            <RotateCcw className="h-3 w-3" />
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
@@ -100,9 +130,25 @@ export function ThreadList({ selectedThreadId, onSelectThread, className }: Thre
       </CardHeader>
       <CardContent>
         {threads.length === 0 ? (
-          <p className="text-center text-xs text-muted-foreground italic py-4">
-            No conversations yet. Start one to begin.
-          </p>
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/5 px-6 py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
+              <Inbox className="h-6 w-6 text-primary/70" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">No conversations yet</h3>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Start a new conversation to get personalized insights from your AI advisor.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCreate}
+              disabled={createMutation.isPending}
+              className="mt-4"
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Start conversation
+            </Button>
+          </div>
         ) : (
           <div className="space-y-1">
             {threads.map((thread) => (
@@ -111,7 +157,7 @@ export function ThreadList({ selectedThreadId, onSelectThread, className }: Thre
                 type="button"
                 onClick={() => onSelectThread(thread)}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left transition-colors',
+                  'group flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left transition-colors',
                   selectedThreadId === thread.id
                     ? 'bg-primary/10 border border-primary/30'
                     : 'hover:bg-muted border border-transparent',
