@@ -293,6 +293,140 @@ describe('PortfolioPage', () => {
     });
   });
 
+  it('displays risk-block reason for concentration limit', async () => {
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 422,
+          statusText: 'Unprocessable Entity',
+          json: () =>
+            Promise.resolve({
+              error: 'Concentration limit exceeded',
+              reason: 'concentration_limit',
+            }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'AAPL' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '500' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/concentration limit/i)).toBeInTheDocument();
+    });
+  });
+
+  it('displays server error guidance for 503', async () => {
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable',
+          json: () => Promise.resolve({ error: 'Engine unavailable' }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'AAPL' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText(/temporarily unavailable/i)).toBeInTheDocument();
+      },
+      { timeout: 3_000 },
+    );
+  });
+
+  it('displays network error guidance on fetch failure', async () => {
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      }
+      if (urlStr.includes('/portfolio/positions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      }
+      if (urlStr.includes('/data/quotes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      }
+      if (urlStr.includes('/portfolio/orders/history')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+      }
+      if (urlStr.endsWith('/portfolio/orders') && init?.method === 'POST') {
+        return Promise.reject(new Error('Failed to fetch'));
+      }
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Quick Order')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Symbol'), { target: { value: 'AAPL' } });
+    fireEvent.change(screen.getByPlaceholderText('Qty'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Network error/i)).toBeInTheDocument();
+      },
+      { timeout: 3_000 },
+    );
+  });
+
   it('handles rejected order status with meaningful message', async () => {
     global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
       const urlStr = typeof url === 'string' ? url : url.toString();

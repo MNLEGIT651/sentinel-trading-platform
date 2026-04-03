@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
 import { queryKeys } from '@/lib/query-keys';
+import { OrderSubmitError } from '@/lib/order-errors';
 
 interface SubmitOrderParams {
   symbol: string;
@@ -27,7 +28,12 @@ async function submitOrder(params: SubmitOrderParams): Promise<SubmitOrderResult
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `Order submit failed: ${res.status}`);
+    throw new OrderSubmitError(body.error || `Order submit failed: ${res.status}`, {
+      status: res.status,
+      reason: body.reason,
+      code: body.code,
+      retryable: body.retryable,
+    });
   }
   return res.json();
 }

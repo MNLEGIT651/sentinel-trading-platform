@@ -25,6 +25,7 @@ import { QuickOrder, type OrderType, type TimeInForce } from '@/components/portf
 import { RecentOrders } from '@/components/portfolio/recent-orders';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
+import { mapOrderError } from '@/lib/order-errors';
 import {
   useAccountQuery,
   usePositionsQuery,
@@ -195,8 +196,8 @@ export default function PortfolioPage() {
       }
     } catch (err) {
       if (mountedRef.current) {
-        const message = err instanceof Error ? err.message : 'check engine';
-        setOrderStatus(`Order failed — ${message}`);
+        const mapped = mapOrderError(err);
+        setOrderStatus(`Order failed — ${mapped.message}`);
       }
     }
   }, [
