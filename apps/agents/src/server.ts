@@ -124,6 +124,8 @@ export function createApp(orchestrator: Orchestrator): Express {
 
     res.status(hasDegraded ? 503 : 200).json({
       status: hasDegraded ? 'degraded' : 'ok',
+      service: 'sentinel-agents',
+      timestamp: new Date().toISOString(),
       uptime: Math.round(process.uptime()),
       cycleCount: orchestrator.currentState.cycleCount,
       halted: orchestrator.currentState.halted,

@@ -49,6 +49,9 @@ class DependencyStatus(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     service: str
+    timestamp: str = Field(
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+    )
     dependencies: DependencyStatus
 
 
