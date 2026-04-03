@@ -1,9 +1,19 @@
 'use client';
 
 import { memo } from 'react';
-import { ArrowUpDown, ChevronUp, ChevronDown, PieChart } from 'lucide-react';
+import { PieChart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  SortableTableHead,
+  type SortState,
+} from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
 export interface Position {
@@ -72,138 +82,111 @@ export const PositionsTable = memo(function PositionsTable({
     );
   }
 
+  const sortState: SortState = { column: sortField, direction: sortDir };
+
   return (
     <Card className="bg-card border-border overflow-hidden">
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                {(
-                  [
-                    ['ticker', 'Ticker'],
-                    ['marketValue', 'Market Value'],
-                    ['pnl', 'P&L'],
-                    ['pnlPct', 'P&L %'],
-                  ] as [SortField, string][]
-                ).map(([field, label]) => (
-                  <th key={field} className="px-4 py-2.5 text-left">
-                    <button
-                      onClick={() => onToggleSort(field)}
+        <Table aria-label="Open positions">
+          <TableHeader>
+            <TableRow>
+              {(
+                [
+                  ['ticker', 'Ticker'],
+                  ['marketValue', 'Market Value'],
+                  ['pnl', 'P&L'],
+                  ['pnlPct', 'P&L %'],
+                ] as [SortField, string][]
+              ).map(([field, label]) => (
+                <SortableTableHead
+                  key={field}
+                  column={field}
+                  sortState={sortState}
+                  onSort={(col) => onToggleSort(col as SortField)}
+                  className="text-[11px] uppercase tracking-wider"
+                >
+                  {label}
+                </SortableTableHead>
+              ))}
+              <TableHead className="text-[11px] uppercase tracking-wider">Shares</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">Avg Entry</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">Current</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider">Sector</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedPositions.map((p) => {
+              const pl = pnl(p);
+              const plPct = pnlPct(p);
+              return (
+                <TableRow key={p.ticker}>
+                  <TableCell className="px-4 py-3">
+                    <div>
+                      <span className="text-sm font-semibold text-foreground">{p.ticker}</span>
+                      <p className="text-[11px] text-muted-foreground">{p.name}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell numeric className="px-4 py-3">
+                    <span className="text-sm font-mono text-foreground">
+                      $
+                      {marketValue(p).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </TableCell>
+                  <TableCell numeric className="px-4 py-3">
+                    <span
+                      className={cn('text-sm font-mono', pl >= 0 ? 'text-profit' : 'text-loss')}
+                    >
+                      {pl >= 0 ? '+' : ''}$
+                      {pl.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </TableCell>
+                  <TableCell numeric className="px-4 py-3">
+                    <Badge
                       className={cn(
-                        'flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider transition-colors hover:text-foreground',
-                        sortField === field ? 'text-primary' : 'text-muted-foreground',
+                        'border text-[10px] font-semibold font-mono',
+                        plPct >= 0
+                          ? 'bg-profit/15 text-profit border-profit/30'
+                          : 'bg-loss/15 text-loss border-loss/30',
                       )}
                     >
-                      {label}
-                      {sortField === field ? (
-                        sortDir === 'asc' ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      {plPct >= 0 ? '+' : ''}
+                      {plPct.toFixed(2)}%
+                    </Badge>
+                  </TableCell>
+                  <TableCell numeric className="px-4 py-3">
+                    <span className="text-sm font-mono text-muted-foreground">{p.shares}</span>
+                  </TableCell>
+                  <TableCell numeric className="px-4 py-3">
+                    <span className="text-sm font-mono text-muted-foreground">
+                      ${p.avgEntry.toFixed(2)}
+                    </span>
+                  </TableCell>
+                  <TableCell numeric className="px-4 py-3">
+                    <span className="text-sm font-mono text-foreground">
+                      ${p.currentPrice.toFixed(2)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    <Badge
+                      className={cn(
+                        'border text-[10px]',
+                        sectorBadges[p.sector] ?? 'bg-muted text-muted-foreground border-border',
                       )}
-                    </button>
-                  </th>
-                ))}
-                <th className="px-4 py-2.5 text-left">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Shares
-                  </span>
-                </th>
-                <th className="px-4 py-2.5 text-left">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Avg Entry
-                  </span>
-                </th>
-                <th className="px-4 py-2.5 text-left">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Current
-                  </span>
-                </th>
-                <th className="px-4 py-2.5 text-left">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Sector
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {sortedPositions.map((p) => {
-                const pl = pnl(p);
-                const plPct = pnlPct(p);
-                return (
-                  <tr key={p.ticker} className="transition-colors hover:bg-accent/30">
-                    <td className="px-4 py-3">
-                      <div>
-                        <span className="text-sm font-semibold text-foreground">{p.ticker}</span>
-                        <p className="text-[11px] text-muted-foreground">{p.name}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-mono text-foreground">
-                        $
-                        {marketValue(p).toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={cn('text-sm font-mono', pl >= 0 ? 'text-profit' : 'text-loss')}
-                      >
-                        {pl >= 0 ? '+' : ''}$
-                        {pl.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        className={cn(
-                          'border text-[10px] font-semibold font-mono',
-                          plPct >= 0
-                            ? 'bg-profit/15 text-profit border-profit/30'
-                            : 'bg-loss/15 text-loss border-loss/30',
-                        )}
-                      >
-                        {plPct >= 0 ? '+' : ''}
-                        {plPct.toFixed(2)}%
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-mono text-muted-foreground">{p.shares}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-mono text-muted-foreground">
-                        ${p.avgEntry.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-mono text-foreground">
-                        ${p.currentPrice.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        className={cn(
-                          'border text-[10px]',
-                          sectorBadges[p.sector] ?? 'bg-muted text-muted-foreground border-border',
-                        )}
-                      >
-                        {p.sector}
-                      </Badge>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    >
+                      {p.sector}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

@@ -2,6 +2,8 @@
 
 import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function SettingsField({
   label,
@@ -16,21 +18,26 @@ function SettingsField({
   onChange: (v: string) => void;
   type?: string;
 }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div className="space-y-2">
-      <label className="text-base font-medium leading-tight text-foreground sm:text-[1.125rem]">
-        {label}
-      </label>
+      <Label htmlFor={fieldId}>{label}</Label>
       {description && (
-        <p className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]">
+        <p
+          id={`${fieldId}-desc`}
+          className="text-sm leading-relaxed text-muted-foreground sm:text-[0.9375rem]"
+        >
           {description}
         </p>
       )}
-      <input
+      <Input
+        id={fieldId}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-10 w-full rounded-md border border-input/70 bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:h-9"
+        aria-label={label}
+        aria-describedby={description ? `${fieldId}-desc` : undefined}
+        className="font-mono"
       />
     </div>
   );
@@ -66,7 +73,7 @@ export function RiskSettings({
   onMaxPositions,
 }: RiskSettingsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 stagger-grid">
       <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
           <CardTitle className="text-xl font-semibold leading-tight text-foreground sm:text-[1.375rem]">

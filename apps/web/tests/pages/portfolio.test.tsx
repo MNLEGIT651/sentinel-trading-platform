@@ -547,4 +547,116 @@ describe('PortfolioPage', () => {
       expect(screen.getByText(/No open positions/)).toBeInTheDocument();
     });
   });
+
+  // ─── Design System Polish Tests ────────────────────────────────────
+
+  it('uses Table compound component with aria-label for positions', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('table', { name: 'Open positions' })).toBeInTheDocument();
+    });
+  });
+
+  it('uses Table compound component with aria-label for recent orders', async () => {
+    const filledOrder = {
+      order_id: 'ord-tbl',
+      symbol: 'AAPL',
+      side: 'buy',
+      order_type: 'market',
+      qty: 1,
+      filled_qty: 1,
+      status: 'filled',
+      fill_price: 250.0,
+      submitted_at: '2026-03-15T10:00:00Z',
+      filled_at: '2026-03-15T10:00:01Z',
+      risk_note: null,
+    };
+
+    global.fetch = vi.fn((url: string | URL | Request) => {
+      const urlStr = typeof url === 'string' ? url : url.toString();
+      if (urlStr.includes('/portfolio/account'))
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockAccount) } as Response);
+      if (urlStr.includes('/portfolio/positions'))
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPositions),
+        } as Response);
+      if (urlStr.includes('/data/quotes'))
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQuotes) } as Response);
+      if (urlStr.includes('/portfolio/orders/history'))
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([filledOrder]),
+        } as Response);
+      return Promise.resolve({ ok: false } as Response);
+    }) as typeof fetch;
+
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('table', { name: 'Recent orders' })).toBeInTheDocument();
+    });
+  });
+
+  it('has aria-label on Refresh button', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Refresh portfolio data' })).toBeInTheDocument();
+    });
+  });
+
+  it('has aria-pressed attributes on Buy/Sell toggle buttons', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      const buyBtn = screen.getByRole('button', { name: 'Buy' });
+      expect(buyBtn).toHaveAttribute('aria-pressed', 'true');
+      const sellBtn = screen.getByRole('button', { name: 'Sell' });
+      expect(sellBtn).toHaveAttribute('aria-pressed', 'false');
+    });
+  });
+
+  it('renders stagger-grid class on snapshot metrics grid', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Portfolio Value')).toBeInTheDocument();
+    });
+    const portfolioValueCard = screen.getByText('Portfolio Value').closest('.stagger-grid');
+    expect(portfolioValueCard).toBeTruthy();
+  });
+
+  it('renders page-enter class on root container', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Portfolio')).toBeInTheDocument();
+    });
+    const heading = screen.getByText('Portfolio');
+    const rootContainer = heading.closest('.page-enter');
+    expect(rootContainer).toBeTruthy();
+  });
+
+  it('uses LoadingButton for order submission', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      const submitBtn = screen.getByRole('button', { name: 'Submit' });
+      expect(submitBtn).toBeInTheDocument();
+      expect(submitBtn).toHaveAttribute('data-slot', 'button');
+    });
+  });
+
+  it('uses Input components with data-slot in Quick Order form', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      const symbolInput = screen.getByPlaceholderText('Symbol');
+      expect(symbolInput).toHaveAttribute('data-slot', 'input');
+      const qtyInput = screen.getByPlaceholderText('Qty');
+      expect(qtyInput).toHaveAttribute('data-slot', 'input');
+    });
+  });
+
+  it('uses Select component with data-slot for Time in Force', async () => {
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      const tifSelect = screen.getByLabelText('Time in Force');
+      expect(tifSelect.closest('[data-slot="select"]')).toBeTruthy();
+    });
+  });
 });

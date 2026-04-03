@@ -25,7 +25,7 @@ export function SnapshotMetrics({
   totalValue,
 }: SnapshotMetricsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 stagger-grid">
       <Card className="bg-card border-border">
         <CardContent className="py-3 px-4">
           <div className="flex items-center justify-between">

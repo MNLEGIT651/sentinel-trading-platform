@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Shield, Smartphone, Key, Loader2, Check, X, AlertCircle } from 'lucide-react';
+import { Shield, Smartphone, Key, Check, X, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { createClient } from '@/lib/supabase/client';
 
 interface MfaFactor {
@@ -154,14 +158,14 @@ export function SecuritySettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+        <Spinner size="md" className="mr-2" />
         <span className="text-sm">Loading security settings…</span>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 stagger-grid">
       {/* MFA Card */}
       <Card className="w-full max-w-none border-border/60 bg-card ring-foreground/5 sm:ring-foreground/10">
         <CardHeader className="pb-3">
@@ -191,19 +195,16 @@ export function SecuritySettings() {
                         Added {new Date(f.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <Button
+                    <LoadingButton
                       variant="ghost"
                       size="sm"
                       onClick={() => unenrollFactor(f.id)}
-                      disabled={unenrolling === f.id}
+                      loading={unenrolling === f.id}
+                      aria-label={`Remove ${f.friendly_name ?? 'authenticator'}`}
                       className="text-destructive hover:text-destructive"
                     >
-                      {unenrolling === f.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <X className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                      <X className="h-3.5 w-3.5" />
+                    </LoadingButton>
                   </div>
                 ))}
               </div>
@@ -214,17 +215,22 @@ export function SecuritySettings() {
                 Add an extra layer of security by requiring a code from your authenticator app when
                 signing in.
               </p>
-              <Button size="sm" onClick={startEnroll}>
+              <LoadingButton
+                size="sm"
+                onClick={startEnroll}
+                loading={enrollState === 'loading'}
+                aria-label="Enable multi-factor authentication"
+              >
                 <Key className="h-3.5 w-3.5 mr-1.5" />
                 Enable MFA
-              </Button>
+              </LoadingButton>
             </>
           ) : null}
 
           {/* Enrollment flow */}
           {enrollState === 'loading' && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Spinner size="sm" />
               Setting up…
             </div>
           )}
@@ -246,14 +252,9 @@ export function SecuritySettings() {
                 <code className="text-xs font-mono break-all select-all">{totpSecret}</code>
               </div>
               <div className="space-y-2">
-                <label
-                  htmlFor="totp-verify"
-                  className="text-base font-medium leading-tight sm:text-[1.125rem]"
-                >
-                  Enter the 6-digit code from your app:
-                </label>
+                <Label htmlFor="totp-verify">Enter the 6-digit code from your app:</Label>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
+                  <Input
                     id="totp-verify"
                     type="text"
                     inputMode="numeric"
@@ -261,17 +262,20 @@ export function SecuritySettings() {
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="flex h-10 w-full rounded-md border border-border/70 bg-background px-3 py-2 text-center text-sm font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-32"
+                    aria-label="TOTP verification code"
+                    className="text-center font-mono tracking-widest sm:w-32"
                   />
                   <div className="flex gap-2">
-                    <Button
+                    <LoadingButton
                       size="sm"
                       onClick={verifyEnrollment}
-                      disabled={verifyCode.length !== 6 || verifying}
+                      disabled={verifyCode.length !== 6}
+                      loading={verifying}
+                      aria-label="Verify TOTP code"
                       className="flex-1 sm:flex-initial"
                     >
-                      {verifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Verify'}
-                    </Button>
+                      Verify
+                    </LoadingButton>
                     <Button
                       variant="ghost"
                       size="sm"

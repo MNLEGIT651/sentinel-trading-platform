@@ -15,17 +15,31 @@ import {
   BarChart3,
   ExternalLink,
   FileText,
-  AlertCircle,
   XCircle,
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  SortableTableHead,
+} from '@/components/ui/table';
+import type { SortState } from '@/components/ui/table';
+import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { ErrorState } from '@/components/ui/error-state';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { Spinner } from '@/components/ui/spinner';
 import { useFillsQuery, useRiskEvaluationsQuery, useOrderHistoryQuery } from '@/hooks/queries';
 import type { Fill, RiskEvaluation, RiskCheck } from '@sentinel/shared';
 import type { OrderHistoryEntry } from '@/hooks/queries/use-order-history-query';
 import { cn } from '@/lib/utils';
-import { orderStatusColors, DEFAULT_ORDER_STYLE } from '@/lib/status-colors';
+import { orderStatusColors, DEFAULT_ORDER_STYLE, sideColors } from '@/lib/status-colors';
 import { PAGE_SIZE_ORDERS } from '@/lib/constants';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -126,12 +140,11 @@ function StatsRow({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+      <div className="stagger-grid grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="border-zinc-800 bg-zinc-900/50">
-            <CardContent className="p-4">
-              <div className="h-4 w-16 animate-pulse rounded bg-zinc-800" />
-              <div className="mt-2 h-6 w-10 animate-pulse rounded bg-zinc-800" />
+            <CardContent className="flex items-center justify-center p-4">
+              <Spinner size="sm" />
             </CardContent>
           </Card>
         ))}
@@ -163,7 +176,7 @@ function StatsRow({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+    <div className="stagger-grid grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
       {cells.map((c) => {
         const Icon = c.icon;
         return (
@@ -179,32 +192,6 @@ function StatsRow({
         );
       })}
     </div>
-  );
-}
-
-// ─── Entry Badge ────────────────────────────────────────────────────────
-
-function EntryBadge({ entry }: { entry: TimelineEntry }) {
-  const meta = ENTRY_META[entry.type];
-  const color = getEntryBadgeColor(entry);
-  const Icon = meta.icon;
-
-  let label = meta.label;
-  if (entry.type === 'risk') {
-    label = (entry.data as RiskEvaluation).allowed ? 'Allowed' : 'Blocked';
-  } else if (entry.type === 'order') {
-    label =
-      (entry.data as OrderHistoryEntry).status.charAt(0).toUpperCase() +
-      (entry.data as OrderHistoryEntry).status.slice(1);
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color}`}
-    >
-      <Icon className="h-3 w-3" />
-      {label}
-    </span>
   );
 }
 
@@ -465,7 +452,10 @@ function OrderDetail({ order }: { order: OrderHistoryEntry }) {
         <div>
           <span className="text-zinc-500">Side</span>
           <p
-            className={cn('font-medium', order.side === 'buy' ? 'text-green-400' : 'text-red-400')}
+            className={cn(
+              'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+              sideColors[order.side] ?? 'text-zinc-400',
+            )}
           >
             {order.side.toUpperCase()}
           </p>
@@ -514,133 +504,6 @@ function OrderDetail({ order }: { order: OrderHistoryEntry }) {
   );
 }
 
-// ─── Timeline Card ──────────────────────────────────────────────────────
-
-function TimelineCard({ entry }: { entry: TimelineEntry }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const summary = useMemo(() => {
-    if (entry.type === 'fill') {
-      const fill = entry.data as Fill;
-      return {
-        primary: `${fill.fill_qty} @ ${formatCurrency(fill.fill_price)}`,
-        secondary: fill.order_id ? `Order ${fill.order_id.slice(0, 8)}…` : null,
-      };
-    }
-    if (entry.type === 'order') {
-      const order = entry.data as OrderHistoryEntry;
-      const sideLabel = order.side === 'buy' ? 'BUY' : 'SELL';
-      return {
-        primary: `${sideLabel} ${order.symbol} × ${order.qty}`,
-        secondary:
-          order.fill_price != null
-            ? `Filled @ ${formatCurrency(order.fill_price)}`
-            : order.status === 'cancelled'
-              ? 'Cancelled'
-              : order.status === 'rejected'
-                ? 'Rejected'
-                : null,
-      };
-    }
-    const risk = entry.data as RiskEvaluation;
-    return {
-      primary: risk.allowed
-        ? `Approved${risk.adjusted_quantity != null ? ` (qty: ${risk.adjusted_quantity})` : ''}`
-        : 'Blocked',
-      secondary: risk.reason,
-    };
-  }, [entry]);
-
-  return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
-      <CardContent className="p-4">
-        {/* Header */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <EntryBadge entry={entry} />
-            <span className="text-sm font-semibold text-zinc-100">{summary.primary}</span>
-            {summary.secondary && (
-              <span className="text-xs text-zinc-500 truncate max-w-[200px] sm:max-w-xs">
-                {summary.secondary}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0 text-xs text-zinc-500">
-            <Clock className="h-3 w-3" />
-            <time dateTime={entry.timestamp}>{formatTimestamp(entry.timestamp)}</time>
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Quick stats */}
-        {entry.type === 'fill' && (
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
-            {(entry.data as Fill).commission != null && (
-              <span>Commission: {formatCurrency((entry.data as Fill).commission ?? 0)}</span>
-            )}
-            {(entry.data as Fill).slippage != null && (
-              <span>Slippage: {((entry.data as Fill).slippage as number).toFixed(4)}</span>
-            )}
-          </div>
-        )}
-
-        {entry.type === 'order' && (
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
-            <span className="flex items-center gap-1">
-              {(entry.data as OrderHistoryEntry).side === 'buy' ? (
-                <TrendingUp className="h-3 w-3 text-green-400" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-400" />
-              )}
-              {(entry.data as OrderHistoryEntry).order_type}
-            </span>
-            {(entry.data as OrderHistoryEntry).filled_qty > 0 && (
-              <span>
-                Filled: {(entry.data as OrderHistoryEntry).filled_qty}/
-                {(entry.data as OrderHistoryEntry).qty}
-              </span>
-            )}
-            {(entry.data as OrderHistoryEntry).risk_note && (
-              <span className="flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {(entry.data as OrderHistoryEntry).risk_note}
-              </span>
-            )}
-          </div>
-        )}
-
-        {entry.type === 'risk' && (
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
-            {(entry.data as RiskEvaluation).checks_performed.length > 0 && (
-              <span>
-                {(entry.data as RiskEvaluation).checks_performed.filter((c) => c.passed).length}/
-                {(entry.data as RiskEvaluation).checks_performed.length} checks passed
-              </span>
-            )}
-            {(entry.data as RiskEvaluation).policy_version && (
-              <span>Policy: {(entry.data as RiskEvaluation).policy_version}</span>
-            )}
-          </div>
-        )}
-
-        {/* Expanded detail */}
-        {expanded && (
-          <div className="mt-3 border-t border-zinc-800 pt-3">
-            {entry.type === 'fill' && <FillDetail fill={entry.data as Fill} />}
-            {entry.type === 'risk' && <RiskEvalDetail evaluation={entry.data as RiskEvaluation} />}
-            {entry.type === 'order' && <OrderDetail order={entry.data as OrderHistoryEntry} />}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Date Range Buttons ─────────────────────────────────────────────────
 
 const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
@@ -657,6 +520,57 @@ const TYPE_FILTER_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: 'risk', label: 'Risk Evals' },
 ];
 
+// ─── Sort Helpers ───────────────────────────────────────────────────────
+
+function getEntrySymbol(entry: TimelineEntry): string {
+  if (entry.type === 'order') return (entry.data as OrderHistoryEntry).symbol;
+  if (entry.type === 'fill') return (entry.data as Fill).order_id.slice(0, 8);
+  return (entry.data as RiskEvaluation).recommendation_id.slice(0, 8);
+}
+
+function getEntryStatus(entry: TimelineEntry): string {
+  if (entry.type === 'fill') return 'filled';
+  if (entry.type === 'order') return (entry.data as OrderHistoryEntry).status;
+  return (entry.data as RiskEvaluation).allowed ? 'allowed' : 'blocked';
+}
+
+function getEntrySide(entry: TimelineEntry): string | null {
+  if (entry.type === 'order') return (entry.data as OrderHistoryEntry).side;
+  return null;
+}
+
+function getEntrySummary(entry: TimelineEntry): { primary: string; secondary: string | null } {
+  if (entry.type === 'fill') {
+    const fill = entry.data as Fill;
+    return {
+      primary: `${fill.fill_qty} @ ${formatCurrency(fill.fill_price)}`,
+      secondary: fill.order_id ? `Order ${fill.order_id.slice(0, 8)}…` : null,
+    };
+  }
+  if (entry.type === 'order') {
+    const order = entry.data as OrderHistoryEntry;
+    const sideLabel = order.side === 'buy' ? 'BUY' : 'SELL';
+    return {
+      primary: `${sideLabel} ${order.symbol} × ${order.qty}`,
+      secondary:
+        order.fill_price != null
+          ? `Filled @ ${formatCurrency(order.fill_price)}`
+          : order.status === 'cancelled'
+            ? 'Cancelled'
+            : order.status === 'rejected'
+              ? 'Rejected'
+              : null,
+    };
+  }
+  const risk = entry.data as RiskEvaluation;
+  return {
+    primary: risk.allowed
+      ? `Approved${risk.adjusted_quantity != null ? ` (qty: ${risk.adjusted_quantity})` : ''}`
+      : 'Blocked',
+    secondary: risk.reason,
+  };
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
@@ -664,6 +578,8 @@ export default function OrdersPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [symbolSearch, setSymbolSearch] = useState('');
   const [page, setPage] = useState(0);
+  const [sortState, setSortState] = useState<SortState>({ column: 'timestamp', direction: 'desc' });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const pageSize = PAGE_SIZE_ORDERS;
 
   const from = useMemo(() => getDateRangeFrom(dateRange), [dateRange]);
@@ -767,10 +683,47 @@ export default function OrdersPage() {
     return entries;
   }, [fills, riskEvals, orders, typeFilter, from, symbolSearch]);
 
+  // Sort timeline
+  const sortedTimeline = useMemo(() => {
+    if (!sortState.direction) return timeline;
+    const dir = sortState.direction === 'asc' ? 1 : -1;
+    return [...timeline].sort((a, b) => {
+      switch (sortState.column) {
+        case 'timestamp':
+          return dir * (new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        case 'type':
+          return dir * a.type.localeCompare(b.type);
+        case 'symbol': {
+          const symA = getEntrySymbol(a);
+          const symB = getEntrySymbol(b);
+          return dir * symA.localeCompare(symB);
+        }
+        case 'status': {
+          const stA = getEntryStatus(a);
+          const stB = getEntryStatus(b);
+          return dir * stA.localeCompare(stB);
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [timeline, sortState]);
+
   // Paginate
-  const totalEntries = timeline.length;
+  const totalEntries = sortedTimeline.length;
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
-  const pagedEntries = timeline.slice(page * pageSize, (page + 1) * pageSize);
+  const pagedEntries = sortedTimeline.slice(page * pageSize, (page + 1) * pageSize);
+
+  const handleSort = useCallback((column: string) => {
+    setSortState((prev) => {
+      if (prev.column === column) {
+        const next = prev.direction === 'asc' ? 'desc' : prev.direction === 'desc' ? null : 'asc';
+        return { column, direction: next };
+      }
+      return { column, direction: 'asc' };
+    });
+    setPage(0);
+  }, []);
 
   const handleDateRange = useCallback((range: DateRange) => {
     setDateRange(range);
@@ -792,151 +745,336 @@ export default function OrdersPage() {
   const hasFilters = dateRange !== 'all' || typeFilter !== 'all' || symbolSearch !== '';
 
   return (
-    <div className="space-y-4 sm:space-y-6 page-enter">
-      {/* Page header */}
-      <div className="flex items-center gap-3">
-        <ArrowUpDown className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" />
-        <div>
-          <h1 className="text-heading-page text-zinc-100">Orders &amp; Fills</h1>
-          <p className="text-xs sm:text-sm text-zinc-500">Execution activity timeline</p>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <StatsRow fills={fills} riskEvals={riskEvals} orders={orders} isLoading={isLoading} />
-
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {/* Date range */}
-          <div className="flex shrink-0 rounded-md border border-zinc-700 overflow-hidden">
-            {DATE_RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => handleDateRange(opt.value)}
-                className={`px-3 py-1.5 text-xs transition-colors ${
-                  dateRange === opt.value
-                    ? 'bg-zinc-700 text-zinc-100 font-medium'
-                    : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+    <ErrorBoundary>
+      <div className="space-y-4 sm:space-y-6 page-enter">
+        {/* Page header */}
+        <div className="flex items-center gap-3">
+          <ArrowUpDown className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" />
+          <div>
+            <h1 className="text-heading-page text-zinc-100">Orders &amp; Fills</h1>
+            <p className="text-xs sm:text-sm text-zinc-500">Execution activity timeline</p>
           </div>
-
-          {/* Type filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => handleTypeFilter(e.target.value as TypeFilter)}
-            className="shrink-0 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 focus:border-zinc-500 focus:outline-none"
-          >
-            {TYPE_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Symbol / ID search */}
-          <div className="relative flex-1 sm:flex-initial">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search ID or reason…"
-              value={symbolSearch}
-              onChange={(e) => {
-                setSymbolSearch(e.target.value);
-                setPage(0);
-              }}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-900 py-1.5 pl-8 pr-3 text-sm text-zinc-300 placeholder-zinc-600 focus:border-zinc-500 focus:outline-none sm:w-48"
-            />
-          </div>
+        {/* Stats */}
+        <StatsRow fills={fills} riskEvals={riskEvals} orders={orders} isLoading={isLoading} />
 
-          {hasFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+        {/* Filters */}
+        <div
+          className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
+          role="search"
+          aria-label="Filter orders"
+        >
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {/* Date range */}
+            <div
+              className="flex shrink-0 rounded-md border border-zinc-700 overflow-hidden"
+              role="group"
+              aria-label="Date range filter"
             >
-              Clear
-            </button>
-          )}
-        </div>
+              {DATE_RANGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleDateRange(opt.value)}
+                  aria-label={`Filter by ${opt.label}`}
+                  aria-pressed={dateRange === opt.value}
+                  className={cn(
+                    'px-3 py-1.5 text-xs transition-colors',
+                    dateRange === opt.value
+                      ? 'bg-zinc-700 text-zinc-100 font-medium'
+                      : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
 
-        <span className="text-xs text-zinc-600 sm:ml-auto">
-          {totalEntries} {totalEntries === 1 ? 'event' : 'events'}
-        </span>
-      </div>
+            {/* Type filter */}
+            <Select
+              value={typeFilter}
+              onChange={(e) => handleTypeFilter(e.target.value as TypeFilter)}
+              aria-label="Filter by event type"
+              className="shrink-0 w-auto"
+            >
+              {TYPE_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-      {/* Timeline */}
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-zinc-800 bg-zinc-900/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-16 animate-pulse rounded-full bg-zinc-800" />
-                  <div className="h-4 w-32 animate-pulse rounded bg-zinc-800" />
-                </div>
-                <div className="mt-2 h-3 w-48 animate-pulse rounded bg-zinc-800" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+          <div className="flex items-center gap-2">
+            {/* Symbol / ID search */}
+            <div className="relative flex-1 sm:flex-initial">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500 z-10" />
+              <Input
+                type="text"
+                placeholder="Search ID or reason…"
+                value={symbolSearch}
+                onChange={(e) => {
+                  setSymbolSearch(e.target.value);
+                  setPage(0);
+                }}
+                aria-label="Search orders by ID, symbol, or reason"
+                className="w-full pl-8 sm:w-48"
+              />
+            </div>
 
-      {isError && (
-        <Card className="border-red-900/50 bg-red-950/20">
-          <CardContent className="p-6 text-center text-red-400">
-            Failed to load execution data. Please try again.
-          </CardContent>
-        </Card>
-      )}
+            {hasFilters && (
+              <button
+                onClick={handleClearFilters}
+                aria-label="Clear all filters"
+                className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
-      {!isLoading && !isError && pagedEntries.length === 0 && (
-        <Card className="border-zinc-800 bg-zinc-900/50">
-          <CardContent className="p-12 text-center">
-            <Activity className="mx-auto h-10 w-10 text-zinc-700" />
-            <h3 className="mt-4 text-lg font-medium text-zinc-400">No execution activity yet</h3>
-            <p className="mt-1 text-sm text-zinc-600">
-              Fills and risk evaluations will appear here as trades are executed.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLoading && !isError && pagedEntries.length > 0 && (
-        <div className="space-y-3">
-          {pagedEntries.map((entry) => (
-            <TimelineCard key={entry.id} entry={entry} />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPage(Math.max(0, page - 1))}
-            disabled={page === 0}
-            className="rounded px-3 py-1 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-30"
-          >
-            Previous
-          </button>
-          <span className="text-xs text-zinc-500">
-            Page {page + 1} of {totalPages}
+          <span className="text-xs text-zinc-600 sm:ml-auto">
+            {totalEntries} {totalEntries === 1 ? 'event' : 'events'}
           </span>
-          <button
-            onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-            disabled={page >= totalPages - 1}
-            className="rounded px-3 py-1 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-30"
-          >
-            Next
-          </button>
         </div>
-      )}
-    </div>
+
+        {/* Timeline Table */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Spinner size="lg" />
+          </div>
+        )}
+
+        {isError && (
+          <ErrorState
+            title="Failed to load data"
+            message="Failed to load execution data. Please try again."
+            onRetry={() => {
+              void fillsQuery.refetch();
+              void riskQuery.refetch();
+              void ordersQuery.refetch();
+            }}
+          />
+        )}
+
+        {!isLoading && !isError && pagedEntries.length === 0 && (
+          <Card className="border-zinc-800 bg-zinc-900/50">
+            <CardContent className="p-12 text-center">
+              <Activity className="mx-auto h-10 w-10 text-zinc-700" />
+              <h3 className="mt-4 text-lg font-medium text-zinc-400">No execution activity yet</h3>
+              <p className="mt-1 text-sm text-zinc-600">
+                Fills and risk evaluations will appear here as trades are executed.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoading && !isError && pagedEntries.length > 0 && (
+          <Card className="border-zinc-800 bg-zinc-900/50 overflow-hidden">
+            <Table aria-label="Orders and execution timeline">
+              <TableHeader>
+                <TableRow>
+                  <SortableTableHead column="type" sortState={sortState} onSort={handleSort}>
+                    Type
+                  </SortableTableHead>
+                  <SortableTableHead column="symbol" sortState={sortState} onSort={handleSort}>
+                    Symbol / ID
+                  </SortableTableHead>
+                  <TableHead>Side</TableHead>
+                  <SortableTableHead column="status" sortState={sortState} onSort={handleSort}>
+                    Status
+                  </SortableTableHead>
+                  <TableHead>Summary</TableHead>
+                  <SortableTableHead column="timestamp" sortState={sortState} onSort={handleSort}>
+                    Time
+                  </SortableTableHead>
+                  <TableHead className="w-10">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pagedEntries.map((entry) => {
+                  const meta = ENTRY_META[entry.type];
+                  const badgeColor = getEntryBadgeColor(entry);
+                  const Icon = meta.icon;
+                  const side = getEntrySide(entry);
+                  const status = getEntryStatus(entry);
+                  const statusStyle =
+                    entry.type === 'order'
+                      ? (ORDER_STATUS_STYLES[(entry.data as OrderHistoryEntry).status] ??
+                        DEFAULT_ORDER_STYLE)
+                      : null;
+                  const summary = getEntrySummary(entry);
+                  const isExpanded = expandedId === entry.id;
+
+                  return (
+                    <TableRow key={entry.id}>
+                      {/* Type badge */}
+                      <TableCell>
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                            badgeColor,
+                          )}
+                        >
+                          <Icon className="h-3 w-3" />
+                          {meta.label}
+                        </span>
+                      </TableCell>
+
+                      {/* Symbol / ID */}
+                      <TableCell className="font-mono text-xs">
+                        {entry.type === 'order' ? (
+                          <span className="font-semibold text-zinc-100">
+                            {(entry.data as OrderHistoryEntry).symbol}
+                          </span>
+                        ) : entry.type === 'fill' ? (
+                          <span className="text-zinc-400 truncate max-w-[100px] inline-block">
+                            {(entry.data as Fill).order_id.slice(0, 8)}…
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/recommendations/${(entry.data as RiskEvaluation).recommendation_id}`}
+                            className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center gap-1"
+                          >
+                            {(entry.data as RiskEvaluation).recommendation_id.slice(0, 8)}…
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
+                      </TableCell>
+
+                      {/* Side */}
+                      <TableCell>
+                        {side ? (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                              sideColors[side] ?? '',
+                            )}
+                          >
+                            {side === 'buy' ? (
+                              <TrendingUp className="h-3 w-3" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3" />
+                            )}
+                            {side.toUpperCase()}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600">—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell>
+                        {statusStyle ? (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                              statusStyle.bg,
+                              statusStyle.text,
+                            )}
+                          >
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </span>
+                        ) : (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                              badgeColor,
+                            )}
+                          >
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Summary */}
+                      <TableCell className="max-w-[200px]">
+                        <span className="text-sm text-zinc-200">{summary.primary}</span>
+                        {summary.secondary && (
+                          <span className="block text-xs text-zinc-500 truncate">
+                            {summary.secondary}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Time */}
+                      <TableCell className="text-xs text-zinc-500 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <time dateTime={entry.timestamp}>{formatTimestamp(entry.timestamp)}</time>
+                        </span>
+                      </TableCell>
+
+                      {/* Expand */}
+                      <TableCell>
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : entry.id)}
+                          aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
+                          aria-expanded={isExpanded}
+                          className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            {/* Expanded detail rows */}
+            {expandedId && pagedEntries.some((e) => e.id === expandedId) && (
+              <div className="border-t border-zinc-800 bg-zinc-950/50 p-4">
+                {(() => {
+                  const entry = pagedEntries.find((e) => e.id === expandedId)!;
+                  return (
+                    <>
+                      {entry.type === 'fill' && <FillDetail fill={entry.data as Fill} />}
+                      {entry.type === 'risk' && (
+                        <RiskEvalDetail evaluation={entry.data as RiskEvaluation} />
+                      )}
+                      {entry.type === 'order' && (
+                        <OrderDetail order={entry.data as OrderHistoryEntry} />
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <nav className="flex items-center justify-center gap-2" aria-label="Pagination">
+            <button
+              onClick={() => setPage(Math.max(0, page - 1))}
+              disabled={page === 0}
+              aria-label="Go to previous page"
+              className="rounded px-3 py-1 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-30"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-zinc-500">
+              Page {page + 1} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+              disabled={page >= totalPages - 1}
+              aria-label="Go to next page"
+              className="rounded px-3 py-1 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-30"
+            >
+              Next
+            </button>
+          </nav>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
