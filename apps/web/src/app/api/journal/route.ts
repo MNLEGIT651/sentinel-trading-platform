@@ -33,11 +33,17 @@ const JournalQuerySchema = z.object({
   to: z.string().optional(),
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidField = z.string().regex(UUID_RE, 'Invalid UUID').nullable().optional();
+
 const JournalCreateSchema = z
   .object({
     event_type: z.enum(VALID_EVENT_TYPES),
     confidence: z.number().min(0).max(1).nullable().optional(),
     user_grade: z.enum(VALID_GRADES).nullable().optional(),
+    order_id: uuidField,
+    recommendation_id: uuidField,
+    signal_id: uuidField,
   })
   .passthrough();
 

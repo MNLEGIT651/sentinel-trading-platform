@@ -13,6 +13,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 // ─── Zod Schemas ────────────────────────────────────────────────────
 
+const uuidField = z.string().regex(UUID_RE, 'Invalid UUID').nullable().optional();
+
 const JournalUpdateSchema = z
   .object({
     user_notes: z.string().nullable().optional(),
@@ -20,6 +22,9 @@ const JournalUpdateSchema = z
     outcome_pnl: z.number().nullable().optional(),
     outcome_return_pct: z.number().nullable().optional(),
     outcome_hold_minutes: z.number().nullable().optional(),
+    order_id: uuidField,
+    recommendation_id: uuidField,
+    signal_id: uuidField,
   })
   .refine((data) => Object.values(data).some((v) => v !== undefined), {
     message: 'No valid fields to update',

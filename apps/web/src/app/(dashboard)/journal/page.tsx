@@ -13,6 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  ShoppingCart,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useJournalQuery, useJournalStatsQuery, useGradeJournalMutation } from '@/hooks/queries';
@@ -188,6 +190,16 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
                 Why
               </Link>
             )}
+            {entry.order_id && (
+              <Link
+                href={`/orders/${entry.order_id}`}
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                title="View linked order"
+              >
+                <ShoppingCart className="h-2.5 w-2.5" />
+                Order
+              </Link>
+            )}
             {entry.ticker && (
               <span className="text-sm font-semibold text-zinc-100">{entry.ticker}</span>
             )}
@@ -252,6 +264,36 @@ function JournalCard({ entry }: { entry: JournalEntry }) {
                 {entry.market_regime && <span>Regime: {entry.market_regime}</span>}
                 {entry.vix_at_time != null && <span>VIX: {entry.vix_at_time.toFixed(1)}</span>}
                 {entry.sector && <span>Sector: {entry.sector}</span>}
+              </div>
+            )}
+
+            {/* Linked order / recommendation IDs */}
+            {(entry.order_id || entry.recommendation_id || entry.signal_id) && (
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <LinkIcon className="h-3 w-3 text-zinc-600" />
+                {entry.order_id && (
+                  <Link
+                    href={`/orders/${entry.order_id}`}
+                    className="text-emerald-400 hover:text-emerald-300 transition-colors font-mono"
+                    title={`Order ${entry.order_id}`}
+                  >
+                    Order: {entry.order_id.slice(0, 8)}…
+                  </Link>
+                )}
+                {entry.recommendation_id && (
+                  <Link
+                    href={`/recommendations/${entry.recommendation_id}`}
+                    className="text-primary hover:text-primary/80 transition-colors font-mono"
+                    title={`Recommendation ${entry.recommendation_id}`}
+                  >
+                    Rec: {entry.recommendation_id.slice(0, 8)}…
+                  </Link>
+                )}
+                {entry.signal_id && (
+                  <span className="text-zinc-500 font-mono" title={`Signal ${entry.signal_id}`}>
+                    Signal: {entry.signal_id.slice(0, 8)}…
+                  </span>
+                )}
               </div>
             )}
 
