@@ -85,6 +85,15 @@ All skips must be listed in the handoff under a **"Skipped Validations"** headin
 - `pnpm build` — blocked by T-C01; shared type update lands there first.
 ```
 
+## Release Readiness
+
+For production deploys, follow the full [Release Checklist and Rollback Runbook](../runbooks/release-checklist.md). Key requirements:
+
+- **Test evidence** must be attached to the PR (see §1 of the release checklist)
+- **SLO go/no-go gate** must pass before deploying (see §3 — thresholds from [slo-dashboard-spec.md](../runbooks/slo-dashboard-spec.md))
+- **Rollback commands** are documented per service in §6 — rollback first, investigate second
+- **Post-deploy validation** (§5) must complete within 5 minutes of deploy
+
 ## Regression Guards
 
 When a PR touches specific areas, the corresponding regression suite **must** be re-run before handoff.
