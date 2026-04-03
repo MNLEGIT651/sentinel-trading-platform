@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { DataProvenance } from '@/components/ui/data-provenance';
+import { ConfigBanner } from '@/components/ui/config-banner';
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import type { OHLCV } from '@sentinel/shared';
@@ -105,6 +106,13 @@ export default function MarketsPage() {
   return (
     <div className="flex h-full flex-col gap-4 p-3 sm:p-4">
       {engineOnline === false && <OfflineBanner service="engine" />}
+      {engineOnline === true && !isLive && !loading && (
+        <ConfigBanner
+          message="Showing simulated data. Configure your Polygon API key for live market data."
+          linkHref="/settings"
+          linkLabel="Go to Settings"
+        />
+      )}
       <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row">
         {/* Watchlist panel */}
         <Card className="w-full shrink-0 bg-card border-border lg:w-72">

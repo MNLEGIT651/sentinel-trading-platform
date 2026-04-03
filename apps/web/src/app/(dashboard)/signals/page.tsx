@@ -253,17 +253,29 @@ export default function SignalsPage() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Zap className="h-8 w-8 text-muted-foreground/40 mb-3" />
-            <h2 className="text-sm font-semibold text-foreground mb-1">No signals yet</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-1">
+              {lastScanTime ? 'No signals found' : 'No signals yet'}
+            </h2>
             <p className="text-xs text-muted-foreground max-w-sm mb-4">
-              Run a signal scan to analyze market conditions across your configured tickers
+              {engineOnline !== true
+                ? 'Engine is offline. Start the engine to scan for trading signals.'
+                : lastScanTime
+                  ? `No signals met the minimum strength threshold (${(minStrength * 100).toFixed(0)}%). Try lowering the threshold or adding more tickers.`
+                  : 'Run a signal scan to analyze market conditions across your configured tickers.'}
             </p>
-            <Button
-              onClick={handleRunScan}
-              disabled={isScanning || engineOnline !== true}
-              size="sm"
-            >
-              Run Scan
-            </Button>
+            {engineOnline === true && (
+              <div className="flex items-center gap-2">
+                <Button onClick={handleRunScan} disabled={isScanning} size="sm">
+                  {lastScanTime ? 'Scan Again' : 'Run Scan'}
+                </Button>
+                {!showConfig && (
+                  <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
+                    <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
+                    Configure
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

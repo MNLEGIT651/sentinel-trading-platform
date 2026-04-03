@@ -1,10 +1,11 @@
 'use client';
 
-import { Bot, Play, Pause, RefreshCw, Loader2, WifiOff } from 'lucide-react';
+import { Bot, Play, Pause, RefreshCw, Loader2, WifiOff, History, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { StatusBadge, type StatusType } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useAppStore } from '@/stores/app-store';
 import { AgentStatusCard } from '@/components/agents/agent-status-card';
@@ -20,6 +21,7 @@ import {
   useResumeMutation,
   useApproveRecommendationMutation,
   useRejectRecommendationMutation,
+  useWorkflowJobsQuery,
 } from '@/hooks/queries';
 
 export default function AgentsPage() {
@@ -29,6 +31,12 @@ export default function AgentsPage() {
   const { data: status, isError: statusError, isLoading: statusLoading } = useAgentStatusQuery();
   const { data: recommendations = [] } = useRecommendationsQuery('pending', 5_000);
   const { data: alerts = [] } = useAlertsQuery(5_000);
+  const { data: recentCycles } = useWorkflowJobsQuery({
+    workflow_type: 'agent_cycle',
+    limit: 5,
+    sort_by: 'created_at',
+    sort_direction: 'desc',
+  });
 
   // Mutation hooks
   const cycleMutation = useTriggerCycleMutation();
@@ -208,6 +216,68 @@ export default function AgentsPage() {
         onApprove={handleApprove}
         onReject={handleReject}
       />
+
+      {/* Recent Cycles */}
+      {recentCycles?.data && recentCycles.data.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Recent Cycles
+            </CardTitle>
+            <Link
+              href="/workflows"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            >
+              View All <ExternalLink className="h-3 w-3" />
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/50">
+              {recentCycles.data.map((job) => {
+                const statusMap: Record<string, StatusType> = {
+                  completed: 'success',
+                  running: 'active',
+                  pending: 'pending',
+                  failed: 'error',
+                  retrying: 'pending',
+                  cancelled: 'idle',
+                };
+                const durationMs =
+                  job.completed_at && job.started_at
+                    ? new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()
+                    : null;
+                return (
+                  <div key={job.id} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={statusMap[job.status] ?? 'idle'} label={job.status} />
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(job.created_at).toLocaleString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {durationMs != null && <span>{(durationMs / 1000).toFixed(1)}s</span>}
+                      {job.error_message && (
+                        <span
+                          className="text-loss truncate max-w-[200px]"
+                          title={job.error_message}
+                        >
+                          {job.error_message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <AgentAlertFeed alerts={alerts} isOffline={!!isOffline} />
     </div>
