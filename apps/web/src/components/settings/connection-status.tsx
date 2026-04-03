@@ -16,6 +16,34 @@ export interface ServiceStatuses {
   alpaca: ServiceStatus;
 }
 
+/** Setup guidance shown for unconfigured or disconnected services. */
+const setupGuidance: Record<string, { envVar: string; description: string }> = {
+  engine: {
+    envVar: 'ENGINE_URL, ENGINE_API_KEY',
+    description: 'Required for market data, orders, and backtesting.',
+  },
+  agents: {
+    envVar: 'AGENTS_URL, AGENTS_API_KEY',
+    description: 'Required for AI-powered analysis and recommendations.',
+  },
+  polygon: {
+    envVar: 'POLYGON_API_KEY',
+    description: 'Required for live market data and charts. Get a free key at polygon.io.',
+  },
+  supabase: {
+    envVar: 'SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY',
+    description: 'Required for data persistence, auth, and real-time updates.',
+  },
+  anthropic: {
+    envVar: 'ANTHROPIC_API_KEY',
+    description: 'Required for AI agent analysis. Get a key at console.anthropic.com.',
+  },
+  alpaca: {
+    envVar: 'ALPACA_API_KEY, ALPACA_SECRET_KEY',
+    description: 'Required for paper/live trading. Get keys at app.alpaca.markets.',
+  },
+};
+
 const statusConfig: Record<ServiceStatus, { color: string; badge: string; text: string }> = {
   connected: {
     color: 'text-profit',
@@ -44,24 +72,38 @@ function ConnectionStatusRow({
   label,
   icon: Icon,
   status,
+  serviceKey,
 }: {
   label: string;
   icon: React.ElementType;
   status: ServiceStatus;
+  serviceKey: string;
 }) {
   const c = statusConfig[status];
+  const guidance = setupGuidance[serviceKey];
+  const showHint = (status === 'not_configured' || status === 'disconnected') && guidance;
 
   return (
-    <div className="flex items-center justify-between border-b border-border/25 py-3 last:border-0">
-      <div className="flex items-center gap-2.5">
-        {status === 'checking' ? (
-          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
-        ) : (
-          <Icon className={cn('h-4 w-4', c.color)} />
-        )}
-        <span className="text-base leading-tight text-foreground sm:text-[1.125rem]">{label}</span>
+    <div className="border-b border-border/25 py-3 last:border-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          {status === 'checking' ? (
+            <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+          ) : (
+            <Icon className={cn('h-4 w-4', c.color)} />
+          )}
+          <span className="text-base leading-tight text-foreground sm:text-[1.125rem]">
+            {label}
+          </span>
+        </div>
+        <Badge className={cn('border text-[10px]', c.badge)}>{c.text}</Badge>
       </div>
-      <Badge className={cn('border text-[10px]', c.badge)}>{c.text}</Badge>
+      {showHint && (
+        <div className="mt-1.5 ml-6.5 text-xs text-muted-foreground">
+          <span>{guidance.description}</span>{' '}
+          <span className="font-mono text-[10px] text-foreground/60">Set: {guidance.envVar}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -71,12 +113,16 @@ function ConnectionStatusCell({
   label,
   icon: Icon,
   status,
+  serviceKey,
 }: {
   label: string;
   icon: React.ElementType;
   status: ServiceStatus;
+  serviceKey: string;
 }) {
   const c = statusConfig[status];
+  const guidance = setupGuidance[serviceKey];
+  const showHint = status === 'not_configured' && guidance;
 
   return (
     <div className="flex items-center gap-2 rounded-md border border-border/25 bg-muted/15 px-3 py-3">
@@ -90,6 +136,14 @@ function ConnectionStatusCell({
           {label}
         </p>
         <p className={cn('text-xs leading-relaxed', c.color)}>{c.text}</p>
+        {showHint && (
+          <p
+            className="text-[10px] text-muted-foreground/70 mt-0.5 truncate"
+            title={guidance.envVar}
+          >
+            Set: {guidance.envVar}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -126,12 +180,42 @@ export function ConnectionStatusPanel({
       <CardContent>
         {/* Compact 2-column grid on mobile */}
         <div className="grid grid-cols-2 gap-2 sm:hidden">
-          <ConnectionStatusCell icon={Server} label="Engine" status={serviceStatus.engine} />
-          <ConnectionStatusCell icon={Bot} label="Agents" status={serviceStatus.agents} />
-          <ConnectionStatusCell icon={Globe} label="Polygon.io" status={serviceStatus.polygon} />
-          <ConnectionStatusCell icon={Database} label="Supabase" status={serviceStatus.supabase} />
-          <ConnectionStatusCell icon={Brain} label="Claude AI" status={serviceStatus.anthropic} />
-          <ConnectionStatusCell icon={Shield} label="Alpaca" status={serviceStatus.alpaca} />
+          <ConnectionStatusCell
+            icon={Server}
+            label="Engine"
+            status={serviceStatus.engine}
+            serviceKey="engine"
+          />
+          <ConnectionStatusCell
+            icon={Bot}
+            label="Agents"
+            status={serviceStatus.agents}
+            serviceKey="agents"
+          />
+          <ConnectionStatusCell
+            icon={Globe}
+            label="Polygon.io"
+            status={serviceStatus.polygon}
+            serviceKey="polygon"
+          />
+          <ConnectionStatusCell
+            icon={Database}
+            label="Supabase"
+            status={serviceStatus.supabase}
+            serviceKey="supabase"
+          />
+          <ConnectionStatusCell
+            icon={Brain}
+            label="Claude AI"
+            status={serviceStatus.anthropic}
+            serviceKey="anthropic"
+          />
+          <ConnectionStatusCell
+            icon={Shield}
+            label="Alpaca"
+            status={serviceStatus.alpaca}
+            serviceKey="alpaca"
+          />
         </div>
         {/* Full row list on sm+ screens */}
         <div className="hidden sm:block">
@@ -139,28 +223,38 @@ export function ConnectionStatusPanel({
             icon={Server}
             label="Quant Engine (FastAPI)"
             status={serviceStatus.engine}
+            serviceKey="engine"
           />
           <ConnectionStatusRow
             icon={Bot}
             label="Agents Orchestrator"
             status={serviceStatus.agents}
+            serviceKey="agents"
           />
           <ConnectionStatusRow
             icon={Globe}
             label="Polygon.io Market Data"
             status={serviceStatus.polygon}
+            serviceKey="polygon"
           />
           <ConnectionStatusRow
             icon={Database}
             label="Supabase Database"
             status={serviceStatus.supabase}
+            serviceKey="supabase"
           />
           <ConnectionStatusRow
             icon={Brain}
             label="Claude AI (Anthropic)"
             status={serviceStatus.anthropic}
+            serviceKey="anthropic"
           />
-          <ConnectionStatusRow icon={Shield} label="Alpaca Broker" status={serviceStatus.alpaca} />
+          <ConnectionStatusRow
+            icon={Shield}
+            label="Alpaca Broker"
+            status={serviceStatus.alpaca}
+            serviceKey="alpaca"
+          />
         </div>
       </CardContent>
     </Card>

@@ -5,6 +5,7 @@ import { PieChart, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OfflineBanner } from '@/components/ui/offline-banner';
+import { ConfigBanner } from '@/components/ui/config-banner';
 import { DataProvenance } from '@/components/ui/data-provenance';
 import type { DataProvenanceProps } from '@/components/ui/data-provenance';
 import { useAppStore } from '@/stores/app-store';
@@ -266,6 +267,13 @@ export default function PortfolioPage() {
   return (
     <div className="space-y-4 p-4">
       {engineOnline === false && <OfflineBanner service="engine" />}
+      {provenanceMode === 'simulated' && engineOnline === true && (
+        <ConfigBanner
+          message="Showing simulated portfolio. Configure Alpaca API keys for live/paper trading."
+          linkHref="/settings"
+          linkLabel="Go to Settings"
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
