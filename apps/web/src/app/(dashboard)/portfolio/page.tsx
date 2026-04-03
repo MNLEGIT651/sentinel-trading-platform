@@ -36,16 +36,7 @@ import {
 } from '@/hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import type { BrokerAccount } from '@/lib/engine-client';
-
-const FALLBACK_ACCOUNT: BrokerAccount = {
-  cash: 100_000,
-  positions_value: 0,
-  equity: 100_000,
-  initial_capital: 100_000,
-};
-
-const ORDER_TERMINAL_STATUSES = new Set(['filled', 'rejected', 'cancelled', 'expired']);
+import { FALLBACK_ACCOUNT, ORDER_TERMINAL_STATUSES } from '@/lib/constants';
 
 export default function PortfolioPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);

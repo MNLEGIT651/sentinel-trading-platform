@@ -17,11 +17,8 @@ import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAppStore } from '@/stores/app-store';
 import type { SignalResult } from '@/lib/engine-client';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
-import {
-  DEFAULT_SIGNAL_TICKERS,
-  MAX_LIVE_SCAN_TICKERS,
-  SignalFilters,
-} from '@/components/signals/signal-filters';
+import { SignalFilters } from '@/components/signals/signal-filters';
+import { DEFAULT_SIGNAL_TICKERS, MAX_LIVE_SCAN_TICKERS } from '@/lib/constants';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
 import type { SignalRow } from '@/components/signals/signal-card';
 import { markPageVisited } from '@/components/dashboard/setup-progress';

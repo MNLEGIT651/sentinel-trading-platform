@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, ChevronDown, ChevronUp, ExternalLink, Filter, X } from 'lucide-react';
+import { PAGE_SIZE_AUDIT } from '@/lib/constants';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -77,7 +78,7 @@ const DATE_RANGE_PRESETS: { label: string; value: DateRangePreset }[] = [
   { label: 'Last 30d', value: '30d' },
 ];
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = PAGE_SIZE_AUDIT;
 
 // ─── Helpers ────────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { ErrorState } from '@/components/ui/error-state';
 
-export default function DashboardError({
+export default function SettingsError({
   error,
   reset,
 }: {
@@ -11,14 +11,14 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[Dashboard] Unhandled error:', error);
+    console.error('[Settings] Unhandled error:', error);
   }, [error]);
 
   return (
     <ErrorState
       variant="full-page"
-      title="Something went wrong"
-      message="Sentinel hit an unexpected error. You can retry without leaving the dashboard."
+      title="Settings error"
+      message="Failed to load settings. Your configuration is safe — try again."
       onRetry={reset}
     />
   );
