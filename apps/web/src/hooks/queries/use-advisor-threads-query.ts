@@ -19,5 +19,7 @@ export function useAdvisorThreadsQuery() {
   return useQuery({
     queryKey: queryKeys.advisor.threads.list(),
     queryFn: fetchThreads,
+    refetchInterval: 30_000,
+    retry: 2,
   });
 }

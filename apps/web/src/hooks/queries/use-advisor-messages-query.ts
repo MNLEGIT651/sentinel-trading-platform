@@ -20,5 +20,6 @@ export function useAdvisorMessagesQuery(threadId: string | null) {
     queryKey: queryKeys.advisor.threads.messages(threadId ?? ''),
     queryFn: () => fetchMessages(threadId!),
     enabled: !!threadId,
+    retry: 2,
   });
 }
