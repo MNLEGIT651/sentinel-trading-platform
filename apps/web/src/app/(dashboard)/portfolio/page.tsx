@@ -5,6 +5,8 @@ import { PieChart, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OfflineBanner } from '@/components/ui/offline-banner';
+import { DataProvenance } from '@/components/ui/data-provenance';
+import type { DataProvenanceProps } from '@/components/ui/data-provenance';
 import { useAppStore } from '@/stores/app-store';
 import { SnapshotMetrics } from '@/components/portfolio/snapshot-metrics';
 import {
@@ -63,7 +65,11 @@ export default function PortfolioPage() {
   }, []);
 
   // TanStack Query hooks
-  const { data: account, isPending: accountLoading } = useAccountQuery();
+  const {
+    data: account,
+    isPending: accountLoading,
+    dataUpdatedAt: accountUpdatedAt,
+  } = useAccountQuery();
   const { data: brokerPositions } = usePositionsQuery();
   const { data: orderHistory } = useOrderHistoryQuery();
   const submitOrder = useSubmitOrderMutation();
@@ -82,8 +88,20 @@ export default function PortfolioPage() {
     },
   });
 
-  const isLive = engineOnline === true && !!account;
   const loading = engineOnline === null || (engineOnline === true && accountLoading);
+
+  // Derive data provenance mode from engine + query state
+  const provenanceMode: DataProvenanceProps['mode'] = useMemo(() => {
+    if (engineOnline === true && account) return 'live';
+    if (engineOnline === false && account) return 'cached';
+    if (engineOnline === false && !account) return 'simulated';
+    return 'offline';
+  }, [engineOnline, account]);
+
+  const provenanceLastUpdated = useMemo(
+    () => (accountUpdatedAt ? new Date(accountUpdatedAt) : null),
+    [accountUpdatedAt],
+  );
 
   // Enrich positions with live prices
   const positions: Position[] = useMemo(() => {
@@ -209,12 +227,14 @@ export default function PortfolioPage() {
           <div>
             <h1 className="text-heading-page text-foreground">Portfolio</h1>
             <p className="text-xs text-muted-foreground">
-              {positions.length} position{positions.length !== 1 ? 's' : ''} &middot;{' '}
-              <span className={isLive ? 'text-profit' : 'text-muted-foreground'}>
-                {isLive ? 'Live' : 'Offline'}
-              </span>
+              {positions.length} position{positions.length !== 1 ? 's' : ''}
             </p>
           </div>
+          <DataProvenance
+            mode={provenanceMode}
+            lastUpdated={provenanceLastUpdated}
+            staleThresholdMs={60_000}
+          />
         </div>
         <button
           onClick={() => {
@@ -270,11 +290,17 @@ export default function PortfolioPage() {
         </TabsList>
 
         <TabsContent value="positions">
-          {positions.length === 0 && isLive ? (
+          {positions.length === 0 ? (
             <Card className="bg-muted/30 border-border/50">
               <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No open positions. Use Quick Order above to place your first trade.
+                  {provenanceMode === 'live' &&
+                    'No open positions. Use Quick Order above to place your first trade.'}
+                  {provenanceMode === 'cached' &&
+                    'Cached data \u2014 no positions found. Reconnect engine for live updates.'}
+                  {provenanceMode === 'simulated' &&
+                    'Showing simulated portfolio \u2014 connect the engine for live data.'}
+                  {provenanceMode === 'offline' && 'No data available \u2014 engine is offline.'}
                 </p>
               </CardContent>
             </Card>
