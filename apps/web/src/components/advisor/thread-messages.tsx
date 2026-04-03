@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { useAdvisorMessagesQuery } from '@/hooks/queries/use-advisor-messages-qu
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { toast } from 'sonner';
-import { Send, Bot, User, ArrowLeft } from 'lucide-react';
+import { Send, Bot, User, ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
 import type { AdvisorMessage, AdvisorMessageCreate } from '@sentinel/shared';
 
 async function sendMessage(threadId: string, input: AdvisorMessageCreate): Promise<AdvisorMessage> {
@@ -30,28 +30,50 @@ interface ThreadMessagesProps {
 }
 
 export function ThreadMessages({ threadId, threadTitle, onBack, className }: ThreadMessagesProps) {
-  const { data, isLoading } = useAdvisorMessagesQuery(threadId);
+  const { data, isLoading, isError, refetch } = useAdvisorMessagesQuery(threadId);
   const queryClient = useQueryClient();
   const [input, setInput] = useState('');
+  const [failedContent, setFailedContent] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => sendMessage(threadId, { role: 'user', content }),
     onSuccess: () => {
       setInput('');
+      setFailedContent(null);
       queryClient.invalidateQueries({
         queryKey: queryKeys.advisor.threads.messages(threadId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.advisor.threads.all() });
     },
-    onError: () => toast.error('Failed to send message'),
+    onError: (_err, content) => {
+      setFailedContent(content);
+      toast.error('Failed to send message');
+    },
   });
 
   const messages = data?.messages ?? [];
 
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.length, scrollToBottom]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || sendMutation.isPending) return;
+    setFailedContent(null);
     sendMutation.mutate(input.trim());
+  }
+
+  function handleRetry() {
+    if (failedContent) {
+      sendMutation.mutate(failedContent);
+    }
   }
 
   return (
@@ -78,6 +100,14 @@ export function ThreadMessages({ threadId, threadTitle, onBack, className }: Thr
                   <div className="h-10 w-48 rounded-lg bg-muted" />
                 </div>
               ))}
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <p className="text-sm text-destructive">Failed to load messages</p>
+              <Button size="xs" variant="outline" onClick={() => refetch()} className="gap-1.5">
+                <RotateCcw className="h-3 w-3" />
+                Retry
+              </Button>
             </div>
           ) : messages.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground italic py-8">
@@ -120,6 +150,29 @@ export function ThreadMessages({ threadId, threadTitle, onBack, className }: Thr
               </div>
             ))
           )}
+
+          {/* Sending indicator */}
+          {sendMutation.isPending && (
+            <div className="flex items-center gap-2 justify-start">
+              <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
+              </div>
+              <p className="text-xs text-muted-foreground italic">Sending…</p>
+            </div>
+          )}
+
+          {/* Retry prompt on send failure */}
+          {failedContent && !sendMutation.isPending && (
+            <div className="flex items-center justify-end gap-2">
+              <p className="text-xs text-destructive">Message failed to send</p>
+              <Button size="xs" variant="outline" onClick={handleRetry} className="gap-1.5">
+                <RotateCcw className="h-3 w-3" />
+                Retry
+              </Button>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
