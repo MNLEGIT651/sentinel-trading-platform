@@ -9,6 +9,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock the trading policy hook so tests don't depend on Supabase
+const mockUpdatePolicy = vi.fn().mockResolvedValue(true);
+let mockPolicyLoading = false;
+let mockPolicyError: string | null = null;
+
 vi.mock('@/hooks/use-trading-policy', () => ({
   useTradingPolicy: () => ({
     policy: {
@@ -26,10 +30,10 @@ vi.mock('@/hooks/use-trading-policy', () => ({
       created_at: '2025-01-01T00:00:00Z',
       updated_at: '2025-01-01T00:00:00Z',
     },
-    loading: false,
+    loading: mockPolicyLoading,
     saving: false,
-    error: null,
-    updatePolicy: vi.fn().mockResolvedValue(true),
+    error: mockPolicyError,
+    updatePolicy: mockUpdatePolicy,
   }),
   policyValue: (policy: Record<string, unknown> | null, key: string) => {
     if (policy && key in policy) return policy[key];
@@ -123,6 +127,9 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 beforeEach(() => {
   localStorageMock.clear();
+  mockPolicyLoading = false;
+  mockPolicyError = null;
+  mockUpdatePolicy.mockResolvedValue(true);
   vi.stubGlobal(
     'fetch',
     vi.fn().mockResolvedValue({
@@ -149,9 +156,10 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(screen.getByText('Settings')).toBeInTheDocument());
   });
 
-  it('shows Save Changes button', async () => {
+  it('shows Save Changes button with aria-label', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() => expect(screen.getByText('Save Changes')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /save settings/i })).toBeInTheDocument();
   });
 
   it('displays connection status section', async () => {
@@ -166,7 +174,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('shows tab navigation', async () => {
+  it('shows tab navigation with aria roles', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument();
@@ -182,6 +190,7 @@ describe('SettingsPage', () => {
       fireEvent.click(screen.getByText('Save Changes'));
     });
     expect(localStorageMock.getItem('sentinel:notification-prefs')).not.toBeNull();
+    expect(mockUpdatePolicy).toHaveBeenCalled();
   });
 
   it('Save Changes shows "Saved" feedback momentarily', async () => {
@@ -193,7 +202,7 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
   });
 
-  it('can switch to Risk tab', async () => {
+  it('can switch to Risk tab and shows form fields with labels', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument(),
@@ -205,7 +214,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('can switch to Alerts tab', async () => {
+  it('can switch to Alerts tab and shows toggle switches', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Alerts/i })[0]).toBeInTheDocument(),
@@ -214,10 +223,13 @@ describe('SettingsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Critical Alerts')).toBeInTheDocument();
       expect(screen.getByText('Warning Alerts')).toBeInTheDocument();
+      // Toggle switches should have proper aria roles
+      const switches = screen.getAllByRole('switch');
+      expect(switches.length).toBeGreaterThan(0);
     });
   });
 
-  it('can switch to Trading tab', async () => {
+  it('can switch to Trading tab and shows toggle fields', async () => {
     renderWithProviders(<SettingsPage />);
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
@@ -226,6 +238,9 @@ describe('SettingsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Paper Trading Mode')).toBeInTheDocument();
       expect(screen.getByText('Auto Trading')).toBeInTheDocument();
+      // Toggle switches should have aria-checked
+      const switches = screen.getAllByRole('switch');
+      expect(switches.length).toBeGreaterThan(0);
     });
   });
 
@@ -236,5 +251,40 @@ describe('SettingsPage', () => {
     );
     fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
     await waitFor(() => expect(screen.getByText('Sentinel Trading v0.1.0')).toBeInTheDocument());
+  });
+
+  it('renders page-enter class on root container', async () => {
+    const { container } = renderWithProviders(<SettingsPage />);
+    await waitFor(() => expect(screen.getByText('Settings')).toBeInTheDocument());
+    const root = container.querySelector('.page-enter');
+    expect(root).toBeInTheDocument();
+  });
+
+  it('shows loading spinner when policy is loading', async () => {
+    mockPolicyLoading = true;
+    renderWithProviders(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Loading settings…')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toBeInTheDocument();
+    });
+  });
+
+  it('connection status refresh has aria-label', async () => {
+    renderWithProviders(<SettingsPage />);
+    await waitFor(() => expect(screen.getByText('Service Status')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /test service connections/i })).toBeInTheDocument();
+  });
+
+  it('risk settings inputs use design system Input component', async () => {
+    renderWithProviders(<SettingsPage />);
+    await waitFor(() =>
+      expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole('tab', { name: /Risk/i })[0]);
+    await waitFor(() => {
+      // Design system Input components have data-slot="input"
+      const inputs = document.querySelectorAll('[data-slot="input"]');
+      expect(inputs.length).toBeGreaterThan(0);
+    });
   });
 });

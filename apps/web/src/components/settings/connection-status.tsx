@@ -1,8 +1,9 @@
 'use client';
 
-import { Server, Globe, Database, Bot, Brain, Shield, RefreshCw, Loader2 } from 'lucide-react';
+import { Server, Globe, Database, Bot, Brain, Shield, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 export type ServiceStatus = 'connected' | 'disconnected' | 'not_configured' | 'checking';
@@ -88,7 +89,7 @@ function ConnectionStatusRow({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           {status === 'checking' ? (
-            <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+            <Spinner size="sm" className="text-muted-foreground" />
           ) : (
             <Icon className={cn('h-4 w-4', c.color)} />
           )}
@@ -127,7 +128,7 @@ function ConnectionStatusCell({
   return (
     <div className="flex items-center gap-2 rounded-md border border-border/25 bg-muted/15 px-3 py-3">
       {status === 'checking' ? (
-        <Loader2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground animate-spin" />
+        <Spinner size="sm" className="shrink-0 text-muted-foreground" />
       ) : (
         <Icon className={cn('h-3.5 w-3.5 shrink-0', c.color)} />
       )}
@@ -170,6 +171,7 @@ export function ConnectionStatusPanel({
           <button
             onClick={onCheckConnections}
             disabled={checkingConnections}
+            aria-label="Test service connections"
             className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             <RefreshCw className={cn('h-3 w-3', checkingConnections && 'animate-spin')} />

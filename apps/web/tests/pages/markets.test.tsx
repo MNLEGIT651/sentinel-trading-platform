@@ -334,4 +334,97 @@ describe('MarketsPage', () => {
       expect(screen.getByText(/Chart: 3 bars/)).toBeInTheDocument();
     });
   });
+
+  // ─── Table structure ──────────────────────────────────────────────────
+
+  it('renders watchlist as a table with header columns', () => {
+    renderWithProviders(<MarketsPage />);
+    expect(screen.getByRole('table', { name: 'Watchlist stocks' })).toBeInTheDocument();
+    expect(screen.getByText('Symbol')).toBeInTheDocument();
+    expect(screen.getByText('Price')).toBeInTheDocument();
+    expect(screen.getByText('Change')).toBeInTheDocument();
+  });
+
+  // ─── Aria / accessibility ─────────────────────────────────────────────
+
+  it('adds aria-label to watchlist rows', () => {
+    renderWithProviders(<MarketsPage />);
+    const row = screen.getByLabelText('View chart for MSFT');
+    expect(row).toBeInTheDocument();
+    expect(row.tagName).toBe('TR');
+  });
+
+  it('marks the selected row with aria-current', () => {
+    renderWithProviders(<MarketsPage />);
+    // AAPL is selected by default
+    const aaplRow = screen.getByLabelText('View chart for AAPL');
+    expect(aaplRow).toHaveAttribute('aria-current', 'true');
+    // Other rows should not have aria-current
+    const msftRow = screen.getByLabelText('View chart for MSFT');
+    expect(msftRow).not.toHaveAttribute('aria-current');
+  });
+
+  it('labels the watchlist and chart panels as regions', () => {
+    renderWithProviders(<MarketsPage />);
+    expect(screen.getByRole('region', { name: 'Watchlist panel' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Price chart panel' })).toBeInTheDocument();
+  });
+
+  // ─── Keyboard navigation ──────────────────────────────────────────────
+
+  it('switches ticker on Enter key in watchlist row', async () => {
+    renderWithProviders(<MarketsPage />);
+    const nvdaRow = screen.getByLabelText('View chart for NVDA');
+    fireEvent.keyDown(nvdaRow, { key: 'Enter' });
+    const nvdaElements = screen.getAllByText('NVDA');
+    expect(nvdaElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('switches ticker on Space key in watchlist row', async () => {
+    renderWithProviders(<MarketsPage />);
+    const googRow = screen.getByLabelText('View chart for GOOGL');
+    fireEvent.keyDown(googRow, { key: ' ' });
+    const googElements = screen.getAllByText('GOOGL');
+    expect(googElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // ─── Spinner / loading ────────────────────────────────────────────────
+
+  it('shows spinner in watchlist header when loading', () => {
+    useAppStore.setState({ engineOnline: null });
+    renderWithProviders(<MarketsPage />);
+    // Spinner renders with role="status" and aria-label="Loading"
+    const statusEls = screen.getAllByRole('status');
+    const spinnerEl = statusEls.find((el) => el.getAttribute('aria-label') === 'Loading');
+    expect(spinnerEl).toBeTruthy();
+  });
+
+  // ─── ErrorState ───────────────────────────────────────────────────────
+
+  it('shows error state when engine online but quotes fetch fails', async () => {
+    useAppStore.setState({ engineOnline: true });
+    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
+
+    renderWithProviders(<MarketsPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load market data')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  // ─── stagger-grid class ───────────────────────────────────────────────
+
+  it('applies stagger-grid class to the card container', () => {
+    const { container } = renderWithProviders(<MarketsPage />);
+    const staggerEl = container.querySelector('.stagger-grid');
+    expect(staggerEl).toBeInTheDocument();
+  });
+
+  // ─── ErrorBoundary wrapping ───────────────────────────────────────────
+
+  it('renders successfully with ErrorBoundary wrapper', () => {
+    const { container } = renderWithProviders(<MarketsPage />);
+    expect(container).toBeTruthy();
+    expect(screen.getByText('Watchlist')).toBeInTheDocument();
+  });
 });

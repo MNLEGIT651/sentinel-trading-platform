@@ -2,6 +2,8 @@
 
 import { Globe, Shield, Bot, Database } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 
 function SettingsField({
@@ -22,28 +24,36 @@ function SettingsField({
   masked?: boolean;
 }) {
   const [showValue, setShowValue] = useState(!masked);
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-foreground">{label}</label>
+        <Label htmlFor={fieldId}>{label}</Label>
         {masked && (
           <button
             onClick={() => setShowValue((v) => !v)}
             className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={showValue ? 'Hide value' : 'Show value'}
+            aria-label={showValue ? `Hide ${label}` : `Show ${label}`}
           >
             {showValue ? 'Hide' : 'Show'}
           </button>
         )}
       </div>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      <input
+      {description && (
+        <p id={`${fieldId}-desc`} className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      )}
+      <Input
+        id={fieldId}
         type={masked && !showValue ? 'password' : type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        aria-label={label}
+        aria-describedby={description ? `${fieldId}-desc` : undefined}
+        className="font-mono"
       />
     </div>
   );
@@ -79,7 +89,7 @@ export function BrokerSettings({
   onSupabaseKey,
 }: BrokerSettingsProps) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2 stagger-grid">
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
