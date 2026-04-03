@@ -71,6 +71,7 @@ Before editing files:
 | T9.3 | done | Codex | `fix/mobile-shell-layout` | `apps/web/src/components/layout/app-shell.tsx` | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-04-02 | Added CSS layout variables to AppShell for mobile safe-area offsets and bottom nav clearance. |
 | T-A01 | done | Claude | `docs/T-A01-execution-plan` | `docs/ai/claude-execution-plan-2026-q2.md`, `docs/ai/state/project-state.md` | `git diff --check` | 2026-04-03 | Added canonical Q2 2026 execution plan with phase map, decision gates, owners, release criteria, rollback expectations, and risk register. |
 | T-A03 | done | Claude | `docs/T-A03-review-checklist` | `docs/ai/review-checklist.md`, `docs/ai/state/project-state.md` | `git diff --check` | 2026-04-03 | Upgraded review checklist with critical-path quality gates, skip-with-reason policy, and regression guards. |
+| T-A02 | done | Copilot | `docs/T-A02-code-standards` | `docs/ai/code-standards.md`, `docs/ai/state/project-state.md` | `git diff --check` | 2026-07-18 | Added comprehensive code standards for TypeScript/Python style, auth patterns, error handling, logging/redaction, and testing requirements. |
 
 ---
 
