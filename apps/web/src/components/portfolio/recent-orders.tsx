@@ -10,6 +10,8 @@ const STATUS_STYLES: Record<string, string> = {
   partially_filled: 'bg-amber-500/15 text-amber-400',
   rejected: 'bg-loss/15 text-loss',
   cancelled: 'bg-loss/15 text-loss',
+  expired: 'bg-loss/15 text-loss',
+  pending_new: 'bg-amber-500/15 text-amber-400',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -18,6 +20,8 @@ const STATUS_LABELS: Record<string, string> = {
   partially_filled: 'Partial',
   rejected: 'Rejected',
   cancelled: 'Cancelled',
+  expired: 'Expired',
+  pending_new: 'Pending',
 };
 
 function formatTime(iso: string): string {

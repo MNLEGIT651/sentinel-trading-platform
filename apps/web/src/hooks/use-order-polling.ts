@@ -11,7 +11,7 @@ export interface OrderStatus {
   submitted_at: string;
 }
 
-const TERMINAL_STATUSES = new Set(['filled', 'rejected', 'cancelled']);
+const TERMINAL_STATUSES = new Set(['filled', 'rejected', 'cancelled', 'expired']);
 const POLL_INTERVAL = 2000;
 const MAX_POLL_TIME = 30_000;
 

@@ -125,4 +125,83 @@ describe('useOrderPolling', () => {
     expect(onTimeout).toHaveBeenCalledWith(acceptedOrder);
     expect(result.current.isPolling).toBe(false);
   });
+
+  it('treats "rejected" as a terminal status', async () => {
+    const rejectedOrder = { order_id: 'rej-1', status: 'rejected', symbol: 'TSLA' };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => rejectedOrder,
+    });
+
+    const onSettled = vi.fn();
+    const { result } = renderHook(() => useOrderPolling({ orderId: 'rej-1', onSettled }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(onSettled).toHaveBeenCalledWith(rejectedOrder);
+    expect(result.current.isPolling).toBe(false);
+  });
+
+  it('treats "cancelled" as a terminal status', async () => {
+    const cancelledOrder = { order_id: 'can-1', status: 'cancelled', symbol: 'MSFT' };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => cancelledOrder,
+    });
+
+    const onSettled = vi.fn();
+    const { result } = renderHook(() => useOrderPolling({ orderId: 'can-1', onSettled }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(onSettled).toHaveBeenCalledWith(cancelledOrder);
+    expect(result.current.isPolling).toBe(false);
+  });
+
+  it('treats "expired" as a terminal status', async () => {
+    const expiredOrder = { order_id: 'exp-1', status: 'expired', symbol: 'NVDA' };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => expiredOrder,
+    });
+
+    const onSettled = vi.fn();
+    const { result } = renderHook(() => useOrderPolling({ orderId: 'exp-1', onSettled }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(onSettled).toHaveBeenCalledWith(expiredOrder);
+    expect(result.current.isPolling).toBe(false);
+  });
+
+  it('handles fetch errors gracefully and continues polling', async () => {
+    let callCount = 0;
+    const filledOrder = { order_id: 'abc', status: 'filled', symbol: 'AAPL' };
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      callCount++;
+      if (callCount === 1) throw new Error('Network error');
+      return { ok: true, json: async () => filledOrder };
+    });
+
+    const onSettled = vi.fn();
+    renderHook(() => useOrderPolling({ orderId: 'abc', onSettled }));
+
+    // First poll fails
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(onSettled).not.toHaveBeenCalled();
+
+    // Second poll succeeds
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(onSettled).toHaveBeenCalledWith(filledOrder);
+  });
 });
