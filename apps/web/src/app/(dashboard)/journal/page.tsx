@@ -105,7 +105,7 @@ function StatsCards() {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 stagger-grid">
       {cells.map((c) => (
         <Card key={c.label} className="border-zinc-800 bg-zinc-900/50">
           <CardContent className="p-4">
@@ -359,7 +359,7 @@ export default function JournalPage() {
   const totalPages = Math.ceil(totalEntries / PAGE_SIZE_JOURNAL);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-enter">
       {/* Page header */}
       <div className="flex items-center gap-3">
         <BookOpen className="h-6 w-6 text-zinc-400" />

@@ -89,8 +89,7 @@ export default function BacktestPage() {
       ran = true;
       setExecutionSource('engine');
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Engine unavailable — unknown error';
+      const message = error instanceof Error ? error.message : 'Engine unavailable — unknown error';
       setEngineError(message);
     }
 
@@ -117,7 +116,7 @@ export default function BacktestPage() {
   const s = result?.summary;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 page-enter">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

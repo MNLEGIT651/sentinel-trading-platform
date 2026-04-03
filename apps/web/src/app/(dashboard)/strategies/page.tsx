@@ -105,7 +105,7 @@ export default function StrategiesPage() {
   const criticalCount = healthSnapshots?.filter((s) => s.health_label === 'critical').length ?? 0;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 page-enter">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function StrategiesPage() {
 
                     {/* Strategy Cards */}
                     {isExpanded && (
-                      <div className="grid grid-cols-1 gap-3 pl-0 sm:pl-4 lg:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-3 pl-0 sm:pl-4 lg:grid-cols-2 xl:grid-cols-3 stagger-grid">
                         {family.strategies.map((strategy) => {
                           const health = healthMap.get(strategy.id);
                           return (

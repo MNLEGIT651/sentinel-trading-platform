@@ -129,7 +129,7 @@ export default function SignalsPage() {
       : 0;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 page-enter">
       {engineOnline === false && <OfflineBanner service="engine" />}
 
       {/* Header */}
@@ -213,7 +213,7 @@ export default function SignalsPage() {
 
       {/* Summary Cards */}
       {signals.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
           <Card className="bg-card border-border">
             <CardContent className="flex items-center justify-between py-3 px-4">
               <span className="text-xs text-muted-foreground">Signals</span>

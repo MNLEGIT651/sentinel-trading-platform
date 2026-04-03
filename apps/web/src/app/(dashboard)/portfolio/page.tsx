@@ -265,7 +265,7 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 page-enter">
       {engineOnline === false && <OfflineBanner service="engine" />}
       {provenanceMode === 'simulated' && engineOnline === true && (
         <ConfigBanner

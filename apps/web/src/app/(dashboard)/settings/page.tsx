@@ -187,7 +187,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-4 px-4 py-3 md:p-4">
+    <div className="space-y-4 px-4 py-3 md:p-4 page-enter">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">

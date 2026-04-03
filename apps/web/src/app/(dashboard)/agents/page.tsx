@@ -93,7 +93,7 @@ export default function AgentsPage() {
   };
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 page-enter">
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
       {/* Header */}
@@ -190,7 +190,7 @@ export default function AgentsPage() {
       )}
 
       {/* Agent Cards */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 stagger-grid">
         {agentDefs.map((agent) => {
           const agentStatus = status?.agents[agent.role];
           return (

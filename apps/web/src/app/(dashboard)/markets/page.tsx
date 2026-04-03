@@ -104,7 +104,7 @@ export default function MarketsPage() {
   const selectedStock = watchlist.find((w) => w.ticker === selectedTicker);
 
   return (
-    <div className="flex h-full flex-col gap-4 p-3 sm:p-4">
+    <div className="flex h-full flex-col gap-4 p-3 sm:p-4 page-enter">
       {engineOnline === false && <OfflineBanner service="engine" />}
       {engineOnline === true && !isLive && !loading && (
         <ConfigBanner

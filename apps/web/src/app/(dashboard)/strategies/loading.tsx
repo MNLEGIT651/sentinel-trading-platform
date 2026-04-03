@@ -1,18 +1,34 @@
-import { SkeletonCard, SkeletonTable } from '@/components/ui/skeleton';
+import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
 
 export default function StrategiesLoading() {
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-center justify-between">
-        <div className="skeleton h-7 w-32 rounded" />
-        <div className="skeleton h-8 w-28 rounded-lg" />
+    <div className="space-y-4 p-4 page-enter">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Skeleton variant="avatar" />
+        <div className="space-y-1">
+          <Skeleton variant="heading" className="w-32" />
+          <Skeleton variant="text" className="w-24 h-3" />
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+
+      {/* Tab bar */}
+      <div className="flex gap-1 rounded-lg border border-border/50 bg-muted/30 p-1 w-fit">
+        <Skeleton variant="button" className="w-20" />
+        <Skeleton variant="button" className="w-28" />
       </div>
-      <SkeletonTable rows={6} cols={5} />
+
+      {/* Strategy family sections */}
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="space-y-3">
+          <Skeleton variant="text" className="h-5 w-40" />
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }, (_, j) => (
+              <SkeletonCard key={j} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

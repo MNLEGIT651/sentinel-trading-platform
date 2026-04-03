@@ -792,7 +792,7 @@ export default function OrdersPage() {
   const hasFilters = dateRange !== 'all' || typeFilter !== 'all' || symbolSearch !== '';
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 page-enter">
       {/* Page header */}
       <div className="flex items-center gap-3">
         <ArrowUpDown className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" />

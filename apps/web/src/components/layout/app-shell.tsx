@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
@@ -42,6 +42,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     closeMobileSidebar();
   }, [pathname, closeMobileSidebar]);
 
+  // Mobile sidebar: Escape key + focus trap
+  const mobileSidebarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const container = mobileSidebarRef.current;
+    if (!container) return;
+
+    const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const firstFocusable = container.querySelector<HTMLElement>(focusableSelector);
+    firstFocusable?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeMobileSidebar();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusables = Array.from(container.querySelectorAll<HTMLElement>(focusableSelector));
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileSidebarOpen, closeMobileSidebar]);
+
   const shellLayoutVars = {
     '--shell-nav-height': '4rem',
     '--shell-bottom-offset': 'var(--shell-nav-height)',
@@ -62,17 +96,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile sidebar overlay — visible only on <lg when toggled */}
       {mobileSidebarOpen && (
-        <>
+        <div
+          ref={mobileSidebarRef}
+          role="dialog"
+          aria-label="Navigation menu"
+          aria-modal="true"
+          className="lg:hidden"
+        >
           <div
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/50"
             onClick={closeMobileSidebar}
             onTouchEnd={closeMobileSidebar}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-56 lg:hidden animate-in slide-in-from-left duration-200">
+          <div className="fixed inset-y-0 left-0 z-50 w-56 animate-in slide-in-from-left duration-200">
             <Sidebar collapsed={false} onToggle={closeMobileSidebar} />
           </div>
-        </>
+        </div>
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden" style={shellLayoutVars}>
