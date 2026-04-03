@@ -1,20 +1,51 @@
-import { SkeletonCard, SkeletonTable } from '@/components/ui/skeleton';
+import { Skeleton, SkeletonMetricCard } from '@/components/ui/skeleton';
 
 export default function OrdersLoading() {
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-center justify-between">
-        <div className="skeleton h-7 w-28 rounded" />
-        <div className="flex gap-2">
-          <div className="skeleton h-8 w-24 rounded-lg" />
+    <div className="space-y-4 sm:space-y-6 page-enter">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Skeleton variant="avatar" />
+        <div className="space-y-1">
+          <Skeleton variant="heading" className="w-36" />
+          <Skeleton variant="text" className="w-48 h-3" />
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <SkeletonMetricCard key={i} />
+        ))}
       </div>
-      <SkeletonTable rows={8} cols={6} />
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} variant="button" className="w-16" />
+          ))}
+        </div>
+        <Skeleton variant="button" className="w-24" />
+        <Skeleton className="h-8 w-48 rounded-lg" />
+      </div>
+
+      {/* Timeline cards */}
+      <div className="space-y-3">
+        {Array.from({ length: 6 }, (_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-lg border border-foreground/5 bg-card p-3"
+          >
+            <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+            <div className="flex-1 space-y-1">
+              <Skeleton variant="text" className="w-3/4" />
+              <Skeleton variant="text" className="w-1/3 h-3" />
+            </div>
+            <Skeleton className="h-3 w-16 shrink-0" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,25 +1,36 @@
-import { SkeletonCard, SkeletonChart, SkeletonTable } from '@/components/ui/skeleton';
+import { Skeleton, SkeletonMetricCard, SkeletonTable } from '@/components/ui/skeleton';
 
 export default function PortfolioLoading() {
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="space-y-4 p-4 page-enter">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="skeleton h-7 w-36 rounded" />
-        <div className="flex gap-2">
-          <div className="skeleton h-8 w-20 rounded-lg" />
-          <div className="skeleton h-8 w-20 rounded-lg" />
+        <div className="flex items-center gap-3">
+          <Skeleton variant="avatar" />
+          <div className="space-y-1">
+            <Skeleton variant="heading" className="w-32" />
+            <Skeleton variant="text" className="w-20 h-3" />
+          </div>
         </div>
+        <Skeleton variant="button" className="w-24" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+
+      {/* Snapshot metrics */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {Array.from({ length: 5 }, (_, i) => (
+          <SkeletonMetricCard key={i} />
+        ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SkeletonTable rows={6} cols={5} />
-        <SkeletonChart className="h-72" />
+
+      {/* Tab bar */}
+      <div className="flex gap-2 border-b border-border/50 pb-2">
+        <Skeleton variant="button" className="w-20" />
+        <Skeleton variant="button" className="w-24" />
+        <Skeleton variant="button" className="w-16" />
       </div>
+
+      {/* Positions table */}
+      <SkeletonTable rows={8} cols={6} />
     </div>
   );
 }

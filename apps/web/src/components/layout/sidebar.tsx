@@ -159,6 +159,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
             collapsed && 'mx-auto mt-1',
           )}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!collapsed}
         >
           {collapsed ? (
             <ChevronRight className="h-3.5 w-3.5" />
@@ -171,7 +172,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
       {/* Navigation */}
       <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
         {navSections.map((section) => (
-          <div key={section.section} className="mb-4">
+          <div key={section.section} role="group" aria-label={section.section} className="mb-4">
             {!collapsed && (
               <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                 {section.section}

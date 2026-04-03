@@ -1,19 +1,46 @@
-import { SkeletonCard, SkeletonChart, SkeletonTable } from '@/components/ui/skeleton';
+import { Skeleton, SkeletonMetricCard } from '@/components/ui/skeleton';
 
 export default function ShadowPortfoliosLoading() {
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="mx-auto max-w-6xl space-y-6 p-6 page-enter">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="skeleton h-7 w-48 rounded" />
-        <div className="skeleton h-8 w-32 rounded-lg" />
+        <div className="flex items-center gap-3">
+          <Skeleton variant="avatar" />
+          <Skeleton variant="heading" className="w-44" />
+        </div>
+        <Skeleton variant="button" className="w-32" />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+
+      {/* Info banner */}
+      <div className="rounded-lg border border-foreground/5 bg-card p-3">
+        <Skeleton variant="text" lines={2} />
       </div>
-      <SkeletonChart />
-      <SkeletonTable rows={6} cols={5} />
+
+      {/* Portfolio cards */}
+      <div className="space-y-3">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="rounded-xl bg-card p-4 ring-1 ring-foreground/10 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton variant="text" className="w-32" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton variant="button" className="w-16" />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, j) => (
+                <SkeletonMetricCard key={j} />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 3 }, (_, j) => (
+                <Skeleton key={j} className="h-6 w-20 rounded-full" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

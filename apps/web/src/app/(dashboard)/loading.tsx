@@ -1,14 +1,13 @@
 import {
-  SkeletonMetricCard,
-  SkeletonAlertFeed,
-  SkeletonSignalCard,
-  SkeletonChart,
   Skeleton,
+  SkeletonMetricCard,
+  SkeletonSignalCard,
+  SkeletonAlertFeed,
 } from '@/components/ui/skeleton';
 
 export default function DashboardLoading() {
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6">
+    <div className="space-y-4 p-4 page-enter">
       {/* System health strip */}
       <div className="flex items-center gap-3">
         <Skeleton className="h-5 w-5 rounded-full" />
@@ -18,34 +17,27 @@ export default function DashboardLoading() {
       </div>
 
       {/* Metric cards grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SkeletonMetricCard />
-        <SkeletonMetricCard />
-        <SkeletonMetricCard />
-        <SkeletonMetricCard />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <SkeletonMetricCard key={i} />
+        ))}
       </div>
 
       {/* Price ticker */}
-      <div className="flex gap-3 overflow-hidden">
+      <div className="flex gap-3 overflow-hidden rounded-xl bg-card p-3 ring-1 ring-foreground/10">
         {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 rounded-lg bg-card p-3 ring-1 ring-foreground/10 shrink-0 w-36"
-          >
+          <div key={i} className="flex items-center gap-2 shrink-0">
             <Skeleton className="h-4 w-10" />
             <Skeleton className="h-4 w-14" />
           </div>
         ))}
       </div>
 
-      {/* Main content — signals + alerts side by side */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Signals + Alert feed */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SkeletonSignalCard />
         <SkeletonAlertFeed />
       </div>
-
-      {/* Chart section */}
-      <SkeletonChart />
     </div>
   );
 }
