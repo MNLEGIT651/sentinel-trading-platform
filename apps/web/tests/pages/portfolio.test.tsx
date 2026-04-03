@@ -116,10 +116,30 @@ describe('PortfolioPage', () => {
     });
   });
 
-  it('shows Live indicator when engine is connected', async () => {
+  it('shows Live provenance badge when engine is connected', async () => {
     renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
-      expect(screen.getByText('Live')).toBeInTheDocument();
+      const badge = screen.getByRole('status');
+      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Live'));
+    });
+  });
+
+  it('shows Simulated provenance badge when engine is offline with no cached data', async () => {
+    useAppStore.setState({ engineOnline: false });
+    global.fetch = vi.fn(() => Promise.resolve({ ok: false } as Response)) as typeof fetch;
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      const badge = screen.getByRole('status');
+      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Simulated'));
+    });
+  });
+
+  it('shows mode-appropriate empty state when offline', async () => {
+    useAppStore.setState({ engineOnline: false });
+    global.fetch = vi.fn(() => Promise.resolve({ ok: false } as Response)) as typeof fetch;
+    renderWithProviders(<PortfolioPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/simulated portfolio/)).toBeInTheDocument();
     });
   });
 
@@ -230,7 +250,7 @@ describe('PortfolioPage', () => {
     );
   }, 10_000);
 
-  it('shows empty state when no positions from engine', async () => {
+  it('shows empty state when no positions from engine (live mode)', async () => {
     global.fetch = vi.fn((url: string | URL | Request) => {
       const urlStr = typeof url === 'string' ? url : url.toString();
       if (urlStr.includes('/portfolio/account')) {
