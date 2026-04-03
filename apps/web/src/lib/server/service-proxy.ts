@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import {
   ServiceError,
   extractErrorMessage,
@@ -123,6 +122,10 @@ function waitWithJitter(attempt: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, base + jitter));
 }
 
+function resolveCorrelationId(extraHeaders?: Record<string, string>): string | undefined {
+  return extraHeaders?.['x-correlation-id'];
+}
+
 function logProxySuccess(meta: Record<string, unknown>): void {
   // eslint-disable-next-line no-console -- structured proxy log for observability
   console.log(
@@ -173,6 +176,7 @@ async function fetchUpstream(
       durationMs: 0,
       method,
       upstreamPath,
+      correlationId: resolveCorrelationId(extraHeaders),
     });
     throw error;
   }
@@ -232,6 +236,7 @@ async function fetchUpstream(
         upstreamStatus: response.status,
         durationMs: Date.now() - startedAt,
         attempt,
+        correlationId: resolveCorrelationId(extraHeaders),
       });
       return response;
     } catch (error) {
@@ -260,6 +265,7 @@ async function fetchUpstream(
                 });
 
       const durationMs = Date.now() - startedAt;
+      const correlationId = resolveCorrelationId(extraHeaders);
       if (attempt < attempts && serviceError.retryable) {
         logProxyFailure(serviceError, {
           action: 'retrying',
@@ -268,6 +274,7 @@ async function fetchUpstream(
           durationMs,
           method,
           upstreamPath,
+          correlationId,
         });
         await waitWithJitter(attempt);
         continue;
@@ -280,6 +287,7 @@ async function fetchUpstream(
         durationMs,
         method,
         upstreamPath,
+        correlationId,
       });
       throw serviceError;
     }
@@ -318,8 +326,13 @@ export async function proxyServiceRequest(
             status: 500,
           });
 
-    return NextResponse.json(serializeServiceError(serviceError), {
+    const correlationId = resolveCorrelationId(extraHeaders);
+    const headers = new Headers({ 'content-type': 'application/json' });
+    if (correlationId) headers.set('x-correlation-id', correlationId);
+
+    return new Response(JSON.stringify(serializeServiceError(serviceError, correlationId)), {
       status: serviceError.status,
+      headers,
     });
   }
 }

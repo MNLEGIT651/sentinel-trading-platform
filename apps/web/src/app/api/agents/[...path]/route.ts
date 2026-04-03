@@ -30,7 +30,14 @@ async function getUserToken(): Promise<string | null> {
     } = await supabase.auth.getSession();
     return session?.access_token ?? null;
   } catch (error) {
-    console.error('agents-proxy.handler', error);
+    console.error(
+      JSON.stringify({
+        scope: 'agents-proxy',
+        level: 'error',
+        action: 'token_extraction_failed',
+        message: error instanceof Error ? error.message : 'Unknown auth error',
+      }),
+    );
     return null;
   }
 }
@@ -46,16 +53,17 @@ async function handle(request: Request, context: RouteContext): Promise<Response
   // Health and status are public — no auth needed
   const isPublic = upstreamPath === '/health' || upstreamPath === '/status';
 
+  const correlationId = getCorrelationId(request);
   const extraHeaders: Record<string, string> = {
-    'x-correlation-id': getCorrelationId(request),
+    'x-correlation-id': correlationId,
   };
 
   if (!isPublic) {
     const token = await getUserToken();
     if (!token) {
       return NextResponse.json(
-        { error: 'unauthorized', message: 'Not authenticated' },
-        { status: 401 },
+        { error: 'unauthorized', message: 'Not authenticated', correlationId },
+        { status: 401, headers: { 'x-correlation-id': correlationId } },
       );
     }
     extraHeaders['Authorization'] = `Bearer ${token}`;

@@ -16,8 +16,9 @@ function getCorrelationId(request: Request): string {
 async function handle(request: Request, context: RouteContext): Promise<Response> {
   const { path } = await context.params;
   const upstreamPath = `/${(path ?? []).join('/')}`;
+  const correlationId = getCorrelationId(request);
   const extraHeaders: Record<string, string> = {
-    'x-correlation-id': getCorrelationId(request),
+    'x-correlation-id': correlationId,
   };
 
   // Health endpoint is public for monitoring
@@ -33,15 +34,23 @@ async function handle(request: Request, context: RouteContext): Promise<Response
     } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
-        { error: 'unauthorized', message: 'Not authenticated' },
-        { status: 401 },
+        { error: 'unauthorized', message: 'Not authenticated', correlationId },
+        { status: 401, headers: { 'x-correlation-id': correlationId } },
       );
     }
   } catch (error) {
-    console.error('engine-proxy.handler', error);
+    console.error(
+      JSON.stringify({
+        scope: 'engine-proxy',
+        level: 'error',
+        action: 'auth_failed',
+        correlationId,
+        message: error instanceof Error ? error.message : 'Unknown auth error',
+      }),
+    );
     return NextResponse.json(
-      { error: 'unauthorized', message: 'Not authenticated' },
-      { status: 401 },
+      { error: 'unauthorized', message: 'Not authenticated', correlationId },
+      { status: 401, headers: { 'x-correlation-id': correlationId } },
     );
   }
 
