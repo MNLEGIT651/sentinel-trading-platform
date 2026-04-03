@@ -61,4 +61,45 @@ describe('BacktestPage', () => {
     // The button should now have the active style class
     expect(downButton.className).toContain('text-primary');
   });
+
+  // ── DataProvenance integration (T-B04) ──
+
+  it('renders DataProvenance badge in header', () => {
+    render(<BacktestPage />);
+    const badge = screen.getByRole('status');
+    expect(badge).toBeInTheDocument();
+  });
+
+  it('shows Simulated badge after fallback run', async () => {
+    render(<BacktestPage />);
+    fireEvent.click(screen.getByText('Run Backtest'));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Total Return')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // Engine is not available in test, so results come from synthetic fallback
+    const badge = screen.getByRole('status');
+    expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Simulated'));
+  });
+
+  it('shows engine error explanation when engine fails', async () => {
+    render(<BacktestPage />);
+    fireEvent.click(screen.getByText('Run Backtest'));
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Total Return')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent(/Engine unavailable/);
+    expect(alert).toHaveTextContent(/client-side simulation/);
+  });
 });
