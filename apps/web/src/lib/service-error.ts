@@ -14,6 +14,7 @@ export interface ServiceErrorBody {
   service: ServiceName;
   retryable: boolean;
   status: number;
+  correlationId?: string;
 }
 
 export class ServiceError extends Error {
@@ -61,12 +62,16 @@ export function extractErrorMessage(payload: unknown, fallback: string): string 
   return fallback;
 }
 
-export function serializeServiceError(error: ServiceError): ServiceErrorBody {
+export function serializeServiceError(
+  error: ServiceError,
+  correlationId?: string,
+): ServiceErrorBody {
   return {
     error: error.message,
     code: error.code,
     service: error.service,
     retryable: error.retryable,
     status: error.status,
+    ...(correlationId ? { correlationId } : {}),
   };
 }

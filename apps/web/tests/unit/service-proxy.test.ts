@@ -508,9 +508,7 @@ describe('proxyServiceRequest', () => {
     it('returns 504 with timeout code on GET timeout', async () => {
       setupEngine();
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      const fetchMock = vi
-        .fn()
-        .mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
+      const fetchMock = vi.fn().mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await proxyServiceRequest(
@@ -528,9 +526,7 @@ describe('proxyServiceRequest', () => {
     it('marks timeout as non-retryable for POST', async () => {
       setupEngine();
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      const fetchMock = vi
-        .fn()
-        .mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
+      const fetchMock = vi.fn().mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await proxyServiceRequest(
@@ -584,9 +580,7 @@ describe('proxyServiceRequest', () => {
       process.env.ENGINE_URL = 'https://engine.example';
       process.env.ENGINE_API_KEY = 'secret-key';
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      const fetchMock = vi
-        .fn()
-        .mockRejectedValue(new DOMException('aborted', 'AbortError'));
+      const fetchMock = vi.fn().mockRejectedValue(new DOMException('aborted', 'AbortError'));
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await proxyServiceRequest(
@@ -719,6 +713,137 @@ describe('proxyServiceRequest', () => {
       );
       const body = await response.json();
       expect(body.error).toContain('quant engine returned 500');
+    });
+  });
+
+  // =========================================================================
+  // T-F01: Correlation ID in error responses
+  // =========================================================================
+  describe('correlation ID in error responses', () => {
+    function setupEngine() {
+      setNodeEnv('production');
+      process.env.ENGINE_URL = 'https://engine.example';
+      process.env.ENGINE_API_KEY = 'secret-key';
+    }
+
+    it('includes correlationId in error response body when provided via extraHeaders', async () => {
+      setupEngine();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'fail' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const response = await proxyServiceRequest(
+        'engine',
+        new Request('https://sentinel.example/api/engine/api/v1/backtest/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }),
+        ['api', 'v1', 'backtest', 'run'],
+        { 'x-correlation-id': 'test-corr-123' },
+      );
+      const body = await response.json();
+
+      expect(body.correlationId).toBe('test-corr-123');
+      expect(response.headers.get('x-correlation-id')).toBe('test-corr-123');
+    });
+
+    it('includes x-correlation-id header on error responses', async () => {
+      setupEngine();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fetchMock = vi.fn().mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const response = await proxyServiceRequest(
+        'engine',
+        new Request('https://sentinel.example/api/engine/api/v1/backtest/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }),
+        ['api', 'v1', 'backtest', 'run'],
+        { 'x-correlation-id': 'timeout-corr-456' },
+      );
+
+      expect(response.headers.get('x-correlation-id')).toBe('timeout-corr-456');
+      const body = await response.json();
+      expect(body.correlationId).toBe('timeout-corr-456');
+      expect(body.code).toBe('timeout');
+    });
+
+    it('omits correlationId field from body when no extraHeaders provided', async () => {
+      setNodeEnv('production');
+      delete process.env.AGENTS_URL;
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const response = await proxyServiceRequest(
+        'agents',
+        new Request('https://sentinel.example/api/agents/health'),
+        ['health'],
+      );
+      const body = await response.json();
+
+      expect(body.correlationId).toBeUndefined();
+      expect(response.headers.get('x-correlation-id')).toBeNull();
+    });
+
+    it('includes correlationId in structured failure logs', async () => {
+      setupEngine();
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'fail' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await proxyServiceRequest(
+        'engine',
+        new Request('https://sentinel.example/api/engine/api/v1/backtest/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }),
+        ['api', 'v1', 'backtest', 'run'],
+        { 'x-correlation-id': 'log-corr-789' },
+      );
+
+      expect(consoleError).toHaveBeenCalled();
+      const logCall = consoleError.mock.calls[0][0] as string;
+      const logData = JSON.parse(logCall);
+      expect(logData.correlationId).toBe('log-corr-789');
+      expect(logData.scope).toBe('service-proxy');
+    });
+
+    it('includes correlationId in structured success logs', async () => {
+      setupEngine();
+      const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await proxyServiceRequest(
+        'engine',
+        new Request('https://sentinel.example/api/engine/health'),
+        ['health'],
+        { 'x-correlation-id': 'success-corr-abc' },
+      );
+
+      expect(consoleLog).toHaveBeenCalled();
+      const logCall = consoleLog.mock.calls[0][0] as string;
+      const logData = JSON.parse(logCall);
+      expect(logData.correlationId).toBe('success-corr-abc');
+      expect(logData.action).toBe('success');
     });
   });
 });
