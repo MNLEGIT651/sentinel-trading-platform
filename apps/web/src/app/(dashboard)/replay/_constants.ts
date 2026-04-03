@@ -57,21 +57,7 @@ export const REC_STATUS_OPTIONS = [
   { label: 'Risk Blocked', value: 'risk_blocked' },
 ];
 
-export const STATUS_COLORS: Record<string, string> = {
-  created: 'bg-blue-500/10 text-blue-400',
-  pending: 'bg-blue-500/10 text-blue-400',
-  pending_approval: 'bg-blue-500/10 text-blue-400',
-  approved: 'bg-emerald-500/10 text-emerald-400',
-  filled: 'bg-emerald-500/10 text-emerald-400',
-  rejected: 'bg-red-500/10 text-red-400',
-  risk_blocked: 'bg-red-500/10 text-red-400',
-  risk_checked: 'bg-zinc-500/10 text-zinc-400',
-  failed: 'bg-red-500/10 text-red-400',
-  cancelled: 'bg-red-500/10 text-red-400',
-  submitted: 'bg-amber-500/10 text-amber-400',
-  partially_filled: 'bg-amber-500/10 text-amber-400',
-  reviewed: 'bg-zinc-500/10 text-zinc-400',
-};
+export { pipelineStatusColors as STATUS_COLORS } from '@/lib/status-colors';
 
 export const EVENT_CATEGORY_COLORS: Record<string, { bg: string; border: string; dot: string }> = {
   created: { bg: 'bg-blue-500/5', border: 'border-blue-500/30', dot: 'bg-blue-400' },

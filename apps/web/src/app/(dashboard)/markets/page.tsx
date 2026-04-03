@@ -15,19 +15,7 @@ import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import type { OHLCV } from '@sentinel/shared';
 import { useQuotesQuery, useBarsQuery } from '@/hooks/queries';
-
-const WATCHLIST_TICKERS = [
-  { ticker: 'AAPL', name: 'Apple Inc.' },
-  { ticker: 'MSFT', name: 'Microsoft Corp.' },
-  { ticker: 'GOOGL', name: 'Alphabet Inc.' },
-  { ticker: 'AMZN', name: 'Amazon.com Inc.' },
-  { ticker: 'NVDA', name: 'NVIDIA Corp.' },
-  { ticker: 'TSLA', name: 'Tesla Inc.' },
-  { ticker: 'META', name: 'Meta Platforms' },
-  { ticker: 'JPM', name: 'JPMorgan Chase' },
-  { ticker: 'V', name: 'Visa Inc.' },
-  { ticker: 'SPY', name: 'SPDR S&P 500' },
-];
+import { WATCHLIST_TICKERS, FALLBACK_PRICES, FALLBACK_CHANGES } from '@/lib/constants';
 
 const TICKER_NAMES = WATCHLIST_TICKERS.map((w) => w.ticker);
 
@@ -37,11 +25,6 @@ interface WatchlistItem {
   price: number;
   change: number;
 }
-
-const FALLBACK_PRICES = [
-  178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38,
-];
-const FALLBACK_CHANGES = [1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62];
 
 function buildFallbackWatchlist(): WatchlistItem[] {
   return WATCHLIST_TICKERS.map((w, i) => ({
@@ -81,8 +64,17 @@ export default function MarketsPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
   const [selectedTicker, setSelectedTicker] = useState('AAPL');
 
-  const { data: quotes, isPending: quotesLoading, dataUpdatedAt: quotesUpdatedAt } = useQuotesQuery(TICKER_NAMES);
-  const { data: bars, isPending: chartLoading, isFetching: chartFetching, dataUpdatedAt: barsUpdatedAt } = useBarsQuery(selectedTicker);
+  const {
+    data: quotes,
+    isPending: quotesLoading,
+    dataUpdatedAt: quotesUpdatedAt,
+  } = useQuotesQuery(TICKER_NAMES);
+  const {
+    data: bars,
+    isPending: chartLoading,
+    isFetching: chartFetching,
+    dataUpdatedAt: barsUpdatedAt,
+  } = useBarsQuery(selectedTicker);
 
   const isLive = engineOnline === true && !!quotes;
   const loading = engineOnline === null || (engineOnline === true && quotesLoading);

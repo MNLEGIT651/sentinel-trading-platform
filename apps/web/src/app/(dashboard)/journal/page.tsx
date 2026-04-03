@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useJournalQuery, useJournalStatsQuery, useGradeJournalMutation } from '@/hooks/queries';
 import type { JournalEntry, TradeGrade } from '@sentinel/shared';
 import Link from 'next/link';
+import { PAGE_SIZE_JOURNAL } from '@/lib/constants';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -341,14 +342,13 @@ export default function JournalPage() {
   const [eventFilter, setEventFilter] = useState('');
   const [tickerFilter, setTickerFilter] = useState('');
   const [page, setPage] = useState(0);
-  const pageSize = 25;
 
   const filters = useMemo(
     () => ({
       event_type: eventFilter || undefined,
       ticker: tickerFilter || undefined,
-      limit: pageSize,
-      offset: page * pageSize,
+      limit: PAGE_SIZE_JOURNAL,
+      offset: page * PAGE_SIZE_JOURNAL,
     }),
     [eventFilter, tickerFilter, page],
   );
@@ -356,7 +356,7 @@ export default function JournalPage() {
   const { data, isLoading, isError } = useJournalQuery(filters);
   const entries = data?.entries ?? [];
   const totalEntries = data?.total ?? 0;
-  const totalPages = Math.ceil(totalEntries / pageSize);
+  const totalPages = Math.ceil(totalEntries / PAGE_SIZE_JOURNAL);
 
   return (
     <div className="space-y-6">

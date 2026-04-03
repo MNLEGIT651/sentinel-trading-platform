@@ -1,9 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-
-export const MAX_LIVE_SCAN_TICKERS = 5;
-export const DEFAULT_SIGNAL_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA';
+import { MAX_LIVE_SCAN_TICKERS, DEFAULT_SIGNAL_TICKERS } from '@/lib/constants';
 
 interface SignalFiltersProps {
   tickerInput: string;

@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getSignalStrengthColor } from '@/lib/status-colors';
 import type { TradeRecommendation } from '@/lib/agents-client';
 import { useRecommendationsQuery } from '@/hooks/queries/use-recommendations-query';
 import { useApproveRecommendationMutation } from '@/hooks/queries/use-approve-recommendation-mutation';
@@ -57,9 +58,7 @@ function relativeTime(dateStr: string): string {
 }
 
 function signalColor(strength: number): string {
-  if (strength > 0.7) return 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10';
-  if (strength >= 0.5) return 'text-amber-400 border-amber-500/20 bg-amber-500/10';
-  return 'text-red-400 border-red-500/20 bg-red-500/10';
+  return getSignalStrengthColor(strength);
 }
 
 function statusBadge(status: TradeRecommendation['status']) {

@@ -23,6 +23,7 @@ import {
   type ServiceStatuses,
 } from '@/components/settings/connection-status';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
+import { TOAST_DURATION } from '@/lib/constants';
 import { RiskSettings } from '@/components/settings/risk-settings';
 import { ScheduleSettings } from '@/components/settings/schedule-settings';
 import { SecuritySettings } from '@/components/settings/security-settings';
@@ -181,7 +182,7 @@ export default function SettingsPage() {
       localStorage.removeItem('sentinel:settings');
       setSaved(true);
       toast.success('Settings saved');
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), TOAST_DURATION);
     }
   };
 

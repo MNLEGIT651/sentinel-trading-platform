@@ -25,6 +25,8 @@ import { useFillsQuery, useRiskEvaluationsQuery, useOrderHistoryQuery } from '@/
 import type { Fill, RiskEvaluation, RiskCheck } from '@sentinel/shared';
 import type { OrderHistoryEntry } from '@/hooks/queries/use-order-history-query';
 import { cn } from '@/lib/utils';
+import { orderStatusColors, DEFAULT_ORDER_STYLE } from '@/lib/status-colors';
+import { PAGE_SIZE_ORDERS } from '@/lib/constants';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -72,16 +74,7 @@ const ENTRY_META: Record<TimelineEntryType, { label: string; icon: typeof CheckC
   order: { label: 'Order', icon: FileText },
 };
 
-const ORDER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  pending: { bg: 'bg-zinc-500/15', text: 'text-zinc-400' },
-  submitted: { bg: 'bg-blue-500/15', text: 'text-blue-400' },
-  partial: { bg: 'bg-amber-500/15', text: 'text-amber-400' },
-  filled: { bg: 'bg-green-500/15', text: 'text-green-400' },
-  cancelled: { bg: 'bg-zinc-500/15', text: 'text-zinc-500' },
-  rejected: { bg: 'bg-red-500/15', text: 'text-red-400' },
-};
-
-const DEFAULT_ORDER_STYLE = { bg: 'bg-zinc-500/15', text: 'text-zinc-400' };
+const ORDER_STATUS_STYLES = orderStatusColors;
 
 function getEntryBadgeColor(entry: TimelineEntry): string {
   if (entry.type === 'fill') {
@@ -671,7 +664,7 @@ export default function OrdersPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [symbolSearch, setSymbolSearch] = useState('');
   const [page, setPage] = useState(0);
-  const pageSize = 30;
+  const pageSize = PAGE_SIZE_ORDERS;
 
   const from = useMemo(() => getDateRangeFrom(dateRange), [dateRange]);
 

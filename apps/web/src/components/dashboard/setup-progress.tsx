@@ -5,28 +5,9 @@ import { Check, Circle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useOnboardingProfile } from '@/hooks/use-onboarding';
+import { SETUP_STEPS, TOTAL_SETUP_STEPS } from '@/lib/constants';
 
 const DISMISSED_KEY = 'sentinel_setup_dismissed';
-
-const SETUP_STEPS = [
-  { id: 'connect-api', label: 'Connect API', alwaysComplete: true },
-  { id: 'view-dashboard', label: 'View Dashboard', alwaysComplete: true },
-  { id: 'run-scan', label: 'Run Signal Scan', storageKey: 'sentinel_visited_signals' },
-  { id: 'review-portfolio', label: 'Review Portfolio', storageKey: 'sentinel_visited_portfolio' },
-  {
-    id: 'configure-strategy',
-    label: 'Configure Strategy',
-    storageKey: 'sentinel_visited_strategies',
-  },
-  { id: 'setup-alerts', label: 'Set Up Alerts', storageKey: 'sentinel_visited_alerts' },
-  {
-    id: 'customize-settings',
-    label: 'Customize Settings',
-    storageKey: 'sentinel_visited_settings',
-  },
-] as const;
-
-const TOTAL_STEPS = SETUP_STEPS.length;
 
 /** Call this from other pages to mark them as visited. */
 export function markPageVisited(page: string) {
@@ -85,8 +66,8 @@ export function SetupProgress() {
   if (!raw || dismissed) return null;
 
   const completedCount = completedIds.size;
-  const allComplete = completedCount === TOTAL_STEPS;
-  const progressPct = Math.round((completedCount / TOTAL_STEPS) * 100);
+  const allComplete = completedCount === TOTAL_SETUP_STEPS;
+  const progressPct = Math.round((completedCount / TOTAL_SETUP_STEPS) * 100);
 
   return (
     <Card className="card-interactive bg-card/50">
@@ -107,7 +88,7 @@ export function SetupProgress() {
         ) : (
           <>
             <p className="text-xs text-muted-foreground">
-              {completedCount} of {TOTAL_STEPS} complete
+              {completedCount} of {TOTAL_SETUP_STEPS} complete
             </p>
 
             {/* Progress bar */}

@@ -36,30 +36,18 @@ import {
   useAgentStatusQuery,
 } from '@/hooks/queries';
 import { useOnboardingProfile, useInvalidateOnboarding } from '@/hooks/use-onboarding';
-
-const TICKER_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'SPY'];
-
-const fallbackTickerData = [
-  { ticker: 'AAPL', price: 178.72, change: 1.24 },
-  { ticker: 'MSFT', price: 378.91, change: 0.82 },
-  { ticker: 'GOOGL', price: 141.8, change: -0.56 },
-  { ticker: 'AMZN', price: 178.25, change: 1.89 },
-  { ticker: 'NVDA', price: 495.22, change: 3.12 },
-  { ticker: 'TSLA', price: 248.48, change: -2.15 },
-  { ticker: 'META', price: 355.64, change: 0.45 },
-  { ticker: 'SPY', price: 456.38, change: 0.62 },
-];
+import { TICKER_SYMBOLS, FALLBACK_TICKER_DATA, POLL_INTERVAL } from '@/lib/constants';
 
 export default function DashboardPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
   const agentsOnline = useAppStore((s) => s.agentsOnline);
 
-  const { data: quotes } = useQuotesQuery(TICKER_SYMBOLS, 30_000);
+  const { data: quotes } = useQuotesQuery(TICKER_SYMBOLS, POLL_INTERVAL);
   const { data: account } = useAccountQuery();
-  const { data: agentAlerts } = useAlertsQuery(30_000);
-  const { data: filledRecs } = useRecommendationsQuery('filled', 30_000);
+  const { data: agentAlerts } = useAlertsQuery(POLL_INTERVAL);
+  const { data: filledRecs } = useRecommendationsQuery('filled', POLL_INTERVAL);
   const { data: systemControls } = useSystemControlsQuery();
-  const { data: pendingRecs } = useRecommendationsQuery('pending', 30_000);
+  const { data: pendingRecs } = useRecommendationsQuery('pending', POLL_INTERVAL);
   const { data: agentStatus } = useAgentStatusQuery();
 
   const { data: onboardingProfile } = useOnboardingProfile();
@@ -68,7 +56,7 @@ export default function DashboardPage() {
   const isLive = engineOnline === true && !!quotes;
 
   const tickerData = useMemo(() => {
-    if (!quotes) return fallbackTickerData;
+    if (!quotes) return [...FALLBACK_TICKER_DATA];
     return TICKER_SYMBOLS.map((sym) => {
       const q = quotes.find((q) => q.ticker === sym);
       return {
