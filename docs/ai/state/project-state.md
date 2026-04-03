@@ -68,6 +68,7 @@ Before editing files:
 | T10.1                    | done   | Codex | `work`                                        | `docs/ai/claude-ticket-board-2026-q2.md`, `docs/ai/state/project-state.md`                                                                                                                                                                                          | `git diff --check`                                                                                                                                                                      | 2026-04-03   | Added a 20-ticket Claude execution board with scoped outcomes, dependencies, acceptance criteria, validations, ordering, and handoff template.                                                                                                                                                        |
 
 | T9.3 | done | Codex | `fix/mobile-shell-layout` | `apps/web/src/components/layout/app-shell.tsx` | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-04-02 | Added CSS layout variables to AppShell for mobile safe-area offsets and bottom nav clearance. |
+| T-A03 | done | Claude | `docs/T-A03-review-checklist` | `docs/ai/review-checklist.md`, `docs/ai/state/project-state.md` | `git diff --check` | 2026-04-03 | Upgraded review checklist with critical-path quality gates, skip-with-reason policy, and regression guards. |
 
 ---
 
