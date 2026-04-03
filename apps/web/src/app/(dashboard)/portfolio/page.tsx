@@ -20,6 +20,7 @@ import {
 } from '@/components/portfolio/positions-table';
 import { AllocationChart } from '@/components/portfolio/allocation-chart';
 import { OrderHistory } from '@/components/portfolio/order-history';
+import { RiskSummary } from '@/components/portfolio/risk-summary';
 import { QuickOrder, type OrderType, type TimeInForce } from '@/components/portfolio/quick-order';
 import { RecentOrders } from '@/components/portfolio/recent-orders';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
@@ -384,7 +385,7 @@ export default function PortfolioPage() {
         </TabsContent>
 
         <TabsContent value="risk">
-          <OrderHistory
+          <RiskSummary
             positions={positions}
             portfolioTotal={portfolioTotal}
             totalValue={totalValue}
@@ -392,6 +393,16 @@ export default function PortfolioPage() {
             totalPnlPct={totalPnlPct}
             allocations={allocations}
           />
+          <div className="mt-4">
+            <OrderHistory
+              positions={positions}
+              portfolioTotal={portfolioTotal}
+              totalValue={totalValue}
+              totalCost={totalCost}
+              totalPnlPct={totalPnlPct}
+              allocations={allocations}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
