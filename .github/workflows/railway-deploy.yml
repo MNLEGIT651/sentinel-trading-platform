@@ -1,0 +1,134 @@
+# Railway Deployment Workflow
+#
+# Automatically deploys apps/engine and apps/agents to Railway on push to main.
+# Only triggers when files in those service directories actually change,
+# so web-only changes won't cause unnecessary Railway deploys.
+#
+# REQUIRED SECRETS:
+#   RAILWAY_TOKEN — A Railway API token with deploy permissions.
+#     1. Generate a token at https://railway.app/account/tokens
+#     2. Add it as a repository secret: Settings > Secrets > Actions > New repository secret
+#     3. Name it exactly RAILWAY_TOKEN
+#
+#   RAILWAY_ENGINE_SERVICE_ID — The Railway service ID for the engine service.
+#   RAILWAY_AGENTS_SERVICE_ID — The Railway service ID for the agents service.
+
+name: Railway Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/engine/**'
+      - 'apps/agents/**'
+
+concurrency:
+  group: railway-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+jobs:
+  # ---------- Detect which services changed ----------
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      engine: ${{ steps.filter.outputs.engine }}
+      agents: ${{ steps.filter.outputs.agents }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            engine:
+              - 'apps/engine/**'
+            agents:
+              - 'apps/agents/**'
+
+  # ---------- Deploy Engine (Python FastAPI → Railway) ----------
+  deploy-engine:
+    name: Deploy Engine
+    needs: changes
+    if: needs.changes.outputs.engine == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy engine service
+        working-directory: apps/engine
+        run: |
+          railway up \
+            --service "${{ secrets.RAILWAY_ENGINE_SERVICE_ID }}" \
+            --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      # Post-deploy health check — verifies the service is up and responding.
+      - name: Health check
+        run: |
+          ENGINE_URL="${{ secrets.RAILWAY_ENGINE_URL:-https://engine.railway.internal }}"
+          echo "Checking engine health at $ENGINE_URL/health ..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ENGINE_URL/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Engine is healthy (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ Attempt $i — got HTTP $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Engine health check failed after 5 attempts"
+          exit 1
+
+  # ---------- Deploy Agents (Node Express → Railway) ----------
+  deploy-agents:
+    name: Deploy Agents
+    needs: changes
+    if: needs.changes.outputs.agents == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy agents service
+        working-directory: apps/agents
+        run: |
+          railway up \
+            --service "${{ secrets.RAILWAY_AGENTS_SERVICE_ID }}" \
+            --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Wait for deployment to stabilize
+        run: sleep 30
+
+      # Post-deploy health check — verifies the service is up and responding.
+      - name: Health check
+        run: |
+          AGENTS_URL="${{ secrets.RAILWAY_AGENTS_URL:-https://agents.railway.internal }}"
+          echo "Checking agents health at $AGENTS_URL/health ..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$AGENTS_URL/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Agents service is healthy (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ Attempt $i — got HTTP $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Agents health check failed after 5 attempts"
+          exit 1

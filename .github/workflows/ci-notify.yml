@@ -1,0 +1,88 @@
+# CI Failure Notification Workflow
+#
+# Automatically creates a GitHub issue when the CI workflow fails,
+# so failures are visible and trackable outside the Actions tab.
+
+name: CI Failure Notification
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types:
+      - completed
+
+jobs:
+  notify-failure:
+    name: Create Failure Issue
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    permissions:
+      issues: write
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const run = context.payload.workflow_run;
+            const runUrl = run.html_url;
+            const branch = run.head_branch;
+            const sha = run.head_sha.substring(0, 7);
+            const fullSha = run.head_sha;
+            const actor = run.actor?.login || 'unknown';
+            const commitUrl = `${context.payload.repository.html_url}/commit/${fullSha}`;
+            const timestamp = new Date(run.updated_at).toISOString();
+
+            const title = `🔴 CI failed on \`${branch}\` (${sha})`;
+
+            const body = [
+              `## CI Failure Report`,
+              ``,
+              `| Detail | Value |`,
+              `|--------|-------|`,
+              `| **Workflow** | [${run.name} #${run.run_number}](${runUrl}) |`,
+              `| **Branch** | \`${branch}\` |`,
+              `| **Commit** | [\`${sha}\`](${commitUrl}) |`,
+              `| **Triggered by** | @${actor} |`,
+              `| **Failed at** | ${timestamp} |`,
+              `| **Conclusion** | \`${run.conclusion}\` |`,
+              ``,
+              `### Next Steps`,
+              `1. Review the [workflow run logs](${runUrl}) for details`,
+              `2. Fix the failing step and push a new commit`,
+              `3. Close this issue once CI is green again`,
+              ``,
+              `---`,
+              `*This issue was automatically created by the CI Failure Notification workflow.*`,
+            ].join('\n');
+
+            // Ensure labels exist (create if missing)
+            for (const label of ['ci-failure', 'automated']) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                });
+              } catch {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                  color: label === 'ci-failure' ? 'D73A4A' : '0E8A16',
+                  description: label === 'ci-failure'
+                    ? 'Automated issue for CI pipeline failures'
+                    : 'Created by an automated workflow',
+                });
+              }
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['ci-failure', 'automated'],
+            });
+
+            console.log(`Created failure issue for run #${run.run_number} on ${branch}`);
