@@ -4,6 +4,9 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Covers backtest (45s) and strategy scan operations.
+// Note: strategy scan has a 70s internal timeout and may still be cut short on the Pro plan (60s max).
+export const maxDuration = 60;
 
 type RouteContext = {
   params: Promise<{ path?: string[] }>;
