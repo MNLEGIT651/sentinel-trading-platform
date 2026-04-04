@@ -1,0 +1,35 @@
+// Sentry client-side configuration for @sentinel/web
+// Copy this file to sentry.client.config.ts and replace the DSN placeholder.
+//
+// Docs: https://docs.sentry.io/platforms/javascript/guides/nextjs/
+
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: "https://<YOUR_PUBLIC_KEY>@o<ORG_ID>.ingest.sentry.io/<PROJECT_ID>",
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
+
+  // --- Performance Monitoring ---
+  // Capture 10% of transactions in production; increase for debugging.
+  tracesSampleRate: 0.1,
+
+  // --- Session Replay (optional) ---
+  // Capture 0% of sessions normally, 100% when an error occurs.
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 1.0,
+  integrations: [Sentry.replayIntegration()],
+
+  // --- Noise Reduction ---
+  ignoreErrors: [
+    // Browser-specific noise
+    "ResizeObserver loop",
+    "Network request failed",
+    /Loading chunk \d+ failed/,
+    // Third-party script errors
+    /^Script error\.?$/,
+  ],
+
+  // --- Debug ---
+  // Set to true for local development to see Sentry logs in the console.
+  // debug: process.env.NODE_ENV === "development",
+});
