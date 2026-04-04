@@ -190,7 +190,7 @@ function mapStructuredError(err: OrderSubmitError): MappedOrderError {
   if (err.status === 422) {
     if (err.reason && RISK_BLOCK_REASONS[err.reason]) {
       return {
-        message: RISK_BLOCK_REASONS[err.reason],
+        message: RISK_BLOCK_REASONS[err.reason]!,
         category: 'risk_block',
         retryable: false,
       };
