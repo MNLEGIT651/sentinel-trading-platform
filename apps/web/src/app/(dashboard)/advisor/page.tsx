@@ -26,7 +26,7 @@ export default function AdvisorPage() {
   const threads = threadsData?.threads;
 
   // Derive selected thread from URL param + loaded threads data
-  const selectedThread = useMemo(() => {
+  const selectedThread = useMemo<AdvisorThread | null>(() => {
     if (!threadIdParam || !threads) return null;
     return threads.find((t) => t.id === threadIdParam) ?? null;
   }, [threadIdParam, threads]);
