@@ -138,7 +138,7 @@ export default function AdvisorPage() {
               className="min-h-[400px]"
             />
           ) : (
-            <ThreadList selectedThreadId={selectedThread?.id} onSelectThread={setSelectedThread} />
+            <ThreadList selectedThreadId={undefined} onSelectThread={setSelectedThread} />
           )}
         </TabsContent>
       </Tabs>
