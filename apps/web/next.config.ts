@@ -90,6 +90,17 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.supabase.co' },
+    ],
+  },
+  experimental: {
+    optimizePackageImports: [
+      '@supabase/supabase-js',
+      '@tanstack/react-query',
+      'lucide-react',
+      'recharts',
+    ],
   },
   turbopack: {
     root: join(__dirname, '..', '..'),

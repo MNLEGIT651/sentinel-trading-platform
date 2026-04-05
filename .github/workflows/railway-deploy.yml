@@ -23,6 +23,9 @@ on:
       - 'apps/agents/**'
       - 'packages/shared/**'
 
+permissions:
+  contents: read
+
 concurrency:
   group: railway-deploy-${{ github.ref }}
   cancel-in-progress: false

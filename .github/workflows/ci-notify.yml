@@ -11,6 +11,10 @@ on:
     types:
       - completed
 
+permissions:
+  issues: write
+  actions: read
+
 jobs:
   notify-failure:
     name: Create Failure Issue
