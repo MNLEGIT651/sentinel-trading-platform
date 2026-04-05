@@ -66,7 +66,9 @@ function isPublicRoute(pathname: string): boolean {
  */
 function isAuthConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return false;
   // Placeholder values used in CI builds are not real auth config
   if (url.includes('placeholder') || key.startsWith('placeholder')) return false;
