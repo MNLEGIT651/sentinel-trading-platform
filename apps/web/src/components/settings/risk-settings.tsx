@@ -36,7 +36,7 @@ function SettingsField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
-        aria-describedby={description ? `${fieldId}-desc` : undefined}
+        {...(description ? { 'aria-describedby': `${fieldId}-desc` } : {})}
         className="font-mono"
       />
     </div>

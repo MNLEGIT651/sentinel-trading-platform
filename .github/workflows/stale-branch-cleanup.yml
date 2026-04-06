@@ -1,0 +1,130 @@
+# Stale Branch & Environment Cleanup
+#
+# Runs weekly to delete branches that were merged or abandoned,
+# and cleans up orphaned Vercel PR deployment environments.
+# This prevents branch/environment accumulation from AI agents
+# (Claude, Copilot, Codex) and normal development.
+
+name: Stale Branch Cleanup
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Every Monday at 6 AM UTC
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  cleanup-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged branches
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const protectedBranches = ['main', 'develop', 'staging'];
+
+            // Get all branches
+            const branches = await github.paginate(
+              github.rest.repos.listBranches,
+              { owner, repo, per_page: 100 }
+            );
+
+            let deleted = 0;
+            for (const branch of branches) {
+              if (protectedBranches.includes(branch.name)) continue;
+              if (branch.protected) continue;
+
+              // Compare with main to check if fully merged
+              const { data: comparison } = await github.rest.repos.compareCommits({
+                owner, repo,
+                base: 'main',
+                head: branch.name,
+              });
+
+              // Delete if fully merged (0 commits ahead) or stale (>14 days, no open PR)
+              const isFullyMerged = comparison.ahead_by === 0;
+
+              if (!isFullyMerged) {
+                // Check if branch has an open PR
+                const { data: prs } = await github.rest.pulls.list({
+                  owner, repo,
+                  head: `${owner}:${branch.name}`,
+                  state: 'open',
+                });
+                if (prs.length > 0) continue; // Has open PR, skip
+
+                // Check if last commit is older than 14 days
+                const { data: branchData } = await github.rest.repos.getBranch({
+                  owner, repo,
+                  branch: branch.name,
+                });
+                const lastCommitDate = new Date(branchData.commit.commit.author.date);
+                const daysOld = (Date.now() - lastCommitDate.getTime()) / (1000 * 60 * 60 * 24);
+                if (daysOld < 14) continue; // Recent activity, skip
+              }
+
+              // Delete the branch
+              try {
+                await github.rest.git.deleteRef({
+                  owner, repo,
+                  ref: `heads/${branch.name}`,
+                });
+                console.log(`✅ Deleted: ${branch.name} (${isFullyMerged ? 'merged' : 'stale >14d'})`);
+                deleted++;
+              } catch (e) {
+                console.log(`❌ Failed to delete ${branch.name}: ${e.message}`);
+              }
+            }
+
+            console.log(`\nCleaned up ${deleted} branches.`);
+
+      - name: Clean orphaned PR environments
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Get all environments
+            const { data } = await github.rest.repos.getAllEnvironments({ owner, repo });
+            const environments = data.environments || [];
+
+            let deleted = 0;
+            for (const env of environments) {
+              // Match PR-specific environments (e.g., "captivating-abundance / Trading-App-pr-123")
+              const prMatch = env.name.match(/pr-(\d+)$/);
+              if (!prMatch) continue;
+
+              const prNumber = parseInt(prMatch[1]);
+
+              // Check if the PR is still open
+              try {
+                const { data: pr } = await github.rest.pulls.get({
+                  owner, repo,
+                  pull_number: prNumber,
+                });
+
+                if (pr.state === 'open') continue; // PR still open, keep environment
+              } catch (e) {
+                // PR not found, safe to delete
+              }
+
+              // Delete orphaned environment
+              try {
+                await github.rest.repos.deleteAnEnvironment({
+                  owner, repo,
+                  environment_name: env.name,
+                });
+                console.log(`✅ Deleted environment: ${env.name}`);
+                deleted++;
+              } catch (e) {
+                console.log(`❌ Failed to delete ${env.name}: ${e.message}`);
+              }
+            }
+
+            console.log(`\nCleaned up ${deleted} orphaned environments.`);

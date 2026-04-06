@@ -46,9 +46,9 @@ export function AnalysisEmptyState({
       <div className="flex items-center gap-3">
         {action &&
           (action.href ? (
-            <Button asChild size="sm">
-              <Link href={action.href}>{action.label}</Link>
-            </Button>
+            <Link href={action.href}>
+              <Button size="sm">{action.label}</Button>
+            </Link>
           ) : (
             <Button size="sm" onClick={action.onClick}>
               {action.label}
@@ -56,9 +56,11 @@ export function AnalysisEmptyState({
           ))}
         {secondaryAction &&
           (secondaryAction.href ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={secondaryAction.href}>{secondaryAction.label}</Link>
-            </Button>
+            <Link href={secondaryAction.href}>
+              <Button variant="outline" size="sm">
+                {secondaryAction.label}
+              </Button>
+            </Link>
           ) : (
             <Button variant="outline" size="sm" onClick={secondaryAction.onClick}>
               {secondaryAction.label}

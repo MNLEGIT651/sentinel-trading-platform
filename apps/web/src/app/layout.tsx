@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     siteName: 'Sentinel',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Sentinel Trading Platform',
     description: 'Autonomous stock trading command center',
   },

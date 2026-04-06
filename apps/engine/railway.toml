@@ -3,6 +3,7 @@ dockerfilePath = "Dockerfile"
 watchPatterns = [
   "src/**",
   "pyproject.toml",
+  "uv.lock",
   "gunicorn_conf.py",
   "start.sh",
   "Dockerfile"
