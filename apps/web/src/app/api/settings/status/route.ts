@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServiceConfig } from '@/lib/server/service-config';
 
+export const maxDuration = 10;
+
 type ServiceStatus = 'connected' | 'disconnected' | 'not_configured';
 
 interface StatusResponse {

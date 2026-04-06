@@ -89,7 +89,7 @@ export function ThreadList({ selectedThreadId, onSelectThread, className }: Thre
   }
 
   if (isLoading) {
-    return <ThreadListSkeleton className={className} />;
+    return <ThreadListSkeleton {...(className != null ? { className } : {})} />;
   }
 
   if (isError) {

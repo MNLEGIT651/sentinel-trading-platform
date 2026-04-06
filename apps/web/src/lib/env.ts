@@ -4,13 +4,35 @@
  */
 
 /* ------------------------------------------------------------------ */
+/*  Supabase key resolution                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Returns the Supabase publishable key, preferring the modern
+ * `sb_publishable_*` format over the legacy JWT anon key.
+ */
+export function getSupabaseKey(): string | undefined {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    undefined
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Server-side env (only available in API routes / server components) */
 /* ------------------------------------------------------------------ */
 
 export function getServerEnv() {
+  const supabaseKey = getSupabaseKey();
+  if (!supabaseKey) {
+    throw new Error(
+      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+    );
+  }
   return {
     supabaseUrl: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    supabaseAnonKey: requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    supabaseKey,
     supabaseServiceRoleKey: optionalEnv('SUPABASE_SERVICE_ROLE_KEY'),
     engineUrl: optionalEnv('ENGINE_URL'),
     engineApiKey: optionalEnv('ENGINE_API_KEY'),
@@ -27,9 +49,15 @@ export function getServerEnv() {
 /* ------------------------------------------------------------------ */
 
 export function getClientEnv() {
+  const supabaseKey = getSupabaseKey();
+  if (!supabaseKey) {
+    throw new Error(
+      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+    );
+  }
   return {
     supabaseUrl: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    supabaseAnonKey: requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+    supabaseKey,
     siteUrl: optionalEnv('NEXT_PUBLIC_SITE_URL'),
   };
 }
@@ -38,7 +66,7 @@ export function getClientEnv() {
 /*  Startup validation — call from instrumentation.ts                 */
 /* ------------------------------------------------------------------ */
 
-const REQUIRED_VARS = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'] as const;
+const REQUIRED_VARS = ['NEXT_PUBLIC_SUPABASE_URL'] as const;
 
 const RECOMMENDED_VARS = ['ENGINE_URL', 'ENGINE_API_KEY', 'AGENTS_URL'] as const;
 
@@ -50,6 +78,11 @@ export function validateEnv(): { valid: boolean; missing: string[]; warnings: st
     if (!process.env[key]) {
       missing.push(key);
     }
+  }
+
+  // At least one Supabase key must be set
+  if (!getSupabaseKey()) {
+    missing.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)');
   }
 
   for (const key of RECOMMENDED_VARS) {

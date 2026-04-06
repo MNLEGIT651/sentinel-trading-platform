@@ -81,3 +81,6 @@ supabase/[0-9a-f]*/
 
 # Vercel audit env
 .env.vercel-audit
+
+.vercel
+.env*.local

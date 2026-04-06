@@ -151,7 +151,7 @@ export function RiskSummary({
       positions.length > 0 && totalValue > 0
         ? (Math.max(...positions.map(marketValue)) / portfolioTotal) * 100
         : 0;
-    const largestSectorPct = allocations.length > 0 ? allocations[0].pct : 0;
+    const largestSectorPct = allocations.length > 0 ? (allocations[0]?.pct ?? 0) : 0;
     const drawdownPct = totalCost > 0 ? Math.abs(totalPnlPct) : 0;
 
     return [

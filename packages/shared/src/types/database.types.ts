@@ -41,6 +41,198 @@ export type Database = {
         };
         Relationships: [];
       };
+      advisor_memory_events: {
+        Row: {
+          created_at: string;
+          event_type: string;
+          id: string;
+          metadata: Json | null;
+          new_value: Json | null;
+          preference_id: string | null;
+          previous_value: Json | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_type: string;
+          id?: string;
+          metadata?: Json | null;
+          new_value?: Json | null;
+          preference_id?: string | null;
+          previous_value?: Json | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string;
+          id?: string;
+          metadata?: Json | null;
+          new_value?: Json | null;
+          preference_id?: string | null;
+          previous_value?: Json | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'advisor_memory_events_preference_id_fkey';
+            columns: ['preference_id'];
+            isOneToOne: false;
+            referencedRelation: 'advisor_preferences';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      advisor_messages: {
+        Row: {
+          content: string;
+          created_at: string;
+          id: string;
+          metadata: Json | null;
+          role: string;
+          thread_id: string;
+          user_id: string;
+        };
+        Insert: {
+          content: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json | null;
+          role: string;
+          thread_id: string;
+          user_id: string;
+        };
+        Update: {
+          content?: string;
+          created_at?: string;
+          id?: string;
+          metadata?: Json | null;
+          role?: string;
+          thread_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'advisor_messages_thread_id_fkey';
+            columns: ['thread_id'];
+            isOneToOne: false;
+            referencedRelation: 'advisor_threads';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      advisor_preferences: {
+        Row: {
+          category: string;
+          confidence: number;
+          confirmed_at: string | null;
+          content: string;
+          context: string | null;
+          created_at: string;
+          id: string;
+          originating_message_id: string | null;
+          source: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          category: string;
+          confidence?: number;
+          confirmed_at?: string | null;
+          content: string;
+          context?: string | null;
+          created_at?: string;
+          id?: string;
+          originating_message_id?: string | null;
+          source: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          category?: string;
+          confidence?: number;
+          confirmed_at?: string | null;
+          content?: string;
+          context?: string | null;
+          created_at?: string;
+          id?: string;
+          originating_message_id?: string | null;
+          source?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'advisor_preferences_originating_message_id_fkey';
+            columns: ['originating_message_id'];
+            isOneToOne: false;
+            referencedRelation: 'advisor_messages';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      advisor_profiles: {
+        Row: {
+          created_at: string;
+          id: string;
+          profile: Json;
+          updated_at: string;
+          user_id: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          profile?: Json;
+          updated_at?: string;
+          user_id: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          profile?: Json;
+          updated_at?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
+      advisor_threads: {
+        Row: {
+          created_at: string;
+          id: string;
+          last_activity: string;
+          message_count: number;
+          rolling_summary: string | null;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          last_activity?: string;
+          message_count?: number;
+          rolling_summary?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          last_activity?: string;
+          message_count?: number;
+          rolling_summary?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       agent_alerts: {
         Row: {
           acknowledged: boolean;
@@ -1684,6 +1876,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'fk_recommendation_events_agent_recs';
+            columns: ['recommendation_id'];
+            isOneToOne: false;
+            referencedRelation: 'agent_recommendations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      recommendation_explanations: {
+        Row: {
+          created_at: string;
+          explanation: Json;
+          generated_at: string;
+          id: string;
+          recommendation_id: string;
+          summary: string;
+          user_id: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          explanation: Json;
+          generated_at?: string;
+          id?: string;
+          recommendation_id: string;
+          summary: string;
+          user_id: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          explanation?: Json;
+          generated_at?: string;
+          id?: string;
+          recommendation_id?: string;
+          summary?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recommendation_explanations_recommendation_id_fkey';
             columns: ['recommendation_id'];
             isOneToOne: false;
             referencedRelation: 'agent_recommendations';

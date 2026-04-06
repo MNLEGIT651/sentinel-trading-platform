@@ -80,7 +80,7 @@ function generateSampleData(basePrice: number): OHLCV[] {
 
 function MarketsContent() {
   const engineOnline = useAppStore((s) => s.engineOnline);
-  const [selectedTicker, setSelectedTicker] = useState(TICKER_SYMBOLS[0]);
+  const [selectedTicker, setSelectedTicker] = useState(TICKER_SYMBOLS[0] ?? 'AAPL');
 
   const {
     data: quotes,

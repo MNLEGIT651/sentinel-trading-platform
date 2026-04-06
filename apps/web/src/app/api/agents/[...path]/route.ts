@@ -4,6 +4,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Max agent timeout is 8s — 15s gives comfortable headroom.
+export const maxDuration = 15;
 
 type RouteContext = {
   params: Promise<{ path?: string[] }>;

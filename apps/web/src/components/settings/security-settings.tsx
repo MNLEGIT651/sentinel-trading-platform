@@ -218,7 +218,7 @@ export function SecuritySettings() {
               <LoadingButton
                 size="sm"
                 onClick={startEnroll}
-                loading={enrollState === 'loading'}
+                loading={false}
                 aria-label="Enable multi-factor authentication"
               >
                 <Key className="h-3.5 w-3.5 mr-1.5" />
