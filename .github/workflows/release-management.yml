@@ -35,7 +35,7 @@ jobs:
       prerelease: ${{ steps.version.outputs.prerelease }}
 
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
           echo "Releasing version: ${VERSION} (prerelease: ${PRERELEASE})"
 
       - name: Setup Node 22
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22
           package-manager-cache: false
@@ -83,7 +83,7 @@ jobs:
           pnpm test
 
       - name: Setup Python 3.12
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.12'
 
@@ -129,7 +129,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
