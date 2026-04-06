@@ -95,7 +95,7 @@ function runCommand(command, args, options) {
   const invocation =
     process.platform === "win32" && command.endsWith(".cmd")
       ? {
-          command: process.env.ComSpec ?? "cmd.exe",
+          command: "cmd.exe",
           args: ["/d", "/s", "/c", `${command} ${args.join(" ")}`],
         }
       : { command, args };
