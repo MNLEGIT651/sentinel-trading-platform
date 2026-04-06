@@ -24,9 +24,15 @@ export function getSupabaseKey(): string | undefined {
 /* ------------------------------------------------------------------ */
 
 export function getServerEnv() {
+  const supabaseKey = getSupabaseKey();
+  if (!supabaseKey) {
+    throw new Error(
+      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+    );
+  }
   return {
     supabaseUrl: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    supabaseKey: getSupabaseKey()!,
+    supabaseKey,
     supabaseServiceRoleKey: optionalEnv('SUPABASE_SERVICE_ROLE_KEY'),
     engineUrl: optionalEnv('ENGINE_URL'),
     engineApiKey: optionalEnv('ENGINE_API_KEY'),
@@ -43,9 +49,15 @@ export function getServerEnv() {
 /* ------------------------------------------------------------------ */
 
 export function getClientEnv() {
+  const supabaseKey = getSupabaseKey();
+  if (!supabaseKey) {
+    throw new Error(
+      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+    );
+  }
   return {
     supabaseUrl: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    supabaseKey: getSupabaseKey()!,
+    supabaseKey,
     siteUrl: optionalEnv('NEXT_PUBLIC_SITE_URL'),
   };
 }

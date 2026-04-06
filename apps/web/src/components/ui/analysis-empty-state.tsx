@@ -3,7 +3,7 @@
 import type { ElementType } from 'react';
 import { Database } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface ActionConfig {
@@ -46,8 +46,8 @@ export function AnalysisEmptyState({
       <div className="flex items-center gap-3">
         {action &&
           (action.href ? (
-            <Link href={action.href}>
-              <Button size="sm">{action.label}</Button>
+            <Link href={action.href} className={cn(buttonVariants({ size: 'sm' }))}>
+              {action.label}
             </Link>
           ) : (
             <Button size="sm" onClick={action.onClick}>
@@ -56,10 +56,11 @@ export function AnalysisEmptyState({
           ))}
         {secondaryAction &&
           (secondaryAction.href ? (
-            <Link href={secondaryAction.href}>
-              <Button variant="outline" size="sm">
-                {secondaryAction.label}
-              </Button>
+            <Link
+              href={secondaryAction.href}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+            >
+              {secondaryAction.label}
             </Link>
           ) : (
             <Button variant="outline" size="sm" onClick={secondaryAction.onClick}>

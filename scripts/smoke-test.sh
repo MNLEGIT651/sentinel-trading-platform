@@ -146,9 +146,9 @@ test_static_assets() {
   local body
   body=$(echo "$raw" | sed '$d')
 
-  # Extract a _next/static JS chunk URL from the HTML
+  # Extract a _next/static JS chunk URL from the HTML (POSIX-compatible)
   local asset_path
-  asset_path=$(echo "$body" | grep -oP '/_next/static/[^"]+\.js' | head -1)
+  asset_path=$(echo "$body" | sed -n 's/.*\(\/_next\/static\/[^"]*\.js\).*/\1/p' | head -1)
 
   if [[ -n "$asset_path" ]]; then
     local asset_raw
