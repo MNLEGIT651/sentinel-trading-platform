@@ -16,13 +16,13 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run Scorecards analysis
-        uses: ossf/scorecard-action@v2.2.0
+        uses: ossf/scorecard-action@v2.4.3
         with:
           results_file: results.sarif
           format: sarif
       - name: Upload results to GitHub
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
