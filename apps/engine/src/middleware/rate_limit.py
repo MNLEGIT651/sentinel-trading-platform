@@ -4,7 +4,7 @@ import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -15,13 +15,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Protects public endpoints from abuse.
     """
 
-    def __init__(self, app, requests_per_minute: int = 100):
+    def __init__(self, app, requests_per_minute: int = 100) -> None:  # noqa: ANN001
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.request_counts: dict[str, list[datetime]] = defaultdict(list)
         self.lock = asyncio.Lock()
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next) -> Response:  # noqa: ANN001
         # Skip rate limit for internal endpoints
         if request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
