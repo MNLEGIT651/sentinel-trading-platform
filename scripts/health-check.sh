@@ -15,7 +15,7 @@ FAILURES=0
 VERCEL_URL="${VERCEL_URL:-https://sentinel-trading-platform.vercel.app}"
 ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/health}"
 AGENTS_HEALTH_URL="${AGENTS_URL:-${VERCEL_URL}/api/agents/health}"
-SUPABASE_API_URL="${SUPABASE_URL:-https://luwyjfwauljwsfsnwiqb.supabase.co/rest/v1/}"
+SUPABASE_API_URL="${SUPABASE_URL:?SUPABASE_URL must be set}/rest/v1/"
 
 # --- helpers ----------------------------------------------------------------
 

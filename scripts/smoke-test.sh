@@ -15,7 +15,7 @@ PASSED=0
 
 # Service URLs (override via environment variables)
 VERCEL_URL="${VERCEL_URL:-https://sentinel-trading-platform.vercel.app}"
-SUPABASE_URL="${SUPABASE_URL:-https://luwyjfwauljwsfsnwiqb.supabase.co}"
+SUPABASE_URL="${SUPABASE_URL:?SUPABASE_URL must be set}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 
 usage() {
