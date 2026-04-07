@@ -17,9 +17,10 @@ Database: Supabase (us-east-1)
 - [ ] Railway engine is healthy (`/health` returns 200)
 - [ ] Railway agents is healthy (`/health` returns 200)
 - [ ] Environment contract passes automated validation for each runtime profile
-  - `node scripts/validate-railway-supabase-env.mjs --profile=web --production --project-ref=<supabase-project-ref>`
-  - `node scripts/validate-railway-supabase-env.mjs --profile=engine --project-ref=<supabase-project-ref>`
-  - `node scripts/validate-railway-supabase-env.mjs --profile=agents --production --project-ref=<supabase-project-ref> --require-private-engine`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=web --production --project-ref=<supabase-project-ref> --env-file=<web-env-file>`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=engine --project-ref=<supabase-project-ref> --env-file=<engine-env-file>`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=agents --production --project-ref=<supabase-project-ref> --require-private-engine --env-file=<agents-env-file>`
+  - `node --test scripts/validate-railway-supabase-env.test.mjs`
 - [ ] Vercel production env vars are set:
   - `ENGINE_URL` = Railway engine URL
   - `ENGINE_API_KEY` = engine auth key
@@ -44,6 +45,11 @@ Use this as the minimum production bar before deploy approval:
    - Web: `SUPABASE_SERVICE_ROLE_KEY`
    - Engine: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
    - Agents: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
+6. **Key and secret quality checks**
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` should use `sb_publishable_...` format.
+   - Supabase anon/service-role tokens should be JWT-shaped.
+   - `ENGINE_API_KEY` should be at least 24 characters.
+   - `SUPABASE_JWT_SECRET` should be at least 32 characters.
 
 ## Deploy Order
 
