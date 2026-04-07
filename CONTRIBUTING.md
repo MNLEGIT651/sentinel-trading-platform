@@ -94,6 +94,7 @@ pnpm test:engine   # Python engine tests (pytest)
 
 Before opening a PR, confirm:
 
+- [ ] `bash scripts/repo-setup-audit.sh` passes
 - [ ] `pnpm lint` passes
 - [ ] `pnpm test` passes
 - [ ] `pnpm build` succeeds
