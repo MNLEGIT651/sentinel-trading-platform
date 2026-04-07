@@ -16,6 +16,9 @@ pnpm lint               # Lint/typecheck Node workspaces only
 pnpm test               # Test Node workspaces only
 pnpm build              # Build Node workspaces only
 node scripts/security-audit.mjs  # Workflow permissions + dependency audit; requires apps/engine/.venv with pip-audit
+node scripts/validate-railway-supabase-env.mjs --profile=web --production --project-ref=<supabase-project-ref>  # Validate production env contract for web runtime
+node scripts/validate-railway-supabase-env.mjs --profile=engine --project-ref=<supabase-project-ref>             # Validate production env contract for engine runtime
+node scripts/validate-railway-supabase-env.mjs --profile=agents --production --project-ref=<supabase-project-ref> --require-private-engine  # Validate production env contract for agents runtime
 pnpm test:web           # Web Vitest suite
 pnpm test:web:e2e       # Web Playwright suite
 pnpm test:agents        # Agents Vitest suite

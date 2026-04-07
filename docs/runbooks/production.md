@@ -16,6 +16,10 @@ Database: Supabase (us-east-1)
 - [ ] Preview deployment passes all smoke tests (see [preview runbook](preview.md))
 - [ ] Railway engine is healthy (`/health` returns 200)
 - [ ] Railway agents is healthy (`/health` returns 200)
+- [ ] Environment contract passes automated validation for each runtime profile
+  - `node scripts/validate-railway-supabase-env.mjs --profile=web --production --project-ref=<supabase-project-ref>`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=engine --project-ref=<supabase-project-ref>`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=agents --production --project-ref=<supabase-project-ref> --require-private-engine`
 - [ ] Vercel production env vars are set:
   - `ENGINE_URL` = Railway engine URL
   - `ENGINE_API_KEY` = engine auth key
@@ -23,6 +27,23 @@ Database: Supabase (us-east-1)
   - `NEXT_PUBLIC_SUPABASE_URL` = Supabase URL
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = Supabase anon key
   - `SUPABASE_SERVICE_ROLE_KEY` = Supabase service role key
+
+### Railway ↔ Supabase Pro Standard
+
+Use this as the minimum production bar before deploy approval:
+
+1. **Single Supabase project identity across services**
+   - `NEXT_PUBLIC_SUPABASE_URL` (web) and `SUPABASE_URL` (engine/agents) must resolve to the same host.
+2. **Exact project-ref verification**
+   - Pass `--project-ref=<ref>` to `validate-railway-supabase-env.mjs` to enforce dashboard/project alignment.
+3. **Private networking for agents → engine**
+   - Railway agents `ENGINE_URL` should be `http://<engine-service>.railway.internal:<port>` (not the public URL).
+4. **No localhost in production**
+   - Web `ENGINE_URL` and `AGENTS_URL` must be public Railway HTTPS URLs.
+5. **Supabase auth secrets present in every required runtime**
+   - Web: `SUPABASE_SERVICE_ROLE_KEY`
+   - Engine: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+   - Agents: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
 
 ## Deploy Order
 
