@@ -12,7 +12,7 @@
   },
   "crons": [
     {
-      "path": "/api/health",
+      "path": "/api/internal/cron/health",
       "schedule": "*/5 * * * *"
     }
   ]
