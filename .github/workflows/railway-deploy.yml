@@ -63,10 +63,34 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Validate required secrets
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          ENGINE_SERVICE_ID: ${{ secrets.RAILWAY_ENGINE_SERVICE_ID }}
+        run: |
+          has_error=false
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::RAILWAY_TOKEN secret is not configured"
+            has_error=true
+          fi
+          if [ -z "$ENGINE_SERVICE_ID" ]; then
+            echo "::error::RAILWAY_ENGINE_SERVICE_ID secret is not configured"
+            has_error=true
+          fi
+          if [ "$has_error" = true ]; then
+            echo "❌ Missing required secrets. Add them at Settings → Secrets → Actions."
+            echo "See: https://docs.railway.com/reference/cli-api#tokens"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: |
+          npm cache clean --force
+          npm install -g @railway/cli
+          railway --version
 
       - name: Deploy engine service
         working-directory: apps/engine
@@ -108,10 +132,34 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Validate required secrets
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          AGENTS_SERVICE_ID: ${{ secrets.RAILWAY_AGENTS_SERVICE_ID }}
+        run: |
+          has_error=false
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::RAILWAY_TOKEN secret is not configured"
+            has_error=true
+          fi
+          if [ -z "$AGENTS_SERVICE_ID" ]; then
+            echo "::error::RAILWAY_AGENTS_SERVICE_ID secret is not configured"
+            has_error=true
+          fi
+          if [ "$has_error" = true ]; then
+            echo "❌ Missing required secrets. Add them at Settings → Secrets → Actions."
+            echo "See: https://docs.railway.com/reference/cli-api#tokens"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: |
+          npm cache clean --force
+          npm install -g @railway/cli
+          railway --version
 
       - name: Deploy agents service
         run: |
