@@ -134,6 +134,7 @@ See [docs/deployment.md](docs/deployment.md) for the full deployment guide, envi
 - [Preview Deployment](docs/runbooks/preview.md)
 - [Production Deployment](docs/runbooks/production.md)
 - [Troubleshooting](docs/runbooks/troubleshooting.md)
+- [GitHub Repo Setup](docs/runbooks/repo-setup.md)
 - [Release Checklist](docs/runbooks/release-checklist.md)
 
 ## Contributing

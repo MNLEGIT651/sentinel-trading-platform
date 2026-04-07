@@ -1,0 +1,47 @@
+name: Vercel Preview Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/vercel-preview-smoke.yml'
+      - 'scripts/health-check.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/vercel-preview-smoke.yml'
+      - 'scripts/health-check.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-preview-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Synthetic Proxy Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Validate target URL secret
+        env:
+          VERCEL_PREVIEW_SMOKE_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
+        run: |
+          if [ -z "$VERCEL_PREVIEW_SMOKE_URL" ]; then
+            echo "::error::Missing required secret: VERCEL_PREVIEW_SMOKE_URL"
+            exit 1
+          fi
+
+      - name: Run synthetic proxy health checks
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
+        run: |
+          ./scripts/health-check.sh --verbose

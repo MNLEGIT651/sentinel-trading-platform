@@ -1,0 +1,37 @@
+name: Workflow Lint
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'apps/web/src/components/settings/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'apps/web/src/components/settings/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+
+      - name: Enforce no API key entry fields in settings UI
+        run: |
+          if rg -n --glob '*.tsx' 'API Key|Secret Key' apps/web/src/components/settings --glob '!**/connection-status.tsx'; then
+            echo 'Forbidden key-entry labels found in Settings components.'
+            exit 1
+          fi

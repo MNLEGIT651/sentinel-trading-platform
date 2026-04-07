@@ -1,7 +1,9 @@
 """Circuit breaker for external API fault tolerance."""
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 
 class CircuitState(Enum):
@@ -45,7 +47,7 @@ class CircuitBreaker:
         self.success_count = 0
         self.last_failure_time: datetime | None = None
 
-    async def call(self, func, *args, **kwargs):
+    async def call(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute function with circuit breaker protection."""
         if self.state == CircuitState.OPEN:
             if self._should_attempt_reset():

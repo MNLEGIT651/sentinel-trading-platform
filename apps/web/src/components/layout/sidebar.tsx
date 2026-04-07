@@ -153,6 +153,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
         )}
         {collapsed && <div className="h-2 w-2 rounded-full bg-primary animate-pulse mx-auto" />}
         <button
+          type="button"
           onClick={handleToggle}
           className={cn(
             'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
@@ -228,6 +229,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
       {/* Footer */}
       <div className="border-t border-border p-4 space-y-3">
         <button
+          type="button"
           disabled={signingOut}
           onClick={async () => {
             if (signingOut) return;
