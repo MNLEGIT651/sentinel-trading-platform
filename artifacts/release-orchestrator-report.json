@@ -74,6 +74,28 @@
   },
   "open_pr_reviews": [
     {
+      "pr": 219,
+      "title": "[DRAFT] Release audit artifacts",
+      "branch": "codex/validate-release-decision",
+      "draft": true,
+      "risk": "docs, infra",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "BLOCKED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head f16ddeec; no GitHub Actions CI statuses yet.",
+        "Draft PR pending parallel validation."
+      ]
+    },
+    {
       "pr": 218,
       "title": "Add Copilot custom agent profiles and repo Copilot instructions",
       "branch": "codex/create-specialized-github-agents-for-deployment",

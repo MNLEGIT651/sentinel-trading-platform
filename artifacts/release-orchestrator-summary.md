@@ -8,6 +8,6 @@ Verified blockers: web build breaks on Google Fonts fetch; Railway deploy workfl
 
 Dashboard-only blockers: branch protection / required-check rules, live Vercel preview health, live Railway service status.
 
-PR merge readiness: none merge-ready. PRs 217/216/215/210/212/183 marked CHANGES_REQUESTED due to missing GitHub Actions CI statuses and CircleCI error contexts (plus Vercel deploy failure on 216, Railway deploy failure on 183). PRs 218 and 211 are drafts and blocked until checks surface and CircleCI context resolved.
+PR merge readiness: none merge-ready. PRs 217/216/215/210/212/183 marked CHANGES_REQUESTED due to missing GitHub Actions CI statuses and CircleCI error contexts (plus Vercel deploy failure on 216, Railway deploy failure on 183). PRs 219/218/211 are drafts and blocked until checks surface and CircleCI context resolved.
 
 Release posture: main not release-ready—web build currently fails and deploy workflows are fail-open. Final decision: CHANGES_REQUESTED / NO_GO until build and workflow issues are fixed and required checks are confirmed in GitHub.
