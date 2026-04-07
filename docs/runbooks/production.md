@@ -21,7 +21,8 @@ Database: Supabase (us-east-1)
   - `ENGINE_API_KEY` = engine auth key
   - `AGENTS_URL` = Railway agents URL
   - `NEXT_PUBLIC_SUPABASE_URL` = Supabase URL
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = Supabase anon key
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` = Supabase publishable key (`sb_publishable_*`)
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = legacy fallback only (optional)
   - `SUPABASE_SERVICE_ROLE_KEY` = Supabase service role key
 
 ## Deploy Order

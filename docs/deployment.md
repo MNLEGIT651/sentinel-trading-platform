@@ -31,11 +31,11 @@ Services on the same Railway project can communicate over an internal private ne
 
 **Environment variable configuration:**
 
-| Service          | Variable     | Value                                                          | Network  |
-| ---------------- | ------------ | -------------------------------------------------------------- | -------- |
-| Railway Agents   | `ENGINE_URL` | `http://sentinel-engine-trading.railway.internal:8000`         | Private  |
-| Vercel Web       | `ENGINE_URL` | `https://<engine>.up.railway.app`                              | Public   |
-| Vercel Web       | `AGENTS_URL` | `https://<agents>.up.railway.app`                              | Public   |
+| Service        | Variable     | Value                                                  | Network |
+| -------------- | ------------ | ------------------------------------------------------ | ------- |
+| Railway Agents | `ENGINE_URL` | `http://sentinel-engine-trading.railway.internal:8000` | Private |
+| Vercel Web     | `ENGINE_URL` | `https://<engine>.up.railway.app`                      | Public  |
+| Vercel Web     | `AGENTS_URL` | `https://<agents>.up.railway.app`                      | Public  |
 
 > **Note:** Private network hostnames use `http` (not `https`) and the Railway-assigned `PORT`. Public URLs use `https` and do not need a port suffix.
 
@@ -43,10 +43,11 @@ Services on the same Railway project can communicate over an internal private ne
 
 ### Vercel (apps/web) -- Browser-Safe
 
-| Variable                        | Purpose               |
-| ------------------------------- | --------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase API endpoint |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public auth  |
+| Variable                                       | Purpose                                |
+| ---------------------------------------------- | -------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                     | Supabase API endpoint                  |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Supabase public auth (primary)         |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                | Supabase public auth (legacy fallback) |
 
 ### Vercel (apps/web) -- Server-Side Only
 
@@ -133,7 +134,7 @@ All upstream URL resolution, auth headers, timeouts, and retries are centralized
 | `apps/web/Dockerfile`      | Web container                   | Local / CI  |
 | `apps/engine/Dockerfile`   | Engine container                | Railway     |
 | `apps/agents/Dockerfile`   | Agents container                | Railway     |
-| `vercel.json`              | Change-detection ignore command | Vercel      |
+| `apps/web/vercel.json`     | Change-detection ignore command | Vercel      |
 | `apps/engine/railway.toml` | Health check + restart policy   | Railway     |
 
 ## Cutover Order

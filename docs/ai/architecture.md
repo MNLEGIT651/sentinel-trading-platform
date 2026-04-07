@@ -98,8 +98,10 @@ Browser ──► Next.js Server ──► Engine API (FastAPI)
 
 ### Security Automation
 
-CI/CD pipeline runs 9 security-related workflows:
+CI/CD pipeline security automation currently enforces:
 
-- Pre-merge: CodeQL SAST, Gitleaks secrets scan, dependency review
-- Post-deploy: OWASP ZAP DAST baseline, Lighthouse audit
-- Scheduled: Security safety audit (daily), container scan (weekly), Scorecard (weekly)
+- `ci.yml`: lint/test/build plus repository security audit job
+- `dependency-review.yml`: dependency risk checks on lock/dependency changes
+- `gitleaks.yml`: secret scanning on PRs and pushes to `main`
+- `workflow-lint.yml`: required workflow inventory guardrails
+- `vercel-preview-smoke.yml`: synthetic proxy smoke checks against the deployed web origin

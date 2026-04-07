@@ -192,6 +192,7 @@ Run these within 5 minutes of production deploy completing.
 | Dashboard      | `/`                    | No offline banner, no localhost fallback |
 
 - [ ] All smoke tests pass
+- [ ] `Vercel Preview Smoke` GitHub Action passed for the commit (required gate)
 
 ### 5.2 SLO Spot Check (5-Minute Window Post-Deploy)
 

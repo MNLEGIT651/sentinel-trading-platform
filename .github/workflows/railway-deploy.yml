@@ -32,6 +32,7 @@ concurrency:
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  RAILWAY_CLI_VERSION: 4.6.3
 
 jobs:
   # ---------- Detect which services changed ----------
@@ -65,8 +66,21 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Validate required deploy secrets (engine)
+        env:
+          RAILWAY_TOKEN_SECRET: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_ENGINE_SERVICE_ID_SECRET: ${{ secrets.RAILWAY_ENGINE_SERVICE_ID }}
+          RAILWAY_ENGINE_URL_SECRET: ${{ secrets.RAILWAY_ENGINE_URL }}
+        run: |
+          [ -n "$RAILWAY_TOKEN_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_TOKEN"; exit 1; }
+          [ -n "$RAILWAY_ENGINE_SERVICE_ID_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_ENGINE_SERVICE_ID"; exit 1; }
+          [ -n "$RAILWAY_ENGINE_URL_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_ENGINE_URL"; exit 1; }
+
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: npm install -g "@railway/cli@${RAILWAY_CLI_VERSION}"
+
+      - name: Print Railway CLI version
+        run: railway --version
 
       - name: Deploy engine service
         working-directory: apps/engine
@@ -84,8 +98,8 @@ jobs:
         run: |
           ENGINE_URL="${{ secrets.RAILWAY_ENGINE_URL }}"
           if [ -z "$ENGINE_URL" ]; then
-            echo "⚠️ RAILWAY_ENGINE_URL secret not set, skipping health check"
-            exit 0
+            echo "::error::Missing required secret: RAILWAY_ENGINE_URL"
+            exit 1
           fi
           echo "Checking engine health at $ENGINE_URL/health ..."
           for i in 1 2 3 4 5; do
@@ -110,8 +124,21 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Validate required deploy secrets (agents)
+        env:
+          RAILWAY_TOKEN_SECRET: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_AGENTS_SERVICE_ID_SECRET: ${{ secrets.RAILWAY_AGENTS_SERVICE_ID }}
+          RAILWAY_AGENTS_URL_SECRET: ${{ secrets.RAILWAY_AGENTS_URL }}
+        run: |
+          [ -n "$RAILWAY_TOKEN_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_TOKEN"; exit 1; }
+          [ -n "$RAILWAY_AGENTS_SERVICE_ID_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_AGENTS_SERVICE_ID"; exit 1; }
+          [ -n "$RAILWAY_AGENTS_URL_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_AGENTS_URL"; exit 1; }
+
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: npm install -g "@railway/cli@${RAILWAY_CLI_VERSION}"
+
+      - name: Print Railway CLI version
+        run: railway --version
 
       - name: Deploy agents service
         run: |
@@ -128,8 +155,8 @@ jobs:
         run: |
           AGENTS_URL="${{ secrets.RAILWAY_AGENTS_URL }}"
           if [ -z "$AGENTS_URL" ]; then
-            echo "⚠️ RAILWAY_AGENTS_URL secret not set, skipping health check"
-            exit 0
+            echo "::error::Missing required secret: RAILWAY_AGENTS_URL"
+            exit 1
           fi
           echo "Checking agents health at $AGENTS_URL/health ..."
           for i in 1 2 3 4 5; do

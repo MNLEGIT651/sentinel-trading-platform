@@ -1,24 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { JetBrains_Mono, DM_Sans } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from '@/components/ui/sonner';
 import { QueryProvider } from '@/components/providers/query-provider';
 import './globals.css';
-
-const dmSans = DM_Sans({
-  variable: '--font-body',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-mono',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -54,9 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${dmSans.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
-      >
+      <body className="antialiased bg-background text-foreground">
         <QueryProvider>{children}</QueryProvider>
         <Toaster />
         <Analytics />
