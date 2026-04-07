@@ -1,24 +1,27 @@
-name: 'Gitleaks'
+name: Secret Scanning (Gitleaks)
 
 on:
-  push:
-    branches: ['main']
   pull_request:
-    branches: ['main']
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: gitleaks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   gitleaks:
+    name: Gitleaks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2.3.3
-        with:
-          args: --verbose --report-format sarif --report-path gitleaks-report.sarif
-      - name: Upload SARIF report
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: gitleaks-report.sarif
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
