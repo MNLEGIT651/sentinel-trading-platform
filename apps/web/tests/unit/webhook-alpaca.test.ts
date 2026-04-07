@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHmac } from 'node:crypto';
 
 // ─── Mock Supabase (service role client) ────────────────────────────
 
@@ -12,28 +13,49 @@ vi.mock('@supabase/supabase-js', () => ({
 import { POST } from '@/app/api/webhooks/alpaca/route';
 
 const originalEnv = {
+  SUPABASE_URL: process.env.SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  ALPACA_WEBHOOK_SECRET: process.env.ALPACA_WEBHOOK_SECRET,
 };
 
-function makeWebhookRequest(body: Record<string, unknown>): Request {
+function signBody(rawBody: string): string {
+  const secret = process.env.ALPACA_WEBHOOK_SECRET ?? '';
+  return createHmac('sha256', secret).update(rawBody).digest('hex');
+}
+
+function makeWebhookRequest(
+  body: Record<string, unknown>,
+  opts?: { signature?: string | null },
+): Request {
+  const rawBody = JSON.stringify(body);
+  const signature = opts?.signature === undefined ? signBody(rawBody) : opts.signature;
+  const headers = new Headers({ 'content-type': 'application/json' });
+  if (signature) {
+    headers.set('x-alpaca-signature', signature);
+  }
+
   return new Request('http://localhost/api/webhooks/alpaca', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    headers,
+    body: rawBody,
   });
 }
 
 describe('/api/webhooks/alpaca', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-key';
+    process.env.ALPACA_WEBHOOK_SECRET = 'alpaca-webhook-secret';
   });
 
   afterEach(() => {
+    process.env.SUPABASE_URL = originalEnv.SUPABASE_URL;
     process.env.NEXT_PUBLIC_SUPABASE_URL = originalEnv.NEXT_PUBLIC_SUPABASE_URL;
     process.env.SUPABASE_SERVICE_ROLE_KEY = originalEnv.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.ALPACA_WEBHOOK_SECRET = originalEnv.ALPACA_WEBHOOK_SECRET;
     vi.restoreAllMocks();
   });
 
@@ -55,10 +77,42 @@ describe('/api/webhooks/alpaca', () => {
 
   it('returns 500 when Supabase config is missing', async () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
     const res = await POST(
       makeWebhookRequest({ event: 'account_status', account_id: 'x', status: 'ACTIVE' }),
     );
     expect(res.status).toBe(500);
+  });
+
+  it('returns 503 when webhook secret is missing', async () => {
+    delete process.env.ALPACA_WEBHOOK_SECRET;
+    const res = await POST(
+      makeWebhookRequest(
+        { event: 'account_status', account_id: 'x', status: 'ACTIVE' },
+        { signature: 'abc' },
+      ),
+    );
+    expect(res.status).toBe(503);
+  });
+
+  it('returns 401 when signature is missing', async () => {
+    const res = await POST(
+      makeWebhookRequest(
+        { event: 'account_status', account_id: 'x', status: 'ACTIVE' },
+        { signature: null },
+      ),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when signature is invalid', async () => {
+    const res = await POST(
+      makeWebhookRequest(
+        { event: 'account_status', account_id: 'x', status: 'ACTIVE' },
+        { signature: 'not-valid' },
+      ),
+    );
+    expect(res.status).toBe(401);
   });
 
   // ─── account_status ─────────────────────────────────────────────
