@@ -96,6 +96,7 @@ export function QuickOrder({
               aria-label="Order side"
             >
               <button
+                type="button"
                 onClick={() => onSideChange('buy')}
                 aria-label="Buy"
                 aria-pressed={side === 'buy'}
@@ -109,6 +110,7 @@ export function QuickOrder({
                 Buy
               </button>
               <button
+                type="button"
                 onClick={() => onSideChange('sell')}
                 aria-label="Sell"
                 aria-pressed={side === 'sell'}
@@ -130,6 +132,7 @@ export function QuickOrder({
               aria-label="Order type"
             >
               <button
+                type="button"
                 onClick={() => onOrderTypeChange('market')}
                 aria-label="Market order"
                 aria-pressed={orderType === 'market'}
@@ -143,6 +146,7 @@ export function QuickOrder({
                 Market
               </button>
               <button
+                type="button"
                 onClick={() => onOrderTypeChange('limit')}
                 aria-label="Limit order"
                 aria-pressed={orderType === 'limit'}

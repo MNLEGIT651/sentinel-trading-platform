@@ -1,22 +1,13 @@
 {
-  "status": "warning",
-  "findings": {
-    "blocking": [],
-    "warnings": [
-      "supabase-typegen workflow uses supabase/setup-cli pinned action but CLI version set to latest; allows drifting tooling.",
-      "Type generation skipped when secrets missing; drift detection not enforced.",
-      "No runtime smoke of auth redirects or RLS performed in this execution."
-    ],
-    "dashboard_only_blockers": [
-      "Production Supabase policies and runtime health not accessible from this environment."
-    ]
-  },
-  "evidence": {
-    "config": "supabase/config.toml",
-    "workflows": [".github/workflows/supabase-typegen.yml"],
-    "client_boundaries": [
-      "apps/web/src/lib/supabase/client.ts",
-      "apps/web/src/lib/supabase/server.ts"
-    ]
-  }
+  "track": "supabase",
+  "status": "fail",
+  "blocking_findings": [
+    "Supabase type generation workflow uses `version: latest` for Supabase CLI, introducing drift risk for generated types."
+  ],
+  "warning_findings": [
+    "Type generation is skipped when SUPABASE_* secrets are unavailable; migration/type drift may survive PR validation."
+  ],
+  "dashboard_only_blockers": [
+    "Could not validate Supabase project settings (auth redirect URLs, RLS enforcement state) without dashboard/API credentials."
+  ]
 }

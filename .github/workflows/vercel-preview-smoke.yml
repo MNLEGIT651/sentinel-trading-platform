@@ -1,53 +1,47 @@
 name: Vercel Preview Smoke
 
 on:
-  deployment_status:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/vercel-preview-smoke.yml'
+      - 'scripts/health-check.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/vercel-preview-smoke.yml'
+      - 'scripts/health-check.sh'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: vercel-preview-smoke-${{ github.event.deployment_status.deployment.environment }}-${{ github.event.deployment_status.id }}
+  group: vercel-preview-smoke-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   smoke:
-    if: github.event.deployment_status.state == 'success' && contains(github.event.deployment.environment, 'Preview')
+    name: Synthetic Proxy Smoke
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Derive preview URL
-        id: derive
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Validate target URL secret
+        env:
+          VERCEL_PREVIEW_SMOKE_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
-          url="${{ github.event.deployment_status.environment_url }}"
-          if [[ -z "${url}" ]]; then
-            url="${{ github.event.deployment_status.target_url }}"
-          fi
-          if [[ -z "${url}" ]]; then
-            echo "::error::Unable to determine deployment URL from event payload."
+          if [ -z "$VERCEL_PREVIEW_SMOKE_URL" ]; then
+            echo "::error::Missing required secret: VERCEL_PREVIEW_SMOKE_URL"
             exit 1
           fi
-          url="${url%/}"
-          echo "base=${url}" >> "$GITHUB_OUTPUT"
-          echo "Preview URL: ${url}"
 
-      - name: Probe health endpoints
+      - name: Run synthetic proxy health checks
         env:
-          BASE_URL: ${{ steps.derive.outputs.base }}
+          VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
-          set -euo pipefail
-          paths=(
-            "/api/health"
-            "/api/engine/health"
-            "/api/agents/health"
-            "/api/settings/status"
-          )
-          for path in "${paths[@]}"; do
-            full="${BASE_URL}${path}"
-            echo "Probing ${full}"
-            if ! curl -f --retry 2 --retry-delay 2 --max-time 10 -sS "$full" >/tmp/smoke.out; then
-              echo "::error::${path} failed"
-              exit 1
-            fi
-          done
-          echo "All preview smoke checks passed."
+          ./scripts/health-check.sh --verbose

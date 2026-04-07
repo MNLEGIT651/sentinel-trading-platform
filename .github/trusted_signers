@@ -1,0 +1,6 @@
+# Trusted SSH signing identities for this repository.
+# Format: principal namespaces:key
+# Example:
+# sentinel-dev git ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...
+#
+# Add each developer/bot signing public key here before requiring commit signing in CI.
