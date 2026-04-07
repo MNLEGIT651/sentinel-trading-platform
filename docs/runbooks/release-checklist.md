@@ -52,6 +52,12 @@ Evidence template (paste into PR body):
 
 > **Blocker:** If any critical-path test suite fails, stop here. Do not proceed to the go/no-go gate.
 
+### 1.1 Supply-chain verification (SBOM tooling)
+
+- [ ] SBOM generation step uses pinned or integrity-verified tooling (no unverified `curl | sh` installers).
+- [ ] Generated SBOM artifacts (`sbom.cdx.json`, `sbom.spdx.json`) are attached to the release.
+- [ ] Any change to SBOM tooling is reviewed as a security-sensitive CI change.
+
 ---
 
 ## 2. Code Review Gate
@@ -192,6 +198,7 @@ Run these within 5 minutes of production deploy completing.
 | Dashboard      | `/`                    | No offline banner, no localhost fallback |
 
 - [ ] All smoke tests pass
+- [ ] `Vercel Preview Smoke` GitHub Action passed for the commit (required gate)
 
 ### 5.2 SLO Spot Check (5-Minute Window Post-Deploy)
 

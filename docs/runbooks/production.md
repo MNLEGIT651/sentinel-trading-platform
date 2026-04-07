@@ -2,6 +2,8 @@
 
 Production runs on one public origin with private backend services. Agents are required.
 
+Before release, complete the [platform verification checklist](platform-verification-checklist.md) for dashboard-level controls.
+
 ## Topology
 
 ```text
@@ -16,13 +18,40 @@ Database: Supabase (us-east-1)
 - [ ] Preview deployment passes all smoke tests (see [preview runbook](preview.md))
 - [ ] Railway engine is healthy (`/health` returns 200)
 - [ ] Railway agents is healthy (`/health` returns 200)
+- [ ] Environment contract passes automated validation for each runtime profile
+  - `node scripts/validate-railway-supabase-env.mjs --profile=web --production --project-ref=<supabase-project-ref> --env-file=<web-env-file>`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=engine --project-ref=<supabase-project-ref> --env-file=<engine-env-file>`
+  - `node scripts/validate-railway-supabase-env.mjs --profile=agents --production --project-ref=<supabase-project-ref> --require-private-engine --env-file=<agents-env-file>`
+  - `node --test scripts/validate-railway-supabase-env.test.mjs`
 - [ ] Vercel production env vars are set:
   - `ENGINE_URL` = Railway engine URL
   - `ENGINE_API_KEY` = engine auth key
   - `AGENTS_URL` = Railway agents URL
   - `NEXT_PUBLIC_SUPABASE_URL` = Supabase URL
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = Supabase anon key
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` (preferred) or `NEXT_PUBLIC_SUPABASE_ANON_KEY` (fallback)
   - `SUPABASE_SERVICE_ROLE_KEY` = Supabase service role key
+
+### Railway ↔ Supabase Pro Standard
+
+Use this as the minimum production bar before deploy approval:
+
+1. **Single Supabase project identity across services**
+   - `NEXT_PUBLIC_SUPABASE_URL` (web) and `SUPABASE_URL` (engine/agents) must resolve to the same host.
+2. **Exact project-ref verification**
+   - Pass `--project-ref=<ref>` to `validate-railway-supabase-env.mjs` to enforce dashboard/project alignment.
+3. **Private networking for agents → engine**
+   - Railway agents `ENGINE_URL` should be `http://<engine-service>.railway.internal:<port>` (not the public URL).
+4. **No localhost in production**
+   - Web `ENGINE_URL` and `AGENTS_URL` must be public Railway HTTPS URLs.
+5. **Supabase auth secrets present in every required runtime**
+   - Web: `SUPABASE_SERVICE_ROLE_KEY`
+   - Engine: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+   - Agents: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
+6. **Key and secret quality checks**
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` should use `sb_publishable_...` format.
+   - Supabase anon/service-role tokens should be JWT-shaped.
+   - `ENGINE_API_KEY` should be at least 24 characters.
+   - `SUPABASE_JWT_SECRET` should be at least 32 characters.
 
 ## Deploy Order
 
@@ -70,16 +99,17 @@ Check Railway logs for:
 - Keep the previous Vercel deployment available for instant rollback.
 - Keep the previous Railway deployment available until the new backend is confirmed stable.
 
-## Post-Cutover Cleanup
+## Post-Cutover Cleanup (Completed Q2 2026)
 
-After production is verified stable:
+The same-origin proxy migration is complete. The following deprecated browser-facing
+variables have been replaced by server-side equivalents and should no longer exist
+in any environment:
 
-1. Remove deprecated Vercel env vars:
-   - `NEXT_PUBLIC_ENGINE_URL`
-   - `NEXT_PUBLIC_ENGINE_API_KEY`
-   - `NEXT_PUBLIC_AGENTS_URL`
-2. Decommission stale Railway services (placeholder or duplicate services).
-3. Verify that removing deprecated vars doesn't break anything by redeploying.
+- ~~`NEXT_PUBLIC_ENGINE_URL`~~ → `ENGINE_URL`
+- ~~`NEXT_PUBLIC_ENGINE_API_KEY`~~ → `ENGINE_API_KEY`
+- ~~`NEXT_PUBLIC_AGENTS_URL`~~ → `AGENTS_URL`
+
+If found in Vercel or Railway env settings, remove them.
 
 ## Rollback
 

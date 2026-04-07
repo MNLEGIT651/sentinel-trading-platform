@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = 'https://sentinel-trading-platform-agents.vercel.app';
+import { getCanonicalUrl } from '@/lib/auth/url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const BASE_URL = getCanonicalUrl();
   return [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
     {

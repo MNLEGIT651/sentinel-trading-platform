@@ -66,6 +66,7 @@ export function AlertPanel({ children }: { children: React.ReactNode }) {
                     </div>
                     {!alert.acknowledged && (
                       <button
+                        type="button"
                         onClick={() => acknowledgeAlert(alert.id)}
                         className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                         title="Dismiss"

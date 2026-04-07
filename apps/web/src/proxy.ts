@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/server';
 import { proxyRateLimiter, rateLimitResponse } from '@/lib/server/rate-limiter';
+import { getSupabaseKey } from '@/lib/env';
 
 // ─── Matcher ──────────────────────────────────────────────────────────────
 // Skip static assets and internal Next.js paths — they must never be
@@ -21,7 +22,7 @@ const PUBLIC_ROUTES = new Set(['/login', '/signup', '/forgot-password', '/reset-
  * their own authentication and must return JSON errors, not HTML redirects.
  * Only truly public non-API paths belong in this list.
  */
-const PUBLIC_PREFIXES = ['/auth/', '/api/health', '/legal/'];
+const PUBLIC_PREFIXES = ['/auth/', '/api/health', '/api/internal/', '/legal/'];
 
 /**
  * API paths that bypass the auth gate for monitoring and liveness probes.
@@ -33,6 +34,7 @@ const PUBLIC_API_PATHS = new Set([
   '/api/agents/health',
   '/api/agents/status',
   '/api/settings/status',
+  '/api/internal/cron/health',
 ]);
 
 /** Static assets and well-known files that never need auth. */
@@ -66,9 +68,7 @@ function isPublicRoute(pathname: string): boolean {
  */
 function isAuthConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = getSupabaseKey();
   if (!url || !key) return false;
   // Placeholder values used in CI builds are not real auth config
   if (url.includes('placeholder') || key.startsWith('placeholder')) return false;

@@ -25,11 +25,22 @@ import { useSystemControlsQuery } from '@/hooks/queries/use-system-controls-quer
 
 /** localStorage key for notification preferences (UI-only, not policy). */
 const NOTIFICATION_STORAGE_KEY = 'sentinel:notification-prefs';
+const DEFAULT_SYSTEM_INFO: Record<string, string> = {
+  Platform: 'Sentinel Trading',
+  Version: '0.0.0',
+  Engine: 'FastAPI (Python 3.12)',
+  Dashboard: 'Next.js 16 + React 19',
+  Agents: 'Claude SDK (TypeScript)',
+  Database: 'Supabase (PostgreSQL 17)',
+  Broker: 'Alpaca Markets API',
+  'Market Data': 'Polygon.io REST + WebSocket',
+};
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [checkingConnections, setCheckingConnections] = useState(false);
   const [activeTab, setActiveTab] = useState('risk');
+  const [systemInfo, setSystemInfo] = useState<Record<string, string>>(DEFAULT_SYSTEM_INFO);
 
   const [serviceStatus, setServiceStatus] = useState<ServiceStatuses>({
     engine: 'checking',
@@ -108,6 +119,38 @@ export default function SettingsPage() {
 
   useEffect(() => {
     markPageVisited('settings');
+  }, []);
+
+  useEffect(() => {
+    const loadSystemInfo = async () => {
+      try {
+        const response = await fetch('/api/settings/system-info', { cache: 'no-store' });
+        if (!response.ok) return;
+        const info = (await response.json()) as {
+          platform: string;
+          appVersion: string;
+          engine: string;
+          dashboard: string;
+          agents: string;
+          database: string;
+          broker: string;
+          marketData: string;
+        };
+        setSystemInfo({
+          Platform: info.platform,
+          Version: info.appVersion,
+          Engine: info.engine,
+          Dashboard: info.dashboard,
+          Agents: info.agents,
+          Database: info.database,
+          Broker: info.broker,
+          'Market Data': info.marketData,
+        });
+      } catch {
+        // Keep defaults if metadata endpoint is unavailable.
+      }
+    };
+    void loadSystemInfo();
   }, []);
 
   // Load notification preferences from localStorage + check connections
@@ -386,15 +429,7 @@ export default function SettingsPage() {
                         </p>
                       </div>
                       <div className="divide-y divide-border/25">
-                        {[
-                          ['Platform', 'Sentinel Trading v0.1.0'],
-                          ['Engine', 'FastAPI (Python 3.12)'],
-                          ['Dashboard', 'Next.js 16 + React 19'],
-                          ['Agents', 'Claude SDK (TypeScript)'],
-                          ['Database', 'Supabase (PostgreSQL 15)'],
-                          ['Broker', 'Alpaca Markets API'],
-                          ['Market Data', 'Polygon.io REST + WebSocket'],
-                        ].map(([label, value]) => (
+                        {Object.entries(systemInfo).map(([label, value]) => (
                           <div
                             key={label}
                             className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
@@ -415,6 +450,7 @@ export default function SettingsPage() {
                         API keys are configured via environment variables in{' '}
                         <code className="font-mono text-foreground">.env</code>. Risk limits and
                         trading mode are saved to the database and synced across devices.
+                        {/* Security policy: do not collect provider API keys in Settings UI. */}
                       </p>
                     </div>
                   </CardContent>
