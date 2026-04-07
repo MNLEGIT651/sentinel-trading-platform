@@ -113,6 +113,7 @@ export function NotificationCenter() {
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors active:scale-95"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
@@ -150,6 +151,7 @@ export function NotificationCenter() {
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
+                    type="button"
                     onClick={markAllRead}
                     className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
                     aria-label="Mark all as read"
@@ -159,6 +161,7 @@ export function NotificationCenter() {
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="Close notifications"
@@ -187,6 +190,7 @@ export function NotificationCenter() {
                     </div>
                     {group.items.map((n) => (
                       <button
+                        type="button"
                         key={n.id}
                         onClick={() => markRead(n.id)}
                         className={cn(
