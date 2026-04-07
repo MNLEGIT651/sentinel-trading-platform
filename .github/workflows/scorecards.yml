@@ -1,0 +1,28 @@
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '30 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  scorecard:
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Scorecards analysis
+        uses: ossf/scorecard-action@v2.2.0
+        with:
+          results_file: results.sarif
+          format: sarif
+      - name: Upload results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif

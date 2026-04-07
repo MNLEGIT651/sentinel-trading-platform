@@ -10,17 +10,19 @@ Navigate to **Settings → Branches → Add branch ruleset** (or classic protect
 
 ### `main` Branch
 
-| Setting                                        | Value  | Why                                                    |
-| ---------------------------------------------- | ------ | ------------------------------------------------------ |
-| Require a pull request before merging           | ✅ On  | Prevent direct pushes to `main`                        |
-| Required approving reviews                      | 1      | At least one review before merge                       |
-| Dismiss stale pull request approvals            | ✅ On  | Re-review after new commits                            |
-| Require review from code owners                 | ✅ On  | Enforces `.github/CODEOWNERS` (Pro feature)            |
-| Require status checks to pass before merging    | ✅ On  | Gate merges on CI                                      |
-| — Required checks                               |        | `Test Web`, `Test Engine`, `Test Agents`, `Security Audit` |
-| Require branches to be up to date before merging | ✅ On | Prevent merge skew                                     |
-| Require conversation resolution before merging  | ✅ On  | All review threads must be resolved                    |
-| Include administrators                          | ✅ On  | Rules apply to repo owner too                          |
+| Setting                                          | Value | Why                                                        |
+| ------------------------------------------------ | ----- | ---------------------------------------------------------- |
+| Require a pull request before merging            | ✅ On | Prevent direct pushes to `main`                            |
+| Required approving reviews                       | 1     | At least one review before merge                           |
+| Dismiss stale pull request approvals             | ✅ On | Re-review after new commits                                |
+| Require review from code owners                  | ✅ On | Enforces `.github/CODEOWNERS` (Pro feature)                |
+| Require status checks to pass before merging     | ✅ On | Gate merges on CI                                          |
+| — Required checks                                |       | `Test Web`, `Test Engine`, `Test Agents`, `Security Audit` |
+| Require branches to be up to date before merging | ✅ On | Prevent merge skew                                         |
+| Require conversation resolution before merging   | ✅ On | All review threads must be resolved                        |
+| Require signed commits                           | ✅ On | Verify commit authenticity via GPG/SSH signatures          |
+| Require linear history                           | ✅ On | Clean history; no merge commits on `main`                  |
+| Include administrators                           | ✅ On | Rules apply to repo owner too                              |
 
 ### Why This Matters
 
@@ -71,18 +73,18 @@ Navigate to **Settings → Environments**.
 
 ### `production`
 
-| Setting                   | Value                  |
-| ------------------------- | ---------------------- |
-| Required reviewers        | `stevenschling13`      |
-| Wait timer                | 0 minutes              |
-| Deployment branch policy  | `main` only            |
+| Setting                  | Value             |
+| ------------------------ | ----------------- |
+| Required reviewers       | `stevenschling13` |
+| Wait timer               | 0 minutes         |
+| Deployment branch policy | `main` only       |
 
 ### `preview`
 
-| Setting                   | Value                  |
-| ------------------------- | ---------------------- |
-| Required reviewers        | (none)                 |
-| Deployment branch policy  | All branches           |
+| Setting                  | Value        |
+| ------------------------ | ------------ |
+| Required reviewers       | (none)       |
+| Deployment branch policy | All branches |
 
 ### Usage in Workflows
 
@@ -138,14 +140,14 @@ jobs:
 
 Navigate to **Settings → Security → Code security and analysis**:
 
-| Setting                                  | Recommended |
-| ---------------------------------------- | ----------- |
-| Private vulnerability reporting          | ✅ Enable   |
-| Dependabot alerts                        | ✅ Enable   |
-| Dependabot security updates              | ✅ Enable   |
-| Dependency graph                         | ✅ Enable   |
-| Secret scanning                          | ✅ Enable   |
-| Secret scanning push protection          | ✅ Enable   |
+| Setting                         | Recommended |
+| ------------------------------- | ----------- |
+| Private vulnerability reporting | ✅ Enable   |
+| Dependabot alerts               | ✅ Enable   |
+| Dependabot security updates     | ✅ Enable   |
+| Dependency graph                | ✅ Enable   |
+| Secret scanning                 | ✅ Enable   |
+| Secret scanning push protection | ✅ Enable   |
 
 ---
 
@@ -153,22 +155,25 @@ Navigate to **Settings → Security → Code security and analysis**:
 
 Navigate to **Settings → General → Pull Requests**:
 
-| Setting        | Recommended |
-| -------------- | ----------- |
-| Allow auto-merge | ✅ Enable |
-| Automatically delete head branches | ✅ Enable |
-| Allow squash merging | ✅ Enable |
-| Default to squash merge | ✅ Recommended |
+| Setting                            | Recommended    |
+| ---------------------------------- | -------------- |
+| Allow auto-merge                   | ✅ Enable      |
+| Automatically delete head branches | ✅ Enable      |
+| Allow squash merging               | ✅ Enable      |
+| Default to squash merge            | ✅ Recommended |
 
 ---
 
 ## 7. Summary Checklist
 
-- [ ] Configure branch protection on `main` with required status checks
-- [ ] Enable "Require review from code owners" (leverages `.github/CODEOWNERS`)
+- [x] Configure branch protection on `main` with required status checks
+- [x] Enable "Require review from code owners" (leverages `.github/CODEOWNERS`)
+- [x] Require signed commits for authenticity
+- [x] Require linear history (no merge commits)
 - [ ] Create `production` and `preview` environments
-- [ ] Enable private vulnerability reporting
-- [ ] Enable Dependabot alerts and security updates
-- [ ] Enable secret scanning and push protection
-- [ ] Enable auto-merge and auto-delete branches
-- [ ] Review Dependabot PRs as they arrive (`.github/dependabot.yml` is active)
+- [x] Enable private vulnerability reporting
+- [x] Enable Dependabot alerts and security updates
+- [x] Enable secret scanning and push protection
+- [x] Enable CodeQL default setup
+- [x] Enable auto-merge and auto-delete branches
+- [x] Review Dependabot PRs as they arrive (`.github/dependabot.yml` is active)

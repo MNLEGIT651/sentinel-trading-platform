@@ -1,17 +1,16 @@
 # Sentinel Trading Platform — Dependabot Configuration
 #
-# GitHub Pro feature: Dependabot opens PRs for dependency updates
-# automatically and groups related updates to reduce noise.
-# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+# Weekly, grouped dependency PRs with controlled update scope.
+# Major-version bumps are held for manual planning/review.
 
 version: 2
 updates:
-  # ── GitHub Actions ─────────────────────────────────────────────────
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'ci'
     labels:
@@ -22,12 +21,12 @@ updates:
         patterns:
           - '*'
 
-  # ── Root npm (devDependencies: turbo, husky, commitlint, etc.) ─────
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore'
     labels:
@@ -36,13 +35,17 @@ updates:
       root-dev:
         patterns:
           - '*'
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
 
-  # ── Web dashboard (Next.js + React) ───────────────────────────────
   - package-ecosystem: npm
     directory: /apps/web
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(web)'
     labels:
@@ -67,37 +70,49 @@ updates:
           - '@eslint/*'
           - 'prettier'
           - '@typescript-eslint/*'
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
 
-  # ── Agents orchestrator (TypeScript) ───────────────────────────────
   - package-ecosystem: npm
     directory: /apps/agents
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(agents)'
     labels:
       - dependencies
       - area/agents
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
 
-  # ── Shared contracts ───────────────────────────────────────────────
   - package-ecosystem: npm
     directory: /packages/shared
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(shared)'
     labels:
       - dependencies
       - area/shared
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
 
-  # ── Python quant engine ────────────────────────────────────────────
   - package-ecosystem: pip
     directory: /apps/engine
     schedule:
       interval: weekly
       day: monday
+    open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(engine)'
     labels:
@@ -119,3 +134,7 @@ updates:
           - 'pytest'
           - 'pytest-*'
           - 'ruff'
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
