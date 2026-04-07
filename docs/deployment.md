@@ -31,11 +31,11 @@ Services on the same Railway project can communicate over an internal private ne
 
 **Environment variable configuration:**
 
-| Service          | Variable     | Value                                                          | Network  |
-| ---------------- | ------------ | -------------------------------------------------------------- | -------- |
-| Railway Agents   | `ENGINE_URL` | `http://sentinel-engine-trading.railway.internal:8000`         | Private  |
-| Vercel Web       | `ENGINE_URL` | `https://<engine>.up.railway.app`                              | Public   |
-| Vercel Web       | `AGENTS_URL` | `https://<agents>.up.railway.app`                              | Public   |
+| Service        | Variable     | Value                                                  | Network |
+| -------------- | ------------ | ------------------------------------------------------ | ------- |
+| Railway Agents | `ENGINE_URL` | `http://sentinel-engine-trading.railway.internal:8000` | Private |
+| Vercel Web     | `ENGINE_URL` | `https://<engine>.up.railway.app`                      | Public  |
+| Vercel Web     | `AGENTS_URL` | `https://<agents>.up.railway.app`                      | Public  |
 
 > **Note:** Private network hostnames use `http` (not `https`) and the Railway-assigned `PORT`. Public URLs use `https` and do not need a port suffix.
 
@@ -82,15 +82,17 @@ Services on the same Railway project can communicate over an internal private ne
 | `SUPABASE_URL`              | Database endpoint            |
 | `PORT`                      | Railway-assigned port (auto) |
 
-### Deprecated (Remove After Cutover)
+### Deprecated (Removed — Q2 2026 Cutover Complete)
 
-| Variable                     | Replacement                    |
+The following browser-facing environment variables were replaced by server-side equivalents during the same-origin proxy migration. They are no longer needed and should be removed from all environments if still present.
+
+| Variable (Removed)           | Replacement                    |
 | ---------------------------- | ------------------------------ |
 | `NEXT_PUBLIC_ENGINE_URL`     | `ENGINE_URL` (server-side)     |
 | `NEXT_PUBLIC_ENGINE_API_KEY` | `ENGINE_API_KEY` (server-side) |
 | `NEXT_PUBLIC_AGENTS_URL`     | `AGENTS_URL` (server-side)     |
 
-These exist only during migration. The browser must not depend on them in production.
+The browser never depends on these. All engine and agents calls flow through the Next.js same-origin proxy (`/api/engine/*`, `/api/agents/*`).
 
 ## Service Configuration
 

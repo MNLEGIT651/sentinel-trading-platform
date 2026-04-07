@@ -114,10 +114,13 @@ Vercel preview deployments automatically deploy on PRs. Configure staging backen
 
 1. Go to **Vercel Dashboard → Project Settings → Environment Variables**
 2. Add variables scoped to **Preview** environment:
-   - `NEXT_PUBLIC_ENGINE_URL` → staging Railway engine public URL
-   - `NEXT_PUBLIC_AGENTS_URL` → staging Railway agents public URL
+   - `ENGINE_URL` → staging Railway engine internal URL
+   - `ENGINE_API_KEY` → staging engine API key
+   - `AGENTS_URL` → staging Railway agents internal URL
    - `NEXT_PUBLIC_SUPABASE_URL` → staging Supabase URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → staging anon key
+
+> **Note:** Do NOT set the deprecated `NEXT_PUBLIC_ENGINE_URL` or `NEXT_PUBLIC_AGENTS_URL`. All engine/agents calls now use the server-side same-origin proxy.
 
 ## Step 4: Deployment Flow
 

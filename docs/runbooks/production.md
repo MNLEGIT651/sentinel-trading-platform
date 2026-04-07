@@ -97,16 +97,17 @@ Check Railway logs for:
 - Keep the previous Vercel deployment available for instant rollback.
 - Keep the previous Railway deployment available until the new backend is confirmed stable.
 
-## Post-Cutover Cleanup
+## Post-Cutover Cleanup (Completed Q2 2026)
 
-After production is verified stable:
+The same-origin proxy migration is complete. The following deprecated browser-facing
+variables have been replaced by server-side equivalents and should no longer exist
+in any environment:
 
-1. Remove deprecated Vercel env vars:
-   - `NEXT_PUBLIC_ENGINE_URL`
-   - `NEXT_PUBLIC_ENGINE_API_KEY`
-   - `NEXT_PUBLIC_AGENTS_URL`
-2. Decommission stale Railway services (placeholder or duplicate services).
-3. Verify that removing deprecated vars doesn't break anything by redeploying.
+- ~~`NEXT_PUBLIC_ENGINE_URL`~~ → `ENGINE_URL`
+- ~~`NEXT_PUBLIC_ENGINE_API_KEY`~~ → `ENGINE_API_KEY`
+- ~~`NEXT_PUBLIC_AGENTS_URL`~~ → `AGENTS_URL`
+
+If found in Vercel or Railway env settings, remove them.
 
 ## Rollback
 
