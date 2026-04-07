@@ -1,47 +1,36 @@
 # Commit Signing Policy
 
-## Goal
+## Protected branches
 
-All new commits to protected branches should be signed with a verified GPG or SSH key.
-This ensures traceability and prevents commit author spoofing.
+- `main`
+- `release/*`
 
-## Current Status
+## Enforcement
 
-- **Enforcement level**: Advisory (warnings only)
-- **Target**: Blocking for `main` branch after all contributors have signing configured
+- CI verifies commit trust status with `git log --pretty='%H %G?'` via `scripts/check-commit-signatures.sh`.
+- Required trust status is `%G? = G` (**trusted-good**) for all newly introduced commits.
+- Any status other than `G` fails CI unless explicitly grandfathered in `docs/security/commit-signing-exceptions.txt`.
+- Platform-native branch protection should also enable **Require signed commits** for `main` and `release/*`.
 
-## How to Set Up Signing
+## Trusted signer source of truth
 
-### GPG Signing
+- `.github/trusted_signers` is the repository trust store used by `git` SSH signature verification.
+- Developers and bots must add their signer identities to this file before opening protected-branch PRs.
 
-```bash
-# Generate a GPG key (if you don't have one)
-gpg --full-generate-key
+## Full-history audit and grandfathering
 
-# List your key ID
-gpg --list-secret-keys --keyid-format=long
-
-# Configure git to use it
-git config --global user.signingkey YOUR_KEY_ID
-git config --global commit.gpgsign true
-```
-
-### SSH Signing (Git 2.34+)
+Audit command:
 
 ```bash
-git config --global gpg.format ssh
-git config --global user.signingkey ~/.ssh/id_ed25519.pub
-git config --global commit.gpgsign true
+scripts/audit-commit-signatures.sh
 ```
 
-## CI Integration
+Latest audit (2026-04-07 UTC):
 
-The `scripts/check-commit-signatures.sh` script audits commits in CI:
+- Total legacy exceptions: **297** commits
+- Breakdown by `%G?` status:
+  - `E` (untrusted/unverifiable): 133
+  - `N` (no signature): 162
+  - `U` (signature good but trust undefined): 2
 
-- **Default mode**: Warns about unsigned commits but does not fail the build
-- **Strict mode**: Set `STRICT=true` env var to fail on unsigned commits
-
-## Exception List
-
-Legacy unsigned commits are tracked in `docs/security/commit-signing-exceptions.txt`.
-Each line contains a full commit SHA that is exempt from the signing requirement.
+The generated exception file (`docs/security/commit-signing-exceptions.txt`) is the approved grandfather list for pre-policy history. New commits must not be added to this file without explicit security review.

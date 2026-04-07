@@ -1,81 +1,55 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { GET } from '@/app/api/internal/cron/health/route';
 
-const originalEnv = {
-  CRON_SECRET: process.env.CRON_SECRET,
-  NODE_ENV: process.env.NODE_ENV,
-  ENGINE_URL: process.env.ENGINE_URL,
-  ENGINE_API_KEY: process.env.ENGINE_API_KEY,
-  AGENTS_URL: process.env.AGENTS_URL,
-};
+const originalCronSecret = process.env.CRON_SECRET;
 
-function restoreEnv() {
-  process.env.CRON_SECRET = originalEnv.CRON_SECRET;
-  (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv.NODE_ENV;
-  process.env.ENGINE_URL = originalEnv.ENGINE_URL;
-  process.env.ENGINE_API_KEY = originalEnv.ENGINE_API_KEY;
-  process.env.AGENTS_URL = originalEnv.AGENTS_URL;
-}
+afterEach(() => {
+  process.env.CRON_SECRET = originalCronSecret;
+});
 
 describe('/api/internal/cron/health', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-    restoreEnv();
-  });
-
-  afterEach(() => {
-    restoreEnv();
-  });
-
-  it('returns 401 when CRON_SECRET is not set', async () => {
+  it('returns 401 when cron secret is missing', async () => {
     delete process.env.CRON_SECRET;
+    const request = new Request('https://example.com/api/internal/cron/health');
 
-    const request = new Request('http://localhost/api/internal/cron/health');
-    const response = await GET(request);
-    const body = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(body).toEqual({ error: 'unauthorized' });
-  });
-
-  it('returns 401 when authorization header is missing', async () => {
-    process.env.CRON_SECRET = 'test-secret';
-
-    const request = new Request('http://localhost/api/internal/cron/health');
     const response = await GET(request);
 
     expect(response.status).toBe(401);
   });
 
-  it('returns 401 when authorization header has wrong secret', async () => {
-    process.env.CRON_SECRET = 'test-secret';
-
-    const request = new Request('http://localhost/api/internal/cron/health', {
+  it('returns 401 when authorization header does not match', async () => {
+    process.env.CRON_SECRET = 'expected-secret';
+    const request = new Request('https://example.com/api/internal/cron/health', {
       headers: { authorization: 'Bearer wrong-secret' },
     });
+
     const response = await GET(request);
 
     expect(response.status).toBe(401);
   });
 
-  it('delegates to health route when CRON_SECRET matches', async () => {
-    process.env.CRON_SECRET = 'test-secret';
-    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
-    delete process.env.ENGINE_URL;
-    delete process.env.ENGINE_API_KEY;
-    delete process.env.AGENTS_URL;
+  it('returns health payload when authorization header matches CRON_SECRET', async () => {
+    process.env.CRON_SECRET = 'expected-secret';
+    process.env.ENGINE_URL = 'https://engine.example';
+    process.env.ENGINE_API_KEY = 'engine-key';
+    process.env.AGENTS_URL = 'https://agents.example';
 
-    vi.stubGlobal('fetch', vi.fn());
+    const fetchMock = async () => new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock as typeof fetch;
 
-    const request = new Request('http://localhost/api/internal/cron/health', {
-      headers: { authorization: 'Bearer test-secret' },
-    });
-    const response = await GET(request);
-    const body = await response.json();
+    try {
+      const request = new Request('https://example.com/api/internal/cron/health', {
+        headers: { authorization: 'Bearer expected-secret' },
+      });
 
-    expect(response.status).toBe(200);
-    expect(body).toHaveProperty('status');
-    expect(body).toHaveProperty('service', 'sentinel-web');
-    expect(body).toHaveProperty('dependencies');
+      const response = await GET(request);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty('status');
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });

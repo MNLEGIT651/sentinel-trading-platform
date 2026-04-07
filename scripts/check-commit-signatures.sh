@@ -1,60 +1,53 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Audit commit signatures for a given range.
-# Usage: check-commit-signatures.sh [RANGE] [EXCEPTIONS_FILE]
-#
-# Exit codes:
-#   0 — all commits trusted or covered by exceptions
-#   1 — untrusted commits found (when STRICT=true, default false)
-#
-# When STRICT is not set or is "false", the script prints warnings but exits 0.
-
-RANGE="${1:-HEAD}"
+RANGE="${1:-}"
 EXCEPTIONS_FILE="${2:-docs/security/commit-signing-exceptions.txt}"
-STRICT="${STRICT:-false}"
+TRUSTED_SIGNERS_FILE="${3:-.github/trusted_signers}"
 
-if [[ ! -f "$EXCEPTIONS_FILE" ]]; then
-  echo "Exceptions file not found: $EXCEPTIONS_FILE — treating all commits as unexempted"
+if [[ ! -f "$TRUSTED_SIGNERS_FILE" ]]; then
+  echo "Trusted signers file not found: $TRUSTED_SIGNERS_FILE" >&2
+  exit 1
 fi
 
-if ! git rev-parse --verify --quiet "${RANGE%%..*}" >/dev/null 2>&1; then
+if [[ ! -f "$EXCEPTIONS_FILE" ]]; then
+  echo "Exceptions file not found: $EXCEPTIONS_FILE" >&2
+  exit 1
+fi
+
+git config gpg.ssh.allowedSignersFile "$TRUSTED_SIGNERS_FILE"
+
+if [[ -z "$RANGE" ]]; then
+  RANGE="HEAD"
+fi
+
+if ! git rev-parse --verify --quiet "${RANGE%%..*}" >/dev/null; then
   echo "No commits found for range: $RANGE"
   exit 0
 fi
 
 violations=0
-total=0
 
 echo "Auditing commit signatures for range: $RANGE"
 while read -r sha status; do
   [[ -z "$sha" ]] && continue
-  total=$((total + 1))
 
-  if [[ "$status" == "G" || "$status" == "U" || "$status" == "E" ]]; then
+  if [[ "$status" == "G" ]]; then
     continue
   fi
 
-  if [[ -f "$EXCEPTIONS_FILE" ]] && grep -Eq "^${sha}( |$)" "$EXCEPTIONS_FILE"; then
+  if grep -Eq "^${sha}( |$)" "$EXCEPTIONS_FILE"; then
     echo "LEGACY-EXCEPTION: $sha status=$status"
     continue
   fi
 
-  echo "UNSIGNED: $sha status=$status"
+  echo "UNTRUSTED: $sha status=$status"
   violations=$((violations + 1))
-done < <(git log --pretty='%H %G?' "$RANGE" 2>/dev/null || true)
-
-echo ""
-echo "Checked $total commit(s): $violations unsigned, $((total - violations)) signed/excepted."
+done < <(git log --pretty='%H %G?' "$RANGE")
 
 if [[ "$violations" -gt 0 ]]; then
-  if [[ "$STRICT" == "true" ]]; then
-    echo "::error::Found $violations unsigned commit(s). See commit-signing-policy.md."
-    exit 1
-  else
-    echo "::warning::Found $violations unsigned commit(s). Consider enabling GPG/SSH signing."
-    exit 0
-  fi
+  echo "Found $violations untrusted commit signature(s)."
+  exit 1
 fi
 
-echo "All commit signatures verified or covered by exceptions."
+echo "All commit signatures trusted or covered by legacy exceptions."

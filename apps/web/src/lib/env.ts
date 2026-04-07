@@ -28,7 +28,7 @@ export function getServerEnv() {
   const supabaseKey = getSupabaseKey();
   if (!supabaseKey) {
     throw new Error(
-      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
     );
   }
   return {
@@ -53,7 +53,7 @@ export function getClientEnv() {
   const supabaseKey = getSupabaseKey();
   if (!supabaseKey) {
     throw new Error(
-      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+      'Missing Supabase key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
     );
   }
   return {
@@ -83,7 +83,9 @@ export function validateEnv(): { valid: boolean; missing: string[]; warnings: st
 
   // At least one Supabase key must be set
   if (!getSupabaseKey()) {
-    missing.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)');
+    missing.push(
+      'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY)',
+    );
   }
 
   for (const key of RECOMMENDED_VARS) {

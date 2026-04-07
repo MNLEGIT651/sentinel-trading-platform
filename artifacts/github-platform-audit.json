@@ -1,0 +1,12 @@
+{
+  "track": "github",
+  "status": "fail",
+  "blocking_findings": [
+    "Railway deploy workflow installs @railway/cli without version pinning, creating non-deterministic deploy behavior."
+  ],
+  "warning_findings": [],
+  "dashboard_only_blockers": [
+    "Branch protection/ruleset visibility unavailable via API (status 401). Verify required checks in GitHub dashboard.",
+    "Cannot confirm branch protection required-check enforcement from repository-local evidence alone."
+  ]
+}
