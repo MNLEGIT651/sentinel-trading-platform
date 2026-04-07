@@ -16,6 +16,7 @@ pnpm lint               # Lint/typecheck Node workspaces only
 pnpm test               # Test Node workspaces only
 pnpm build              # Build Node workspaces only
 node scripts/security-audit.mjs  # Workflow permissions + dependency audit; requires apps/engine/.venv with pip-audit
+node scripts/validate-platform-contract.mjs  # Validates env/check/health contracts against policy files
 pnpm test:web           # Web Vitest suite
 pnpm test:web:e2e       # Web Playwright suite
 pnpm test:agents        # Agents Vitest suite
@@ -65,6 +66,7 @@ Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`
 - `git diff --check`
 - Run the closest local command to the workflow steps you changed
 - `node scripts/security-audit.mjs` when workflow permissions or dependency-audit automation changes
+- `node scripts/validate-platform-contract.mjs` when env contracts, required checks, or health endpoint policy changes
 - CI `security-audit` gate runs after `test-web`, `test-engine`, and `test-agents` on:
   - pushes to `main`
   - pull requests targeting `main` or `release/*` branches

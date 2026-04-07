@@ -552,6 +552,20 @@ export interface EngineResponse<T> {
   timestamp: string;
 }
 
+/** Shared dependency status values returned by service health endpoints. */
+export type DependencyHealth = 'connected' | 'disconnected' | 'not_configured';
+
+/** Shared status values returned by service health endpoints. */
+export type ServiceHealthStatus = 'ok' | 'degraded';
+
+/** Minimal cross-service health payload contract. */
+export interface ServiceHealthResponse {
+  status: ServiceHealthStatus;
+  service: string;
+  timestamp: string;
+  dependencies: Record<string, DependencyHealth>;
+}
+
 /* ── Notification Types ─────────────────────────────────── */
 
 export type NotificationChannel = 'in_app' | 'email' | 'push';

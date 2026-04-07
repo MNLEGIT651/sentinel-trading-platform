@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "environments": {
+    "web": {
+      "public": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY"],
+      "publicFallback": ["NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+      "server": ["ENGINE_URL", "ENGINE_API_KEY", "AGENTS_URL", "SUPABASE_SERVICE_ROLE_KEY"]
+    },
+    "engine": {
+      "required": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ENGINE_API_KEY"],
+      "optional": [
+        "POLYGON_API_KEY",
+        "ALPACA_API_KEY",
+        "ALPACA_SECRET_KEY",
+        "ALPACA_BROKER_API_KEY",
+        "ALPACA_BROKER_API_SECRET"
+      ]
+    },
+    "agents": {
+      "required": [
+        "ANTHROPIC_API_KEY",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_JWT_SECRET",
+        "ENGINE_URL",
+        "ENGINE_API_KEY"
+      ],
+      "optional": ["AGENTS_API_KEY", "RESEND_API_KEY", "NOTIFICATION_EMAIL"]
+    },
+    "ci": {
+      "requiredSecrets": [
+        "RAILWAY_TOKEN",
+        "RAILWAY_ENGINE_SERVICE_ID",
+        "RAILWAY_AGENTS_SERVICE_ID",
+        "SUPABASE_ACCESS_TOKEN",
+        "SUPABASE_PROJECT_REF"
+      ]
+    }
+  },
+  "healthEndpoints": [
+    { "service": "web", "path": "/api/health", "file": "apps/web/src/app/api/health/route.ts" },
+    { "service": "engine", "path": "/health", "file": "apps/engine/src/api/routes/health.py" },
+    { "service": "agents", "path": "/health", "file": "apps/agents/src/server.ts" }
+  ],
+  "requiredChecksPolicy": "policy/required-checks.json"
+}

@@ -37,6 +37,7 @@ import { getSupabaseClient } from './supabase-client.js';
 import { randomUUID } from 'node:crypto';
 import { startRecommendationWorkflow } from './workflows/recommendation-lifecycle.js';
 import { CORRELATION_HEADER, withCorrelationId, getCorrelationId } from './correlation.js';
+import type { ServiceHealthResponse } from '@sentinel/shared';
 
 const CYCLE_LOCK_NAME = 'agent_cycle';
 
@@ -122,7 +123,11 @@ export function createApp(orchestrator: Orchestrator): Express {
     const hasDegraded =
       (engineConfigured && !engineReachable) || (supabaseConfigured && !supabaseReachable);
 
-    res.status(hasDegraded ? 503 : 200).json({
+    const body: ServiceHealthResponse & {
+      uptime: number;
+      cycleCount: number;
+      halted: boolean;
+    } = {
       status: hasDegraded ? 'degraded' : 'ok',
       service: 'sentinel-agents',
       timestamp: new Date().toISOString(),
@@ -135,14 +140,16 @@ export function createApp(orchestrator: Orchestrator): Express {
             ? 'connected'
             : 'disconnected'
           : 'not_configured',
-        anthropic: Boolean(process.env.ANTHROPIC_API_KEY) ? 'configured' : 'not_configured',
+        anthropic: Boolean(process.env.ANTHROPIC_API_KEY) ? 'connected' : 'not_configured',
         supabase: supabaseConfigured
           ? supabaseReachable
             ? 'connected'
             : 'disconnected'
           : 'not_configured',
       },
-    });
+    };
+
+    res.status(hasDegraded ? 503 : 200).json(body);
   });
 
   // ── Status ──────────────────────────────────────────────────────

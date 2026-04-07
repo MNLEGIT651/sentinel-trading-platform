@@ -84,8 +84,8 @@ jobs:
         run: |
           ENGINE_URL="${{ secrets.RAILWAY_ENGINE_URL }}"
           if [ -z "$ENGINE_URL" ]; then
-            echo "⚠️ RAILWAY_ENGINE_URL secret not set, skipping health check"
-            exit 0
+            echo "❌ RAILWAY_ENGINE_URL secret is required for protected-branch deploy validation"
+            exit 1
           fi
           echo "Checking engine health at $ENGINE_URL/health ..."
           for i in 1 2 3 4 5; do
@@ -128,8 +128,8 @@ jobs:
         run: |
           AGENTS_URL="${{ secrets.RAILWAY_AGENTS_URL }}"
           if [ -z "$AGENTS_URL" ]; then
-            echo "⚠️ RAILWAY_AGENTS_URL secret not set, skipping health check"
-            exit 0
+            echo "❌ RAILWAY_AGENTS_URL secret is required for protected-branch deploy validation"
+            exit 1
           fi
           echo "Checking agents health at $AGENTS_URL/health ..."
           for i in 1 2 3 4 5; do

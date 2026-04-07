@@ -186,7 +186,33 @@ jobs:
         run: pnpm --filter agents test
 
   # ---------------------------------------------------------------------------
-  # Job 4: Dependency vulnerability scanning
+  # Job 4: Contract governance validation
+  # ---------------------------------------------------------------------------
+  contract-governance:
+    name: Contract Governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node 22
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+
+      - name: Enable corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate platform contract
+        run: node scripts/validate-platform-contract.mjs
+
+  # ---------------------------------------------------------------------------
+  # Job 5: Dependency vulnerability scanning
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
@@ -194,7 +220,7 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' &&
         (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
-    needs: [test-web, test-engine, test-agents]
+    needs: [test-web, test-engine, test-agents, contract-governance]
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

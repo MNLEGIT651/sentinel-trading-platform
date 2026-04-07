@@ -250,7 +250,7 @@ describe('SettingsPage', () => {
       expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
     );
     fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
-    await waitFor(() => expect(screen.getByText('Sentinel Trading v0.1.0')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Sentinel Trading')).toBeInTheDocument());
   });
 
   it('renders page-enter class on root container', async () => {

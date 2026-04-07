@@ -1,0 +1,10 @@
+{
+  "branches": ["main"],
+  "requiredChecks": [
+    "Test Web",
+    "Test Engine",
+    "Test Agents",
+    "Contract Governance",
+    "Security Audit"
+  ]
+}

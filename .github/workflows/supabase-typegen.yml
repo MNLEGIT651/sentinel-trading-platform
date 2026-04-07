@@ -37,13 +37,22 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
 
-      - name: Warn if secrets unavailable
-        if: env.SUPABASE_ACCESS_TOKEN == '' || env.SUPABASE_PROJECT_REF == ''
+      - name: Fail on missing secrets (protected branch)
+        if: (env.SUPABASE_ACCESS_TOKEN == '' || env.SUPABASE_PROJECT_REF == '') && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          echo "::warning::Supabase secrets not available (fork PR or missing config). Skipping type generation."
+          echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF are required on main pushes."
+          exit 1
+
+      - name: Warn if secrets unavailable (PR/fork)
+        if: (env.SUPABASE_ACCESS_TOKEN == '' || env.SUPABASE_PROJECT_REF == '') && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          echo "::warning::Supabase secrets not available for this context. Skipping type generation."
 
       - name: Check for type drift
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''

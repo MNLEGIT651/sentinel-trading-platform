@@ -25,6 +25,17 @@ import { useSystemControlsQuery } from '@/hooks/queries/use-system-controls-quer
 
 /** localStorage key for notification preferences (UI-only, not policy). */
 const NOTIFICATION_STORAGE_KEY = 'sentinel:notification-prefs';
+const PLATFORM_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'Sentinel Trading';
+
+const SYSTEM_INFO_ROWS: ReadonlyArray<[string, string]> = [
+  ['Platform', PLATFORM_VERSION],
+  ['Engine', 'FastAPI (Python 3.12)'],
+  ['Dashboard', 'Next.js 16 + React 19'],
+  ['Agents', 'Claude SDK (TypeScript)'],
+  ['Database', 'Supabase (PostgreSQL)'],
+  ['Broker', 'Alpaca Markets API'],
+  ['Market Data', 'Polygon.io REST + WebSocket'],
+];
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -386,15 +397,7 @@ export default function SettingsPage() {
                         </p>
                       </div>
                       <div className="divide-y divide-border/25">
-                        {[
-                          ['Platform', 'Sentinel Trading v0.1.0'],
-                          ['Engine', 'FastAPI (Python 3.12)'],
-                          ['Dashboard', 'Next.js 16 + React 19'],
-                          ['Agents', 'Claude SDK (TypeScript)'],
-                          ['Database', 'Supabase (PostgreSQL 15)'],
-                          ['Broker', 'Alpaca Markets API'],
-                          ['Market Data', 'Polygon.io REST + WebSocket'],
-                        ].map(([label, value]) => (
+                        {SYSTEM_INFO_ROWS.map(([label, value]) => (
                           <div
                             key={label}
                             className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
