@@ -15,7 +15,7 @@ EXCEPTIONS_FILE="${2:-docs/security/commit-signing-exceptions.txt}"
 STRICT="${STRICT:-false}"
 
 if [[ ! -f "$EXCEPTIONS_FILE" ]]; then
-  echo "Exceptions file not found: $EXCEPTIONS_FILE — treating all commits as unexcepted"
+  echo "Exceptions file not found: $EXCEPTIONS_FILE — treating all commits as unexempted"
 fi
 
 if ! git rev-parse --verify --quiet "${RANGE%%..*}" >/dev/null 2>&1; then
