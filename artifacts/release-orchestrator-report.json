@@ -1,0 +1,310 @@
+{
+  "timestamp_utc": "2026-04-07T20:27:00Z",
+  "execution_mode": "FULL_EXECUTION",
+  "repo": "stevenschling13/Trading-App",
+  "default_branch": "main",
+  "base_ref": "main",
+  "head_ref": "codex/validate-release-decision",
+  "summary": {
+    "status": "fail",
+    "merge_decision": "CHANGES_REQUESTED",
+    "release_decision": "NO_GO",
+    "blocking_issues": 3,
+    "warnings": 4
+  },
+  "risk_classification": {
+    "infra": true,
+    "security": true,
+    "runtime": true,
+    "data_contract": true,
+    "docs": false
+  },
+  "tracks": {
+    "github": {
+      "status": "warning",
+      "artifact_json": "artifacts/github-platform-audit.json",
+      "artifact_md": "artifacts/github-platform-audit.md",
+      "blocking_findings": [],
+      "warning_findings": [
+        "CircleCI Pipeline status errors on all open PR heads with no in-repo CircleCI config; required-check impact unknown.",
+        "Branch protection / required checks not visible from repo.",
+        "Vercel preview smoke workflow referenced in Actions list but no file in repo; coverage unverified."
+      ],
+      "dashboard_only_blockers": [
+        "Required checks and branch protection must be confirmed in GitHub UI; not visible locally."
+      ]
+    },
+    "vercel": {
+      "status": "fail",
+      "artifact_json": "artifacts/vercel-platform-audit.json",
+      "artifact_md": "artifacts/vercel-platform-audit.md",
+      "blocking_findings": [
+        "pnpm build fails: next/font/google in apps/web/src/app/layout.tsx attempts to fetch Google Fonts (DM Sans, JetBrains Mono), blocked offline."
+      ],
+      "warning_findings": [
+        "vercel.json ignoreCommand uses HEAD^ diff and can skip builds on merge commits.",
+        "No repository-defined Vercel preview smoke workflow; runtime gate unverified."
+      ],
+      "dashboard_only_blockers": ["Live Vercel preview health not probed in this environment."]
+    },
+    "railway": {
+      "status": "fail",
+      "artifact_json": "artifacts/railway-platform-audit.json",
+      "artifact_md": "artifacts/railway-platform-audit.md",
+      "blocking_findings": [
+        "Railway deploy workflow skips health checks when RAILWAY_ENGINE_URL / RAILWAY_AGENTS_URL secrets are missing, allowing deploys without validation."
+      ],
+      "warning_findings": [
+        "Railway CLI installed unpinned via npm install -g @railway/cli.",
+        "No proxy/edge smoke tests or rollback automation after deploy."
+      ],
+      "dashboard_only_blockers": ["Live Railway deployment state not verified here."]
+    },
+    "supabase": {
+      "status": "warning",
+      "artifact_json": "artifacts/supabase-platform-audit.json",
+      "artifact_md": "artifacts/supabase-platform-audit.md",
+      "blocking_findings": [],
+      "warning_findings": [
+        "supabase-typegen workflow sets Supabase CLI version to latest; tooling unpinned.",
+        "Typegen step is skipped when secrets missing, leaving drift undetected."
+      ],
+      "dashboard_only_blockers": ["No production RLS/auth probing performed in this environment."]
+    }
+  },
+  "open_pr_reviews": [
+    {
+      "pr": 218,
+      "title": "Add Copilot custom agent profiles and repo Copilot instructions",
+      "branch": "codex/create-specialized-github-agents-for-deployment",
+      "draft": true,
+      "risk": "infra, docs",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "BLOCKED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error (no config found) on head 6d575505; no GitHub Actions CI statuses reported.",
+        "Draft PR; required checks not visible."
+      ]
+    },
+    {
+      "pr": 217,
+      "title": "Harden CI/CD and deploy workflows; add safety checks, scripts, and layout cleanup",
+      "branch": "codex/run-platform-level-audit-for-sentinel-trading",
+      "draft": false,
+      "risk": "infra, runtime, security",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review",
+        "railway-deploy"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "CHANGES_REQUESTED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head 9457f397; GitHub Actions CI not reported.",
+        "Required checks unclear; Vercel deployment succeeded but CI required jobs absent."
+      ]
+    },
+    {
+      "pr": 216,
+      "title": "Harden CI/CD and dependency automation: Dependabot limits, Railway deploy validation + proxy probes, Vercel ignore fix, Supabase CLI pin, runbooks",
+      "branch": "codex/audit-and-document-platforms-for-optimization",
+      "draft": false,
+      "risk": "infra, runtime, security",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review",
+        "railway-deploy"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "CHANGES_REQUESTED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head 521d7f62; Vercel deployment failed.",
+        "GitHub Actions CI statuses not present; required checks incomplete."
+      ]
+    },
+    {
+      "pr": 215,
+      "title": "Add security CI workflows, pin SBOM tooling, and surface server system metadata in Settings UI",
+      "branch": "codex/review-codebase-and-propose-improvements",
+      "draft": false,
+      "risk": "infra, runtime, security",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review",
+        "railway-deploy"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "CHANGES_REQUESTED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head f7ba364d; only Vercel deployment succeeded.",
+        "Required GitHub Actions CI statuses missing."
+      ]
+    },
+    {
+      "pr": 212,
+      "title": "Add CodeQL workflow for code analysis",
+      "branch": "security/codeql-workflow",
+      "draft": false,
+      "risk": "infra, security",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "CHANGES_REQUESTED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head 723a9918; no GitHub Actions CI statuses.",
+        "Required checks cannot be confirmed."
+      ]
+    },
+    {
+      "pr": 211,
+      "title": "Add repo-setup-audit script and document security posture",
+      "branch": "copilot/setup-security-and-automation-research",
+      "draft": true,
+      "risk": "infra, docs",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "BLOCKED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head fc32f6b5; other statuses mixed (Railway not triggered, Vercel skipped).",
+        "Draft PR; required checks not surfaced."
+      ]
+    },
+    {
+      "pr": 210,
+      "title": "chore: add repo-setup audit script and GitHub repo setup runbook",
+      "branch": "codex/add-remote-origin-and-sync-branches",
+      "draft": false,
+      "risk": "infra, docs",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "CHANGES_REQUESTED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head 9cc035a9; no GitHub Actions CI statuses.",
+        "Required check coverage unknown."
+      ]
+    },
+    {
+      "pr": 183,
+      "title": "Fix CI failures, upgrade deferred major deps, harden Supabase integration",
+      "branch": "dependabot/npm_and_yarn/root-dev-448626748f",
+      "draft": false,
+      "risk": "runtime, security, infra",
+      "required_checks_expected": [
+        "CI (test-web, test-engine, test-agents)",
+        "workflow-lint",
+        "dependency-review",
+        "railway-deploy"
+      ],
+      "required_checks_present": false,
+      "required_checks_green": false,
+      "smoke_gates_present": false,
+      "smoke_gates_green": false,
+      "blocker_comments_present": false,
+      "decision": "CHANGES_REQUESTED",
+      "blocking_reasons": [
+        "CircleCI Pipeline status error on head 04c53626; Railway sentinel-agents deployment failed; required GitHub Actions CI statuses absent."
+      ]
+    }
+  ],
+  "commands_run": [
+    {
+      "command": "pnpm install --frozen-lockfile",
+      "status": "pass",
+      "notes": "Installed workspace dependencies via corepack/pnpm; engine warning about Node 24 vs expected 22."
+    },
+    {
+      "command": "pnpm lint",
+      "status": "pass",
+      "notes": "All workspace lint/tsc tasks passed."
+    },
+    {
+      "command": "pnpm test",
+      "status": "pass",
+      "notes": "All 104 web + 29 agents + 3 shared suites passed (warnings in console logs expected mocks)."
+    },
+    {
+      "command": "pnpm build",
+      "status": "fail",
+      "notes": "Failed in @sentinel/web build: next/font/google attempted to fetch DM Sans and JetBrains Mono from fonts.googleapis.com (blocked network)."
+    }
+  ],
+  "files_changed_by_codex": [
+    "artifacts/github-platform-audit.json",
+    "artifacts/github-platform-audit.md",
+    "artifacts/vercel-platform-audit.json",
+    "artifacts/vercel-platform-audit.md",
+    "artifacts/railway-platform-audit.json",
+    "artifacts/railway-platform-audit.md",
+    "artifacts/supabase-platform-audit.json",
+    "artifacts/supabase-platform-audit.md",
+    "artifacts/release-orchestrator-summary.md",
+    "artifacts/release-orchestrator-report.json"
+  ],
+  "post_fix_revalidation": [],
+  "repo_fixable_blockers": [
+    "Self-host or remove Google Fonts in apps/web/src/app/layout.tsx to unblock Next.js build.",
+    "Make Railway deploy health checks fail closed when service URLs are absent; pin Railway CLI version in workflow."
+  ],
+  "dashboard_only_blockers": [
+    "Verify branch protection and required checks in GitHub UI; current view cannot confirm.",
+    "Confirm live Vercel preview and Railway service health via dashboards."
+  ],
+  "warnings": [
+    "supabase-typegen workflow uses floating Supabase CLI version and skips when secrets missing.",
+    "vercel.json ignoreCommand is not merge-base aware and may skip builds.",
+    "CircleCI Pipeline status errors appear on all PRs despite no CircleCI config in repo."
+  ],
+  "recommended_followups": [
+    "Add repository-defined Vercel preview smoke workflow and align Actions list.",
+    "Pin @railway/cli and enforce URL-backed health checks; add proxy smoke tests post-deploy.",
+    "Pin Supabase CLI version in supabase-typegen workflow and fail if secrets unavailable.",
+    "Remove or disable stale CircleCI status context if not required; ensure GitHub Actions CI reports on PRs."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "status": "fail",
+  "findings": {
+    "blocking": [
+      "Railway deploy workflow skips health checks entirely when RAILWAY_ENGINE_URL / RAILWAY_AGENTS_URL secrets are absent, allowing deploys to succeed without validation."
+    ],
+    "warnings": [
+      "Railway CLI installed via npm install -g @railway/cli with no version pinning.",
+      "No proxy/edge smoke tests after deploy; only optional service-local /health checks.",
+      "Rollback/verification steps are not automated in workflow."
+    ],
+    "dashboard_only_blockers": [
+      "Live Railway deployment status and health not probed from this environment."
+    ]
+  },
+  "evidence": {
+    "railway_configs": ["railway.toml", "apps/engine/railway.toml"],
+    "workflow": ".github/workflows/railway-deploy.yml"
+  }
+}

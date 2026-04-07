@@ -1,0 +1,25 @@
+{
+  "status": "warning",
+  "findings": {
+    "blocking": [],
+    "warnings": [
+      "Open PR heads show failing 'CircleCI Pipeline' statuses (no config found) for multiple SHAs; CircleCI not defined in repo, required-status impact unknown.",
+      "Branch protection / required-check rules not visible from repo; cannot confirm required checks.",
+      "Vercel preview smoke workflow referenced in Actions list but no file present in repo; preview gate coverage unverified."
+    ],
+    "dashboard_only_blockers": [
+      "Cannot confirm branch protection and required checks from repository context; treat required-check completeness as dashboard-only until verified."
+    ]
+  },
+  "evidence": {
+    "workflows_sample": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/railway-deploy.yml",
+      ".github/workflows/supabase-typegen.yml"
+    ],
+    "failing_status_contexts": [
+      "CircleCI Pipeline (no config found)",
+      "Vercel (mixed success/failure across PRs)"
+    ]
+  }
+}

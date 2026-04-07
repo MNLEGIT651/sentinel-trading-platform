@@ -1,0 +1,20 @@
+{
+  "status": "fail",
+  "findings": {
+    "blocking": [
+      "pnpm build fails: next/font/google in apps/web/src/app/layout.tsx attempts to fetch DM Sans and JetBrains Mono from fonts.googleapis.com; network access blocked → build exit 1."
+    ],
+    "warnings": [
+      "vercel.json ignoreCommand uses HEAD^ diff instead of merge-base; build-skipping can be incorrect on merge commits.",
+      "No repository-defined Vercel preview smoke workflow; runtime health gating unverified from code."
+    ],
+    "dashboard_only_blockers": [
+      "Live preview health/status cannot be probed from this environment."
+    ]
+  },
+  "evidence": {
+    "config": "apps/web/vercel.json",
+    "health_route": "apps/web/src/app/api/health/route.ts",
+    "build_failure_log": "pnpm build → next/font google fetch error (DM Sans, JetBrains Mono)"
+  }
+}
