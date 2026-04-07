@@ -24,7 +24,7 @@ jobs:
 
       - uses: supabase/setup-cli@950dd0d5e1c4e6a5d7ed6c9dec3a1b3e89757f31 # v1.4.0
         with:
-          version: latest
+          version: 2.48.3
 
       - name: Generate types
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
