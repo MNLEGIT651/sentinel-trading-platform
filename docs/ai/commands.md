@@ -16,6 +16,8 @@ pnpm lint               # Lint/typecheck Node workspaces only
 pnpm test               # Test Node workspaces only
 pnpm build              # Build Node workspaces only
 node scripts/security-audit.mjs  # Workflow permissions + dependency audit; requires apps/engine/.venv with pip-audit
+gitleaks dir -v .                # Local secret scan equivalent to gitleaks workflow
+actionlint                       # Lint GitHub workflow syntax/expressions
 pnpm test:web           # Web Vitest suite
 pnpm test:web:e2e       # Web Playwright suite
 pnpm test:agents        # Agents Vitest suite
@@ -63,8 +65,10 @@ Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`
 ### CI Or Workflow Changes
 
 - `git diff --check`
+- `actionlint`
 - Run the closest local command to the workflow steps you changed
 - `node scripts/security-audit.mjs` when workflow permissions or dependency-audit automation changes
+- `gitleaks dir -v .` when changing secret scanning policy/workflows
 - CI `security-audit` gate runs after `test-web`, `test-engine`, and `test-agents` on:
   - pushes to `main`
   - pull requests targeting `main` or `release/*` branches

@@ -98,8 +98,9 @@ Browser ──► Next.js Server ──► Engine API (FastAPI)
 
 ### Security Automation
 
-CI/CD pipeline runs 9 security-related workflows:
+CI/CD pipeline includes these security workflows in-repo today:
 
-- Pre-merge: CodeQL SAST, Gitleaks secrets scan, dependency review
-- Post-deploy: OWASP ZAP DAST baseline, Lighthouse audit
-- Scheduled: Security safety audit (daily), container scan (weekly), Scorecard (weekly)
+- Pre-merge and mainline checks: CodeQL SAST, Gitleaks secret scanning, dependency review, security audit
+- Scheduled governance: OpenSSF Scorecards
+
+Optional controls such as OWASP ZAP baseline and Lighthouse can be added as deployment-maturity follow-ups.
