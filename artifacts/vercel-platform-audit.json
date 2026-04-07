@@ -1,0 +1,9 @@
+{
+  "track": "vercel",
+  "status": "pass",
+  "blocking_findings": [],
+  "warning_findings": [
+    "Live runtime probes for /api/health, /api/engine/health, /api/agents/health, /api/settings/status were not executed because deployment URL/env was not provided."
+  ],
+  "dashboard_only_blockers": []
+}
