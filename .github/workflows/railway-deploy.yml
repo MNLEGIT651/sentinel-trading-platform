@@ -32,6 +32,7 @@ concurrency:
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  RAILWAY_CLI_VERSION: 3.18.1
 
 jobs:
   # ---------- Detect which services changed ----------
@@ -66,7 +67,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: npm install -g @railway/cli@${{ env.RAILWAY_CLI_VERSION }}
 
       - name: Deploy engine service
         working-directory: apps/engine
@@ -84,8 +85,8 @@ jobs:
         run: |
           ENGINE_URL="${{ secrets.RAILWAY_ENGINE_URL }}"
           if [ -z "$ENGINE_URL" ]; then
-            echo "⚠️ RAILWAY_ENGINE_URL secret not set, skipping health check"
-            exit 0
+            echo "::error::RAILWAY_ENGINE_URL secret not set. Failing deploy."
+            exit 1
           fi
           echo "Checking engine health at $ENGINE_URL/health ..."
           for i in 1 2 3 4 5; do
@@ -111,7 +112,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: npm install -g @railway/cli@${{ env.RAILWAY_CLI_VERSION }}
 
       - name: Deploy agents service
         run: |
@@ -128,8 +129,8 @@ jobs:
         run: |
           AGENTS_URL="${{ secrets.RAILWAY_AGENTS_URL }}"
           if [ -z "$AGENTS_URL" ]; then
-            echo "⚠️ RAILWAY_AGENTS_URL secret not set, skipping health check"
-            exit 0
+            echo "::error::RAILWAY_AGENTS_URL secret not set. Failing deploy."
+            exit 1
           fi
           echo "Checking agents health at $AGENTS_URL/health ..."
           for i in 1 2 3 4 5; do
@@ -141,5 +142,30 @@ jobs:
             echo "⏳ Attempt $i — got HTTP $STATUS, retrying in 10s..."
             sleep 10
           done
-          echo "❌ Agents health check failed after 5 attempts"
-          exit 1
+            echo "❌ Agents health check failed after 5 attempts"
+            exit 1
+
+  proxy-smoke:
+    name: Proxy Smoke
+    needs:
+      - changes
+      - deploy-engine
+      - deploy-agents
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.agents == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify proxy health URL
+        env:
+          PROXY_URL: ${{ secrets.RAILWAY_PROXY_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROXY_URL}" ]; then
+            echo "::error::RAILWAY_PROXY_HEALTH_URL secret not set. Failing proxy smoke."
+            exit 1
+          fi
+          echo "Checking proxy at ${PROXY_URL}"
+          if ! curl -f --retry 3 --retry-delay 3 --max-time 10 -sS "${PROXY_URL}" >/tmp/proxy-health.out; then
+            echo "::error::Proxy health check failed"
+            exit 1
+          fi
+          echo "✅ Proxy health check passed."

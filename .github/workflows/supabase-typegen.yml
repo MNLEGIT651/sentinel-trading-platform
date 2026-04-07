@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
+
+env:
+  SUPABASE_CLI_VERSION: 2.48.3
 
 jobs:
   typegen:
@@ -24,10 +28,20 @@ jobs:
 
       - uses: supabase/setup-cli@950dd0d5e1c4e6a5d7ed6c9dec3a1b3e89757f31 # v1.4.0
         with:
-          version: latest
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Assert required Supabase secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_ACCESS_TOKEN}" || -z "${SUPABASE_PROJECT_REF}" ]]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF must be set for type generation."
+            exit 1
+          fi
 
       - name: Generate types
-        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
         run: |
           supabase gen types --lang=typescript \
             --project-id "$SUPABASE_PROJECT_REF" \
@@ -37,16 +51,7 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
 
-      - name: Warn if secrets unavailable
-        if: env.SUPABASE_ACCESS_TOKEN == '' || env.SUPABASE_PROJECT_REF == ''
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: |
-          echo "::warning::Supabase secrets not available (fork PR or missing config). Skipping type generation."
-
       - name: Check for type drift
-        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}

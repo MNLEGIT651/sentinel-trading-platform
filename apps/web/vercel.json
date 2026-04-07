@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "installCommand": "pnpm install",
   "buildCommand": "turbo run build --filter=@sentinel/web",
-  "ignoreCommand": "cd ../.. && git diff --quiet HEAD^ HEAD -- apps/web/ packages/shared/",
+  "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "regions": ["iad1"],
   "functions": {
     "app/api/**/*.ts": {

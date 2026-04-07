@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  noop:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Delegate CI to GitHub Actions
+          command: |
+            echo "CI is enforced via GitHub Actions. This CircleCI job exists to satisfy legacy status checks."
+
+workflows:
+  version: 2
+  noop-workflow:
+    jobs:
+      - noop
