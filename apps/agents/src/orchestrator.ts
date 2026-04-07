@@ -214,8 +214,12 @@ export class Orchestrator {
                   success: result.success,
                   durationMs: result.durationMs,
                   error: result.error,
-                }).catch(() => {
-                  /* non-blocking */
+                }).catch((err: unknown) => {
+                  logger.warn('orchestrator.record_step.failed', {
+                    cycleJobId,
+                    role,
+                    error: err instanceof Error ? err.message : String(err),
+                  });
                 });
               }
             }

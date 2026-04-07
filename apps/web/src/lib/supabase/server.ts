@@ -10,7 +10,7 @@ export async function createServerSupabaseClient() {
   if (!url || !key) {
     throw new Error(
       'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and ' +
-        'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY).',
+        'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY).',
     );
   }
 
@@ -63,8 +63,9 @@ export async function updateSession(request: NextRequest) {
   });
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { claims },
+  } = await supabase.auth.getClaims();
+  const user = claims?.sub ? { id: claims.sub } : null;
 
   return { user, supabaseResponse };
 }

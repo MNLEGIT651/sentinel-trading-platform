@@ -29,15 +29,27 @@ report it responsibly.
 
 ### Response Timeline
 
-| Step                     | Target    |
-| ------------------------ | --------- |
-| Acknowledgement          | 48 hours  |
-| Initial triage           | 5 days    |
-| Fix or mitigation issued | 30 days   |
+| Step                     | Target   |
+| ------------------------ | -------- |
+| Acknowledgement          | 48 hours |
+| Initial triage           | 5 days   |
+| Fix or mitigation issued | 30 days  |
 
 ## Security Practices
 
-- **Dependency scanning**: Dependabot monitors all ecosystems weekly.
-- **Security audits**: `npm audit` and `pip-audit` run daily via GitHub Actions.
-- **Secret detection**: No secrets are committed to the repository; CI validates this.
-- **Least-privilege CI**: All workflows use minimal `permissions` blocks.
+- **Branch protection**: `main` requires pull request reviews, passing CI status
+  checks (Test Web, Test Engine, Test Agents), up-to-date branches, conversation
+  resolution, signed commits, and linear history.
+- **Dependency scanning**: Dependabot monitors all ecosystems weekly with alerts,
+  security updates, grouped security updates, and malware alerts enabled.
+- **Security audits**: `pnpm audit` and `pip-audit` run in CI via
+  `scripts/security-audit.mjs`; `scripts/repo-setup-audit.sh` verifies
+  repository-level settings.
+- **Secret scanning & push protection**: GitHub secret scanning is enabled with
+  push protection to block commits containing secrets before they reach the
+  repository.
+- **Code scanning (CodeQL)**: CodeQL default setup is enabled, analyzing
+  JavaScript/TypeScript and Python for security vulnerabilities on every push
+  and pull request.
+- **Least-privilege CI**: All workflows use minimal top-level `permissions`
+  blocks and actions are pinned to full-length commit SHAs.

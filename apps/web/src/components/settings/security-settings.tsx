@@ -144,7 +144,12 @@ export function SecuritySettings() {
   const cancelEnroll = async () => {
     // Unenroll the unverified factor
     if (factorId) {
-      await supabase.auth.mfa.unenroll({ factorId }).catch(() => {});
+      await supabase.auth.mfa.unenroll({ factorId }).catch((err: unknown) => {
+        console.warn(
+          '[MFA] Unenroll cancelled factor failed:',
+          err instanceof Error ? err.message : String(err),
+        );
+      });
     }
     setEnrollState('idle');
     setQrUri('');

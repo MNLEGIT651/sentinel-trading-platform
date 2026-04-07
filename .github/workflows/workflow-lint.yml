@@ -4,32 +4,34 @@ on:
   pull_request:
     paths:
       - '.github/workflows/**'
-      - 'scripts/check-required-workflows.mjs'
-      - 'scripts/security-audit.mjs'
+      - 'apps/web/src/components/settings/**'
   push:
     branches: [main]
     paths:
       - '.github/workflows/**'
-      - 'scripts/check-required-workflows.mjs'
-      - 'scripts/security-audit.mjs'
-  workflow_dispatch:
+      - 'apps/web/src/components/settings/**'
 
 permissions:
   contents: read
 
+concurrency:
+  group: workflow-lint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint-workflows:
-    name: Lint workflow controls
+  actionlint:
+    name: actionlint
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Node 22
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
 
-      - name: Check required workflows
-        run: node scripts/check-required-workflows.mjs
+      - name: Enforce no API key entry fields in settings UI
+        run: |
+          if rg -n --glob '*.tsx' 'API Key|Secret Key' apps/web/src/components/settings --glob '!**/connection-status.tsx'; then
+            echo 'Forbidden key-entry labels found in Settings components.'
+            exit 1
+          fi

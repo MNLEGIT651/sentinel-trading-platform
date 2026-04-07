@@ -27,6 +27,32 @@ If any of those fields are missing, the agent should infer the smallest safe sco
 - Never let two agents edit the same file at the same time.
 - Rebase or merge only after the owning agent finishes and the branch passes validation.
 
+## Commit Signing Policy (main + release branches)
+
+- Protected targets: `main` and `release/*`.
+- Policy: all new commits that land on protected targets must be **trusted-good** under `git log --pretty='%H %G?'`.
+- Trust result required by policy: `%G? == G` only.
+- Any other result (`N`, `E`, `B`, `U`, `X`, `Y`, `R`) is treated as untrusted and fails CI unless the commit SHA is explicitly grandfathered in `docs/security/commit-signing-exceptions.txt`.
+- Branch protection should also enable platform-native **Require signed commits** for `main` and `release/*` when available.
+
+### Local setup (developers and bots)
+
+1. Configure SSH commit signing:
+   - `git config --global gpg.format ssh`
+   - `git config --global user.signingkey <path-to-ssh-public-key-or-key-id>`
+   - `git config --global commit.gpgsign true`
+2. Ensure repo trust policy is applied:
+   - `git config gpg.ssh.allowedSignersFile .github/trusted_signers`
+3. Add your signer identity to `.github/trusted_signers` in this repo before opening a PR.
+4. Validate your branch before push:
+   - `scripts/check-commit-signatures.sh origin/main..HEAD`
+
+Bots must follow the same policy:
+
+- use a dedicated bot signing key,
+- add the bot key to `.github/trusted_signers`,
+- run `scripts/check-commit-signatures.sh` as part of bot validation before creating PRs.
+
 Recommended branch names:
 
 - `feat/<area>-<outcome>`

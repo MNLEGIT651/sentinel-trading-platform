@@ -132,16 +132,39 @@ beforeEach(() => {
   mockUpdatePolicy.mockResolvedValue(true);
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        engine: 'connected',
-        agents: 'connected',
-        polygon: 'connected',
-        supabase: 'connected',
-        anthropic: 'connected',
-        alpaca: 'connected',
-      }),
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/settings/status')) {
+        return {
+          ok: true,
+          json: async () => ({
+            engine: 'connected',
+            agents: 'connected',
+            polygon: 'connected',
+            supabase: 'connected',
+            anthropic: 'connected',
+            alpaca: 'connected',
+          }),
+        };
+      }
+
+      if (url.includes('/api/settings/system-info')) {
+        return {
+          ok: true,
+          json: async () => ({
+            platform: 'Sentinel Trading',
+            appVersion: '9.9.9-test',
+            engine: 'FastAPI (Python 3.12)',
+            dashboard: 'Next.js 16 + React 19',
+            agents: 'Claude SDK (TypeScript)',
+            database: 'Supabase (PostgreSQL 17)',
+            broker: 'Alpaca Markets API',
+            marketData: 'Polygon.io REST + WebSocket',
+          }),
+        };
+      }
+
+      return { ok: false, json: async () => ({}) };
     }),
   );
 });
@@ -250,7 +273,7 @@ describe('SettingsPage', () => {
       expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
     );
     fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
-    await waitFor(() => expect(screen.getByText('Sentinel Trading v0.1.0')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('9.9.9-test')).toBeInTheDocument());
   });
 
   it('renders page-enter class on root container', async () => {

@@ -3,15 +3,6 @@
 # Automatically deploys apps/engine and apps/agents to Railway on push to main.
 # Only triggers when files in those service directories actually change,
 # so web-only changes won't cause unnecessary Railway deploys.
-#
-# REQUIRED SECRETS:
-#   RAILWAY_TOKEN — A Railway API token with deploy permissions.
-#     1. Generate a token at https://railway.app/account/tokens
-#     2. Add it as a repository secret: Settings > Secrets > Actions > New repository secret
-#     3. Name it exactly RAILWAY_TOKEN
-#
-#   RAILWAY_ENGINE_SERVICE_ID — The Railway service ID for the engine service.
-#   RAILWAY_AGENTS_SERVICE_ID — The Railway service ID for the agents service.
 
 name: Railway Deploy
 
@@ -31,11 +22,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-  RAILWAY_CLI_VERSION: 4.6.3
+  RAILWAY_CLI_VERSION: 3.12.0
 
 jobs:
-  # ---------- Detect which services changed ----------
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
@@ -56,7 +45,6 @@ jobs:
               - 'apps/agents/**'
               - 'packages/shared/**'
 
-  # ---------- Deploy Engine (Python FastAPI → Railway) ----------
   deploy-engine:
     name: Deploy Engine
     needs: changes
@@ -66,21 +54,23 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Validate required deploy secrets (engine)
+      - name: Validate required production secrets (engine)
         env:
-          RAILWAY_TOKEN_SECRET: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_ENGINE_SERVICE_ID_SECRET: ${{ secrets.RAILWAY_ENGINE_SERVICE_ID }}
-          RAILWAY_ENGINE_URL_SECRET: ${{ secrets.RAILWAY_ENGINE_URL }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_ENGINE_SERVICE_ID: ${{ secrets.RAILWAY_ENGINE_SERVICE_ID }}
+          RAILWAY_ENGINE_URL: ${{ secrets.RAILWAY_ENGINE_URL }}
         run: |
-          [ -n "$RAILWAY_TOKEN_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_TOKEN"; exit 1; }
-          [ -n "$RAILWAY_ENGINE_SERVICE_ID_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_ENGINE_SERVICE_ID"; exit 1; }
-          [ -n "$RAILWAY_ENGINE_URL_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_ENGINE_URL"; exit 1; }
+          set -euo pipefail
+          required=(RAILWAY_TOKEN RAILWAY_ENGINE_SERVICE_ID RAILWAY_ENGINE_URL)
+          for key in "${required[@]}"; do
+            if [ -z "${!key:-}" ]; then
+              echo "❌ Missing required production secret: $key"
+              exit 1
+            fi
+          done
 
       - name: Install Railway CLI
         run: npm install -g "@railway/cli@${RAILWAY_CLI_VERSION}"
-
-      - name: Print Railway CLI version
-        run: railway --version
 
       - name: Deploy engine service
         working-directory: apps/engine
@@ -95,15 +85,13 @@ jobs:
         run: sleep 30
 
       - name: Health check
+        env:
+          ENGINE_URL: ${{ secrets.RAILWAY_ENGINE_URL }}
         run: |
-          ENGINE_URL="${{ secrets.RAILWAY_ENGINE_URL }}"
-          if [ -z "$ENGINE_URL" ]; then
-            echo "::error::Missing required secret: RAILWAY_ENGINE_URL"
-            exit 1
-          fi
-          echo "Checking engine health at $ENGINE_URL/health ..."
+          set -euo pipefail
+          echo "Checking engine health at ${ENGINE_URL}/health ..."
           for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$ENGINE_URL/health" || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${ENGINE_URL}/health" || true)
             if [ "$STATUS" = "200" ]; then
               echo "✅ Engine is healthy (attempt $i)"
               exit 0
@@ -114,7 +102,6 @@ jobs:
           echo "❌ Engine health check failed after 5 attempts"
           exit 1
 
-  # ---------- Deploy Agents (Node Express → Railway) ----------
   deploy-agents:
     name: Deploy Agents
     needs: changes
@@ -124,21 +111,23 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Validate required deploy secrets (agents)
+      - name: Validate required production secrets (agents)
         env:
-          RAILWAY_TOKEN_SECRET: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_AGENTS_SERVICE_ID_SECRET: ${{ secrets.RAILWAY_AGENTS_SERVICE_ID }}
-          RAILWAY_AGENTS_URL_SECRET: ${{ secrets.RAILWAY_AGENTS_URL }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_AGENTS_SERVICE_ID: ${{ secrets.RAILWAY_AGENTS_SERVICE_ID }}
+          RAILWAY_AGENTS_URL: ${{ secrets.RAILWAY_AGENTS_URL }}
         run: |
-          [ -n "$RAILWAY_TOKEN_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_TOKEN"; exit 1; }
-          [ -n "$RAILWAY_AGENTS_SERVICE_ID_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_AGENTS_SERVICE_ID"; exit 1; }
-          [ -n "$RAILWAY_AGENTS_URL_SECRET" ] || { echo "::error::Missing required secret: RAILWAY_AGENTS_URL"; exit 1; }
+          set -euo pipefail
+          required=(RAILWAY_TOKEN RAILWAY_AGENTS_SERVICE_ID RAILWAY_AGENTS_URL)
+          for key in "${required[@]}"; do
+            if [ -z "${!key:-}" ]; then
+              echo "❌ Missing required production secret: $key"
+              exit 1
+            fi
+          done
 
       - name: Install Railway CLI
         run: npm install -g "@railway/cli@${RAILWAY_CLI_VERSION}"
-
-      - name: Print Railway CLI version
-        run: railway --version
 
       - name: Deploy agents service
         run: |
@@ -152,15 +141,13 @@ jobs:
         run: sleep 30
 
       - name: Health check
+        env:
+          AGENTS_URL: ${{ secrets.RAILWAY_AGENTS_URL }}
         run: |
-          AGENTS_URL="${{ secrets.RAILWAY_AGENTS_URL }}"
-          if [ -z "$AGENTS_URL" ]; then
-            echo "::error::Missing required secret: RAILWAY_AGENTS_URL"
-            exit 1
-          fi
-          echo "Checking agents health at $AGENTS_URL/health ..."
+          set -euo pipefail
+          echo "Checking agents health at ${AGENTS_URL}/health ..."
           for i in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$AGENTS_URL/health" || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${AGENTS_URL}/health" || true)
             if [ "$STATUS" = "200" ]; then
               echo "✅ Agents service is healthy (attempt $i)"
               exit 0
@@ -170,3 +157,53 @@ jobs:
           done
           echo "❌ Agents health check failed after 5 attempts"
           exit 1
+
+  verify-web-proxy:
+    name: Verify Web Proxy Endpoints
+    needs: [changes, deploy-engine, deploy-agents]
+    if: always() && (needs.changes.outputs.engine == 'true' || needs.changes.outputs.agents == 'true')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate required production secret (web URL)
+        env:
+          VERCEL_PRODUCTION_URL: ${{ secrets.VERCEL_PRODUCTION_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_PRODUCTION_URL:-}" ]; then
+            echo "❌ Missing required production secret: VERCEL_PRODUCTION_URL"
+            exit 1
+          fi
+
+      - name: Verify upstream deploy jobs succeeded
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.deploy-engine.result }}" = "failure" ] || [ "${{ needs.deploy-agents.result }}" = "failure" ]; then
+            echo "❌ Upstream Railway deploy job failed; skipping proxy checks by failing the release gate."
+            exit 1
+          fi
+
+      - name: Run synthetic proxy probes
+        env:
+          BASE_URL: ${{ secrets.VERCEL_PRODUCTION_URL }}
+        run: |
+          set -euo pipefail
+          base="${BASE_URL%/}"
+          endpoints=(
+            "/api/engine/health"
+            "/api/agents/health"
+            "/api/agents/status"
+            "/api/settings/status"
+          )
+
+          for endpoint in "${endpoints[@]}"; do
+            url="${base}${endpoint}"
+            echo "🔎 Probing ${url}"
+            status=$(curl -sS -o /tmp/proxy-response.json -w "%{http_code}" "$url")
+            if [ "$status" != "200" ]; then
+              echo "❌ ${endpoint} returned HTTP ${status}"
+              cat /tmp/proxy-response.json
+              exit 1
+            fi
+            echo "✅ ${endpoint} returned HTTP 200"
+          done
