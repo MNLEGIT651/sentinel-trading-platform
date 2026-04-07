@@ -5,14 +5,9 @@
   "buildCommand": "turbo run build --filter=@sentinel/web",
   "ignoreCommand": "cd ../.. && git diff --quiet HEAD^ HEAD -- apps/web/ packages/shared/",
   "regions": ["iad1"],
-  "functions": {
-    "app/api/**/*.ts": {
-      "maxDuration": 60
-    }
-  },
   "crons": [
     {
-      "path": "/api/health",
+      "path": "/api/internal/cron/health",
       "schedule": "*/5 * * * *"
     }
   ]
