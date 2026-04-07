@@ -186,7 +186,10 @@ export function KycForm({ onSubmitted, onCancel }: KycFormProps) {
         }),
       });
       if (!brokerUpdateRes.ok) {
-        console.warn('Failed to update broker record after submission');
+        console.warn(
+          '[KYC] Failed to update broker record after submission, status:',
+          brokerUpdateRes.status,
+        );
       }
 
       // 4. Update onboarding step
@@ -196,12 +199,19 @@ export function KycForm({ onSubmitted, onCancel }: KycFormProps) {
         body: JSON.stringify({ onboarding_step: 'kyc_submitted' }),
       });
       if (!profileRes.ok) {
-        console.warn('Failed to update onboarding step after submission');
+        console.warn(
+          '[KYC] Failed to update onboarding step after submission, status:',
+          profileRes.status,
+        );
       }
 
       toast.success('Application submitted successfully');
       onSubmitted?.(result);
-    } catch {
+    } catch (err) {
+      console.error(
+        '[KYC] Application submission failed:',
+        err instanceof Error ? err.message : String(err),
+      );
       toast.error('Failed to submit application');
     } finally {
       setSubmitting(false);

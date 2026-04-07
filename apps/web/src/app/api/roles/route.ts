@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { parseBody, parseSearchParams } from '@/lib/api/validation';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import { safeErrorMessage } from '@/lib/api-error';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** Service-role client that bypasses RLS — used only for operator admin queries */
 function supabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  return createAdminSupabaseClient();
 }
 
 type OperatorRole = 'observer' | 'reviewer' | 'approver' | 'operator';

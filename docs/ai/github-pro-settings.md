@@ -20,15 +20,15 @@ Navigate to **Settings → Branches → Add branch ruleset** (or classic protect
 | — Required checks                                |       | `Test Web`, `Test Engine`, `Test Agents`, `Security Audit` |
 | Require branches to be up to date before merging | ✅ On | Prevent merge skew                                         |
 | Require conversation resolution before merging   | ✅ On | All review threads must be resolved                        |
-| Require signed commits                           | ✅ On | Prevent unsigned commits on protected branch               |
-| Require merge queue                              | ✅ On | Serializes merges and avoids base-branch races             |
+| Require signed commits                           | ✅ On | Verify commit authenticity via GPG/SSH signatures          |
+| Require linear history                           | ✅ On | Clean history; no merge commits on `main`                  |
 | Include administrators                           | ✅ On | Rules apply to repo owner too                              |
 
 ### Why This Matters
 
-Enabling "Require review from code owners" means PRs touching `apps/engine/`
-won't merge until the engine owner approves. Signed commits + merge queue add
-defense-in-depth for protected branch integrity.
+With GitHub Pro, CODEOWNERS enforcement actually works — on the free tier the
+file is parsed but not enforced. Enabling "Require review from code owners"
+means PRs touching `apps/engine/` won't merge until the engine owner approves.
 
 ---
 
@@ -166,11 +166,14 @@ Navigate to **Settings → General → Pull Requests**:
 
 ## 7. Summary Checklist
 
-- [ ] Configure branch protection on `main` with required status checks
-- [ ] Enable "Require review from code owners" (leverages `.github/CODEOWNERS`)
+- [x] Configure branch protection on `main` with required status checks
+- [x] Enable "Require review from code owners" (leverages `.github/CODEOWNERS`)
+- [x] Require signed commits for authenticity
+- [x] Require linear history (no merge commits)
 - [ ] Create `production` and `preview` environments
-- [ ] Enable private vulnerability reporting
-- [ ] Enable Dependabot alerts and security updates
-- [ ] Enable secret scanning and push protection
-- [ ] Enable auto-merge and auto-delete branches
-- [ ] Review Dependabot PRs as they arrive (`.github/dependabot.yml` is active)
+- [x] Enable private vulnerability reporting
+- [x] Enable Dependabot alerts and security updates
+- [x] Enable secret scanning and push protection
+- [x] Enable CodeQL default setup
+- [x] Enable auto-merge and auto-delete branches
+- [x] Review Dependabot PRs as they arrive (`.github/dependabot.yml` is active)

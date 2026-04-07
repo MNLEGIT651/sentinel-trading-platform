@@ -6,6 +6,7 @@ import dataclasses
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Any
 
 TERMINAL_STATUSES = frozenset({"filled", "rejected", "cancelled"})
 
@@ -111,7 +112,7 @@ class OrderStore:
 
     # ── DB persistence ────────────────────────────────────────────
 
-    def _get_client(self):
+    def _get_client(self) -> Any | None:
         """Lazily import and create a Supabase client."""
         if not self._db_available:
             return None
