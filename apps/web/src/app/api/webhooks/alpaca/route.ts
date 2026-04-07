@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { parseBody } from '@/lib/api/validation';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,6 +17,42 @@ const WebhookBody = z
   })
   .passthrough();
 
+const SIGNATURE_HEADERS = ['x-alpaca-signature', 'x-webhook-signature', 'x-signature'] as const;
+
+function parseJsonBody(raw: string): z.infer<typeof WebhookBody> | null {
+  try {
+    const parsed = JSON.parse(raw);
+    const result = WebhookBody.safeParse(parsed);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function signatureMatches(rawBody: string, secret: string, received: string): boolean {
+  const normalized = received.trim().replace(/^sha256=/i, '');
+  const expectedHex = createHmac('sha256', secret).update(rawBody).digest('hex');
+  const expectedBase64 = createHmac('sha256', secret).update(rawBody).digest('base64');
+
+  const candidates = [expectedHex, expectedBase64];
+
+  return candidates.some((expected) => {
+    const receivedBuffer = Buffer.from(normalized);
+    const expectedBuffer = Buffer.from(expected);
+    if (receivedBuffer.length !== expectedBuffer.length) return false;
+    return timingSafeEqual(receivedBuffer, expectedBuffer);
+  });
+}
+
+function verifyWebhookSignature(request: Request, rawBody: string, secret: string): boolean {
+  for (const header of SIGNATURE_HEADERS) {
+    const value = request.headers.get(header);
+    if (!value) continue;
+    if (signatureMatches(rawBody, secret, value)) return true;
+  }
+  return false;
+}
+
 /**
  * POST /api/webhooks/alpaca ΓÇö Handle Alpaca Broker API webhooks.
  *
@@ -30,20 +66,31 @@ const WebhookBody = z
  */
 export async function POST(request: Request) {
   try {
-    const body = await parseBody(request, WebhookBody);
-    if (body instanceof NextResponse) return body;
+    const secret = process.env.ALPACA_WEBHOOK_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        { error: 'Webhook secret not configured. Set ALPACA_WEBHOOK_SECRET.' },
+        { status: 503 },
+      );
+    }
+
+    const rawBody = await request.text();
+    const body = parseJsonBody(rawBody);
+    if (!body) {
+      return NextResponse.json(
+        { error: 'validation_error', message: 'Invalid webhook payload.' },
+        { status: 400 },
+      );
+    }
+
+    if (!verifyWebhookSignature(request, rawBody, secret)) {
+      return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
+    }
 
     const event = body.event;
 
     // Use service role for webhook updates (no user session)
-    const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const supabase = createAdminSupabaseClient();
 
     switch (event) {
       // ΓöÇΓöÇΓöÇ Account Status Changes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

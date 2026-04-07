@@ -70,8 +70,6 @@ interface BrokerSettingsProps {
   onAnthropicKey: (v: string) => void;
   supabaseUrl: string;
   onSupabaseUrl: (v: string) => void;
-  supabaseKey: string;
-  onSupabaseKey: (v: string) => void;
 }
 
 export function BrokerSettings({
@@ -85,8 +83,6 @@ export function BrokerSettings({
   onAnthropicKey,
   supabaseUrl,
   onSupabaseUrl,
-  supabaseKey,
-  onSupabaseKey,
 }: BrokerSettingsProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-2 stagger-grid">
@@ -170,13 +166,6 @@ export function BrokerSettings({
             value={supabaseUrl}
             onChange={onSupabaseUrl}
             placeholder="https://your-project.supabase.co"
-          />
-          <SettingsField
-            label="Supabase Service Role Key"
-            value={supabaseKey}
-            onChange={onSupabaseKey}
-            placeholder="Enter service role key"
-            masked
           />
         </CardContent>
       </Card>
