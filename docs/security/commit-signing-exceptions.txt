@@ -1,0 +1,7 @@
+# Commit Signing Exceptions
+#
+# Each line contains a full commit SHA that is exempt from the signing
+# requirement. Add commits here only when they cannot be re-signed
+# (e.g., historical commits before signing was enforced).
+#
+# Format: <full SHA> [optional comment]
