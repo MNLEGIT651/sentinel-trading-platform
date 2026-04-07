@@ -189,14 +189,14 @@ section "Secret Scanning & Push Protection"
 
 # These settings are not reliably queryable without admin access on all plans,
 # so we verify the local configuration and documentation.
-SECRET_SCAN_DOCS=$(grep -rlic "secret.scanning" SECURITY.md docs/ 2>/dev/null || echo "0")
+SECRET_SCAN_DOCS=$(grep -rlic "secret scanning" SECURITY.md docs/ 2>/dev/null || echo "0")
 if [[ "$SECRET_SCAN_DOCS" -gt 0 ]]; then
   pass "Secret scanning documented in repository"
 else
   warn "Secret scanning not mentioned in SECURITY.md or docs/"
 fi
 
-PUSH_PROT_DOCS=$(grep -rlic "push.protection" SECURITY.md docs/ 2>/dev/null || echo "0")
+PUSH_PROT_DOCS=$(grep -rlic "push protection" SECURITY.md docs/ 2>/dev/null || echo "0")
 if [[ "$PUSH_PROT_DOCS" -gt 0 ]]; then
   pass "Push protection documented in repository"
 else
@@ -257,7 +257,7 @@ if [[ -d "$WORKFLOW_DIR" ]]; then
   for wf in "$WORKFLOW_DIR"/*.yml "$WORKFLOW_DIR"/*.yaml; do
     [[ -f "$wf" ]] || continue
     # Match `uses: org/action@vN` (tag) but not `uses: org/action@<sha>`
-    if grep -P 'uses:\s+\S+@v\d' "$wf" &>/dev/null; then
+    if grep -E 'uses:[[:space:]]+[^[:space:]]+@v[0-9]' "$wf" &>/dev/null; then
       ((TAG_USES++))
       verbose "Tag-pinned action in: $(basename "$wf")"
     fi
