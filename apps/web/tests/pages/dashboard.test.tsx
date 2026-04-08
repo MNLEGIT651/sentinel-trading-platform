@@ -34,19 +34,19 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Total Equity')).toBeInTheDocument();
   });
 
-  it('renders the Daily P&L metric card label', () => {
+  it('renders the Session P&L metric label', () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Daily P&L')).toBeInTheDocument();
+    expect(screen.getByText('Session P&L')).toBeInTheDocument();
   });
 
-  it('renders the Cash Available metric card label', () => {
+  it('renders the Deployable Cash metric label', () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Cash Available')).toBeInTheDocument();
+    expect(screen.getByText('Deployable Cash')).toBeInTheDocument();
   });
 
-  it('renders the Positions Value metric card label', () => {
+  it('renders Watchlist panel', () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Positions Value')).toBeInTheDocument();
+    expect(screen.getByText('Watchlist')).toBeInTheDocument();
   });
 
   it('renders Active Signals card', () => {
@@ -61,15 +61,15 @@ describe('DashboardPage', () => {
 
   // --- Semantic HTML ---
 
-  it('wraps system health in a section with aria-label', () => {
+  it('wraps system state in a section with aria-label', () => {
     renderWithProviders(<DashboardPage />);
-    const section = screen.getByLabelText('System health status');
+    const section = screen.getByLabelText('System state');
     expect(section.tagName).toBe('SECTION');
   });
 
-  it('wraps portfolio metrics in a section with aria-label', () => {
+  it('wraps trading workstation in a section with aria-label', () => {
     renderWithProviders(<DashboardPage />);
-    const section = screen.getByLabelText('Portfolio metrics');
+    const section = screen.getByLabelText('Trading workstation');
     expect(section.tagName).toBe('SECTION');
   });
 
@@ -79,17 +79,17 @@ describe('DashboardPage', () => {
     expect(section.tagName).toBe('SECTION');
   });
 
-  it('wraps signals and alerts in a section with aria-label', () => {
+  it('wraps signal and setup band in a section with aria-label', () => {
     renderWithProviders(<DashboardPage />);
-    const section = screen.getByLabelText('Signals and alerts');
+    const section = screen.getByLabelText('Signal and setup band');
     expect(section.tagName).toBe('SECTION');
   });
 
   // --- System Health Strip ---
 
-  it('displays default system health values when offline', () => {
+  it('displays default system values when offline', () => {
     renderWithProviders(<DashboardPage />);
-    const healthSection = screen.getByLabelText('System health status');
+    const healthSection = screen.getByLabelText('System state');
     expect(within(healthSection).getByText('Active')).toBeInTheDocument();
     expect(within(healthSection).getByText('paper')).toBeInTheDocument();
     expect(within(healthSection).getByText('0')).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe('DashboardPage', () => {
 
   it('marks decorative icons as aria-hidden', () => {
     renderWithProviders(<DashboardPage />);
-    const healthSection = screen.getByLabelText('System health status');
+    const healthSection = screen.getByLabelText('System state');
     const hiddenIcons = healthSection.querySelectorAll('[aria-hidden="true"]');
     // Icons + separator pipes
     expect(hiddenIcons.length).toBeGreaterThanOrEqual(4);

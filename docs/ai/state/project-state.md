@@ -122,3 +122,4 @@ When you finish a ticket:
 1. Mark it `done`.
 2. Add a one-line summary of what changed.
 3. Record exact validation commands and status in the handoff/PR.
+   | DESK-WS-01 | done | Codex | `work` | `apps/web/src/components/layout/sidebar.tsx`, `apps/web/src/app/(dashboard)/page.tsx`, `apps/web/src/components/dashboard/*`, `apps/web/src/app/globals.css`, `apps/web/tests/pages/dashboard.test.tsx`, `apps/web/tests/components/layout/sidebar-a11y.test.tsx`, `docs/ai/state/project-state.md` | `pnpm lint`; `pnpm test:web`; `git diff --check` | 2026-04-08 | Reworked desktop dashboard into pane-first workstation, curated sidebar hierarchy, and updated web tests for revised IA and composition. |

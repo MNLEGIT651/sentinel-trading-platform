@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import {
   DollarSign,
-  TrendingUp,
   BarChart3,
   AlertTriangle,
   Zap,
@@ -11,8 +10,11 @@ import {
   Activity,
   Clock,
   Bot,
+  Waves,
+  ListChecks,
+  ArrowRight,
 } from 'lucide-react';
-import { MetricCard } from '@/components/dashboard/metric-card';
+import Link from 'next/link';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
 import { PriceTicker } from '@/components/dashboard/price-ticker';
 import { IncidentControls } from '@/components/dashboard/incident-controls';
@@ -25,6 +27,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SimulatedBadge } from '@/components/ui/simulated-badge';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
+import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/stores/app-store';
 import type { Alert } from '@sentinel/shared';
 import { cn } from '@/lib/utils';
@@ -96,6 +99,7 @@ function DashboardContent() {
   const recentSignals = useMemo(() => {
     if (!filledRecs) return [];
     return filledRecs.slice(0, MAX_LIVE_SCAN_TICKERS).map((r) => ({
+      id: r.id,
       ticker: r.ticker,
       side: r.side,
       reason: r.reason ?? '',
@@ -103,6 +107,15 @@ function DashboardContent() {
       ts: r.created_at,
     }));
   }, [filledRecs]);
+
+  const watchlist = useMemo(
+    () =>
+      tickerData.slice(0, 8).map((item) => ({
+        ...item,
+        signalCount: recentSignals.filter((sig) => sig.ticker === item.ticker).length,
+      })),
+    [tickerData, recentSignals],
+  );
 
   const equity = account?.equity ?? FALLBACK_ACCOUNT.equity;
   const pnl = equity - (account?.initial_capital ?? FALLBACK_ACCOUNT.initial_capital);
@@ -114,127 +127,54 @@ function DashboardContent() {
     agentStatus?.halted ? 'error' : agentStatus?.isRunning ? 'success' : 'neutral',
   );
 
+  const heroTicker = tickerData[0];
+
   return (
-    <div className="space-y-4 p-3 sm:p-4 xl:p-6 page-enter" aria-label="Trading dashboard">
+    <div className="space-y-4 p-3 sm:p-4 xl:p-5 page-enter" aria-label="Trading dashboard">
       <h1 className="text-heading-page">Dashboard</h1>
 
       {engineOnline === false && <OfflineBanner service="engine" />}
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
-      {/* System Health Strip */}
-      <section
-        aria-label="System health status"
-        className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm sm:px-4"
-      >
-        <div className="flex items-center gap-1.5">
-          <Shield className="h-3.5 w-3.5" aria-hidden="true" />
-          <span className={cn('font-medium', tradingColors.text)}>
+      <section aria-label="System state" className="workstation-strip">
+        <div className="workspace-keyline">
+          <p className="workspace-label">Trading</p>
+          <div className={cn('workspace-value', tradingColors.text)}>
+            <Shield className="h-3.5 w-3.5" aria-hidden="true" />
             {systemControls?.trading_halted ? 'Halted' : 'Active'}
-          </span>
+          </div>
         </div>
-        <span className="hidden sm:inline text-border" aria-hidden="true">
-          |
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Activity className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium uppercase">
-            {systemControls?.global_mode ?? 'paper'}
-          </span>
+        <div className="workspace-keyline">
+          <p className="workspace-label">Market Mode</p>
+          <div className="workspace-value text-foreground/90">
+            <Activity className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+            <span className="uppercase">{systemControls?.global_mode ?? 'paper'}</span>
+          </div>
         </div>
-        <span className="hidden sm:inline text-border" aria-hidden="true">
-          |
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          <span className="text-muted-foreground">Pending:</span>
-          <span
+        <div className="workspace-keyline">
+          <p className="workspace-label">Approvals</p>
+          <div
             className={cn(
-              'font-medium',
+              'workspace-value',
               (pendingRecs?.length ?? 0) > 0 ? pendingColors.text : 'text-muted-foreground',
             )}
           >
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
             {pendingRecs?.length ?? 0}
-          </span>
+          </div>
         </div>
-        <span className="hidden sm:inline text-border" aria-hidden="true">
-          |
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Bot className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          <span className={cn('font-medium', agentColors.text)}>
+        <div className="workspace-keyline">
+          <p className="workspace-label">Agents</p>
+          <div className={cn('workspace-value', agentColors.text)}>
+            <Bot className="h-3.5 w-3.5" aria-hidden="true" />
             {agentStatus?.halted ? 'Halted' : agentStatus?.isRunning ? 'Running' : 'Idle'}
-          </span>
-          {agentStatus?.cycleCount != null && (
-            <span className="text-xs text-muted-foreground">#{agentStatus.cycleCount}</span>
-          )}
-        </div>
-      </section>
-
-      {/* Incident Controls */}
-      <IncidentControls />
-
-      {/* Portfolio Metrics */}
-      <section aria-label="Portfolio metrics">
-        <div className="@container">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 stagger-grid">
-            <MetricCard
-              label={
-                <>
-                  Total Equity{' '}
-                  <InfoTooltip content="Total value of all assets including cash and open positions." />
-                </>
-              }
-              value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
-              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-            />
-            <MetricCard
-              label={
-                <>
-                  Daily P&L{' '}
-                  <InfoTooltip content="Today's profit or loss across all positions, updated in real-time during market hours." />
-                </>
-              }
-              value={
-                <AnimatedNumber
-                  value={Math.abs(pnl)}
-                  prefix={pnl >= 0 ? '+$' : '-$'}
-                  decimals={2}
-                />
-              }
-              change={pnlPct}
-              icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-            />
-            <MetricCard
-              label={
-                <>
-                  Cash Available <InfoTooltip content="Uninvested cash available for new trades." />
-                </>
-              }
-              value={
-                <AnimatedNumber
-                  value={account?.cash ?? FALLBACK_ACCOUNT.cash}
-                  prefix="$"
-                  decimals={2}
-                />
-              }
-              icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
-            />
-            <MetricCard
-              label="Positions Value"
-              value={
-                <AnimatedNumber
-                  value={account?.positions_value ?? FALLBACK_ACCOUNT.positions_value}
-                  prefix="$"
-                  decimals={2}
-                />
-              }
-              icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
-            />
+            {agentStatus?.cycleCount != null && (
+              <span className="text-[11px] text-muted-foreground">#{agentStatus.cycleCount}</span>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Price Ticker */}
       <section aria-label="Market prices" className="relative">
         <PriceTicker items={tickerData} />
         <span className="absolute -top-1.5 right-2">
@@ -252,68 +192,185 @@ function DashboardContent() {
         </span>
       </section>
 
-      {/* Signals & Alerts */}
-      <section aria-label="Signals and alerts">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Active Signals */}
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-heading-card">Active Signals</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            </CardHeader>
-            <CardContent>
-              {recentSignals.length === 0 ? (
-                <EmptyState
-                  icon={Zap}
-                  title="No Recent Signals"
-                  description="Strategies generate signals during market hours."
-                  className="border-0 bg-transparent py-6"
-                />
-              ) : (
-                <div className="space-y-2" role="list" aria-label="Recent trading signals">
-                  {recentSignals.map((s, i) => (
-                    <article
-                      key={i}
-                      className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0"
-                      role="listitem"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            'text-[10px] font-bold px-1.5 py-0.5 rounded',
-                            sideColors[s.side] ?? sideColors.buy,
-                          )}
-                        >
-                          {s.side.toUpperCase()}
-                        </span>
-                        <span className="text-sm font-semibold text-foreground">{s.ticker}</span>
-                      </div>
-                      {s.strength != null && (
-                        <span
-                          className={cn(
-                            'text-xs font-mono px-1.5 py-0.5 rounded border',
-                            getSignalStrengthColor(s.strength),
-                          )}
-                        >
-                          {(s.strength * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </article>
-                  ))}
+      <section aria-label="Trading workstation" className="workstation-grid">
+        <Card className="workstation-panel workstation-watchlist @container/watchlist">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-heading-card">Watchlist</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5 pt-0">
+            {watchlist.map((item) => (
+              <article
+                key={item.ticker}
+                className="grid grid-cols-[4rem_1fr_auto] items-center gap-2 rounded-md px-1 py-1 text-xs hover:bg-accent/40"
+              >
+                <span className="font-mono text-foreground/90">{item.ticker}</span>
+                <span className="font-mono text-muted-foreground">${item.price.toFixed(2)}</span>
+                <div className="text-right">
+                  <span className={cn('font-mono', item.change >= 0 ? 'text-profit' : 'text-loss')}>
+                    {item.change >= 0 ? '+' : ''}
+                    {item.change.toFixed(2)}%
+                  </span>
+                  {item.signalCount > 0 && (
+                    <p className="text-[10px] text-muted-foreground">{item.signalCount} sig</p>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </article>
+            ))}
+          </CardContent>
+        </Card>
 
-          {/* Alert Feed */}
+        <Card className="workstation-panel workstation-primary-pane @container/primary">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-heading-card">Market Workspace</CardTitle>
+              <Button variant="ghost" size="sm" asChild className="h-7 px-2 text-xs">
+                <Link href="/markets">
+                  Open detailed market view <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            <div className="rounded-lg border border-border bg-background/50 p-3 min-h-56">
+              <div className="flex items-center justify-between">
+                <p className="workspace-label">Primary Instrument</p>
+                <Waves className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 @[32rem]/primary:grid-cols-[1.2fr_0.8fr]">
+                <div className="rounded-md border border-border/70 bg-card/40 p-3 min-h-36">
+                  <p className="text-xs text-muted-foreground">
+                    {heroTicker?.ticker ?? 'SPY'} intraday context
+                  </p>
+                  <p className="mt-2 text-data-primary">
+                    <AnimatedNumber value={heroTicker?.price ?? 0} prefix="$" decimals={2} />
+                  </p>
+                  <p
+                    className={cn(
+                      'mt-1 text-xs font-mono',
+                      (heroTicker?.change ?? 0) >= 0 ? 'text-profit' : 'text-loss',
+                    )}
+                  >
+                    {(heroTicker?.change ?? 0) >= 0 ? '+' : ''}
+                    {(heroTicker?.change ?? 0).toFixed(2)}%
+                  </p>
+                </div>
+                <div className="rounded-md border border-border/70 bg-card/40 p-3">
+                  <p className="workspace-label">Session P&L</p>
+                  <p className="mt-2 text-data-primary">
+                    <AnimatedNumber
+                      value={Math.abs(pnl)}
+                      prefix={pnl >= 0 ? '+$' : '-$'}
+                      decimals={2}
+                    />
+                  </p>
+                  <p
+                    className={cn(
+                      'mt-1 text-xs font-mono',
+                      pnlPct >= 0 ? 'text-profit' : 'text-loss',
+                    )}
+                  >
+                    {pnlPct >= 0 ? '+' : ''}
+                    {pnlPct.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 @[38rem]/primary:grid-cols-2">
+              <div className="rounded-md border border-border/70 bg-background/40 p-3">
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="workspace-label">Total Equity</p>
+                  <InfoTooltip content="Total value of all assets including cash and open positions." />
+                </div>
+                <p className="mt-1.5 text-data-primary">
+                  <AnimatedNumber value={equity} prefix="$" decimals={2} />
+                </p>
+              </div>
+              <div className="rounded-md border border-border/70 bg-background/40 p-3">
+                <div className="flex items-center gap-1.5">
+                  <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="workspace-label">Deployable Cash</p>
+                </div>
+                <p className="mt-1.5 text-data-primary">
+                  <AnimatedNumber
+                    value={account?.cash ?? FALLBACK_ACCOUNT.cash}
+                    prefix="$"
+                    decimals={2}
+                  />
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="workstation-ops-rail space-y-3">
+          <IncidentControls />
           <AlertFeed alerts={alerts} />
         </div>
       </section>
 
-      {/* Setup Progress */}
-      <SetupProgress />
+      <section
+        aria-label="Signal and setup band"
+        className="grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_1fr]"
+      >
+        <Card className="workstation-panel">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-heading-card">Active Signals</CardTitle>
+            <ListChecks className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          </CardHeader>
+          <CardContent>
+            {recentSignals.length === 0 ? (
+              <EmptyState
+                icon={Zap}
+                title="No Recent Signals"
+                description="Strategies generate signals during market hours."
+                className="border-0 bg-transparent py-6"
+              />
+            ) : (
+              <div className="space-y-2" role="list" aria-label="Recent trading signals">
+                {recentSignals.map((s) => (
+                  <article
+                    key={s.id}
+                    className="grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-border/50 py-1.5 last:border-0"
+                    role="listitem"
+                  >
+                    <span
+                      className={cn(
+                        'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                        sideColors[s.side] ?? sideColors.buy,
+                      )}
+                    >
+                      {s.side.toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{s.ticker}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {s.reason || 'No rationale provided'}
+                      </p>
+                    </div>
+                    {s.strength != null ? (
+                      <span
+                        className={cn(
+                          'text-xs font-mono px-1.5 py-0.5 rounded border',
+                          getSignalStrengthColor(s.strength),
+                        )}
+                      >
+                        {(s.strength * 100).toFixed(0)}%
+                      </span>
+                    ) : (
+                      <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Onboarding Wizard (shows for new users) */}
+        <SetupProgress />
+      </section>
+
       {onboardingProfile && (
         <OnboardingWizard
           onboardingStep={onboardingProfile.onboarding_step}

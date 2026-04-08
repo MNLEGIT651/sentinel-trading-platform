@@ -50,9 +50,9 @@ describe('Sidebar accessibility', () => {
   });
 
   it('active link has aria-current="page"', () => {
-    mockPathname.mockReturnValue('/strategies');
+    mockPathname.mockReturnValue('/portfolio');
     render(<Sidebar />);
-    const link = screen.getByRole('link', { name: /Strategies/i });
+    const link = screen.getByRole('link', { name: /^Portfolio$/i });
     expect(link).toHaveAttribute('aria-current', 'page');
   });
 
@@ -78,12 +78,8 @@ describe('Sidebar accessibility', () => {
   it('nav sections have group role with aria-label', () => {
     render(<Sidebar />);
     const groups = screen.getAllByRole('group');
-    expect(groups.length).toBe(5);
-    expect(groups[0]).toHaveAttribute('aria-label', 'Overview');
-    expect(groups[1]).toHaveAttribute('aria-label', 'Trading');
-    expect(groups[2]).toHaveAttribute('aria-label', 'Analysis');
-    expect(groups[3]).toHaveAttribute('aria-label', 'Operations');
-    expect(groups[4]).toHaveAttribute('aria-label', 'Governance');
+    expect(groups.length).toBe(2);
+    expect(groups[0]).toHaveAttribute('aria-label', 'Core Workflows');
   });
 });
 

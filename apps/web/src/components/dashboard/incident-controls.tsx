@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertOctagon, ShieldAlert, Activity, Clock, OctagonX } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -14,16 +13,16 @@ import {
 } from '@/hooks/queries';
 
 const MODE_STYLES: Record<string, string> = {
-  live: 'bg-red-500/15 text-red-400',
-  backtest: 'bg-blue-500/15 text-blue-400',
-  paper: 'bg-amber-500/15 text-amber-400',
+  live: 'text-loss',
+  backtest: 'text-blue-400',
+  paper: 'text-amber-400',
 };
 
 const ACTION_LABELS: Record<string, string> = {
   halt_trading: 'Halted trading',
   resume_trading: 'Resumed trading',
-  approve_recommendation: 'Approved rec',
-  reject_recommendation: 'Rejected rec',
+  approve_recommendation: 'Approved recommendation',
+  reject_recommendation: 'Rejected recommendation',
   update_policy: 'Updated policy',
   change_mode: 'Changed mode',
   override_risk: 'Risk override',
@@ -74,110 +73,101 @@ export function IncidentControls() {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {/* System Mode Indicator */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5">
+    <section
+      aria-label="Intervention controls"
+      className="workstation-panel @container/interventions space-y-3 px-3 py-3 sm:px-4"
+    >
+      <div className="grid grid-cols-1 gap-2.5 border-b border-border/80 pb-3 @[26rem]/interventions:grid-cols-3">
+        <div className="workspace-keyline">
+          <p className="workspace-label">Trading Mode</p>
+          <div className="mt-1.5 flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">System Mode</p>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className={cn('rounded px-2 py-0.5 text-sm font-semibold uppercase', modeColor)}>
-              {mode}
-            </span>
+            <span className={cn('text-sm font-semibold uppercase', modeColor)}>{mode}</span>
             {isHalted && (
-              <span className="rounded bg-red-500/20 px-2 py-0.5 text-sm font-bold text-red-400 animate-pulse">
-                HALTED
+              <span className="rounded bg-loss/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-loss">
+                halted
               </span>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Emergency Halt Button */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5 mb-2">
-            <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Emergency Controls</p>
-          </div>
-          {!showConfirm ? (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowConfirm(true)}
-              disabled={isHalted || haltMutation.isPending}
-              className="w-full"
+        <div className="workspace-keyline">
+          <p className="workspace-label">Critical Incidents</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <AlertOctagon className="h-3.5 w-3.5 text-muted-foreground" />
+            <span
+              className={cn(
+                'text-sm font-semibold',
+                criticalCount > 0 ? 'text-loss' : 'text-foreground',
+              )}
             >
-              <OctagonX className="h-3.5 w-3.5 mr-1" />
-              {isHalted ? 'Trading Halted' : 'Emergency Halt'}
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-red-400 font-medium">Confirm halt all trading?</p>
-              <div className="flex gap-2">
+              {criticalCount}
+            </span>
+            <span className="text-xs text-muted-foreground">unresolved</span>
+          </div>
+        </div>
+
+        <div className="workspace-keyline">
+          <p className="workspace-label">Emergency</p>
+          <div className="mt-1.5">
+            {!showConfirm ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowConfirm(true)}
+                disabled={isHalted || haltMutation.isPending}
+                className="h-8 w-full justify-center text-xs"
+              >
+                <OctagonX className="mr-1.5 h-3.5 w-3.5" />
+                {isHalted ? 'Trading Halted' : 'Trigger Halt'}
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="destructive"
                   size="xs"
                   onClick={handleHalt}
                   disabled={haltMutation.isPending}
                 >
-                  {haltMutation.isPending ? 'Halting…' : 'Confirm Halt'}
+                  {haltMutation.isPending ? 'Halting…' : 'Confirm'}
                 </Button>
                 <Button variant="outline" size="xs" onClick={() => setShowConfirm(false)}>
                   Cancel
                 </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Active Incident Count */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5">
-            <AlertOctagon className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Active Incidents</p>
-          </div>
-          <p
-            className={cn(
-              'mt-1 text-2xl font-bold',
-              criticalCount > 0 ? 'text-red-400' : 'text-foreground',
             )}
-          >
-            {criticalCount}
-          </p>
-          <p className="text-xs text-muted-foreground">critical unresolved</p>
-        </CardContent>
-      </Card>
-
-      {/* Recent Operator Actions Feed */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Recent Actions</p>
           </div>
-          {recentActions.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No recent operator actions</p>
-          ) : (
-            <div className="space-y-1.5">
-              {recentActions.slice(0, 5).map((action) => (
-                <div key={action.id} className="flex items-start gap-1.5 text-xs">
-                  <span className="text-muted-foreground shrink-0">
-                    {formatActionTime(action.created_at)}
-                  </span>
-                  <span className="text-foreground truncate">
-                    {ACTION_LABELS[action.action_type] ?? action.action_type.replace(/_/g, ' ')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" /> Recent interventions
+        </div>
+        {recentActions.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No operator actions in the current session.
+          </p>
+        ) : (
+          <ul className="space-y-1" role="list">
+            {recentActions.slice(0, 5).map((action) => (
+              <li
+                key={action.id}
+                className="grid grid-cols-[3.25rem_1fr] items-start gap-2 text-xs"
+                role="listitem"
+              >
+                <span className="font-mono text-muted-foreground">
+                  {formatActionTime(action.created_at)}
+                </span>
+                <span className="truncate text-foreground/90">
+                  <ShieldAlert className="mr-1 inline h-3 w-3 text-muted-foreground" />
+                  {ACTION_LABELS[action.action_type] ?? action.action_type.replace(/_/g, ' ')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
