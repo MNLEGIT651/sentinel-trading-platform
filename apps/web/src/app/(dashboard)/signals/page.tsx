@@ -134,8 +134,8 @@ export default function SignalsPage() {
       : 0;
 
   return (
-    <PageContainer className="page-enter" density="compact">
-      <SectionStack spacing="default">
+    <PageContainer density="compact">
+      <SectionStack spacing="default" className="page-enter">
         {engineOnline === false && <OfflineBanner service="engine" />}
 
         {/* Header */}
