@@ -58,6 +58,12 @@ while read -r sha status; do
     continue
   fi
 
+  if [[ "$github_verification_enabled" -eq 1 ]] &&
+    is_trusted_bot_commit "$gh_cli" "$repo_slug" "$sha" ".github/trusted_bot_logins"; then
+    echo "TRUSTED-BOT: $sha status=$status"
+    continue
+  fi
+
   echo "UNTRUSTED: $sha status=$status"
   violations=$((violations + 1))
 done < <(git log --pretty='%H %G?' "$RANGE")

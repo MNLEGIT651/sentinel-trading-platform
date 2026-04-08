@@ -67,3 +67,46 @@ is_github_verified_commit() {
 
   [[ "$verified" == "true" ]]
 }
+
+# is_trusted_bot_commit <gh_cli> <repo> <sha> [trusted_bot_logins_file]
+#
+# Returns 0 (true) when the commit was created by a known trusted bot/service
+# account or through GitHub's web-flow.  Matches on:
+#   1. committer.login is listed in the trusted_bot_logins file, OR
+#   2. commit.committer.email ends with @users.noreply.github.com, OR
+#   3. commit.committer.email equals noreply@github.com
+#
+# Only these explicit patterns are trusted; arbitrary unsigned commits are NOT.
+is_trusted_bot_commit() {
+  local gh_cli="$1"
+  local repo="$2"
+  local sha="$3"
+  local trusted_logins_file="${4:-.github/trusted_bot_logins}"
+
+  local committer_login committer_email
+
+  committer_login="$(
+    "$gh_cli" api "repos/${repo}/commits/${sha}" \
+      --jq '.committer.login // ""' 2>/dev/null || true
+  )"
+  committer_email="$(
+    "$gh_cli" api "repos/${repo}/commits/${sha}" \
+      --jq '.commit.committer.email // ""' 2>/dev/null || true
+  )"
+
+  # Check committer login against the trusted bot list
+  if [[ -f "$trusted_logins_file" && -n "$committer_login" ]]; then
+    if grep -Eq "^${committer_login}$" "$trusted_logins_file" 2>/dev/null; then
+      return 0
+    fi
+  fi
+
+  # Check for GitHub noreply email patterns (web-flow / API commits)
+  case "$committer_email" in
+    noreply@github.com|*@users.noreply.github.com)
+      return 0
+      ;;
+  esac
+
+  return 1
+}

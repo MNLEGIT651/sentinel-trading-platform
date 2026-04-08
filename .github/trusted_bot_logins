@@ -1,0 +1,11 @@
+# Trusted bot/service accounts whose API-created commits are accepted without a GPG/SSH signature.
+# One login per line. Lines starting with # are comments.
+#
+# web-flow: GitHub's internal committer for web-editor, API, and merge commits.
+# github-actions[bot]: Commits created by GitHub Actions workflows.
+# github-merge-queue[bot]: Commits created by the GitHub Merge Queue.
+# openaistoragesvc: OpenAI Codex (and similar) API-driven commits.
+web-flow
+github-actions[bot]
+github-merge-queue[bot]
+openaistoragesvc
