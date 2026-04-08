@@ -115,7 +115,7 @@ function DashboardContent() {
   );
 
   return (
-    <div className="space-y-4 p-3 sm:p-4 xl:p-6 page-enter" aria-label="Trading dashboard">
+    <div className="space-y-6 p-3 sm:p-4 xl:p-6 page-enter" aria-label="Trading dashboard">
       <h1 className="text-heading-page">Dashboard</h1>
 
       {engineOnline === false && <OfflineBanner service="engine" />}
@@ -186,6 +186,8 @@ function DashboardContent() {
               }
               value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
               icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+              hero
+              className="col-span-2 lg:col-span-1"
             />
             <MetricCard
               label={

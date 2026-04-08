@@ -76,8 +76,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
       >
         Skip to main content
       </a>
-      {/* Bottom accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
 
       <div className="flex items-center gap-3">
         <button

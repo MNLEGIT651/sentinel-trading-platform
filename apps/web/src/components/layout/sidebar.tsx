@@ -138,20 +138,17 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
         collapsed ? 'w-16' : 'w-56',
       )}
     >
-      {/* Accent line along right edge */}
-      <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
-
       {/* Logo area */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-primary" />
             <span className="font-mono text-xs font-bold tracking-[0.25em] text-primary">
               SENTINEL
             </span>
           </div>
         )}
-        {collapsed && <div className="h-2 w-2 rounded-full bg-primary animate-pulse mx-auto" />}
+        {collapsed && <div className="h-2 w-2 rounded-full bg-primary mx-auto" />}
         <button
           type="button"
           onClick={handleToggle}

@@ -81,26 +81,15 @@ body::before {
   background-size: 256px 256px;
 }
 
-/* Faint grid pattern on the background */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.03;
-  background-image:
-    linear-gradient(oklch(1 0 0 / 15%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 15%) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
+/* Grid pattern removed — uniform grid overlays are a common AI-generated tell.
+   The noise grain above provides sufficient texture. */
 
 /* ── Staggered Entrance Animations ──────────────────────────── */
 
 @keyframes sentinel-fade-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(5px);
   }
   to {
     opacity: 1;
@@ -133,31 +122,31 @@ body::after {
 
 /* Stagger children in grid layouts */
 .stagger-grid > * {
-  animation: sentinel-fade-up 0.35s ease-out both;
+  animation: sentinel-fade-up 0.3s ease-out both;
 }
 .stagger-grid > *:nth-child(1) {
   animation-delay: 0ms;
 }
 .stagger-grid > *:nth-child(2) {
-  animation-delay: 50ms;
+  animation-delay: 35ms;
 }
 .stagger-grid > *:nth-child(3) {
-  animation-delay: 100ms;
+  animation-delay: 70ms;
 }
 .stagger-grid > *:nth-child(4) {
-  animation-delay: 150ms;
+  animation-delay: 105ms;
 }
 .stagger-grid > *:nth-child(5) {
-  animation-delay: 200ms;
+  animation-delay: 140ms;
 }
 .stagger-grid > *:nth-child(6) {
-  animation-delay: 250ms;
+  animation-delay: 175ms;
 }
 .stagger-grid > *:nth-child(7) {
-  animation-delay: 300ms;
+  animation-delay: 210ms;
 }
 .stagger-grid > *:nth-child(8) {
-  animation-delay: 350ms;
+  animation-delay: 245ms;
 }
 
 /* ── Glow Effects ───────────────────────────────────────────── */
@@ -319,7 +308,7 @@ tr:hover {
   animation: slide-in-from-left 0.2s ease-out both;
 }
 
-/* ── Skeleton Shimmer (Psychology: Perceived Speed) ─────────── */
+/* ── Skeleton Shimmer ────────────────────────────────────────── */
 
 @keyframes shimmer {
   0% {
@@ -342,18 +331,18 @@ tr:hover {
   border-radius: 0.375rem;
 }
 
-/* ── Semantic Typography (Psychology: Cognitive Load) ────────── */
+/* ── Semantic Typography ─────────────────────────────────────── */
 
 .text-heading-page {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
+  font-size: 1.375rem;
+  line-height: 1.875rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 @media (min-width: 640px) {
   .text-heading-page {
-    font-size: 1.5rem;
-    line-height: 2rem;
+    font-size: 1.75rem;
+    line-height: 2.25rem;
   }
 }
 
@@ -361,13 +350,14 @@ tr:hover {
   font-size: 1rem;
   line-height: 1.5rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .text-heading-card {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
   font-weight: 500;
-  color: var(--color-muted-foreground);
+  color: oklch(0.68 0.015 260);
 }
 
 .text-data-primary {
@@ -379,6 +369,22 @@ tr:hover {
   letter-spacing: -0.02em;
 }
 
+/* Hero data: single most important number on a page */
+.text-data-hero {
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+@media (min-width: 640px) {
+  .text-data-hero {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+}
+
 .text-data-secondary {
   font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
@@ -387,21 +393,20 @@ tr:hover {
   font-weight: 500;
 }
 
-/* ── Card Hover Lift (Psychology: Dopamine Micro-reward) ────── */
+/* ── Card Hover (subtle interactivity cue) ──────────────────── */
 
 .card-interactive {
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 .card-interactive:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 25px -5px oklch(0 0 0 / 30%),
-    0 0 10px -5px oklch(0.72 0.17 195 / 10%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px oklch(0 0 0 / 35%);
 }
 
-/* ── Count-up Animation (Psychology: Engagement) ────────────── */
+/* ── Count-up Number Animation ───────────────────────────────── */
 
 @keyframes count-fade-in {
   from {
@@ -418,7 +423,7 @@ tr:hover {
   animation: count-fade-in 0.3s ease-out both;
 }
 
-/* ── Progress Glow (Psychology: Achievement Celebration) ────── */
+/* ── Progress Glow ──────────────────────────────────────────── */
 
 @keyframes progress-glow {
   0%,
@@ -439,7 +444,7 @@ tr:hover {
   --tw-shadow-color: oklch(0.75 0.22 155 / 40%);
 }
 
-/* ── Tooltip fade (Psychology: Contextual Help) ─────────────── */
+/* ── Tooltip fade ────────────────────────────────────────────── */
 
 @keyframes tooltip-fade {
   from {
@@ -491,34 +496,34 @@ tr:hover {
   }
 }
 
-/* ── Page section entrance (Psychology: Guided Attention) ────── */
+/* ── Page section entrance ────────────────────────────────── */
 
 .page-enter > * {
-  animation: sentinel-fade-up 0.35s ease-out both;
+  animation: sentinel-fade-up 0.3s ease-out both;
 }
 .page-enter > *:nth-child(1) {
   animation-delay: 0ms;
 }
 .page-enter > *:nth-child(2) {
-  animation-delay: 60ms;
+  animation-delay: 40ms;
 }
 .page-enter > *:nth-child(3) {
-  animation-delay: 120ms;
+  animation-delay: 80ms;
 }
 .page-enter > *:nth-child(4) {
-  animation-delay: 180ms;
+  animation-delay: 120ms;
 }
 .page-enter > *:nth-child(5) {
-  animation-delay: 240ms;
+  animation-delay: 160ms;
 }
 .page-enter > *:nth-child(6) {
-  animation-delay: 300ms;
+  animation-delay: 200ms;
 }
 .page-enter > *:nth-child(7) {
-  animation-delay: 360ms;
+  animation-delay: 240ms;
 }
 .page-enter > *:nth-child(8) {
-  animation-delay: 420ms;
+  animation-delay: 280ms;
 }
 
 /* ── Password strength meter ────────────────────────────────── */
