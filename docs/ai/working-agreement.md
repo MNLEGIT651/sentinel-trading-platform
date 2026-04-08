@@ -30,8 +30,8 @@ If any of those fields are missing, the agent should infer the smallest safe sco
 ## Commit Signing Policy (main + release branches)
 
 - Protected targets: `main` and `release/*`.
-- Policy: all new commits that land on protected targets must be **trusted-good** under `git log --pretty='%H %G?'`.
-- Trust result required by policy: `%G? == G` only.
+- Policy: all new commits that land on protected targets must be either **trusted-good** under `git log --pretty='%H %G?'` or marked `verified: true` by the GitHub commit API.
+- Trust result required by policy: `%G? == G` or a GitHub-verified commit.
 - Any other result (`N`, `E`, `B`, `U`, `X`, `Y`, `R`) is treated as untrusted and fails CI unless the commit SHA is explicitly grandfathered in `docs/security/commit-signing-exceptions.txt`.
 - Branch protection should also enable platform-native **Require signed commits** for `main` and `release/*` when available.
 
@@ -51,6 +51,7 @@ Bots must follow the same policy:
 
 - use a dedicated bot signing key,
 - add the bot key to `.github/trusted_signers`,
+- or rely on GitHub-native verified commits where applicable,
 - run `scripts/check-commit-signatures.sh` as part of bot validation before creating PRs.
 
 Recommended branch names:
