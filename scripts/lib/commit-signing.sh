@@ -83,16 +83,14 @@ is_trusted_bot_commit() {
   local sha="$3"
   local trusted_logins_file="${4:-.github/trusted_bot_logins}"
 
-  local committer_login committer_email
+  local committer_login committer_email api_response
 
-  committer_login="$(
+  api_response="$(
     "$gh_cli" api "repos/${repo}/commits/${sha}" \
-      --jq '.committer.login // ""' 2>/dev/null || true
+      --jq '(.committer.login // "") + "|" + (.commit.committer.email // "")' 2>/dev/null || true
   )"
-  committer_email="$(
-    "$gh_cli" api "repos/${repo}/commits/${sha}" \
-      --jq '.commit.committer.email // ""' 2>/dev/null || true
-  )"
+  committer_login="${api_response%%|*}"
+  committer_email="${api_response#*|}"
 
   # Check committer login against the trusted bot list
   if [[ -f "$trusted_logins_file" && -n "$committer_login" ]]; then
