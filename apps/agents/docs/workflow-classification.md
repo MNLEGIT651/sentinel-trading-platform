@@ -20,10 +20,10 @@ assign investment priority so the team focuses on product-critical work first.
 | 7   | **Incident Monitor**         | Internal | **P1 — Important**    | Implemented | Auto-downgrades autonomy on consecutive failures. Safety-critical module that protects users from runaway auto-execution.                         |
 | 8   | **Auto-Execution Policy**    | Internal | **P1 — Important**    | Implemented | Seven-check validation framework for autonomous trade execution. Directly gates whether trades execute without operator intervention.             |
 | 9   | **Agent Cycle**              | Internal | **P2 — Nice-to-have** | Implemented | Durable orchestration wrapper that tracks each cycle as a job. Useful for observability but not directly user-facing.                             |
-| 10  | **Workflow Manager**         | Internal | **P2 — Nice-to-have** | Implemented | Monitors agent health, optimizes scheduling, detects cascading failures. Operational plumbing — important for reliability but invisible to users. |
+| 10  | **Workflow Manager**         | Internal | **P2 — Nice-to-have** | Retired     | Removed from active runtime to reduce non-product agent surface area and contract drift.                                                          |
 | 11  | **Workflow Runner / Worker** | Internal | **P2 — Nice-to-have** | Implemented | Durable execution engine (polling, retries, timeouts, distributed locks). Essential infrastructure but not user-facing.                           |
 | 12  | **Scheduler**                | Internal | **P2 — Nice-to-have** | Implemented | Market-hours cron scheduler (NYSE 09:30–15:59 ET, DST-correct). Infrastructure plumbing.                                                          |
-| 13  | **PR Manager**               | Internal | **P3 — Deprioritize** | Implemented | Validates PRs against repo conventions and CI status. Development tooling only — zero product impact.                                             |
+| 13  | **PR Manager**               | Internal | **P3 — Deprioritize** | Retired     | Removed from active runtime; CI and branch protection remain the canonical dev-process controls.                                                  |
 
 ---
 
@@ -72,27 +72,25 @@ A workflow is **internal operations** if it:
 
 ### Maintain (P2)
 
-5. **Agent Cycle, Workflow Runner/Worker, Scheduler, Workflow Manager** — Infrastructure building blocks that are already stable. Keep them working but don't proactively enhance unless P0/P1 work requires it.
+5. **Agent Cycle, Workflow Runner/Worker, Scheduler** — Infrastructure building blocks that are already stable. Keep them working but don't proactively enhance unless P0/P1 work requires it.
 
 ### Defer (P3)
 
-6. **PR Manager** — Developer-experience convenience agent. It duplicates functionality available through GitHub Actions and repository rulesets. No product user is affected by its absence. **Deprioritize until all Phase B–D and E–F tickets are complete.**
+6. **PR Manager** — now retired. Developer-experience checks should stay in GitHub Actions and repository rulesets.
 
 ---
 
 ## Trading Cycle Priority Order (Runtime)
 
-For reference, the runtime execution priority enforced by the Workflow Manager:
+For reference, the runtime execution priority:
 
 1. `risk_monitor` — highest (capital protection)
 2. `execution_monitor` — high (active trades)
 3. `market_sentinel` — medium (market awareness)
 4. `strategy_analyst` — medium (signal generation)
 5. `research` — low (on-demand analysis)
-6. `pr_manager` — low (development support)
-7. `workflow_manager` — lowest (self-management)
 
-This runtime ordering already reflects the correct product priority — user-facing trading agents run before internal/development agents.
+This runtime ordering reflects the active product scope: only trading-relevant agents are part of the runtime contract.
 
 ---
 
@@ -101,3 +99,4 @@ This runtime ordering already reflects the correct product priority — user-fac
 | Date       | Author  | Change                                                                                                                                 |
 | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-07-18 | Copilot | Initial classification (T-E01). Classified 7 agents, 2 durable workflows, and 4 infrastructure modules. Deprioritized PR Manager (P3). |
+| 2026-04-08 | Codex   | Retired PR Manager and Workflow Manager from runtime contracts and workflow files; kept classification history for auditability.       |

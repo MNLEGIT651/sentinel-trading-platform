@@ -248,8 +248,8 @@ describe('AdvisorPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Investment strategy discussion')).toBeInTheDocument();
     });
-    const btn = screen.getByText('Investment strategy discussion').closest('button');
-    fireEvent.click(btn!);
+    const threadItem = screen.getByRole('button', { name: /Investment strategy discussion/i });
+    fireEvent.click(threadItem);
     await waitFor(() => {
       expect(replaceFn).toHaveBeenCalledWith(
         expect.stringContaining('threadId=thread-1'),

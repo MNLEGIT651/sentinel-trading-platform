@@ -9,6 +9,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 ### CI/CD Workflows
 
 #### 1. **CI Workflow** (`.github/workflows/ci.yml`)
+
 - **Trigger**: Push to main, Pull requests
 - **Purpose**: Primary continuous integration pipeline
 - **Jobs**:
@@ -21,6 +22,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 15 minutes per job
 
 #### 2. **Test Coverage Workflow** (`.github/workflows/test-coverage.yml`)
+
 - **Trigger**: Pull requests, Push to main, Manual dispatch
 - **Purpose**: Track and report test coverage metrics
 - **Jobs**:
@@ -33,7 +35,8 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 15 minutes
 
 #### 3. **Release Management Workflow** (`.github/workflows/release-management.yml`)
-- **Trigger**: Version tags (v*.*.*), Manual dispatch
+
+- **Trigger**: Version tags (v*.*.\*), Manual dispatch
 - **Purpose**: Automated release creation and validation
 - **Jobs**:
   - `validate-release`: Runs full test suite before release
@@ -46,6 +49,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 30 minutes for validation
 
 #### 4. **Performance Benchmarks Workflow** (`.github/workflows/performance-benchmarks.yml`)
+
 - **Trigger**: Pull requests, Push to main, Weekly schedule, Manual dispatch
 - **Purpose**: Track performance metrics across all apps
 - **Jobs**:
@@ -63,6 +67,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 ### Code Quality Workflows
 
 #### 5. **Claude Code Workflow** (`.github/workflows/claude.yml`)
+
 - **Trigger**: Issue comments, PR comments, Issue opened with @claude
 - **Purpose**: AI-powered code assistance and automation
 - **Features**:
@@ -72,6 +77,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 30 minutes
 
 #### 6. **Claude Code Review Workflow** (`.github/workflows/claude-code-review.yml`)
+
 - **Trigger**: PR opened, synchronized, ready for review, reopened
 - **Purpose**: Automated AI code review
 - **Features**:
@@ -81,6 +87,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 15 minutes
 
 #### 7. **Auto-Label Workflow** (`.github/workflows/auto-label.yml`)
+
 - **Trigger**: PR events (opened, synchronized, reopened), Issues opened
 - **Purpose**: Automatic PR and issue labeling
 - **Features**:
@@ -94,6 +101,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 5 minutes
 
 #### 8. **Stale Management Workflow** (`.github/workflows/stale-management.yml`)
+
 - **Trigger**: Daily at midnight UTC, Manual dispatch
 - **Purpose**: Clean up stale issues and PRs
 - **Configuration**:
@@ -106,6 +114,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 ### Security Workflows
 
 #### 9. **Security Safety Audit Workflow** (`.github/workflows/security-safety.yml`)
+
 - **Trigger**: Daily at 9:17 AM UTC, Manual dispatch
 - **Purpose**: Automated security vulnerability scanning
 - **Features**:
@@ -116,12 +125,14 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 - **Timeout**: 15 minutes
 
 #### 10. **Workflow Lint** (`.github/workflows/workflow-lint.yml`)
+
 - **Trigger**: PR or push affecting workflows, Manual dispatch
 - **Purpose**: Validate GitHub Actions workflow syntax
 - **Tool**: actionlint v1.7.8
 - **Timeout**: 10 minutes
 
 #### 11. **Dependency Review** (`.github/workflows/dependency-review.yml`)
+
 - **Trigger**: Pull requests
 - **Purpose**: Review dependency changes for security issues
 - **Features**: Automatic scanning of new dependencies
@@ -129,6 +140,7 @@ The Sentinel Trading Platform uses a comprehensive set of automated workflows an
 ### Deployment Workflows
 
 #### 12. **Vercel Deployment Checks** (`.github/workflows/vercel-deployment-checks.yml`)
+
 - **Trigger**: Vercel deployment success webhook, Manual dispatch
 - **Purpose**: Validate deployment health
 - **Checks**:
@@ -146,6 +158,7 @@ Agent workflows are defined in `apps/agents/workflows/*.md` as Markdown files wi
 ### Trading Agents
 
 #### 1. **Market Sentinel** (`market_sentinel.md`)
+
 - **Schedule**: Every 5 minutes during market hours
 - **Cooldown**: 5 minutes
 - **Tools**: get_market_data, get_market_sentiment, create_alert
@@ -157,6 +170,7 @@ Agent workflows are defined in `apps/agents/workflows/*.md` as Markdown files wi
   - Track sector rotation
 
 #### 2. **Strategy Analyst** (`strategy_analyst.md`)
+
 - **Schedule**: Every 15 minutes during market hours
 - **Cooldown**: 15 minutes
 - **Tools**: run_strategy_scan, get_strategy_info, get_market_data, analyze_ticker, create_alert
@@ -168,6 +182,7 @@ Agent workflows are defined in `apps/agents/workflows/*.md` as Markdown files wi
   - Consider correlation between signals
 
 #### 3. **Risk Monitor** (`risk_monitor.md`)
+
 - **Schedule**: Every 1 minute during market hours
 - **Cooldown**: 1 minute
 - **Tools**: assess_portfolio_risk, check_risk_limits, calculate_position_size, create_alert
@@ -179,6 +194,7 @@ Agent workflows are defined in `apps/agents/workflows/*.md` as Markdown files wi
   - HALT trading if circuit breaker triggered
 
 #### 4. **Execution Monitor** (`execution_monitor.md`)
+
 - **Schedule**: On demand
 - **Cooldown**: 10 seconds
 - **Tools**: submit_order, get_open_orders, check_risk_limits, calculate_position_size, create_alert
@@ -190,6 +206,7 @@ Agent workflows are defined in `apps/agents/workflows/*.md` as Markdown files wi
   - Run final risk checks before execution
 
 #### 5. **Research Analyst** (`research.md`)
+
 - **Schedule**: On demand
 - **Cooldown**: 30 minutes
 - **Tools**: analyze_ticker, get_market_data, get_market_sentiment, create_alert
@@ -200,90 +217,53 @@ Agent workflows are defined in `apps/agents/workflows/*.md` as Markdown files wi
   - Evaluate volume patterns
   - Provide comprehensive research reports
 
-### Development Agents
+### Runtime Priority Order
 
-#### 6. **PR Manager** (`pr_manager.md`)
-- **Schedule**: On PR events
-- **Cooldown**: 1 minute
-- **Tools**: check_pr_status, run_validation, request_review, create_alert, check_ci_status
-- **Responsibilities**:
-  - Validate PR description completeness
-  - Check CI/CD pipeline status
-  - Verify test coverage requirements
-  - Ensure code follows repository conventions
-  - Request appropriate reviewers
-  - Block merge if critical checks fail
-  - Detect sensitive path changes
-
-**Sensitive Paths Monitored**:
-- `.github/workflows/*` - affects all developers
-- `supabase/migrations/*` - irreversible schema changes
-- `packages/shared/*` - cross-app contracts
-- `apps/web/src/lib/engine-fetch.ts` - auth boundary
-- `apps/engine/src/api/main.py` - engine auth
-- `apps/engine/src/config.py` - sensitive config
-- `package.json`, `pnpm-lock.yaml` - dependencies
-- `.env.example` - environment contract
-
-#### 7. **Workflow Manager** (`workflow_manager.md`)
-- **Schedule**: Continuous monitoring
-- **Cooldown**: 2 minutes
-- **Tools**: get_workflow_status, check_agent_health, analyze_workflow_performance, optimize_workflow_schedule, create_alert
-- **Responsibilities**:
-  - Monitor all active agent workflows
-  - Detect and resolve workflow execution issues
-  - Optimize workflow scheduling
-  - Track performance metrics (execution time, success rate, resource usage)
-  - Coordinate dependencies between workflows
-  - Implement self-improvement recommendations
-
-**Workflow Priority Order**:
 1. risk_monitor (highest - capital protection)
 2. execution_monitor (high - active trades)
 3. market_sentinel (medium - market awareness)
 4. strategy_analyst (medium - signal generation)
 5. research (low - on-demand analysis)
-6. pr_manager (low - development support)
-7. workflow_manager (lowest - self-management)
 
 ### Agent Cycle
 
 The trading cycle is defined in `apps/agents/workflows/cycle.md`:
 
 **Sequence**:
+
 1. market_sentinel — assess market conditions
 2. strategy_analyst — generate signals (after market data available)
 3. risk_monitor — check portfolio risk (after positions known)
 4. execution_monitor — execute approved trades (after risk approval)
 
 **Halt Conditions**:
+
 - If risk_monitor sets halted=true, skip execution_monitor
 - If market_sentinel detects crisis regime, run risk_monitor immediately
 
 **On-Demand Agents**:
+
 - research — triggered by specific ticker requests
-- pr_manager — triggered by PR events
-- workflow_manager — continuous monitoring
 
 ## Architecture Integration
 
 ### Type Definitions
 
 Agent roles are defined in `apps/agents/src/types.ts`:
+
 ```typescript
 export type AgentRole =
   | 'market_sentinel'
   | 'strategy_analyst'
   | 'risk_monitor'
   | 'research'
-  | 'execution_monitor'
-  | 'pr_manager'
-  | 'workflow_manager';
+  | 'execution_monitor';
 ```
 
 ### Workflow Loading
 
 Workflows are loaded by `apps/agents/src/wat/workflow-loader.ts`:
+
 - Parses YAML frontmatter from Markdown files
 - Validates required fields (name, role, tools)
 - Loads all agent workflows dynamically
@@ -292,6 +272,7 @@ Workflows are loaded by `apps/agents/src/wat/workflow-loader.ts`:
 ### Frontmatter Schema
 
 Each agent workflow requires:
+
 ```yaml
 ---
 name: Agent Name
@@ -331,6 +312,7 @@ last_updated_by: human/agent
 ### Workflow Status
 
 Check workflow runs:
+
 ```bash
 gh run list --workflow=ci.yml
 gh run view <run-id>
@@ -339,6 +321,7 @@ gh run view <run-id>
 ### Agent Status
 
 Monitor agent health through:
+
 - `/api/agents/status` endpoint on agents service
 - Workflow manager agent monitoring
 - Supabase audit logs
@@ -346,6 +329,7 @@ Monitor agent health through:
 ### Metrics Tracked
 
 **GitHub Workflows**:
+
 - Test pass rate
 - Build duration
 - Coverage percentage
@@ -353,6 +337,7 @@ Monitor agent health through:
 - Performance benchmarks
 
 **Agent Workflows**:
+
 - Execution frequency
 - Success rate
 - Average duration
@@ -362,17 +347,20 @@ Monitor agent health through:
 ## Maintenance
 
 ### Weekly Tasks
+
 - Review performance benchmark trends
 - Check stale issue/PR cleanup effectiveness
 - Review security audit findings
 
 ### Monthly Tasks
+
 - Update workflow dependencies
 - Review and optimize cooldown periods
 - Analyze workflow execution patterns
 - Update agent learnings section
 
 ### Quarterly Tasks
+
 - Comprehensive workflow audit
 - Agent workflow effectiveness review
 - Update documentation

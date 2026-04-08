@@ -134,9 +134,9 @@ describe('real workflow files', () => {
     }
   });
 
-  it('loads cycle.md with 4 in-cycle and 3 on-demand', () => {
+  it('loads cycle.md with 4 in-cycle and 1 on-demand', () => {
     const cycle = loadCycle(realDir);
     expect(cycle.sequence).toHaveLength(4);
-    expect(cycle.onDemand).toEqual(['research', 'pr_manager', 'workflow_manager']);
+    expect(cycle.onDemand).toEqual(['research']);
   });
 });

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/format-relative-time';
 import { useAdvisorThreadsQuery } from '@/hooks/queries/use-advisor-threads-query';
 import {
   useCreateThreadMutation,
@@ -12,18 +13,6 @@ import {
 import { toast } from 'sonner';
 import { MessageSquare, Plus, Trash2, RotateCcw, Inbox } from 'lucide-react';
 import type { AdvisorThread } from '@sentinel/shared';
-
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
-}
 
 function ThreadListSkeleton({ className }: { className?: string }) {
   return (
@@ -152,10 +141,17 @@ export function ThreadList({ selectedThreadId, onSelectThread, className }: Thre
         ) : (
           <div className="space-y-1">
             {threads.map((thread) => (
-              <button
+              <div
                 key={thread.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectThread(thread)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectThread(thread);
+                  }
+                }}
                 className={cn(
                   'group flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left transition-colors',
                   selectedThreadId === thread.id
@@ -180,7 +176,7 @@ export function ThreadList({ selectedThreadId, onSelectThread, className }: Thre
                 >
                   <Trash2 className="h-3 w-3 text-destructive" />
                 </Button>
-              </button>
+              </div>
             ))}
           </div>
         )}

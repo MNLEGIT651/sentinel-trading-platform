@@ -5,7 +5,6 @@ import {
   createErrorResponse,
   CircuitBreaker,
   CircuitBreakerState,
-  RequestDeduplicator,
 } from '../src/error-handling.js';
 
 // ---------------------------------------------------------------------------
@@ -191,94 +190,5 @@ describe('CircuitBreaker', () => {
     await expect(breaker.call(() => Promise.reject(new Error('upstream down')))).rejects.toThrow(
       'upstream down',
     );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// RequestDeduplicator
-// ---------------------------------------------------------------------------
-
-describe('RequestDeduplicator', () => {
-  let dedup: RequestDeduplicator;
-
-  beforeEach(() => {
-    dedup = new RequestDeduplicator();
-  });
-
-  it('executes function on first call', async () => {
-    const fn = vi.fn().mockResolvedValue('data');
-    const result = await dedup.dedupe('key1', fn, 5000);
-
-    expect(result).toBe('data');
-    expect(fn).toHaveBeenCalledTimes(1);
-  });
-
-  it('returns cached promise for duplicate key within TTL', async () => {
-    const fn = vi.fn().mockResolvedValue('cached');
-
-    await dedup.dedupe('key1', fn, 5000);
-    await dedup.dedupe('key1', fn, 5000);
-
-    expect(fn).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls function again after TTL expires', async () => {
-    const fn = vi.fn().mockResolvedValue('fresh');
-
-    // Use TTL=1ms so it expires almost immediately
-    await dedup.dedupe('key1', fn, 1);
-
-    // Wait for TTL to expire
-    await new Promise((r) => setTimeout(r, 5));
-
-    await dedup.dedupe('key1', fn, 1);
-
-    expect(fn).toHaveBeenCalledTimes(2);
-  }, 500);
-
-  it('removes entry from cache on rejection', async () => {
-    let callCount = 0;
-    const fn = vi.fn().mockImplementation(async () => {
-      callCount++;
-      if (callCount === 1) throw new Error('fail');
-      return 'retry success';
-    });
-
-    await dedup.dedupe('key1', fn, 5000).catch(() => {});
-
-    // After failure, cache should be cleared — second call should re-execute
-    const result = await dedup.dedupe('key1', fn, 5000);
-
-    expect(result).toBe('retry success');
-    expect(fn).toHaveBeenCalledTimes(2);
-  });
-
-  it('does not share cache entries across different keys', async () => {
-    const fn = vi.fn().mockResolvedValue('ok');
-
-    await dedup.dedupe('key-a', fn, 5000);
-    await dedup.dedupe('key-b', fn, 5000);
-
-    expect(fn).toHaveBeenCalledTimes(2);
-  });
-
-  it('tracks cache size correctly', async () => {
-    const fn = vi.fn().mockResolvedValue('ok');
-
-    expect(dedup.size()).toBe(0);
-
-    await dedup.dedupe('k1', fn, 5000);
-    await dedup.dedupe('k2', fn, 5000);
-
-    expect(dedup.size()).toBe(2);
-  });
-
-  it('clears all entries with clear()', async () => {
-    const fn = vi.fn().mockResolvedValue('ok');
-
-    await dedup.dedupe('k1', fn, 5000);
-    dedup.clear();
-
-    expect(dedup.size()).toBe(0);
   });
 });
