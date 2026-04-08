@@ -6,9 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Format a number as USD currency. Returns '—' for null/undefined. */
-export function formatCurrency(value: number | null | undefined): string {
+export function formatCurrency(value: number | string | null | undefined): string {
   if (value == null) return '—';
-  return `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(Number(value));
 }
 
 /** Format an ISO date string as a relative time label (e.g. "3h ago"). */
@@ -21,5 +24,5 @@ export function formatRelativeTime(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
+  return new Date(dateStr).toLocaleDateString('en-US');
 }

@@ -34,7 +34,7 @@ chore/<description>            # Deps, config, tooling
 
 Five jobs defined in `.github/workflows/ci.yml`. All run on `ubuntu-latest`. Concurrency group cancels in-progress runs on force-push to the same branch — this prevents wasteful duplicate CI runs.
 
-`verify-commit-signatures` and `security-audit` only run on pushes to `main` and PRs targeting `main` or `release/*`. The three test jobs run on every push and PR.
+`verify-commit-signatures` and `security-audit` only run on pushes to `main` and PRs targeting `main` or `release/*`. The three test jobs run on PRs plus pushes to `main`; pushes to non-`main` branches do not run CI unless they are opened as a PR.
 
 ### Job 0: `verify-commit-signatures` (main/release PRs only)
 
