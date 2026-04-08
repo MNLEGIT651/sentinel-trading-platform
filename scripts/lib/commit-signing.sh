@@ -93,8 +93,9 @@ is_trusted_bot_commit() {
   committer_email="${api_response#*|}"
 
   # Check committer login against the trusted bot list
+  # Use -Fx for fixed string matching to avoid regex injection from untrusted input
   if [[ -f "$trusted_logins_file" && -n "$committer_login" ]]; then
-    if grep -Eq "^${committer_login}$" "$trusted_logins_file" 2>/dev/null; then
+    if grep -Fxq "$committer_login" "$trusted_logins_file" 2>/dev/null; then
       return 0
     fi
   fi
