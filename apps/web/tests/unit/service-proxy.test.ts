@@ -815,7 +815,7 @@ describe('proxyServiceRequest', () => {
       );
 
       expect(consoleError).toHaveBeenCalled();
-      const logCall = consoleError.mock.calls[0][0] as string;
+      const logCall = consoleError.mock.calls[0]![0] as string;
       const logData = JSON.parse(logCall);
       expect(logData.correlationId).toBe('log-corr-789');
       expect(logData.scope).toBe('service-proxy');
@@ -840,7 +840,7 @@ describe('proxyServiceRequest', () => {
       );
 
       expect(consoleLog).toHaveBeenCalled();
-      const logCall = consoleLog.mock.calls[0][0] as string;
+      const logCall = consoleLog.mock.calls[0]![0] as string;
       const logData = JSON.parse(logCall);
       expect(logData.correlationId).toBe('success-corr-abc');
       expect(logData.action).toBe('success');

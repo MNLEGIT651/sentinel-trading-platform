@@ -138,7 +138,7 @@ describe('Journal API routes', { timeout: 15_000 }, () => {
 
     it('GET /api/journal/stats returns 401 when unauthenticated', async () => {
       const { GET } = await import('@/app/api/journal/stats/route');
-      const res = await GET(req('/api/journal/stats'));
+      const res = await GET();
       expect(res.status).toBe(401);
     });
   });

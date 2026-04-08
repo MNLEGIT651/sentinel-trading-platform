@@ -9,8 +9,15 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+interface JournalResponse {
+  entries: JournalEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 const mockUseJournalQuery = vi.fn(() => ({
-  data: undefined,
+  data: undefined as JournalResponse | undefined,
   isLoading: false,
   isError: false,
 }));
@@ -19,7 +26,7 @@ vi.mock('@/hooks/queries', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/hooks/queries')>();
   return {
     ...actual,
-    useJournalQuery: (...args: unknown[]) => mockUseJournalQuery(...args),
+    useJournalQuery: () => mockUseJournalQuery(),
     useJournalStatsQuery: vi.fn(() => ({ data: undefined, isLoading: false })),
     useGradeJournalMutation: vi.fn(() => ({
       mutate: vi.fn(),

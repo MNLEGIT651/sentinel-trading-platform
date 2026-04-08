@@ -57,7 +57,7 @@ describe('AuditLogPage', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useOperatorActionsQuery>);
+    } as unknown as ReturnType<typeof useOperatorActionsQuery>);
 
     renderWithProviders(<AuditLogPage />);
     expect(screen.getByText('Total Actions')).toBeInTheDocument();

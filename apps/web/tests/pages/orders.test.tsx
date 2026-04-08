@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import OrdersPage from '@/app/(dashboard)/orders/page';
 import { renderWithProviders } from '../test-utils';
+import type { OrderHistoryEntry } from '@/hooks/queries/use-order-history-query';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/orders',
@@ -44,24 +45,24 @@ async function mockAllEmpty() {
     isError: false,
     error: null,
     refetch: vi.fn(),
-  } as ReturnType<typeof queries.useFillsQuery>);
+  } as unknown as ReturnType<typeof queries.useFillsQuery>);
   vi.mocked(queries.useRiskEvaluationsQuery).mockReturnValue({
     data: { data: [], total: 0 },
     isLoading: false,
     isError: false,
     error: null,
     refetch: vi.fn(),
-  } as ReturnType<typeof queries.useRiskEvaluationsQuery>);
+  } as unknown as ReturnType<typeof queries.useRiskEvaluationsQuery>);
   vi.mocked(queries.useOrderHistoryQuery).mockReturnValue({
     data: [],
     isLoading: false,
     isError: false,
     error: null,
     refetch: vi.fn(),
-  } as ReturnType<typeof queries.useOrderHistoryQuery>);
+  } as unknown as ReturnType<typeof queries.useOrderHistoryQuery>);
 }
 
-async function mockWithOrders(orders: Parameters<typeof vi.fn>[0] = undefined) {
+async function mockWithOrders(orders?: OrderHistoryEntry[]) {
   const queries = await import('@/hooks/queries');
   vi.mocked(queries.useFillsQuery).mockReturnValue({
     data: { data: [], total: 0 },
@@ -69,14 +70,14 @@ async function mockWithOrders(orders: Parameters<typeof vi.fn>[0] = undefined) {
     isError: false,
     error: null,
     refetch: vi.fn(),
-  } as ReturnType<typeof queries.useFillsQuery>);
+  } as unknown as ReturnType<typeof queries.useFillsQuery>);
   vi.mocked(queries.useRiskEvaluationsQuery).mockReturnValue({
     data: { data: [], total: 0 },
     isLoading: false,
     isError: false,
     error: null,
     refetch: vi.fn(),
-  } as ReturnType<typeof queries.useRiskEvaluationsQuery>);
+  } as unknown as ReturnType<typeof queries.useRiskEvaluationsQuery>);
   vi.mocked(queries.useOrderHistoryQuery).mockReturnValue({
     data: orders ?? [
       {
@@ -97,7 +98,7 @@ async function mockWithOrders(orders: Parameters<typeof vi.fn>[0] = undefined) {
     isError: false,
     error: null,
     refetch: vi.fn(),
-  } as ReturnType<typeof queries.useOrderHistoryQuery>);
+  } as unknown as ReturnType<typeof queries.useOrderHistoryQuery>);
 }
 
 beforeEach(() => {

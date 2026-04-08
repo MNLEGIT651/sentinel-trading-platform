@@ -50,8 +50,8 @@ describe('useStrategiesQuery', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toHaveLength(2);
-    expect(result.current.data![0].name).toBe('rsi_momentum');
-    expect(result.current.data![1].family).toBe('reversion');
+    expect(result.current.data![0]!.name).toBe('rsi_momentum');
+    expect(result.current.data![1]!.family).toBe('reversion');
   });
 
   it('extracts strategies array from response', async () => {

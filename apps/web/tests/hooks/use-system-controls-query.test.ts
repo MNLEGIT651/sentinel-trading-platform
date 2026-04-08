@@ -143,7 +143,7 @@ describe('useHaltSystemMutation', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    const body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]![1]!.body);
     expect(body.trading_halted).toBe(true);
   });
 });
@@ -171,7 +171,7 @@ describe('useResumeSystemMutation', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    const body = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]![1]!.body);
     expect(body.trading_halted).toBe(false);
   });
 });

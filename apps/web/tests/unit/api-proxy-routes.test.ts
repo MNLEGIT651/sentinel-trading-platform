@@ -248,7 +248,7 @@ describe('/api/engine/[...path] route handler', () => {
     await GET(request, ctx);
 
     // The original request (with its query string) is passed to the proxy
-    const [, forwardedReq] = mockProxyServiceRequest.mock.calls[0];
+    const [, forwardedReq] = mockProxyServiceRequest.mock.calls[0]!;
     const url = new URL(forwardedReq.url);
     expect(url.searchParams.get('symbols')).toBe('AAPL,MSFT');
     expect(url.searchParams.get('interval')).toBe('1d');
@@ -282,10 +282,10 @@ describe('/api/engine/[...path] route handler', () => {
 
     await GET(request, ctx);
 
-    const extraHeaders = mockProxyServiceRequest.mock.calls[0][3] as Record<string, string>;
+    const extraHeaders = mockProxyServiceRequest.mock.calls[0]![3] as Record<string, string>;
     expect(extraHeaders['x-correlation-id']).toBeDefined();
     expect(typeof extraHeaders['x-correlation-id']).toBe('string');
-    expect(extraHeaders['x-correlation-id'].length).toBeGreaterThan(0);
+    expect(extraHeaders['x-correlation-id']!.length).toBeGreaterThan(0);
   });
 
   // ─── Error boundary tests ─────────────────────────────────────────────

@@ -82,7 +82,7 @@ describe('OperatorRolesPage', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useRolesQuery>);
+    } as unknown as ReturnType<typeof useRolesQuery>);
 
     renderWithProviders(<RolesPage />);
     expect(screen.getByText(/no team members found/i)).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('OperatorRolesPage', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useRolesQuery>);
+    } as unknown as ReturnType<typeof useRolesQuery>);
 
     renderWithProviders(<RolesPage />);
     expect(screen.getByText('Alice Operator')).toBeInTheDocument();

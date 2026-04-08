@@ -47,7 +47,7 @@ describe('usePositionsQuery', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toHaveLength(2);
-    expect(result.current.data![0].instrument_id).toBe('AAPL');
+    expect(result.current.data![0]!.instrument_id).toBe('AAPL');
   });
 
   it('calls the correct engine URL', async () => {
