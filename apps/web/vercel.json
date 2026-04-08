@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "installCommand": "pnpm install",
   "buildCommand": "turbo run build --filter=@sentinel/web",
-  "ignoreCommand": "bash scripts/vercel-ignore-command.sh",
+  "ignoreCommand": "bash ../../scripts/vercel-ignore-command.sh",
   "regions": ["iad1"],
   "crons": [
     {

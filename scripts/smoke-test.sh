@@ -15,7 +15,7 @@ PASSED=0
 
 # Service URLs (override via environment variables)
 VERCEL_URL="${VERCEL_URL:-https://sentinel-trading-platform.vercel.app}"
-SUPABASE_URL="${SUPABASE_URL:?SUPABASE_URL must be set}"
+SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 
 usage() {
@@ -188,7 +188,11 @@ log "================================================"
 test_vercel_serves_html
 test_health_endpoint
 test_settings_status
-test_supabase_api
+if [[ -n "$SUPABASE_URL" ]]; then
+  test_supabase_api
+else
+  log "⊘ Supabase API (skipped — SUPABASE_URL not set)"
+fi
 test_static_assets
 test_api_auth_required
 
