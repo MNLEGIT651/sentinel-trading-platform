@@ -69,7 +69,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
   }, []);
 
   return (
-    <header className="flex h-12 items-center justify-between border-b border-border bg-card/80 backdrop-blur-sm px-4 relative">
+    <header className="safe-area-top relative flex min-h-12 items-center justify-between border-b border-border bg-card/80 px-3 backdrop-blur-sm sm:px-4">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:top-2 focus:left-2"
@@ -95,7 +95,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
         <Breadcrumbs className="hidden sm:flex" />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-3">
         {/* Command palette trigger */}
         {onCommandPalette && (
           <button
@@ -109,6 +109,17 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
             <kbd className="hidden md:inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1 py-0.5 text-[10px] font-mono">
               ⌘K
             </kbd>
+          </button>
+        )}
+
+        {onCommandPalette && (
+          <button
+            type="button"
+            onClick={onCommandPalette}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground sm:hidden"
+            aria-label="Search and commands"
+          >
+            <Search className="h-4 w-4" />
           </button>
         )}
 

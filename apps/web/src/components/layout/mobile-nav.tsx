@@ -19,9 +19,9 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur-md safe-area-bottom lg:hidden"
+      className="app-safe-area-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur-md lg:hidden"
     >
-      <div className="flex h-16 items-center justify-around px-2">
+      <div className="mx-auto flex h-16 w-full max-w-screen-md items-center justify-around px-2">
         {items.map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
@@ -40,7 +40,7 @@ export function MobileNav() {
               <item.icon
                 className={cn('h-5 w-5', isActive && 'drop-shadow-[0_0_6px_var(--color-primary)]')}
               />
-              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              <span className="text-[11px] font-medium leading-none">{item.label}</span>
             </Link>
           );
         })}

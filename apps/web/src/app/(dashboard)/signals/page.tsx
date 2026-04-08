@@ -22,6 +22,11 @@ import { DEFAULT_SIGNAL_TICKERS, MAX_LIVE_SCAN_TICKERS } from '@/lib/constants';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
 import type { SignalRow } from '@/components/signals/signal-card';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
+import {
+  MetricGroup,
+  PageContainer,
+  SectionStack,
+} from '@/components/layout/responsive-primitives';
 
 export default function SignalsPage() {
   useEffect(() => {
@@ -129,161 +134,169 @@ export default function SignalsPage() {
       : 0;
 
   return (
-    <div className="space-y-4 p-4 page-enter">
-      {engineOnline === false && <OfflineBanner service="engine" />}
+    <PageContainer className="page-enter" density="compact">
+      <SectionStack spacing="default">
+        {engineOnline === false && <OfflineBanner service="engine" />}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Zap className="h-5 w-5 text-primary" />
-          <div>
-            <h1 className="text-heading-page text-foreground">Signals</h1>
-            <p className="text-xs text-muted-foreground">
-              {signals.length > 0
-                ? `${signals.length} signal${signals.length !== 1 ? 's' : ''} from ${scanMeta?.tickers ?? 0} tickers · ${lastScanTime}`
-                : 'Run a scan to analyze the market'}
-            </p>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Zap className="h-5 w-5 text-primary" />
+            <div>
+              <h1 className="text-heading-page text-foreground">Signals</h1>
+              <p className="text-xs text-muted-foreground">
+                {signals.length > 0
+                  ? `${signals.length} signal${signals.length !== 1 ? 's' : ''} from ${scanMeta?.tickers ?? 0} tickers · ${lastScanTime}`
+                  : 'Run a scan to analyze the market'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowConfig((v) => !v)}>
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {showConfig ? (
+                <ChevronUp className="h-3 w-3 ml-1" />
+              ) : (
+                <ChevronDown className="h-3 w-3 ml-1" />
+              )}
+            </Button>
+            <Button
+              onClick={handleRunScan}
+              disabled={isScanning || engineOnline !== true}
+              size="sm"
+            >
+              {isScanning ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span className="ml-1.5">Scanning…</span>
+                </>
+              ) : (
+                <span>Run Scan</span>
+              )}
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowConfig((v) => !v)}>
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            {showConfig ? (
-              <ChevronUp className="h-3 w-3 ml-1" />
-            ) : (
-              <ChevronDown className="h-3 w-3 ml-1" />
-            )}
-          </Button>
-          <Button onClick={handleRunScan} disabled={isScanning || engineOnline !== true} size="sm">
-            {isScanning ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span className="ml-1.5">Scanning…</span>
-              </>
-            ) : (
-              <span>Run Scan</span>
-            )}
-          </Button>
-        </div>
-      </div>
 
-      {/* Config Panel */}
-      {showConfig && (
-        <SignalFilters
-          tickerInput={tickerInput}
-          onTickerInput={setTickerInput}
-          days={days}
-          onDays={setDays}
-          minStrength={minStrength}
-          onMinStrength={setMinStrength}
-        />
-      )}
+        {/* Config Panel */}
+        {showConfig && (
+          <SignalFilters
+            tickerInput={tickerInput}
+            onTickerInput={setTickerInput}
+            days={days}
+            onDays={setDays}
+            minStrength={minStrength}
+            onMinStrength={setMinStrength}
+          />
+        )}
 
-      {/* Error */}
-      {error && (
-        <Card className="bg-loss/10 border-loss/30">
-          <CardContent className="flex items-center gap-2 py-3 px-4">
-            <AlertTriangle className="h-4 w-4 text-loss flex-shrink-0" />
-            <span className="text-sm text-loss">{error}</span>
-          </CardContent>
-        </Card>
-      )}
-
-      {warning && !error && (
-        <Card className="bg-amber-500/10 border-amber-500/30">
-          <CardContent className="flex items-center gap-2 py-3 px-4">
-            <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
-            <span className="text-sm text-amber-300">{warning}</span>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Scan warnings (partial errors) */}
-      {scanMeta && scanMeta.errors.length > 0 && !error && (
-        <Card className="bg-amber-500/10 border-amber-500/30">
-          <CardContent className="py-2 px-4">
-            <p className="text-xs text-amber-400">
-              {scanMeta.errors.length} ticker(s) had errors:{' '}
-              {scanMeta.errors.slice(0, 3).join('; ')}
-              {scanMeta.errors.length > 3 ? ` +${scanMeta.errors.length - 3} more` : ''}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Summary Cards */}
-      {signals.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 stagger-grid">
-          <Card className="bg-card border-border">
-            <CardContent className="flex items-center justify-between py-3 px-4">
-              <span className="text-xs text-muted-foreground">Signals</span>
-              <span className="text-lg font-bold text-foreground">{signals.length}</span>
+        {/* Error */}
+        {error && (
+          <Card className="bg-loss/10 border-loss/30">
+            <CardContent className="flex items-center gap-2 py-3 px-4">
+              <AlertTriangle className="h-4 w-4 text-loss flex-shrink-0" />
+              <span className="text-sm text-loss">{error}</span>
             </CardContent>
           </Card>
-          <Card className="bg-card border-border">
-            <CardContent className="flex items-center justify-between py-3 px-4">
-              <span className="text-xs text-muted-foreground">Long / Short</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-profit">{longCount}L</span>
-                <span className="text-muted-foreground">/</span>
-                <span className="text-sm font-semibold text-loss">{shortCount}S</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border">
-            <CardContent className="flex items-center justify-between py-3 px-4">
-              <span className="text-xs text-muted-foreground">
-                Avg Strength{' '}
-                <InfoTooltip content="Model confidence score from 0-100%. Scores above 70% indicate strong conviction." />
-              </span>
-              <span className="text-lg font-bold text-foreground">{avgStrength}</span>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border">
-            <CardContent className="flex items-center justify-between py-3 px-4">
-              <span className="text-xs text-muted-foreground">Strategies</span>
-              <span className="text-lg font-bold text-foreground">{scanMeta?.strategies ?? 0}</span>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        )}
 
-      {/* Empty state */}
-      {!isScanning && !error && signals.length === 0 && (
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Zap className="h-8 w-8 text-muted-foreground/40 mb-3" />
-            <h2 className="text-sm font-semibold text-foreground mb-1">
-              {lastScanTime ? 'No signals found' : 'No signals yet'}
-            </h2>
-            <p className="text-xs text-muted-foreground max-w-sm mb-4">
-              {engineOnline !== true
-                ? 'Engine is offline. Start the engine to scan for trading signals.'
-                : lastScanTime
-                  ? `No signals met the minimum strength threshold (${(minStrength * 100).toFixed(0)}%). Try lowering the threshold or adding more tickers.`
-                  : 'Run a signal scan to analyze market conditions across your configured tickers.'}
-            </p>
-            {engineOnline === true && (
-              <div className="flex items-center gap-2">
-                <Button onClick={handleRunScan} disabled={isScanning} size="sm">
-                  {lastScanTime ? 'Scan Again' : 'Run Scan'}
-                </Button>
-                {!showConfig && (
-                  <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
-                    <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
-                    Configure
+        {warning && !error && (
+          <Card className="bg-amber-500/10 border-amber-500/30">
+            <CardContent className="flex items-center gap-2 py-3 px-4">
+              <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+              <span className="text-sm text-amber-300">{warning}</span>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Scan warnings (partial errors) */}
+        {scanMeta && scanMeta.errors.length > 0 && !error && (
+          <Card className="bg-amber-500/10 border-amber-500/30">
+            <CardContent className="py-2 px-4">
+              <p className="text-xs text-amber-400">
+                {scanMeta.errors.length} ticker(s) had errors:{' '}
+                {scanMeta.errors.slice(0, 3).join('; ')}
+                {scanMeta.errors.length > 3 ? ` +${scanMeta.errors.length - 3} more` : ''}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Summary Cards */}
+        {signals.length > 0 && (
+          <MetricGroup className="stagger-grid">
+            <Card className="bg-card border-border">
+              <CardContent className="flex items-center justify-between py-3 px-4">
+                <span className="text-xs text-muted-foreground">Signals</span>
+                <span className="text-lg font-bold text-foreground">{signals.length}</span>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="flex items-center justify-between py-3 px-4">
+                <span className="text-xs text-muted-foreground">Long / Short</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-profit">{longCount}L</span>
+                  <span className="text-muted-foreground">/</span>
+                  <span className="text-sm font-semibold text-loss">{shortCount}S</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="flex items-center justify-between py-3 px-4">
+                <span className="text-xs text-muted-foreground">
+                  Avg Strength{' '}
+                  <InfoTooltip content="Model confidence score from 0-100%. Scores above 70% indicate strong conviction." />
+                </span>
+                <span className="text-lg font-bold text-foreground">{avgStrength}</span>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="flex items-center justify-between py-3 px-4">
+                <span className="text-xs text-muted-foreground">Strategies</span>
+                <span className="text-lg font-bold text-foreground">
+                  {scanMeta?.strategies ?? 0}
+                </span>
+              </CardContent>
+            </Card>
+          </MetricGroup>
+        )}
+
+        {/* Empty state */}
+        {!isScanning && !error && signals.length === 0 && (
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Zap className="h-8 w-8 text-muted-foreground/40 mb-3" />
+              <h2 className="text-sm font-semibold text-foreground mb-1">
+                {lastScanTime ? 'No signals found' : 'No signals yet'}
+              </h2>
+              <p className="text-xs text-muted-foreground max-w-sm mb-4">
+                {engineOnline !== true
+                  ? 'Engine is offline. Start the engine to scan for trading signals.'
+                  : lastScanTime
+                    ? `No signals met the minimum strength threshold (${(minStrength * 100).toFixed(0)}%). Try lowering the threshold or adding more tickers.`
+                    : 'Run a signal scan to analyze market conditions across your configured tickers.'}
+              </p>
+              {engineOnline === true && (
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleRunScan} disabled={isScanning} size="sm">
+                    {lastScanTime ? 'Scan Again' : 'Run Scan'}
                   </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  {!showConfig && (
+                    <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
+                      <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
+                      Configure
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Signal Table */}
-      {!isScanning && !error && signals.length > 0 && (
-        <SignalTimeline signals={sortedSignals} onToggleSort={toggleSort} />
-      )}
-    </div>
+        {/* Signal Table */}
+        {!isScanning && !error && signals.length > 0 && (
+          <SignalTimeline signals={sortedSignals} onToggleSort={toggleSort} />
+        )}
+      </SectionStack>
+    </PageContainer>
   );
 }

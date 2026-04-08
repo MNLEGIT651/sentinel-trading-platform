@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        'flex h-screen overflow-hidden',
+        'app-shell-height flex overflow-hidden bg-background',
         device.isHydrated && device.isTouch && 'touch-device',
       )}
       {...(device.isHydrated ? { 'data-device': device.type } : {})}
@@ -109,7 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onTouchEnd={closeMobileSidebar}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-56 animate-in slide-in-from-left duration-200">
+          <div className="fixed left-0 z-50 w-[min(22rem,88vw)] animate-in slide-in-from-left duration-200 top-[max(env(safe-area-inset-top),0.5rem)] bottom-[max(env(safe-area-inset-bottom),0.5rem)]">
             <Sidebar collapsed={false} onToggle={closeMobileSidebar} />
           </div>
         </div>
@@ -122,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className={cn(
             'flex-1 overflow-auto',
             device.isHydrated && device.isTouch && 'overscroll-contain',
-            'pb-[var(--shell-bottom-offset)] lg:pb-0',
+            'pb-[calc(var(--shell-bottom-offset)+env(safe-area-inset-bottom))] lg:pb-0',
           )}
         >
           <div className="animate-sentinel-in">{children}</div>
