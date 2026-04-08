@@ -4,3 +4,4 @@
 # sentinel-dev git ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...
 #
 # Add each developer/bot signing public key here before requiring commit signing in CI.
+stevenschlingman62@gmail.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJWlBx1FFIzoWU1dQ9TJKfvLPlOXXG/Pndfr4a3afpGi

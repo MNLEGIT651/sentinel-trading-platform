@@ -31,6 +31,8 @@ jobs:
           fetch-depth: 0
 
       - name: Verify signatures in commit range
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
@@ -103,27 +105,29 @@ jobs:
 
       - name: Report bundle size
         run: |
-          echo "### 📦 Bundle Size Report" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f apps/web/.next/BUILD_ID ]; then
-            echo "**Build ID:** $(cat apps/web/.next/BUILD_ID)" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          # Parse route manifest for sizes
-          if [ -f apps/web/.next/routes-manifest.json ]; then
-            echo "Static routes: $(jq '.staticRoutes | length' apps/web/.next/routes-manifest.json)"
-            echo "Dynamic routes: $(jq '.dynamicRoutes | length' apps/web/.next/routes-manifest.json)"
-          fi >> "$GITHUB_STEP_SUMMARY"
-          # Report JS chunk sizes
-          if [ -d apps/web/.next/static/chunks ]; then
-            total=$(du -sh apps/web/.next/static/chunks 2>/dev/null | cut -f1)
-            echo "Total JS chunks: $total"
+          {
+            echo "### 📦 Bundle Size Report"
             echo ""
-            echo "Top 10 largest chunks:"
-            find apps/web/.next/static/chunks -name '*.js' -exec du -h {} + 2>/dev/null | sort -rh | head -10
-          fi >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+            if [ -f apps/web/.next/BUILD_ID ]; then
+              echo "**Build ID:** $(cat apps/web/.next/BUILD_ID)"
+            fi
+            echo ""
+            echo '```'
+            # Parse route manifest for sizes
+            if [ -f apps/web/.next/routes-manifest.json ]; then
+              echo "Static routes: $(jq '.staticRoutes | length' apps/web/.next/routes-manifest.json)"
+              echo "Dynamic routes: $(jq '.dynamicRoutes | length' apps/web/.next/routes-manifest.json)"
+            fi
+            # Report JS chunk sizes
+            if [ -d apps/web/.next/static/chunks ]; then
+              total=$(du -sh apps/web/.next/static/chunks 2>/dev/null | cut -f1)
+              echo "Total JS chunks: $total"
+              echo ""
+              echo "Top 10 largest chunks:"
+              find apps/web/.next/static/chunks -name '*.js' -exec du -h {} + 2>/dev/null | sort -rh | head -10
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
   # Job 2: Python quant engine

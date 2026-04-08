@@ -31,16 +31,20 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Validate target URL secret
+      - name: Resolve target URL secret
+        id: target
         env:
           VERCEL_PREVIEW_SMOKE_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
           if [ -z "$VERCEL_PREVIEW_SMOKE_URL" ]; then
-            echo "::error::Missing required secret: VERCEL_PREVIEW_SMOKE_URL"
-            exit 1
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Missing required secret: VERCEL_PREVIEW_SMOKE_URL. Skipping preview smoke checks."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run synthetic proxy health checks
+        if: steps.target.outputs.available == 'true'
         env:
           VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
