@@ -1,4 +1,7 @@
+import { formatCurrency } from '@/lib/utils';
 import { STATUS_COLORS } from './_constants';
+
+export { formatCurrency };
 
 export function toLocalDatetimeStr(d: Date): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -18,11 +21,6 @@ export function formatTimestamp(ts: string): string {
     minute: '2-digit',
     second: '2-digit',
   });
-}
-
-export function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return '—';
-  return `$${Number(value).toFixed(2)}`;
 }
 
 export function formatPct(value: number | null | undefined): string {

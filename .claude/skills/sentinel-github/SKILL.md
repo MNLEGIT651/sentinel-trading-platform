@@ -32,20 +32,28 @@ chore/<description>            # Deps, config, tooling
 
 ## CI Pipeline
 
-Three parallel jobs defined in `.github/workflows/ci.yml`. All run on `ubuntu-latest`. Concurrency group cancels in-progress runs on force-push to the same branch — this prevents wasteful duplicate CI runs.
+Five jobs defined in `.github/workflows/ci.yml`. All run on `ubuntu-latest`. Concurrency group cancels in-progress runs on force-push to the same branch — this prevents wasteful duplicate CI runs.
+
+`verify-commit-signatures` and `security-audit` only run on pushes to `main` and PRs targeting `main` or `release/*`. The three test jobs run on every push and PR.
+
+### Job 0: `verify-commit-signatures` (main/release PRs only)
+
+Verifies all commits in the push range are either GPG-good or GitHub-verified. Reads trusted signers from `.github/trusted_signers` and exceptions from `docs/security/commit-signing-exceptions.txt`.
 
 ### Job 1: `test-web` (Node 22 + pnpm)
 
 1. Installs deps with `pnpm install --frozen-lockfile`
-2. Runs `pnpm --filter web test` (Vitest)
-3. Runs `pnpm --filter web build` with **placeholder** Supabase env vars
+2. Runs `pnpm lint` (ESLint + TSC across all packages)
+3. Runs `pnpm --filter web test` (Vitest)
+4. Runs `pnpm --filter web build` with **placeholder** Supabase env vars
 
 The build step uses:
 
 ```yaml
 NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-publishable-key
 SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+NEXT_TELEMETRY_DISABLED: '1'
 ```
 
 **No real secrets needed in CI for the web build.** The build just needs the vars to be present and non-empty.
@@ -53,15 +61,21 @@ SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
 ### Job 2: `test-engine` (Python 3.12 + uv)
 
 1. Installs uv, creates venv, installs `.[dev]` in `apps/engine/`
-2. Runs `.venv/bin/python -m pytest tests --tb=short`
-3. Uses `PYTHONDONTWRITEBYTECODE=1` to skip `.pyc` generation
+2. Runs `ruff check` and `ruff format --check`
+3. Runs `.venv/bin/python -m pytest tests --tb=short`
+4. Uses `PYTHONDONTWRITEBYTECODE=1` to skip `.pyc` generation
 
 Note: Linux path (`.venv/bin/python`, not `.venv/Scripts/python`). Local Windows dev uses `Scripts/`.
 
 ### Job 3: `test-agents` (Node 22 + pnpm)
 
 1. Installs deps
-2. Runs `pnpm --filter agents test` (Vitest)
+2. Runs `pnpm --filter agents build` (TypeScript type-check)
+3. Runs `pnpm --filter agents test` (Vitest)
+
+### Job 4: `security-audit` (main/release PRs only)
+
+Runs after all three test jobs. Installs `pip-audit` and runs `node scripts/security-audit.mjs`.
 
 ---
 

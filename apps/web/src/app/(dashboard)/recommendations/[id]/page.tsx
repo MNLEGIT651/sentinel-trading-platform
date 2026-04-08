@@ -12,7 +12,7 @@ import type {
   OperatorAction,
 } from '@sentinel/shared';
 
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { getPipelineStatusColor, sideColors } from '@/lib/status-colors';
 import {
@@ -68,11 +68,6 @@ function formatTs(iso: string): string {
 
 function formatEventType(t: string): string {
   return t.replace(/_/g, ' ');
-}
-
-function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return '—';
-  return `$${Number(value).toFixed(2)}`;
 }
 
 /* ------------------------------------------------------------------ */

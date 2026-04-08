@@ -22,11 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed 6 unused GitHub Actions workflows (performance-benchmarks, test-coverage, secrets-scan, workflow-lint, auto-label, stale-management)
 - Slimmed CI pipeline to 4 essential workflows
+- Extracted `formatRelativeTime` and `formatCurrency` helpers to `apps/web/src/lib/utils.ts`; removed 5 inline duplicates across advisor and dashboard pages
 
 ### Fixed
 
 - Tightened catalyst_events RLS policy from always-true to user_id scoped
 - Fixed lint warnings in test files
+- Removed 4 dead WAT module files (`audit-logger`, `self-improver`, `tool-registry`, `python-runner`) that had no production callers; deleted their 4 companion test files
+- Updated `sentinel-github` skill doc to match actual CI env vars and correct 5-job pipeline description
 
 ## [0.1.0] — 2026-03-30
 

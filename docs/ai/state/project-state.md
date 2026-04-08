@@ -1,6 +1,6 @@
 # Project State Ledger
 
-_Last updated: 2026-03-21_
+_Last updated: 2026-04-08_
 
 This is the live status board for Claude Code, Codex, and human collaborators.
 
@@ -97,6 +97,7 @@ Before editing files:
 | OPS-2026-04-07B | done | Codex | `work` | `.github/workflows/railway-deploy.yml`, `apps/web/vercel.json`, `.github/workflows/supabase-typegen.yml`, `.github/dependabot.yml`, `docs/runbooks/platform-verification-checklist.md`, `docs/runbooks/production.md`, `docs/ai/state/project-state.md` | `pnpm lint`; `pnpm test`; `pnpm build` (fails in this env: Google Fonts fetch); `pnpm lint:engine` (fails: missing ruff); `pnpm format:check:engine` (fails: missing ruff); `pnpm test:engine` (fails: missing pytest); `pnpm exec prettier --check ...`; `git diff --check` | 2026-04-07 | Hardened deploy/typegen workflows, replaced fragile Vercel ignore logic, added production platform verification checklist, and tightened weekly dependency maintenance controls. |
 
 | REL-ORCH-20260407 | done | Codex | `work` | `artifacts/*`, platform audit evidence collection, `docs/ai/state/project-state.md` | `git diff --check`; `pnpm lint`; `pnpm test`; `pnpm build`; `pnpm lint:engine`; `pnpm format:check:engine`; `pnpm test:engine`; `/workspace/Trading-App/.bin/actionlint`; GitHub API PR sweep | 2026-04-07 | Completed release-owner multi-platform verification artifacts and per-PR matrix; reran full validation suite with passing lint/test/build/engine/actionlint evidence; result CHANGES_REQUESTED/NO_GO. |
+| CI-CLEANUP-20260408 | done | Claude | `claude/fix-ci-cleanup-TWR3y` | `apps/agents/src/wat/{audit-logger,self-improver,tool-registry,python-runner}.ts` (deleted), `apps/agents/tests/wat/{audit-logger,self-improver,tool-registry,python-runner}.test.ts` (deleted), `apps/web/src/lib/utils.ts`, `apps/web/src/components/advisor/{thread-list,memory-timeline}.tsx`, `apps/web/src/app/(dashboard)/{orders/page,replay/_helpers,recommendations/[id]/page}.tsx`, `.claude/skills/sentinel-github/SKILL.md`, `CHANGELOG.md`, `docs/ai/state/project-state.md` | `pnpm lint` ✅; `pnpm --filter web test` ✅ 1169; `pnpm --filter agents test` ✅ 277; `pnpm --filter agents build` ✅ | 2026-04-08 | Five-area cleanup: (1) CI audit — all jobs pass locally, skill doc corrected; (2) dead WAT code removed — 4 source + 4 test files deleted, zero production callers; (3) UI dedup — `formatRelativeTime` and `formatCurrency` consolidated into utils.ts, 5 inline copies removed; (4) docs updated — CHANGELOG, project-state, sentinel-github skill; (5) shared contracts verified aligned — `@sentinel/shared` correctly exports to both web and agents with no drift. |
 
 ---
 

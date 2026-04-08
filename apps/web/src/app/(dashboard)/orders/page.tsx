@@ -38,7 +38,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useFillsQuery, useRiskEvaluationsQuery, useOrderHistoryQuery } from '@/hooks/queries';
 import type { Fill, RiskEvaluation, RiskCheck } from '@sentinel/shared';
 import type { OrderHistoryEntry } from '@/hooks/queries/use-order-history-query';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { orderStatusColors, DEFAULT_ORDER_STYLE, sideColors } from '@/lib/status-colors';
 import { PAGE_SIZE_ORDERS } from '@/lib/constants';
 
@@ -74,10 +74,6 @@ function getDateRangeFrom(range: DateRange): string | undefined {
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);
   return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-}
-
-function formatCurrency(val: number): string {
-  return `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ─── Type Metadata ──────────────────────────────────────────────────────
