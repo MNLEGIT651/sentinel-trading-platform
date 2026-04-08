@@ -542,6 +542,7 @@ tr:hover {
 .responsive-pane-layout__secondary,
 .responsive-pane-layout__support {
   min-width: 0;
+  container-type: inline-size;
 }
 
 @container (min-width: 56rem) {
