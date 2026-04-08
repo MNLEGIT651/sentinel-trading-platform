@@ -215,9 +215,9 @@ function DashboardContent() {
                   />
                 ) : (
                   <div className="space-y-2" role="list" aria-label="Recent trading signals">
-                    {recentSignals.map((s, i) => (
+                    {recentSignals.map((s) => (
                       <article
-                        key={i}
+                        key={`${s.ticker}-${s.side}-${s.strength ?? 'na'}`}
                         className="grid grid-cols-[auto,1fr,auto] items-center gap-2 border-b border-border/50 py-1.5 last:border-0"
                         role="listitem"
                       >
