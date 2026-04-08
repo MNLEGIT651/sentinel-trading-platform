@@ -113,7 +113,7 @@ describe('ROUTE_LABELS', () => {
 
   it.each(expectedRoutes)('has a label for %s', (route) => {
     expect(ROUTE_LABELS[route]).toBeDefined();
-    expect(ROUTE_LABELS[route].length).toBeGreaterThan(0);
+    expect(ROUTE_LABELS[route]!.length).toBeGreaterThan(0);
   });
 
   it('contains at least 25 entries', () => {

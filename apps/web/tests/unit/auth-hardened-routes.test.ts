@@ -59,13 +59,13 @@ describe('Auth enforcement on hardened routes', { timeout: 15_000 }, () => {
 
   it('GET /api/fills returns 401', async () => {
     const { GET } = await import('@/app/api/fills/route');
-    const res = await GET(req('/api/fills'));
+    const res = await GET(req('/api/fills') as never);
     expect(res.status).toBe(401);
   });
 
   it('POST /api/fills returns 401', async () => {
     const { POST } = await import('@/app/api/fills/route');
-    const res = await POST(req('/api/fills', 'POST'));
+    const res = await POST(req('/api/fills', 'POST') as never);
     expect(res.status).toBe(401);
   });
 
@@ -95,7 +95,7 @@ describe('Auth enforcement on hardened routes', { timeout: 15_000 }, () => {
 
   it('GET /api/experiments returns 401', async () => {
     const { GET } = await import('@/app/api/experiments/route');
-    const res = await GET(req('/api/experiments') as never);
+    const res = await GET();
     expect(res.status).toBe(401);
   });
 
@@ -107,7 +107,7 @@ describe('Auth enforcement on hardened routes', { timeout: 15_000 }, () => {
 
   it('GET /api/system-controls returns 401', async () => {
     const { GET } = await import('@/app/api/system-controls/route');
-    const res = await GET(req('/api/system-controls'));
+    const res = await GET();
     expect(res.status).toBe(401);
   });
 

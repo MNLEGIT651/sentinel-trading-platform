@@ -74,7 +74,7 @@ describe('WorkflowsPage', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useWorkflowJobsQuery>);
+    } as unknown as ReturnType<typeof useWorkflowJobsQuery>);
 
     renderWithProviders(<WorkflowsPage />);
     expect(screen.getByText('No workflows found')).toBeInTheDocument();

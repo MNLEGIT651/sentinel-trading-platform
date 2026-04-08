@@ -64,7 +64,7 @@ describe('Advisor API routes', () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
         data: { user: null },
         error: { message: 'Not authenticated' },
-      });
+      } as never);
 
       const { GET } = await import('@/app/api/advisor/profile/route');
       const res = await GET();
@@ -92,7 +92,7 @@ describe('Advisor API routes', () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
         data: { user: null },
         error: { message: 'Not authenticated' },
-      });
+      } as never);
 
       const { GET } = await import('@/app/api/advisor/memory-events/route');
       const req = new Request('http://localhost/api/advisor/memory-events');

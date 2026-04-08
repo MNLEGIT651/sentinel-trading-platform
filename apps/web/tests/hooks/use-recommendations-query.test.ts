@@ -33,8 +33,26 @@ describe('useRecommendationsQuery', () => {
 
   it('fetches pending recommendations by default', async () => {
     const mockRecs = [
-      { id: 'rec-1', ticker: 'AAPL', side: 'buy', status: 'pending' },
-      { id: 'rec-2', ticker: 'MSFT', side: 'sell', status: 'pending' },
+      {
+        id: 'rec-1',
+        created_at: '2024-01-01T00:00:00Z',
+        agent_role: 'analyst',
+        ticker: 'AAPL',
+        side: 'buy' as const,
+        quantity: 10,
+        order_type: 'market' as const,
+        status: 'pending' as const,
+      },
+      {
+        id: 'rec-2',
+        created_at: '2024-01-01T00:00:00Z',
+        agent_role: 'analyst',
+        ticker: 'MSFT',
+        side: 'sell' as const,
+        quantity: 5,
+        order_type: 'market' as const,
+        status: 'pending' as const,
+      },
     ];
     vi.mocked(agentsClient.getRecommendations).mockResolvedValue({
       recommendations: mockRecs,
@@ -47,13 +65,24 @@ describe('useRecommendationsQuery', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toHaveLength(2);
-    expect(result.current.data![0].ticker).toBe('AAPL');
+    expect(result.current.data![0]!.ticker).toBe('AAPL');
     expect(agentsClient.getRecommendations).toHaveBeenCalledWith('pending');
   });
 
   it('fetches with custom status filter', async () => {
     vi.mocked(agentsClient.getRecommendations).mockResolvedValue({
-      recommendations: [{ id: 'rec-3', ticker: 'GOOG', side: 'buy', status: 'approved' }],
+      recommendations: [
+        {
+          id: 'rec-3',
+          created_at: '2024-01-01T00:00:00Z',
+          agent_role: 'analyst',
+          ticker: 'GOOG',
+          side: 'buy' as const,
+          quantity: 10,
+          order_type: 'market' as const,
+          status: 'approved' as const,
+        },
+      ],
     });
 
     const { result } = renderHook(() => useRecommendationsQuery('approved'), {
