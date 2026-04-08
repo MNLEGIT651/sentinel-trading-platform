@@ -7,6 +7,7 @@ interface MetricCardProps {
   value: React.ReactNode;
   change?: number;
   icon?: React.ReactNode;
+  emphasis?: 'default' | 'hero';
 }
 
 export const MetricCard = memo(function MetricCard({
@@ -14,19 +15,25 @@ export const MetricCard = memo(function MetricCard({
   value,
   change,
   icon,
+  emphasis = 'default',
 }: MetricCardProps) {
   return (
-    <Card className="@container/metric bg-card border-border card-interactive group/metric relative overflow-hidden">
-      {/* Subtle top accent gradient */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+    <Card className="@container/metric border-border bg-card card-interactive">
       <CardHeader className="flex flex-col items-start pb-1.5 @[10rem]/metric:flex-row @[10rem]/metric:items-center @[10rem]/metric:justify-between">
         <CardTitle className="text-heading-card">{label}</CardTitle>
-        <div className="text-muted-foreground/50 transition-transform duration-200 group-hover/metric:scale-110 group-hover/metric:text-primary/70">
-          {icon}
-        </div>
+        <div className="text-muted-foreground/65">{icon}</div>
       </CardHeader>
       <CardContent className="space-y-1">
-        <div className="text-data-primary animate-count-in">{value}</div>
+        <div
+          className={cn(
+            emphasis === 'hero'
+              ? 'text-[2rem] leading-9 sm:text-[2.25rem] sm:leading-10'
+              : 'text-data-primary',
+            'font-mono font-semibold tabular-nums tracking-tight animate-count-in',
+          )}
+        >
+          {value}
+        </div>
         {change !== undefined && (
           <p
             className={cn(

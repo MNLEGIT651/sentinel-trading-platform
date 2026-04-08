@@ -11,6 +11,7 @@ import {
   Activity,
   Clock,
   Bot,
+  Radar,
 } from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertFeed } from '@/components/dashboard/alert-feed';
@@ -121,7 +122,6 @@ function DashboardContent() {
       {engineOnline === false && <OfflineBanner service="engine" />}
       {agentsOnline === false && <OfflineBanner service="agents" />}
 
-      {/* System Health Strip */}
       <section
         aria-label="System health status"
         className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm sm:px-4"
@@ -132,7 +132,7 @@ function DashboardContent() {
             {systemControls?.trading_halted ? 'Halted' : 'Active'}
           </span>
         </div>
-        <span className="hidden sm:inline text-border" aria-hidden="true">
+        <span className="hidden text-border sm:inline" aria-hidden="true">
           |
         </span>
         <div className="flex items-center gap-1.5">
@@ -141,7 +141,7 @@ function DashboardContent() {
             {systemControls?.global_mode ?? 'paper'}
           </span>
         </div>
-        <span className="hidden sm:inline text-border" aria-hidden="true">
+        <span className="hidden text-border sm:inline" aria-hidden="true">
           |
         </span>
         <div className="flex items-center gap-1.5">
@@ -156,7 +156,7 @@ function DashboardContent() {
             {pendingRecs?.length ?? 0}
           </span>
         </div>
-        <span className="hidden sm:inline text-border" aria-hidden="true">
+        <span className="hidden text-border sm:inline" aria-hidden="true">
           |
         </span>
         <div className="flex items-center gap-1.5">
@@ -170,150 +170,192 @@ function DashboardContent() {
         </div>
       </section>
 
-      {/* Incident Controls */}
-      <IncidentControls />
-
-      {/* Portfolio Metrics */}
-      <section aria-label="Portfolio metrics">
-        <div className="@container">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 stagger-grid">
-            <MetricCard
-              label={
-                <>
-                  Total Equity{' '}
-                  <InfoTooltip content="Total value of all assets including cash and open positions." />
-                </>
-              }
-              value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
-              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-            />
-            <MetricCard
-              label={
-                <>
-                  Daily P&L{' '}
-                  <InfoTooltip content="Today's profit or loss across all positions, updated in real-time during market hours." />
-                </>
-              }
-              value={
-                <AnimatedNumber
-                  value={Math.abs(pnl)}
-                  prefix={pnl >= 0 ? '+$' : '-$'}
-                  decimals={2}
-                />
-              }
-              change={pnlPct}
-              icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-            />
-            <MetricCard
-              label={
-                <>
-                  Cash Available <InfoTooltip content="Uninvested cash available for new trades." />
-                </>
-              }
-              value={
-                <AnimatedNumber
-                  value={account?.cash ?? FALLBACK_ACCOUNT.cash}
-                  prefix="$"
-                  decimals={2}
-                />
-              }
-              icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
-            />
-            <MetricCard
-              label="Positions Value"
-              value={
-                <AnimatedNumber
-                  value={account?.positions_value ?? FALLBACK_ACCOUNT.positions_value}
-                  prefix="$"
-                  decimals={2}
-                />
-              }
-              icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Price Ticker */}
-      <section aria-label="Market prices" className="relative">
-        <PriceTicker items={tickerData} />
-        <span className="absolute -top-1.5 right-2">
-          {isLive ? (
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-profit/15 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-profit uppercase"
-              aria-label="Live market data"
-            >
-              <span className="h-1 w-1 rounded-full bg-profit animate-pulse" aria-hidden="true" />
-              Live
-            </span>
-          ) : (
-            <SimulatedBadge />
-          )}
-        </span>
-      </section>
-
-      {/* Signals & Alerts */}
-      <section aria-label="Signals and alerts">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Active Signals */}
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-heading-card">Active Signals</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            </CardHeader>
-            <CardContent>
-              {recentSignals.length === 0 ? (
-                <EmptyState
-                  icon={Zap}
-                  title="No Recent Signals"
-                  description="Strategies generate signals during market hours."
-                  className="border-0 bg-transparent py-6"
-                />
-              ) : (
-                <div className="space-y-2" role="list" aria-label="Recent trading signals">
-                  {recentSignals.map((s, i) => (
-                    <article
-                      key={i}
-                      className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0"
-                      role="listitem"
+      <section
+        aria-label="Trading workspace"
+        className="grid gap-4 xl:grid-cols-[1.15fr,1.7fr,1.15fr]"
+      >
+        <div className="space-y-4">
+          <section aria-label="Market prices">
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-heading-card">Watchlist</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <PriceTicker items={tickerData} />
+                <div className="mt-2 flex justify-end">
+                  {isLive ? (
+                    <span
+                      className="inline-flex items-center gap-1 rounded border border-profit/30 bg-profit/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-profit"
+                      aria-label="Live market data"
                     >
-                      <div className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-profit" aria-hidden="true" />
+                      Live
+                    </span>
+                  ) : (
+                    <SimulatedBadge />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section aria-label="Signals and alerts">
+            <Card className="border-border bg-card">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-heading-card">Active Signals</CardTitle>
+                <Zap className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              </CardHeader>
+              <CardContent>
+                {recentSignals.length === 0 ? (
+                  <EmptyState
+                    icon={Zap}
+                    title="No Recent Signals"
+                    description="Strategies generate signals during market hours."
+                    className="border-0 bg-transparent py-6"
+                  />
+                ) : (
+                  <div className="space-y-2" role="list" aria-label="Recent trading signals">
+                    {recentSignals.map((s, i) => (
+                      <article
+                        key={i}
+                        className="grid grid-cols-[auto,1fr,auto] items-center gap-2 border-b border-border/50 py-1.5 last:border-0"
+                        role="listitem"
+                      >
                         <span
                           className={cn(
-                            'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                            'rounded px-1.5 py-0.5 text-[10px] font-bold',
                             sideColors[s.side] ?? sideColors.buy,
                           )}
                         >
                           {s.side.toUpperCase()}
                         </span>
                         <span className="text-sm font-semibold text-foreground">{s.ticker}</span>
-                      </div>
-                      {s.strength != null && (
-                        <span
-                          className={cn(
-                            'text-xs font-mono px-1.5 py-0.5 rounded border',
-                            getSignalStrengthColor(s.strength),
-                          )}
-                        >
-                          {(s.strength * 100).toFixed(0)}%
-                        </span>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              )}
+                        {s.strength != null && (
+                          <span
+                            className={cn(
+                              'rounded border px-1.5 py-0.5 font-mono text-xs',
+                              getSignalStrengthColor(s.strength),
+                            )}
+                          >
+                            {(s.strength * 100).toFixed(0)}%
+                          </span>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        </div>
+
+        <div className="space-y-4">
+          <MetricCard
+            emphasis="hero"
+            label={
+              <>
+                Total Equity{' '}
+                <InfoTooltip content="Total value of all assets including cash and open positions." />
+              </>
+            }
+            value={<AnimatedNumber value={equity} prefix="$" decimals={2} />}
+            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          />
+
+          <IncidentControls />
+
+          <section aria-label="Portfolio metrics">
+            <div className="@container">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <MetricCard
+                  label={
+                    <>
+                      Daily P&L{' '}
+                      <InfoTooltip content="Today's profit or loss across all positions, updated in real-time during market hours." />
+                    </>
+                  }
+                  value={
+                    <AnimatedNumber
+                      value={Math.abs(pnl)}
+                      prefix={pnl >= 0 ? '+$' : '-$'}
+                      decimals={2}
+                    />
+                  }
+                  change={pnlPct}
+                  icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+                />
+                <MetricCard
+                  label={
+                    <>
+                      Cash Available{' '}
+                      <InfoTooltip content="Uninvested cash available for new trades." />
+                    </>
+                  }
+                  value={
+                    <AnimatedNumber
+                      value={account?.cash ?? FALLBACK_ACCOUNT.cash}
+                      prefix="$"
+                      decimals={2}
+                    />
+                  }
+                  icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+                />
+                <MetricCard
+                  label="Positions Value"
+                  value={
+                    <AnimatedNumber
+                      value={account?.positions_value ?? FALLBACK_ACCOUNT.positions_value}
+                      prefix="$"
+                      decimals={2}
+                    />
+                  }
+                  icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+                />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-4">
+          <Card className="border-border bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-heading-card">Execution Context</CardTitle>
+              <Radar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                <span className="text-muted-foreground">Market data</span>
+                <span className="font-medium text-foreground">
+                  {isLive ? 'Live feed' : 'Simulated feed'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                <span className="text-muted-foreground">Trade mode</span>
+                <span className="font-medium uppercase text-foreground">
+                  {systemControls?.global_mode ?? 'paper'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                <span className="text-muted-foreground">Pending approvals</span>
+                <span className="font-mono tabular-nums text-foreground">
+                  {pendingRecs?.length ?? 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Agent loop</span>
+                <span className="font-medium text-foreground">
+                  {agentStatus?.halted ? 'Halted' : agentStatus?.isRunning ? 'Running' : 'Idle'}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Alert Feed */}
           <AlertFeed alerts={alerts} />
         </div>
       </section>
 
-      {/* Setup Progress */}
       <SetupProgress />
 
-      {/* Onboarding Wizard (shows for new users) */}
       {onboardingProfile && (
         <OnboardingWizard
           onboardingStep={onboardingProfile.onboarding_step}

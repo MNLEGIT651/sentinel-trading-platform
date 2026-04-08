@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { AlertOctagon, ShieldAlert, Activity, Clock, OctagonX } from 'lucide-react';
+import { ShieldAlert, Activity, Clock, OctagonX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,9 +14,9 @@ import {
 } from '@/hooks/queries';
 
 const MODE_STYLES: Record<string, string> = {
-  live: 'bg-red-500/15 text-red-400',
-  backtest: 'bg-blue-500/15 text-blue-400',
-  paper: 'bg-amber-500/15 text-amber-400',
+  live: 'border-loss/40 bg-loss/10 text-loss',
+  backtest: 'border-primary/40 bg-primary/10 text-primary',
+  paper: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -74,33 +74,47 @@ export function IncidentControls() {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {/* System Mode Indicator */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5">
+    <Card className="border-border bg-card">
+      <CardContent className="grid gap-4 p-4 md:grid-cols-[1.1fr,1fr,1.4fr]">
+        <section className="border-border md:border-r md:pr-4">
+          <div className="mb-2 flex items-center gap-1.5">
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">System Mode</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Execution State
+            </p>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className={cn('rounded px-2 py-0.5 text-sm font-semibold uppercase', modeColor)}>
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'rounded border px-2 py-0.5 text-xs font-semibold uppercase',
+                modeColor,
+              )}
+            >
               {mode}
             </span>
             {isHalted && (
-              <span className="rounded bg-red-500/20 px-2 py-0.5 text-sm font-bold text-red-400 animate-pulse">
-                HALTED
+              <span className="rounded border border-loss/35 bg-loss/10 px-2 py-0.5 text-xs font-semibold uppercase text-loss">
+                Halted
               </span>
             )}
+            <span
+              className={cn(
+                'font-mono text-xl tabular-nums',
+                criticalCount > 0 ? 'text-loss' : 'text-foreground',
+              )}
+            >
+              {criticalCount}
+            </span>
+            <span className="text-xs text-muted-foreground">critical incidents</span>
           </div>
-        </CardContent>
-      </Card>
+        </section>
 
-      {/* Emergency Halt Button */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5 mb-2">
+        <section className="border-border md:border-r md:px-4">
+          <div className="mb-2 flex items-center gap-1.5">
             <ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Emergency Controls</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Intervention
+            </p>
           </div>
           {!showConfirm ? (
             <Button
@@ -110,12 +124,12 @@ export function IncidentControls() {
               disabled={isHalted || haltMutation.isPending}
               className="w-full"
             >
-              <OctagonX className="h-3.5 w-3.5 mr-1" />
+              <OctagonX className="mr-1 h-3.5 w-3.5" />
               {isHalted ? 'Trading Halted' : 'Emergency Halt'}
             </Button>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-red-400 font-medium">Confirm halt all trading?</p>
+              <p className="text-xs font-medium text-loss">Confirm halt all trading?</p>
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
@@ -131,53 +145,33 @@ export function IncidentControls() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </section>
 
-      {/* Active Incident Count */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5">
-            <AlertOctagon className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Active Incidents</p>
-          </div>
-          <p
-            className={cn(
-              'mt-1 text-2xl font-bold',
-              criticalCount > 0 ? 'text-red-400' : 'text-foreground',
-            )}
-          >
-            {criticalCount}
-          </p>
-          <p className="text-xs text-muted-foreground">critical unresolved</p>
-        </CardContent>
-      </Card>
-
-      {/* Recent Operator Actions Feed */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-1.5 mb-2">
+        <section>
+          <div className="mb-2 flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">Recent Actions</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Operator Actions
+            </p>
           </div>
           {recentActions.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No recent operator actions</p>
+            <p className="py-2 text-xs text-muted-foreground">No recent operator actions</p>
           ) : (
             <div className="space-y-1.5">
               {recentActions.slice(0, 5).map((action) => (
-                <div key={action.id} className="flex items-start gap-1.5 text-xs">
-                  <span className="text-muted-foreground shrink-0">
+                <div key={action.id} className="grid grid-cols-[auto,1fr] gap-2 text-xs">
+                  <span className="font-mono text-muted-foreground">
                     {formatActionTime(action.created_at)}
                   </span>
-                  <span className="text-foreground truncate">
+                  <span className="truncate text-foreground/90">
                     {ACTION_LABELS[action.action_type] ?? action.action_type.replace(/_/g, ' ')}
                   </span>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </section>
+      </CardContent>
+    </Card>
   );
 }

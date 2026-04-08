@@ -10,9 +10,9 @@ import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const severityStyles: Record<AlertSeverity, string> = {
-  info: 'bg-blue-500/20 text-blue-400',
-  warning: 'bg-yellow-500/20 text-yellow-400',
-  critical: 'bg-red-500/20 text-red-400',
+  info: 'border-border bg-muted/30 text-muted-foreground',
+  warning: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+  critical: 'border-loss/35 bg-loss/10 text-loss',
 };
 
 function formatTime(dateStr: string): string {
@@ -32,7 +32,7 @@ export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-heading-card">Recent Alerts</CardTitle>
+        <CardTitle className="text-heading-card">Active Alerts</CardTitle>
         <Bell className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -44,18 +44,21 @@ export const AlertFeed = memo(function AlertFeed({ alerts }: AlertFeedProps) {
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="flex items-start gap-3 rounded-lg border border-border/60 p-3 hover:bg-accent/50 transition-colors"
+                  className="grid grid-cols-[auto,1fr,auto] items-start gap-3 rounded-lg border border-border/70 p-3 transition-colors hover:bg-accent/30"
                 >
                   <Badge
-                    className={cn('text-[10px] uppercase shrink-0', severityStyles[alert.severity])}
+                    className={cn(
+                      'shrink-0 border text-[10px] uppercase',
+                      severityStyles[alert.severity],
+                    )}
                   >
                     {alert.severity}
                   </Badge>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{alert.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{alert.message}</p>
+                    <p className="truncate text-sm font-medium">{alert.title}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{alert.message}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground/60 shrink-0 font-mono">
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
                     {formatTime(alert.triggered_at)}
                   </span>
                 </div>

@@ -69,21 +69,18 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
   }, []);
 
   return (
-    <header className="flex h-12 items-center justify-between border-b border-border bg-card/80 backdrop-blur-sm px-4 relative">
+    <header className="relative flex h-12 items-center justify-between border-b border-border bg-card/80 px-4">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:top-2 focus:left-2"
       >
         Skip to main content
       </a>
-      {/* Bottom accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onMenuClick}
-          className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden transition-colors active:scale-95"
+          className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
           aria-label="Toggle menu"
         >
           <Menu className="h-5 w-5" />
@@ -101,7 +98,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
           <button
             type="button"
             onClick={onCommandPalette}
-            className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            className="hidden items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground sm:flex"
             aria-label="Open command palette"
           >
             <Search className="h-3.5 w-3.5" />
@@ -118,12 +115,7 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
         <div className="hidden sm:flex items-center gap-2">
           <Activity className="h-3 w-3 text-muted-foreground/60" />
           <div className="flex items-center gap-1.5">
-            <div
-              className={cn(
-                'h-1.5 w-1.5 rounded-full',
-                marketOpen ? 'bg-profit animate-pulse' : 'bg-loss',
-              )}
-            />
+            <div className={cn('h-1.5 w-1.5 rounded-full', marketOpen ? 'bg-profit' : 'bg-loss')} />
             <span className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
               {marketOpen ? 'OPEN' : 'CLOSED'}
             </span>
@@ -144,10 +136,10 @@ export function Header({ onMenuClick, onCommandPalette }: HeaderProps) {
         {/* User avatar */}
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/25 hover:ring-primary/50 hover:bg-primary/20 transition-all cursor-pointer"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-border bg-muted/20 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           aria-label="Account"
         >
-          <User className="h-3.5 w-3.5 text-primary" />
+          <User className="h-3.5 w-3.5" />
         </button>
       </div>
     </header>
