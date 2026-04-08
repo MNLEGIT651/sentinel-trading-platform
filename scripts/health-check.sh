@@ -15,7 +15,7 @@ FAILURES=0
 VERCEL_URL="${VERCEL_URL:-https://sentinel-trading-platform.vercel.app}"
 ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/health}"
 AGENTS_HEALTH_URL="${AGENTS_URL:-${VERCEL_URL}/api/agents/health}"
-SUPABASE_API_URL="${SUPABASE_URL:-https://luwyjfwauljwsfsnwiqb.supabase.co/rest/v1/}"
+SUPABASE_API_URL="${SUPABASE_URL:+${SUPABASE_URL}/rest/v1/}"
 
 # --- helpers ----------------------------------------------------------------
 
@@ -123,20 +123,33 @@ run_check() {
 run_check "Vercel Frontend"    "$VERCEL_URL"
 run_check "Railway Engine"     "$ENGINE_HEALTH_URL"
 run_check "Railway Agents"     "$AGENTS_HEALTH_URL"
-run_check "Supabase API"       "$SUPABASE_API_URL"
+if [[ -n "$SUPABASE_API_URL" ]]; then
+  run_check "Supabase API"     "$SUPABASE_API_URL"
+else
+  printf "  ⊘  Supabase API (skipped — SUPABASE_URL not set)\n"
+fi
 
 # --- summary -----------------------------------------------------------------
 
 printf "\n════════════════════════════════════════\n"
 printf "Summary:\n\n"
 
-for svc in "Vercel Frontend" "Railway Engine" "Railway Agents" "Supabase API"; do
+for svc in "Vercel Frontend" "Railway Engine" "Railway Agents"; do
   if [[ "${RESULTS[$svc]}" == "pass" ]]; then
     printf "  ✓  %s\n" "$svc"
   else
     printf "  ✗  %s\n" "$svc"
   fi
 done
+if [[ -n "$SUPABASE_API_URL" ]]; then
+  if [[ "${RESULTS[Supabase API]}" == "pass" ]]; then
+    printf "  ✓  Supabase API\n"
+  else
+    printf "  ✗  Supabase API\n"
+  fi
+else
+  printf "  ⊘  Supabase API (skipped)\n"
+fi
 
 printf "\n"
 

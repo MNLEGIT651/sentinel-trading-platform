@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "installCommand": "pnpm install",
   "buildCommand": "turbo run build --filter=@sentinel/web",
-  "ignoreCommand": "bash -lc 'set -euo pipefail; cd ../..; BASE=${VERCEL_GIT_PREVIOUS_SHA:-}; HEAD=${VERCEL_GIT_COMMIT_SHA:-HEAD}; if [ -z \"${BASE}\" ] || [ \"${BASE}\" = \"0000000000000000000000000000000000000000\" ]; then echo \"No previous commit SHA available; do not ignore build.\"; exit 1; fi; git diff --quiet \"${BASE}\" \"${HEAD}\" -- apps/web packages/shared'",
+  "ignoreCommand": "bash ../../scripts/vercel-ignore-command.sh",
   "regions": ["iad1"],
   "crons": [
     {

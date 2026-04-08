@@ -1,415 +1,234 @@
 {
-  "timestamp_utc": "2026-04-07T20:57:04Z",
-  "execution_mode": "FULL_EXECUTION",
-  "repo": "stevenschling13/Trading-App",
-  "default_branch": "main",
-  "base_ref": "main",
-  "head_ref": "work",
-  "summary": {
-    "status": "fail",
-    "merge_decision": "CHANGES_REQUESTED",
-    "release_decision": "NO_GO",
-    "blocking_issues": 3,
-    "warnings": 3
+  "meta": {
+    "date": "2026-04-07",
+    "repo": "stevenschling13/Trading-App",
+    "default_branch": "main",
+    "main_sha": "9f52598",
+    "audit_branch": "fix/release-audit-remediation",
+    "audit_sha": "8e51a5b",
+    "audit_pr": 268
   },
-  "risk_classification": {
-    "infra": true,
-    "security": false,
-    "runtime": true,
-    "data_contract": false,
-    "docs": true
+  "verdict": "BLOCKED_BY_MISSING_ACCESS_OR_SECRETS",
+  "verdict_reasons": [
+    "Cannot verify Supabase dashboard settings (auth redirects, RLS policies)",
+    "Cannot verify Vercel/Railway env var values from CLI",
+    "Railway sentinel-agents service has pre-existing build failure",
+    "Gitleaks failures on all dependabot PRs (pre-existing secrets in history)",
+    "No human reviews on any open PR"
+  ],
+  "go_requirements": [
+    "Merge PR #268 (release audit remediation)",
+    "Verify Supabase auth redirect URLs in dashboard",
+    "Verify Vercel env vars for production + preview",
+    "Verify Railway env vars for engine + agents",
+    "Fix agents service build failure",
+    "Configure Gitleaks baseline allowlist",
+    "Decide policy for dependabot commit signature verification"
+  ],
+  "branch_state": {
+    "default_branch": "main",
+    "main_sha": "9f52598",
+    "is_current": true,
+    "total_branches": 16,
+    "open_prs": 11
   },
-  "tracks": {
-    "github": {
-      "status": "fail",
-      "artifact_json": "artifacts/github-platform-audit.json",
-      "artifact_md": "artifacts/github-platform-audit.md",
-      "blocking_findings": [
-        "Railway deploy workflow installs @railway/cli without version pinning, creating non-deterministic deploy behavior."
+  "open_prs": [
+    {
+      "number": 268,
+      "title": "fix: release audit remediation — CI, env, security, deploy fixes",
+      "branch": "fix/release-audit-remediation",
+      "author": "stevenschling13",
+      "risk": "infra",
+      "decision": "MERGE_FIRST",
+      "merge_order": 1,
+      "mergeable": "MERGEABLE",
+      "blockers": ["no human review"]
+    },
+    {
+      "number": 250,
+      "title": "ci: bump the github-actions group across 1 directory with 3 updates",
+      "branch": "dependabot/github_actions/github-actions-adb850a791",
+      "author": "dependabot[bot]",
+      "risk": "infra",
+      "decision": "APPROVE",
+      "merge_order": 2,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 223,
+      "title": "chore(agents): bump @anthropic-ai/sdk from 0.82.0 to 0.85.0",
+      "branch": "dependabot/npm_and_yarn/apps/agents/anthropic-ai/sdk-0.85.0",
+      "author": "dependabot[bot]",
+      "risk": "runtime",
+      "decision": "APPROVE",
+      "merge_order": 3,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 226,
+      "title": "chore(agents): bump @supabase/supabase-js from 2.101.1 to 2.102.1",
+      "branch": "dependabot/npm_and_yarn/apps/agents/supabase/supabase-js-2.102.1",
+      "author": "dependabot[bot]",
+      "risk": "runtime",
+      "decision": "APPROVE",
+      "merge_order": 4,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 225,
+      "title": "chore(web): bump @vitest/browser-playwright from 4.1.1 to 4.1.3",
+      "branch": "dependabot/npm_and_yarn/apps/web/vitest/browser-playwright-4.1.3",
+      "author": "dependabot[bot]",
+      "risk": "devtools",
+      "decision": "APPROVE",
+      "merge_order": 5,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 224,
+      "title": "chore(web): bump eslint-plugin-storybook from 10.3.4 to 10.3.5",
+      "branch": "dependabot/npm_and_yarn/apps/web/lint-format-a10a457921",
+      "author": "dependabot[bot]",
+      "risk": "devtools",
+      "decision": "APPROVE",
+      "merge_order": 6,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 227,
+      "title": "chore(web): bump storybook from 10.3.3 to 10.3.5",
+      "branch": "dependabot/npm_and_yarn/apps/web/storybook-10.3.5",
+      "author": "dependabot[bot]",
+      "risk": "devtools",
+      "decision": "APPROVE",
+      "merge_order": 7,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 228,
+      "title": "chore(web): bump @storybook/nextjs-vite from 10.3.3 to 10.3.5",
+      "branch": "dependabot/npm_and_yarn/apps/web/storybook/nextjs-vite-10.3.5",
+      "author": "dependabot[bot]",
+      "risk": "devtools",
+      "decision": "APPROVE",
+      "merge_order": 8,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 230,
+      "title": "chore(web): bump @storybook/addon-onboarding from 10.3.3 to 10.3.5",
+      "branch": "dependabot/npm_and_yarn/apps/web/storybook/addon-onboarding-10.3.5",
+      "author": "dependabot[bot]",
+      "risk": "devtools",
+      "decision": "APPROVE",
+      "merge_order": 9,
+      "mergeable": "MERGEABLE",
+      "blockers": ["gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 266,
+      "title": "chore: bump the root-dev group with 23 updates",
+      "branch": "dependabot/npm_and_yarn/root-dev-1ce26426c5",
+      "author": "dependabot[bot]",
+      "risk": "devtools",
+      "decision": "CHANGES_REQUESTED",
+      "merge_order": 10,
+      "mergeable": "CONFLICTING",
+      "blockers": ["merge conflicts", "gitleaks failure", "unsigned commits", "no human review"]
+    },
+    {
+      "number": 222,
+      "title": "Platform contract enforcement, health/type standardization, and CI/deploy hardening",
+      "branch": "codex/create-plan-for-repo-improvement",
+      "author": "stevenschling13",
+      "risk": "infra/runtime",
+      "decision": "CHANGES_REQUESTED",
+      "merge_order": 11,
+      "mergeable": "CONFLICTING",
+      "blockers": ["merge conflicts", "overlaps with #268", "no human review"]
+    }
+  ],
+  "fixes_completed": [
+    {
+      "commit": "d216799",
+      "files": ["apps/web/vercel.json"],
+      "description": "Fix ignoreCommand >256 char limit (unblocks 8/10 PRs)"
+    },
+    {
+      "commit": "956de3a",
+      "files": [
+        ".github/workflows/gitleaks.yml",
+        ".github/workflows/workflow-lint.yml",
+        ".github/workflows/scorecards.yml",
+        ".github/workflows/codeql.yml"
       ],
-      "warning_findings": [],
-      "dashboard_only_blockers": [
-        "Branch protection/ruleset visibility unavailable via API (status 401). Verify required checks in GitHub dashboard.",
-        "Cannot confirm branch protection required-check enforcement from repository-local evidence alone."
+      "description": "Pin 8 floating GitHub Action refs to SHA digests"
+    },
+    {
+      "commit": "f345399",
+      "files": [".github/workflows/supabase-typegen.yml"],
+      "description": "Fix supabase-typegen if: conditions"
+    },
+    {
+      "commit": "c102048",
+      "files": ["scripts/health-check.sh", "scripts/smoke-test.sh"],
+      "description": "Remove hardcoded production Supabase URL, fail-closed"
+    },
+    {
+      "commit": "4ef7660",
+      "files": [".env.example", ".github/workflows/release-management.yml"],
+      "description": "Complete .env.example, fix release workflow env var name"
+    },
+    {
+      "commit": "8e51a5b",
+      "files": [".github/workflows/supabase-typegen.yml"],
+      "description": "Move secrets to job-level env for actionlint compliance"
+    }
+  ],
+  "validation": {
+    "git_diff_check": { "status": "pass" },
+    "actionlint": { "status": "pass", "notes": "Only SC2129 style warning" },
+    "pnpm_install": { "status": "pass" },
+    "pnpm_lint": {
+      "status": "fail",
+      "notes": "Pre-existing: eslint not installed in @sentinel/web"
+    },
+    "pnpm_typecheck": { "status": "fail", "notes": "Pre-existing: 61 TS errors in web tests" }
+  },
+  "platform_blockers": {
+    "github_repo_side": { "status": "fixed", "items": [] },
+    "github_policy": {
+      "status": "needs_decision",
+      "items": [
+        "Gitleaks fails on dependabot PRs (pre-existing secrets in history)",
+        "Verify Commit Signatures fails for dependabot (unsigned bot commits)",
+        "No human reviews on any PR"
       ]
     },
     "vercel": {
-      "status": "pass",
-      "artifact_json": "artifacts/vercel-platform-audit.json",
-      "artifact_md": "artifacts/vercel-platform-audit.md",
-      "blocking_findings": [],
-      "warning_findings": [
-        "Live runtime probes for /api/health, /api/engine/health, /api/agents/health, /api/settings/status were not executed because deployment URL/env was not provided."
-      ],
-      "dashboard_only_blockers": []
+      "status": "cannot_verify",
+      "items": ["Env var values must be verified in Vercel dashboard"]
     },
     "railway": {
-      "status": "fail",
-      "artifact_json": "artifacts/railway-platform-audit.json",
-      "artifact_md": "artifacts/railway-platform-audit.md",
-      "blocking_findings": [
-        "Railway deploy workflow uses floating global CLI install (`npm install -g @railway/cli`) rather than pinned version."
-      ],
-      "warning_findings": [
-        "Health checks are conditionally skipped if RAILWAY_ENGINE_URL or RAILWAY_AGENTS_URL secrets are absent, reducing fail-closed certainty."
-      ],
-      "dashboard_only_blockers": [
-        "No Railway dashboard/API deploy history was available in this run; production service mapping must be confirmed in Railway dashboard."
+      "status": "build_failure",
+      "items": [
+        "sentinel-agents build fails (pre-existing, not caused by open PRs)",
+        "Env var values must be verified in Railway dashboard"
       ]
     },
     "supabase": {
-      "status": "fail",
-      "artifact_json": "artifacts/supabase-platform-audit.json",
-      "artifact_md": "artifacts/supabase-platform-audit.md",
-      "blocking_findings": [
-        "Supabase type generation workflow uses `version: latest` for Supabase CLI, introducing drift risk for generated types."
-      ],
-      "warning_findings": [
-        "Type generation is skipped when SUPABASE_* secrets are unavailable; migration/type drift may survive PR validation."
-      ],
-      "dashboard_only_blockers": [
-        "Could not validate Supabase project settings (auth redirect URLs, RLS enforcement state) without dashboard/API credentials."
+      "status": "cannot_verify",
+      "items": [
+        "Auth redirect URLs must be verified in Supabase dashboard",
+        "RLS policies need dashboard audit"
       ]
     }
-  },
-  "open_pr_reviews": [
-    {
-      "pr": 219,
-      "title": "[DRAFT] Release audit artifacts",
-      "branch": "codex/validate-release-decision",
-      "draft": true,
-      "risk": "infra,runtime",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": true,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "BLOCKED",
-      "blocking_reasons": ["PR is draft.", "Smoke/deploy check present but not green."]
-    },
-    {
-      "pr": 218,
-      "title": "Add Copilot custom agent profiles and repo Copilot instructions",
-      "branch": "codex/create-specialized-github-agents-for-deployment",
-      "draft": true,
-      "risk": "infra,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "BLOCKED",
-      "blocking_reasons": [
-        "PR is draft.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 217,
-      "title": "Harden CI/CD and deploy workflows; add safety checks, scripts, and layout cleanup",
-      "branch": "codex/run-platform-level-audit-for-sentinel-trading",
-      "draft": false,
-      "risk": "infra,security,runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": true,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "CHANGES_REQUESTED",
-      "blocking_reasons": ["Smoke/deploy check present but not green."]
-    },
-    {
-      "pr": 216,
-      "title": "Harden CI/CD and dependency automation: Dependabot limits, Railway deploy validation + proxy probes, Vercel ignore fix, Supabase CLI pin, runbooks",
-      "branch": "codex/audit-and-document-platforms-for-optimization",
-      "draft": false,
-      "risk": "infra,runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "APPROVE",
-      "blocking_reasons": ["No explicit smoke/health/deploy check run found on PR head SHA."]
-    },
-    {
-      "pr": 215,
-      "title": "Add security CI workflows, pin SBOM tooling, and surface server system metadata in Settings UI",
-      "branch": "codex/review-codebase-and-propose-improvements",
-      "draft": false,
-      "risk": "infra,security,runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "APPROVE",
-      "blocking_reasons": ["No explicit smoke/health/deploy check run found on PR head SHA."]
-    },
-    {
-      "pr": 212,
-      "title": "Add CodeQL workflow for code analysis",
-      "branch": "security/codeql-workflow",
-      "draft": false,
-      "risk": "infra",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "CHANGES_REQUESTED",
-      "blocking_reasons": [
-        "One or more required checks are failing or not successful.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 211,
-      "title": "Add repo-setup-audit script and document security posture",
-      "branch": "copilot/setup-security-and-automation-research",
-      "draft": true,
-      "risk": "docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": false,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "BLOCKED",
-      "blocking_reasons": [
-        "PR is draft.",
-        "Required checks missing from check-run/status evidence.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 210,
-      "title": "chore: add repo-setup audit script and GitHub repo setup runbook",
-      "branch": "codex/add-remote-origin-and-sync-branches",
-      "draft": false,
-      "risk": "docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "APPROVE",
-      "blocking_reasons": ["No explicit smoke/health/deploy check run found on PR head SHA."]
-    },
-    {
-      "pr": 209,
-      "title": "Fix CI failures, upgrade deferred major deps, harden Supabase integration",
-      "branch": "copilot/find-fixes-for-all-issues",
-      "draft": true,
-      "risk": "infra,security,runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": false,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "BLOCKED",
-      "blocking_reasons": [
-        "PR is draft.",
-        "Required checks missing from check-run/status evidence.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 207,
-      "title": "chore: enforce commit-signing policy for protected branches",
-      "branch": "codex/define-signing-policy-and-ci-verification",
-      "draft": false,
-      "risk": "infra,security,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "CHANGES_REQUESTED",
-      "blocking_reasons": [
-        "One or more required checks are failing or not successful.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 206,
-      "title": "Harden Alpaca webhook security and centralize Supabase admin client",
-      "branch": "codex/research-supabase-deployment-optimization-tips",
-      "draft": false,
-      "risk": "runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "APPROVE",
-      "blocking_reasons": ["No explicit smoke/health/deploy check run found on PR head SHA."]
-    },
-    {
-      "pr": 204,
-      "title": "Standardize Supabase publishable key, secure internal cron endpoint, and normalize server-side Supabase usage",
-      "branch": "codex/audit-vercel-and-supabase-integration",
-      "draft": false,
-      "risk": "infra,runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "CHANGES_REQUESTED",
-      "blocking_reasons": [
-        "One or more required checks are failing or not successful.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 193,
-      "title": "Full-repo audit: code quality, accessibility, dead code cleanup, docs modernization",
-      "branch": "copilot/resolve-all-issues",
-      "draft": true,
-      "risk": "security,runtime,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": false,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "BLOCKED",
-      "blocking_reasons": [
-        "PR is draft.",
-        "Required checks missing from check-run/status evidence.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    },
-    {
-      "pr": 192,
-      "title": "chore: enforce Railway\u2194Supabase pro-standard env validation",
-      "branch": "codex/ensure-railway-connection-setup-for-project",
-      "draft": false,
-      "risk": "infra,docs",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": true,
-      "required_checks_green": true,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "APPROVE",
-      "blocking_reasons": ["No explicit smoke/health/deploy check run found on PR head SHA."]
-    },
-    {
-      "pr": 183,
-      "title": "chore: bump the root-dev group across 1 directory with 21 updates",
-      "branch": "dependabot/npm_and_yarn/root-dev-448626748f",
-      "draft": false,
-      "risk": "runtime",
-      "required_checks_expected": ["Test Web", "Test Engine", "Test Agents", "Security Audit"],
-      "required_checks_present": false,
-      "required_checks_green": false,
-      "smoke_gates_present": false,
-      "smoke_gates_green": false,
-      "blocker_comments_present": false,
-      "decision": "BLOCKED",
-      "blocking_reasons": [
-        "Required checks missing from check-run/status evidence.",
-        "No explicit smoke/health/deploy check run found on PR head SHA."
-      ]
-    }
-  ],
-  "commands_run": [
-    {
-      "command": "git diff --check",
-      "status": "pass",
-      "notes": ""
-    },
-    {
-      "command": "pnpm lint",
-      "status": "pass",
-      "notes": "Passed."
-    },
-    {
-      "command": "pnpm test",
-      "status": "pass",
-      "notes": "Passed; warning logs are from mocked test scenarios."
-    },
-    {
-      "command": "pnpm build",
-      "status": "pass",
-      "notes": "Passed after switching layout fonts to non-network defaults."
-    },
-    {
-      "command": "pnpm lint:engine",
-      "status": "pass",
-      "notes": "Passed after ensuring engine dev environment."
-    },
-    {
-      "command": "pnpm format:check:engine",
-      "status": "pass",
-      "notes": "Passed."
-    },
-    {
-      "command": "pnpm test:engine",
-      "status": "pass",
-      "notes": "523 passed."
-    },
-    {
-      "command": "/workspace/Trading-App/.bin/actionlint",
-      "status": "pass",
-      "notes": "Passed using Go-installed actionlint binary."
-    }
-  ],
-  "files_changed_by_codex": [
-    "apps/web/src/app/layout.tsx",
-    "docs/ai/state/project-state.md",
-    "artifacts/github-platform-audit.json",
-    "artifacts/github-platform-audit.md",
-    "artifacts/vercel-platform-audit.json",
-    "artifacts/vercel-platform-audit.md",
-    "artifacts/railway-platform-audit.json",
-    "artifacts/railway-platform-audit.md",
-    "artifacts/supabase-platform-audit.json",
-    "artifacts/supabase-platform-audit.md",
-    "artifacts/release-orchestrator-report.json",
-    "artifacts/release-orchestrator-summary.md"
-  ],
-  "post_fix_revalidation": [
-    {
-      "command": "apps/engine/.venv/bin/python -m ensurepip --upgrade && .venv/bin/python -m pip install -e \".[dev]\"",
-      "status": "pass",
-      "notes": "Engine environment restored and dev deps installed."
-    },
-    {
-      "command": "pnpm lint:engine && pnpm format:check:engine && pnpm test:engine",
-      "status": "pass",
-      "notes": "All engine checks passed after env repair."
-    }
-  ],
-  "repo_fixable_blockers": [],
-  "dashboard_only_blockers": [
-    "Branch protection/ruleset visibility unavailable via API (status 401). Verify required checks in GitHub dashboard.",
-    "Cannot confirm branch protection required-check enforcement from repository-local evidence alone.",
-    "No Railway dashboard/API deploy history was available in this run; production service mapping must be confirmed in Railway dashboard.",
-    "Could not validate Supabase project settings (auth redirect URLs, RLS enforcement state) without dashboard/API credentials."
-  ],
-  "warnings": [
-    "Live runtime probes for /api/health, /api/engine/health, /api/agents/health, /api/settings/status were not executed because deployment URL/env was not provided.",
-    "Health checks are conditionally skipped if RAILWAY_ENGINE_URL or RAILWAY_AGENTS_URL secrets are absent, reducing fail-closed certainty.",
-    "Type generation is skipped when SUPABASE_* secrets are unavailable; migration/type drift may survive PR validation."
-  ],
-  "recommended_followups": [
-    "Pin Railway CLI version in railway-deploy workflow.",
-    "Pin Supabase CLI version in supabase-typegen workflow.",
-    "Add required smoke checks for PRs targeting main.",
-    "Run live preview/prod endpoint probes and attach logs before release decision."
-  ]
+  }
 }
