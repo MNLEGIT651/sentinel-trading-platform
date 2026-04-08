@@ -244,13 +244,49 @@ describe('agentsClient.rejectRecommendation', () => {
 describe('agentsClient.getAlerts', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('fetches alerts from /api/agents/alerts', async () => {
-    mockFetch.mockReturnValue(mockOk({ alerts: [alertFixture] }));
+  it('fetches first page of alerts from /api/agents/alerts', async () => {
+    mockFetch.mockReturnValue(
+      mockOk({
+        alerts: [alertFixture],
+        nextCursor: { lastCreatedAt: alertFixture.created_at, lastId: alertFixture.id },
+      }),
+    );
     const result = await agentsClient.getAlerts();
 
     expect(mockFetch).toHaveBeenCalledWith('/api/agents/alerts', expect.any(Object));
     expect(result.alerts).toHaveLength(1);
     expect(result.alerts[0]?.title).toBe('Volatility spike');
+    expect(result.nextCursor).toEqual({
+      lastCreatedAt: '2026-01-01T00:00:00Z',
+      lastId: 'alert-1',
+    });
+  });
+
+  it('passes cursor params as query string', async () => {
+    mockFetch.mockReturnValue(mockOk({ alerts: [], nextCursor: null }));
+    await agentsClient.getAlerts({
+      limit: 25,
+      cursor: { lastCreatedAt: '2026-01-01T00:00:00Z', lastId: 'alert-1' },
+    });
+
+    const [url] = mockFetch.mock.calls[0] as [string, unknown];
+    expect(url).toContain('/api/agents/alerts?');
+    expect(url).toContain('limit=25');
+    expect(url).toContain('lastCreatedAt=2026-01-01T00%3A00%3A00Z');
+    expect(url).toContain('lastId=alert-1');
+  });
+
+  it('returns null nextCursor on last page', async () => {
+    mockFetch.mockReturnValue(mockOk({ alerts: [alertFixture], nextCursor: null }));
+    const result = await agentsClient.getAlerts();
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('omits query string when no params provided', async () => {
+    mockFetch.mockReturnValue(mockOk({ alerts: [], nextCursor: null }));
+    await agentsClient.getAlerts();
+    const [url] = mockFetch.mock.calls[0] as [string, unknown];
+    expect(url).toBe('/api/agents/alerts');
   });
 
   it('throws AgentsApiError on 401 response', async () => {
