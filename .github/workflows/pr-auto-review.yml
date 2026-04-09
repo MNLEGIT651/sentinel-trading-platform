@@ -1,0 +1,284 @@
+# PR Owner Review
+# Automatically classifies risk, checks CI gates, dispatches specialist agents,
+# and posts a structured merge decision on every non-draft pull request.
+# Mirrors the pr-owner-operator agent contract.
+
+name: PR Owner Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  # Re-run when required CI finishes so we can re-evaluate the merge decision
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+  actions: read
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: PR Owner Review
+    runs-on: ubuntu-latest
+    # Skip drafts; for workflow_run events only run if there's an associated PR
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.pull_requests[0])
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Resolve PR number
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            PR_NUM="${{ github.event.workflow_run.pull_requests[0].number }}"
+            HEAD_SHA=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUM}" --jq '.head.sha')
+            echo "number=${PR_NUM}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Classify risk
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only 2>/dev/null || echo "")
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "risk=docs" >> "$GITHUB_OUTPUT"
+            echo "specialists=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          RISK=""
+
+          # Infra: workflows, deploy config, Dockerfiles
+          if echo "$CHANGED_FILES" | grep -qE '\.github/workflows/|railway\.toml|vercel\.json|Dockerfile|\.github/copilot'; then
+            RISK="${RISK:+$RISK,}infra"
+          fi
+
+          # Security: auth, env contracts, secrets config
+          if echo "$CHANGED_FILES" | grep -qE 'auth|security|\.env|trusted_bot|gitleaks|scorecards'; then
+            RISK="${RISK:+$RISK,}security"
+          fi
+
+          # Runtime: source code changes (excluding test-only changes)
+          if echo "$CHANGED_FILES" | grep -E '\.(ts|tsx|py|js|jsx)$' | grep -qvE '\.test\.|\.spec\.|__tests__'; then
+            RISK="${RISK:+$RISK,}runtime"
+          fi
+
+          # Data-contract: migrations, shared types
+          if echo "$CHANGED_FILES" | grep -qE 'supabase/migrations/|packages/shared/src/'; then
+            RISK="${RISK:+$RISK,}data-contract"
+          fi
+
+          # Docs
+          if echo "$CHANGED_FILES" | grep -qE '\.(md|mdx)$|docs/'; then
+            RISK="${RISK:+$RISK,}docs"
+          fi
+
+          # Default
+          RISK="${RISK:-docs}"
+          echo "risk=$RISK" >> "$GITHUB_OUTPUT"
+
+          # Specialist dispatch
+          SPECIALISTS=""
+          if echo "$CHANGED_FILES" | grep -qE '\.github/workflows/|vercel\.json|railway\.toml|docs/deployment|docs/runbooks/'; then
+            SPECIALISTS="${SPECIALISTS:+$SPECIALISTS,}platform-sync-auditor"
+          fi
+          if echo "$CHANGED_FILES" | grep -qE 'supabase/|typegen'; then
+            SPECIALISTS="${SPECIALISTS:+$SPECIALISTS,}supabase-boundary-guardian"
+          fi
+          # Deploy workflows or push-to-main gates
+          if echo "$CHANGED_FILES" | grep -qE 'railway-deploy|vercel-preview-smoke|ci-notify'; then
+            SPECIALISTS="${SPECIALISTS:+$SPECIALISTS,}runtime-smoke-guardian"
+          fi
+          echo "specialists=$SPECIALISTS" >> "$GITHUB_OUTPUT"
+
+      - name: Check required CI gates
+        id: gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          REQUIRED_CHECKS=(
+            "Test Web"
+            "Test Engine"
+            "Test Agents"
+            "Security Audit"
+            "Verify Commit Signatures"
+            "Gitleaks"
+          )
+
+          ALL_GREEN=true
+          TABLE_ROWS=""
+          FAILED_LIST=""
+          MISSING_LIST=""
+
+          for CHECK in "${REQUIRED_CHECKS[@]}"; do
+            # Get the most recent conclusion for this check
+            CONCLUSION=$(gh api "repos/${{ github.repository }}/commits/${HEAD_SHA}/check-runs" \
+              --jq ".check_runs[] | select(.name == \"${CHECK}\") | .conclusion" 2>/dev/null | head -1)
+
+            if [ -z "$CONCLUSION" ]; then
+              STATUS_EMOJI="⏳"
+              STATUS_TEXT="pending"
+              MISSING_LIST="${MISSING_LIST:+$MISSING_LIST, }${CHECK}"
+              ALL_GREEN=false
+            elif [ "$CONCLUSION" = "success" ] || [ "$CONCLUSION" = "skipped" ]; then
+              STATUS_EMOJI="✅"
+              STATUS_TEXT="$CONCLUSION"
+            else
+              STATUS_EMOJI="❌"
+              STATUS_TEXT="$CONCLUSION"
+              FAILED_LIST="${FAILED_LIST:+$FAILED_LIST, }${CHECK}"
+              ALL_GREEN=false
+            fi
+
+            TABLE_ROWS="${TABLE_ROWS}| ${CHECK} | ${STATUS_EMOJI} ${STATUS_TEXT} |\n"
+          done
+
+          {
+            echo "all_green=$ALL_GREEN"
+            echo "failed=$FAILED_LIST"
+            echo "missing=$MISSING_LIST"
+          } >> "$GITHUB_OUTPUT"
+
+          # Write table to a file to preserve newlines
+          printf '%b' "$TABLE_ROWS" > /tmp/check-table.txt
+
+      - name: Check for secrets in diff
+        id: secrets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          DIFF=$(gh pr diff "$PR_NUMBER" 2>/dev/null || echo "")
+          SECRETS_FOUND=false
+
+          # Basic secret patterns (supplement Gitleaks, not replace)
+          if echo "$DIFF" | grep -qEi '(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|AKIA[A-Z0-9]{16}|password\s*=\s*["\x27][^"\x27]{8,})'; then
+            SECRETS_FOUND=true
+          fi
+
+          echo "found=$SECRETS_FOUND" >> "$GITHUB_OUTPUT"
+
+      - name: Post review decision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          RISK: ${{ steps.classify.outputs.risk }}
+          SPECIALISTS: ${{ steps.classify.outputs.specialists }}
+          ALL_GREEN: ${{ steps.gates.outputs.all_green }}
+          FAILED: ${{ steps.gates.outputs.failed }}
+          MISSING: ${{ steps.gates.outputs.missing }}
+          SECRETS_FOUND: ${{ steps.secrets.outputs.found }}
+        run: |
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # Determine decision
+          if [ "$SECRETS_FOUND" = "true" ]; then
+            DECISION="CHANGES_REQUESTED"
+            EMOJI="🚨"
+          elif [ "$ALL_GREEN" = "true" ]; then
+            DECISION="APPROVE"
+            EMOJI="✅"
+          else
+            DECISION="CHANGES_REQUESTED"
+            EMOJI="❌"
+          fi
+
+          CHECK_TABLE=$(cat /tmp/check-table.txt)
+          RISK_JSON=$(echo "$RISK" | sed 's/,/", "/g' | sed 's/^/"/;s/$/"/')
+
+          # Write comment body to file to avoid heredoc indentation issues
+          {
+            echo "## ${EMOJI} PR Owner Review — ${DECISION}"
+            echo ""
+            echo "**Agent:** pr-owner-operator"
+            echo "**Risk Classification:** \`${RISK}\`"
+            echo "**Timestamp:** ${TIMESTAMP}"
+            echo ""
+            echo "### Required CI Gates"
+            echo "| Check | Status |"
+            echo "|-------|--------|"
+            printf '%b' "$CHECK_TABLE"
+          } > /tmp/pr-review-body.md
+
+          # Specialist dispatch section
+          if [ -n "$SPECIALISTS" ]; then
+            {
+              echo ""
+              echo "### Specialist Dispatch"
+              echo "| Agent | Status |"
+              echo "|-------|--------|"
+              IFS=',' read -ra SPEC_ARRAY <<< "$SPECIALISTS"
+              for SPEC in "${SPEC_ARRAY[@]}"; do
+                echo "| ${SPEC} | 🔄 requested |"
+              done
+            } >> /tmp/pr-review-body.md
+          fi
+
+          # Remediation section
+          if [ "$SECRETS_FOUND" = "true" ] || [ -n "$FAILED" ] || [ -n "$MISSING" ]; then
+            {
+              echo ""
+              echo "### Remediation"
+              if [ "$SECRETS_FOUND" = "true" ]; then
+                echo "- **P0:** Potential secret detected in diff — remove immediately"
+              fi
+              if [ -n "$FAILED" ]; then
+                echo "- **P0:** Fix failing checks: ${FAILED}"
+              fi
+              if [ -n "$MISSING" ]; then
+                echo "- **P1:** Waiting on checks: ${MISSING}"
+              fi
+            } >> /tmp/pr-review-body.md
+          fi
+
+          # JSON merge decision
+          {
+            echo ""
+            echo "---"
+            echo "<details><summary>Merge Decision (JSON)</summary>"
+            echo ""
+            echo '```json'
+            echo "{"
+            echo "  \"agent\": \"pr-owner-operator\","
+            echo "  \"decision\": \"${DECISION}\","
+            echo "  \"risk_classification\": [${RISK_JSON}],"
+            echo "  \"secrets_detected\": ${SECRETS_FOUND},"
+            echo "  \"all_checks_green\": ${ALL_GREEN},"
+            echo "  \"failed_checks\": \"${FAILED}\","
+            echo "  \"missing_checks\": \"${MISSING}\","
+            echo "  \"timestamp_utc\": \"${TIMESTAMP}\""
+            echo "}"
+            echo '```'
+            echo "</details>"
+          } >> /tmp/pr-review-body.md
+
+          # Delete previous bot review comments to avoid spam
+          EXISTING_COMMENTS=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq '[.[] | select(.body | contains("PR Owner Review")) | .id] | .[]' 2>/dev/null || echo "")
+
+          for COMMENT_ID in $EXISTING_COMMENTS; do
+            gh api -X DELETE "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" 2>/dev/null || true
+          done
+
+          # Post the new comment
+          gh pr comment "$PR_NUMBER" --body-file /tmp/pr-review-body.md
