@@ -36,7 +36,7 @@ vi.mock('../src/recommendations-store.js', () => ({
   markRiskBlocked: vi.fn(),
   rejectRecommendation: vi.fn(),
   getRecommendation: vi.fn(),
-  listAlerts: vi.fn().mockResolvedValue([]),
+  listAlerts: vi.fn().mockResolvedValue({ alerts: [], nextCursor: null }),
 }));
 
 vi.mock('../src/scheduler.js', () => ({
@@ -183,10 +183,38 @@ describe('GET /recommendations', () => {
 });
 
 describe('GET /alerts', () => {
-  it('returns empty array', async () => {
+  it('returns empty page with null cursor', async () => {
     const res = await request(app).get('/alerts');
     expect(res.status).toBe(200);
     expect(res.body.alerts).toEqual([]);
+    expect(res.body.nextCursor).toBeNull();
+  });
+
+  it('passes cursor params to listAlerts', async () => {
+    const { listAlerts } = await import('../src/recommendations-store.js');
+    vi.mocked(listAlerts).mockResolvedValue({ alerts: [], nextCursor: null });
+    await request(app).get('/alerts?limit=25&lastCreatedAt=2026-01-01T00:00:00Z&lastId=abc');
+    expect(listAlerts).toHaveBeenCalledWith(25, {
+      lastCreatedAt: '2026-01-01T00:00:00Z',
+      lastId: 'abc',
+    });
+  });
+
+  it('returns 400 when only one cursor field is provided', async () => {
+    const res = await request(app).get('/alerts?lastCreatedAt=2026-01-01T00:00:00Z');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/lastCreatedAt.*lastId/);
+  });
+
+  it('clamps limit to 1..100 range', async () => {
+    const { listAlerts } = await import('../src/recommendations-store.js');
+    vi.mocked(listAlerts).mockResolvedValue({ alerts: [], nextCursor: null });
+
+    await request(app).get('/alerts?limit=200');
+    expect(listAlerts).toHaveBeenCalledWith(100, undefined);
+
+    await request(app).get('/alerts?limit=-5');
+    expect(listAlerts).toHaveBeenCalledWith(1, undefined);
   });
 });
 

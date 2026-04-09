@@ -19,8 +19,8 @@ import {
   useRecommendationEventsQuery,
   type RecommendationDetail,
 } from '@/hooks/queries/use-recommendation-events-query';
-import { useApproveRecommendationMutation } from '@/hooks/queries/use-approve-recommendation-mutation';
-import { useRejectRecommendationMutation } from '@/hooks/queries/use-reject-recommendation-mutation';
+import { useApproveRecommendationMutation } from '@/hooks/mutations/use-approve-recommendation-mutation';
+import { useRejectRecommendationMutation } from '@/hooks/mutations/use-reject-recommendation-mutation';
 import { ExplanationSection } from '@/components/advisor/explanation-section';
 
 /* ------------------------------------------------------------------ */

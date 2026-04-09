@@ -11,6 +11,15 @@ from typing import Any
 import numpy as np
 
 from src.strategies.base import OHLCVData, Signal, SignalDirection, Strategy
+from src.strategies.constants import (
+    BB_BASELINE_STRENGTH,
+    BB_PENETRATION_MULTIPLIER,
+    MIN_BARS_PADDING,
+    RSI_EXTREME_BASELINE_STRENGTH,
+    RSI_EXTREME_NORMALIZATION_RANGE,
+    RSI_SLOW_TOLERANCE,
+    ZSCORE_STRENGTH_DIVISOR,
+)
 from src.strategies.indicators import bollinger_bands, rsi
 
 
@@ -39,7 +48,7 @@ class BollingerReversion(Strategy):
         )
 
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
-        min_bars = max(self.params["bb_period"], self.params["rsi_period"]) + 5
+        min_bars = max(self.params["bb_period"], self.params["rsi_period"]) + MIN_BARS_PADDING
         if not self.validate_data(data, min_bars):
             return []
 
@@ -61,7 +70,7 @@ class BollingerReversion(Strategy):
         if price <= lower[i] and current_rsi <= self.params["rsi_oversold"]:
             # Strength based on how far below lower band
             penetration = (lower[i] - price) / band_width if band_width > 0 else 0
-            strength = min(0.4 + penetration * 3, 1.0)
+            strength = min(BB_BASELINE_STRENGTH + penetration * BB_PENETRATION_MULTIPLIER, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -86,7 +95,7 @@ class BollingerReversion(Strategy):
         # Short: price at or above upper band + RSI confirms overbought
         elif price >= upper[i] and current_rsi >= self.params["rsi_overbought"]:
             penetration = (price - upper[i]) / band_width if band_width > 0 else 0
-            strength = min(0.4 + penetration * 3, 1.0)
+            strength = min(BB_BASELINE_STRENGTH + penetration * BB_PENETRATION_MULTIPLIER, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -134,7 +143,7 @@ class ZScoreReversion(Strategy):
 
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
         lookback = self.params["lookback"]
-        if not self.validate_data(data, lookback + 5):
+        if not self.validate_data(data, lookback + MIN_BARS_PADDING):
             return []
 
         i = len(data) - 1
@@ -149,7 +158,7 @@ class ZScoreReversion(Strategy):
         signals: list[Signal] = []
 
         if z < -self.params["entry_z"]:
-            strength = min(abs(z) / 4.0, 1.0)
+            strength = min(abs(z) / ZSCORE_STRENGTH_DIVISOR, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -162,7 +171,7 @@ class ZScoreReversion(Strategy):
             )
 
         elif z > self.params["entry_z"]:
-            strength = min(abs(z) / 4.0, 1.0)
+            strength = min(abs(z) / ZSCORE_STRENGTH_DIVISOR, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -200,7 +209,7 @@ class RSIMeanReversion(Strategy):
         )
 
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
-        min_bars = self.params["slow_rsi_period"] + 5
+        min_bars = self.params["slow_rsi_period"] + MIN_BARS_PADDING
         if not self.validate_data(data, min_bars):
             return []
 
@@ -216,10 +225,11 @@ class RSIMeanReversion(Strategy):
         # Both RSI periods in extreme oversold
         if (
             fast_rsi[i] < self.params["extreme_oversold"]
-            and slow_rsi[i] < self.params["extreme_oversold"] + 10
+            and slow_rsi[i] < self.params["extreme_oversold"] + RSI_SLOW_TOLERANCE
         ):
             avg_rsi = (fast_rsi[i] + slow_rsi[i]) / 2
-            strength = min((self.params["extreme_oversold"] - avg_rsi) / 20.0 + 0.4, 1.0)
+            depth = (self.params["extreme_oversold"] - avg_rsi) / RSI_EXTREME_NORMALIZATION_RANGE
+            strength = min(depth + RSI_EXTREME_BASELINE_STRENGTH, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -238,10 +248,11 @@ class RSIMeanReversion(Strategy):
         # Both RSI periods in extreme overbought
         elif (
             fast_rsi[i] > self.params["extreme_overbought"]
-            and slow_rsi[i] > self.params["extreme_overbought"] - 10
+            and slow_rsi[i] > self.params["extreme_overbought"] - RSI_SLOW_TOLERANCE
         ):
             avg_rsi = (fast_rsi[i] + slow_rsi[i]) / 2
-            strength = min((avg_rsi - self.params["extreme_overbought"]) / 20.0 + 0.4, 1.0)
+            depth = (avg_rsi - self.params["extreme_overbought"]) / RSI_EXTREME_NORMALIZATION_RANGE
+            strength = min(depth + RSI_EXTREME_BASELINE_STRENGTH, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,

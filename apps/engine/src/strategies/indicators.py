@@ -36,9 +36,9 @@ def cached_indicator(func: Callable[..., Any]) -> Callable[..., Any]:
         if not _cache_active:
             return func(*args, **kwargs)
         key: tuple[Any, ...] = (
-            (func.__name__,)
-            + tuple(id(a) if isinstance(a, np.ndarray) else a for a in args)
-            + tuple(sorted(kwargs.items()))
+            func.__name__,
+            *tuple(id(a) if isinstance(a, np.ndarray) else a for a in args),
+            *tuple(sorted(kwargs.items())),
         )
         cached = _indicator_cache.get(key)
         if cached is not None:
@@ -58,7 +58,7 @@ def indicator_cache() -> Generator[None, None, None]:
     same array and parameters return cached results. The cache is cleared
     on exit and between ``clear_indicator_cache()`` calls.
     """
-    global _cache_active  # noqa: PLW0603
+    global _cache_active
     _cache_active = True
     try:
         yield

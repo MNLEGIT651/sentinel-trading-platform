@@ -91,16 +91,19 @@ limit: 100
 
 The web app on Vercel needs these variables set in the Vercel project settings (dashboard → Settings → Environment Variables):
 
-| Variable                        | Preview  | Production | Notes                                                           |
-| ------------------------------- | -------- | ---------- | --------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | ✓        | ✓          | Same value for both                                             |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✓        | ✓          | Public key, same for both                                       |
-| `SUPABASE_SERVICE_ROLE_KEY`     | ✓        | ✓          | **Secret** — never expose client-side                           |
-| `NEXT_PUBLIC_ENGINE_URL`        | ✓        | ✓          | **Critical** — must point to deployed engine URL, NOT localhost |
-| `NEXT_PUBLIC_AGENTS_URL`        | ✓        | ✓          | Deployed agents URL                                             |
-| `ANTHROPIC_API_KEY`             | optional | optional   | Only if agents are server-side                                  |
+| Variable                        | Preview | Production | Notes                                                    |
+| ------------------------------- | ------- | ---------- | -------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | ✓       | ✓          | Same value for both                                      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✓       | ✓          | Public key, same for both                                |
+| `SUPABASE_SERVICE_ROLE_KEY`     | ✓       | ✓          | **Secret** — never expose client-side                    |
+| `ENGINE_URL`                    | ✓       | ✓          | **Critical** — deployed engine URL for server-side proxy |
+| `ENGINE_API_KEY`                | ✓       | ✓          | Engine auth key for server-side proxy                    |
+| `AGENTS_URL`                    | ✓       | ✓          | Deployed agents URL for server-side proxy                |
+| `CRON_SECRET`                   | ✓       | ✓          | Vercel cron authentication                               |
 
-**Most common production issue:** `NEXT_PUBLIC_ENGINE_URL` still set to `http://localhost:8000`. Update it to the actual deployed engine URL.
+> **Deprecated:** `NEXT_PUBLIC_ENGINE_URL`, `NEXT_PUBLIC_ENGINE_API_KEY`, and `NEXT_PUBLIC_AGENTS_URL` are fully removed. All engine/agents calls now use the server-side same-origin proxy via `ENGINE_URL` and `AGENTS_URL`. Remove any stale references from Vercel env vars.
+
+**Most common production issue:** `ENGINE_URL` missing or still set to `http://localhost:8000`. The same-origin proxy (`/api/engine/*`) forwards to this URL server-side — it must point to the actual deployed engine.
 
 Pull current Vercel env vars to local:
 

@@ -110,6 +110,6 @@ Adjust based on Polygon API tier limits and desired responsiveness.
 | `ANTHROPIC_API_KEY`             | console.anthropic.com | Pay per token       | Only needed for agents          |
 | `ENGINE_API_KEY`                | Self-generated        | —                   | `secrets.token_hex(32)`         |
 | `CORS_ORIGINS`                  | Self-defined          | —                   | Comma-separated origins         |
-| `NEXT_PUBLIC_ENGINE_URL`        | Self-defined          | —                   | `http://localhost:8000` locally |
-| `NEXT_PUBLIC_AGENTS_URL`        | Self-defined          | —                   | `http://localhost:3001` locally |
+| `ENGINE_URL`                    | Self-defined          | —                   | `http://localhost:8000` locally |
+| `AGENTS_URL`                    | Self-defined          | —                   | `http://localhost:3001` locally |
 | `AGENTS_PORT`                   | Self-defined          | —                   | Default `3001`                  |

@@ -11,9 +11,7 @@ export type AgentRole =
   | 'strategy_analyst'
   | 'risk_monitor'
   | 'research'
-  | 'execution_monitor'
-  | 'pr_manager'
-  | 'workflow_manager';
+  | 'execution_monitor';
 
 export type AgentStatus = 'idle' | 'running' | 'error' | 'cooldown';
 

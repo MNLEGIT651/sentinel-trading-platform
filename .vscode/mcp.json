@@ -1,0 +1,20 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "anthropic-key",
+      "description": "Anthropic API Key (leave blank if authenticated via `claude --dangerously-skip-permissions`)",
+      "password": true
+    }
+  ],
+  "servers": {
+    "claude-code": {
+      "type": "stdio",
+      "command": "claude",
+      "args": ["mcp", "serve"],
+      "env": {
+        "ANTHROPIC_API_KEY": "${input:anthropic-key}"
+      }
+    }
+  }
+}

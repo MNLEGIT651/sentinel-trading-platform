@@ -11,6 +11,14 @@ from typing import Any
 import numpy as np
 
 from src.strategies.base import OHLCVData, Signal, SignalDirection, Strategy
+from src.strategies.constants import (
+    MIN_BARS_PADDING,
+    OBV_DIVERGENCE_STRENGTH_MULTIPLIER,
+    OBV_MIN_SIGNAL_STRENGTH,
+    ROC_STRENGTH_MULTIPLIER,
+    RSI_BASELINE_STRENGTH,
+    RSI_NORMALIZATION_RANGE,
+)
 from src.strategies.indicators import obv, rate_of_change, rsi, sma
 
 
@@ -39,7 +47,7 @@ class RSIMomentum(Strategy):
         )
 
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
-        min_bars = self.params["rsi_period"] + 5
+        min_bars = self.params["rsi_period"] + MIN_BARS_PADDING
         if not self.validate_data(data, min_bars):
             return []
 
@@ -60,7 +68,8 @@ class RSIMomentum(Strategy):
             and prev_rsi >= self.params["oversold"]
             and current_rsi > prev_rsi
         ):
-            strength = min((self.params["oversold"] - prev2_rsi) / 30.0 + 0.3, 1.0)
+            depth = (self.params["oversold"] - prev2_rsi) / RSI_NORMALIZATION_RANGE
+            strength = min(depth + RSI_BASELINE_STRENGTH, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -78,7 +87,8 @@ class RSIMomentum(Strategy):
             and prev_rsi <= self.params["overbought"]
             and current_rsi < prev_rsi
         ):
-            strength = min((prev2_rsi - self.params["overbought"]) / 30.0 + 0.3, 1.0)
+            depth = (prev2_rsi - self.params["overbought"]) / RSI_NORMALIZATION_RANGE
+            strength = min(depth + RSI_BASELINE_STRENGTH, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -116,7 +126,8 @@ class RateOfChangeMomentum(Strategy):
         )
 
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
-        min_bars = max(self.params["roc_period"], self.params["volume_sma_period"]) + 5
+        period = max(self.params["roc_period"], self.params["volume_sma_period"])
+        min_bars = period + MIN_BARS_PADDING
         if not self.validate_data(data, min_bars):
             return []
 
@@ -138,7 +149,7 @@ class RateOfChangeMomentum(Strategy):
         threshold = self.params["threshold"]
 
         if current_roc > threshold:
-            strength = min(current_roc / (threshold * 3), 1.0)
+            strength = min(current_roc / (threshold * ROC_STRENGTH_MULTIPLIER), 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -154,7 +165,7 @@ class RateOfChangeMomentum(Strategy):
                 )
             )
         elif current_roc < -threshold:
-            strength = min(abs(current_roc) / (threshold * 3), 1.0)
+            strength = min(abs(current_roc) / (threshold * ROC_STRENGTH_MULTIPLIER), 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
@@ -195,7 +206,7 @@ class OBVDivergence(Strategy):
         )
 
     def generate_signals(self, data: OHLCVData) -> list[Signal]:
-        min_bars = self.params["lookback"] + self.params["obv_sma_period"] + 5
+        min_bars = self.params["lookback"] + self.params["obv_sma_period"] + MIN_BARS_PADDING
         if not self.validate_data(data, min_bars):
             return []
 
@@ -223,12 +234,12 @@ class OBVDivergence(Strategy):
             obv_drop = (
                 (obv_window[0] - obv_window[-1]) / abs(obv_window[0]) if obv_window[0] != 0 else 0
             )
-            strength = min(abs(obv_drop) * 5, 1.0)
+            strength = min(abs(obv_drop) * OBV_DIVERGENCE_STRENGTH_MULTIPLIER, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
                     direction=SignalDirection.SHORT,
-                    strength=max(strength, 0.2),
+                    strength=max(strength, OBV_MIN_SIGNAL_STRENGTH),
                     strategy_name=self.name,
                     reason="Bearish OBV divergence: price at high but volume declining",
                     metadata={"obv_change": obv_drop, "price": data.last_close},
@@ -240,12 +251,12 @@ class OBVDivergence(Strategy):
             obv_rise = (
                 (obv_window[-1] - obv_window[0]) / abs(obv_window[0]) if obv_window[0] != 0 else 0
             )
-            strength = min(abs(obv_rise) * 5, 1.0)
+            strength = min(abs(obv_rise) * OBV_DIVERGENCE_STRENGTH_MULTIPLIER, 1.0)
             signals.append(
                 Signal(
                     ticker=data.ticker,
                     direction=SignalDirection.LONG,
-                    strength=max(strength, 0.2),
+                    strength=max(strength, OBV_MIN_SIGNAL_STRENGTH),
                     strategy_name=self.name,
                     reason="Bullish OBV divergence: price at low but volume rising",
                     metadata={"obv_change": obv_rise, "price": data.last_close},

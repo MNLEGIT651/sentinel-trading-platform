@@ -17,6 +17,7 @@ describe('agents env contract', () => {
       SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
       ENGINE_URL: 'http://localhost:8000',
       ENGINE_API_KEY: 'engine-key',
+      WEB_URL: 'http://localhost:3000',
     });
 
     expect(missing).toEqual(['SUPABASE_JWT_SECRET']);
@@ -31,6 +32,7 @@ describe('agents env contract', () => {
       SUPABASE_JWT_SECRET: 'jwt-secret',
       ENGINE_URL: 'http://localhost:8000',
       ENGINE_API_KEY: 'engine-key',
+      WEB_URL: 'http://localhost:3000',
     });
 
     expect(missing).toEqual([]);

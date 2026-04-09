@@ -1,7 +1,7 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
+import { useMutationWithInvalidation } from '@/hooks/use-mutation-with-invalidation';
 import type { AdvisorProfilePatch, AdvisorProfile } from '@sentinel/shared';
 
 async function patchProfile(patch: AdvisorProfilePatch): Promise<AdvisorProfile> {
@@ -15,13 +15,8 @@ async function patchProfile(patch: AdvisorProfilePatch): Promise<AdvisorProfile>
 }
 
 export function useAdvisorProfileMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: patchProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.advisor.profile() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.advisor.memoryEvents.all() });
-    },
-  });
+  return useMutationWithInvalidation(patchProfile, [
+    queryKeys.advisor.profile(),
+    queryKeys.advisor.memoryEvents.all(),
+  ]);
 }
