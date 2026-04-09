@@ -170,11 +170,11 @@ export type { FillsFilters } from './use-fills-query';
 // ── Workflow Jobs ─────────────────────────────────────────────────
 export { useWorkflowJobsQuery, useWorkflowStepsQuery } from './use-workflow-jobs-query';
 
-// ── Mutation hooks ─────────────────────────────────────────────────
-export { useSubmitOrderMutation } from './use-submit-order-mutation';
-export { useApproveRecommendationMutation } from './use-approve-recommendation-mutation';
-export { useRejectRecommendationMutation } from './use-reject-recommendation-mutation';
-export { useTriggerCycleMutation } from './use-trigger-cycle-mutation';
-export { useHaltMutation, useResumeMutation } from './use-halt-resume-mutations';
-export { useCreateJournalEntryMutation } from './use-create-journal-entry-mutation';
-export { useGradeJournalMutation } from './use-grade-journal-mutation';
+// ── Mutation hooks (re-exported from mutations/) ──────────────────
+export { useSubmitOrderMutation } from '../mutations/use-submit-order-mutation';
+export { useApproveRecommendationMutation } from '../mutations/use-approve-recommendation-mutation';
+export { useRejectRecommendationMutation } from '../mutations/use-reject-recommendation-mutation';
+export { useTriggerCycleMutation } from '../mutations/use-trigger-cycle-mutation';
+export { useHaltMutation, useResumeMutation } from '../mutations/use-halt-resume-mutations';
+export { useCreateJournalEntryMutation } from '../mutations/use-create-journal-entry-mutation';
+export { useGradeJournalMutation } from '../mutations/use-grade-journal-mutation';

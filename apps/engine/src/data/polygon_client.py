@@ -40,9 +40,28 @@ _INITIAL_BACKOFF = 12.0  # seconds
 _INTERACTIVE_TIMEOUT = 8.0
 _QUOTE_CACHE_TTL = 300.0
 _BARS_CACHE_TTL = 3600.0
+_MAX_CACHE_SIZE = 1000
 
 _quote_cache: dict[str, tuple[float, PolygonBar]] = {}
 _bars_cache: dict[tuple[str, str, str, str, int], tuple[float, list[PolygonBar]]] = {}
+
+
+def _evict_expired(cache: dict[Any, tuple[float, Any]]) -> None:
+    """Remove all expired entries from the cache."""
+    now = monotonic()
+    expired_keys = [k for k, (expires_at, _) in cache.items() if expires_at <= now]
+    for k in expired_keys:
+        del cache[k]
+
+
+def _evict_oldest(cache: dict[Any, tuple[float, Any]], max_size: int) -> None:
+    """Evict oldest entries (by expiry time) until cache is within max_size."""
+    if len(cache) <= max_size:
+        return
+    entries = sorted(cache.items(), key=lambda item: item[1][0])
+    to_remove = len(cache) - max_size
+    for k, _ in entries[:to_remove]:
+        del cache[k]
 
 
 def _read_cache(
@@ -69,6 +88,9 @@ def _write_cache(
     ttl_seconds: float,
 ) -> None:
     cache[key] = (monotonic() + ttl_seconds, value)
+    if len(cache) > _MAX_CACHE_SIZE:
+        _evict_expired(cache)
+        _evict_oldest(cache, _MAX_CACHE_SIZE)
 
 
 class PolygonClient:

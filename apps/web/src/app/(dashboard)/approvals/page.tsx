@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils';
 import { getSignalStrengthColor } from '@/lib/status-colors';
 import type { TradeRecommendation } from '@/lib/agents-client';
 import { useRecommendationsQuery } from '@/hooks/queries/use-recommendations-query';
-import { useApproveRecommendationMutation } from '@/hooks/queries/use-approve-recommendation-mutation';
-import { useRejectRecommendationMutation } from '@/hooks/queries/use-reject-recommendation-mutation';
+import { useApproveRecommendationMutation } from '@/hooks/mutations/use-approve-recommendation-mutation';
+import { useRejectRecommendationMutation } from '@/hooks/mutations/use-reject-recommendation-mutation';
 import { ApprovalDialog } from '@/components/agents/approval-dialog';
 
 // ── Types ──────────────────────────────────────────────────────────

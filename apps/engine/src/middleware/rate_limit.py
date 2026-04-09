@@ -37,13 +37,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             now = datetime.now()
             cutoff = now - timedelta(minutes=1)
 
-            # Clean old requests
-            self.request_counts[client_ip] = [
-                req_time for req_time in self.request_counts[client_ip] if req_time > cutoff
-            ]
+            # Clean old requests for this IP
+            if client_ip in self.request_counts:
+                self.request_counts[client_ip] = [
+                    req_time for req_time in self.request_counts[client_ip] if req_time > cutoff
+                ]
+                # Remove empty entries to prevent unbounded memory growth
+                if not self.request_counts[client_ip]:
+                    del self.request_counts[client_ip]
 
             # Check limit
-            if len(self.request_counts[client_ip]) >= self.requests_per_minute:
+            current_count = len(self.request_counts.get(client_ip, []))
+            if current_count >= self.requests_per_minute:
                 raise HTTPException(
                     status_code=429,
                     detail=f"Rate limit exceeded: {self.requests_per_minute}/min",

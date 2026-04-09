@@ -1,7 +1,7 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
+import { useMutationWithInvalidation } from '@/hooks/use-mutation-with-invalidation';
 import type {
   AdvisorPreference,
   AdvisorPreferenceCreate,
@@ -48,35 +48,24 @@ async function deletePreference(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete preference');
 }
 
-function useInvalidateAdvisor() {
-  const queryClient = useQueryClient();
-  return () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.advisor.preferences.all() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.advisor.memoryEvents.all() });
-  };
-}
+const INVALIDATE_KEYS = [queryKeys.advisor.preferences.all(), queryKeys.advisor.memoryEvents.all()];
 
 export function useCreatePreferenceMutation() {
-  const invalidate = useInvalidateAdvisor();
-  return useMutation({ mutationFn: createPreference, onSuccess: invalidate });
+  return useMutationWithInvalidation(createPreference, INVALIDATE_KEYS);
 }
 
 export function useUpdatePreferenceMutation() {
-  const invalidate = useInvalidateAdvisor();
-  return useMutation({ mutationFn: updatePreference, onSuccess: invalidate });
+  return useMutationWithInvalidation(updatePreference, INVALIDATE_KEYS);
 }
 
 export function useConfirmPreferenceMutation() {
-  const invalidate = useInvalidateAdvisor();
-  return useMutation({ mutationFn: confirmPreference, onSuccess: invalidate });
+  return useMutationWithInvalidation(confirmPreference, INVALIDATE_KEYS);
 }
 
 export function useDismissPreferenceMutation() {
-  const invalidate = useInvalidateAdvisor();
-  return useMutation({ mutationFn: dismissPreference, onSuccess: invalidate });
+  return useMutationWithInvalidation(dismissPreference, INVALIDATE_KEYS);
 }
 
 export function useDeletePreferenceMutation() {
-  const invalidate = useInvalidateAdvisor();
-  return useMutation({ mutationFn: deletePreference, onSuccess: invalidate });
+  return useMutationWithInvalidation(deletePreference, INVALIDATE_KEYS);
 }
