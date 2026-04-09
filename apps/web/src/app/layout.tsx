@@ -3,7 +3,10 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from '@/components/ui/sonner';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { getCanonicalUrl } from '@/lib/auth/url';
 import './globals.css';
+
+const metadataBase = new URL(getCanonicalUrl());
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -13,6 +16,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase,
   title: {
     default: 'Sentinel Trading Platform',
     template: '%s | Sentinel',
