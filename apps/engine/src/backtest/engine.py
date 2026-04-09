@@ -163,20 +163,19 @@ class BacktestEngine:
                 continue
 
             # Check max holding period
-            if self.max_holding_bars and position != 0:
-                if (i - entry_bar) >= self.max_holding_bars:
-                    cash, trade = self._close_position(
-                        data.ticker,
-                        position,
-                        entry_price,
-                        current_price,
-                        entry_bar,
-                        i,
-                        cash,
-                    )
-                    trades.append(trade)
-                    position = 0
-                    continue
+            if self.max_holding_bars and position != 0 and (i - entry_bar) >= self.max_holding_bars:
+                cash, trade = self._close_position(
+                    data.ticker,
+                    position,
+                    entry_price,
+                    current_price,
+                    entry_bar,
+                    i,
+                    cash,
+                )
+                trades.append(trade)
+                position = 0
+                continue
 
             # Generate signals on data up to current bar
             window = OHLCVData(

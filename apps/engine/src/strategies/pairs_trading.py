@@ -119,7 +119,7 @@ class PairsSpreadTrading(Strategy):
             return []
 
         # Compute spread on recent window
-        spread, beta, intercept = compute_spread(close_a[-lookback:], close_b[-lookback:])
+        spread, beta, _intercept = compute_spread(close_a[-lookback:], close_b[-lookback:])
         spread_mean = np.mean(spread)
         spread_std = np.std(spread, ddof=1)
 

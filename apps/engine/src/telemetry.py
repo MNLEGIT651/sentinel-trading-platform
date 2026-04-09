@@ -78,7 +78,7 @@ def get_tracer(name: str = _SERVICE_NAME) -> Tracer:
 class _NoOpSpan:
     """Span that does nothing — used when OTel is not installed."""
 
-    def set_attribute(self, key: str, value) -> None:  # noqa: ANN001
+    def set_attribute(self, key: str, value) -> None:
         pass
 
     def is_recording(self) -> bool:
@@ -94,11 +94,11 @@ class _NoOpSpan:
 class _NoOpTracer:
     """Tracer that returns no-op spans — used when OTel is not installed."""
 
-    def start_as_current_span(self, name: str, **kwargs):  # noqa: ANN003
+    def start_as_current_span(self, name: str, **kwargs):
         return _NoOpSpan()
 
 
-def instrument_fastapi(app) -> None:  # noqa: ANN001 – avoids hard import of FastAPI
+def instrument_fastapi(app) -> None:
     """Instrument a FastAPI application if OTEL is enabled."""
     if not _otel_enabled():
         return

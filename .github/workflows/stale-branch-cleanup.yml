@@ -12,6 +12,10 @@ on:
     - cron: '0 6 * * 1' # Every Monday at 6 AM UTC
   workflow_dispatch: # Allow manual trigger
 
+concurrency:
+  group: stale-branch-cleanup
+  cancel-in-progress: true
+
 permissions:
   contents: write
   deployments: write

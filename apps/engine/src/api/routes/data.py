@@ -112,7 +112,7 @@ async def get_quote(ticker: str) -> MarketQuote:
         if exc.response.status_code == 429:
             raise HTTPException(
                 status_code=429, detail="Polygon rate limit exceeded. Try again shortly."
-            )
+            ) from exc
         raise
     finally:
         await polygon.close()
@@ -179,7 +179,7 @@ async def get_bars(
         if exc.response.status_code == 429:
             raise HTTPException(
                 status_code=429, detail="Polygon rate limit exceeded. Try again shortly."
-            )
+            ) from exc
         raise
     finally:
         await polygon.close()

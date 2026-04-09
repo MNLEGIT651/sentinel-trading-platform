@@ -15,13 +15,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Protects public endpoints from abuse.
     """
 
-    def __init__(self, app, requests_per_minute: int = 100) -> None:  # noqa: ANN001
+    def __init__(self, app, requests_per_minute: int = 100) -> None:
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.request_counts: dict[str, list[datetime]] = defaultdict(list)
         self.lock = asyncio.Lock()
 
-    async def dispatch(self, request: Request, call_next) -> Response:  # noqa: ANN001
+    async def dispatch(self, request: Request, call_next) -> Response:
         # Skip rate limit for internal endpoints
         if request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)

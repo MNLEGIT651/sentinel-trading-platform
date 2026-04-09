@@ -221,7 +221,7 @@ describe('ShadowTracker', () => {
 
   describe('calculateShadowEquity', () => {
     it('calculates equity from initial capital and orders', async () => {
-      let callCount = 0;
+      const callCount = 0;
       mockFrom.mockImplementation((table: string) => {
         if (table === 'experiments') {
           return {

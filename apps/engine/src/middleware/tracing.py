@@ -45,7 +45,7 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
             span = trace.get_current_span()
             if span.is_recording():
                 span.set_attribute("correlation_id", request_id)
-        except Exception:  # noqa: BLE001 – OTel may not be installed
+        except Exception:
             pass
 
         response = await call_next(request)

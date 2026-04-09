@@ -50,12 +50,40 @@ _Branch: copilot/resolve-all-issues_
 - Updated `docs/deployment/staging-environment.md`: Replaced deprecated vars with server-side equivalents
 - Updated `docs/runbooks/production.md`: Marked post-cutover cleanup as completed
 
+### Phase 1 (continued): Dependency Modernization
+
+- Removed unused `zod` dependency from `apps/agents/package.json`
+- Upgraded Python `starlette` 0.52.1 -> 1.0.0 (first stable release) via uv lock
+- Node-side majors already at target: @opentelemetry/\* v2/v0.214, @vitejs/plugin-react v6, @supabase/ssr v0.10
+
+### Phase 2 (continued): Dead Code Removal
+
+- Removed dead `pr_manager` and `workflow_manager` agent roles (type, system prompts, workflow .md files, loadAllWorkflows references)
+- Removed unused `SelfImprover` class (`apps/agents/src/wat/self-improver.ts`) and its test
+- Cleaned `AgentRole` union type to active roles only
+
+### Phase 4 (continued): Agents Audit
+
+- Added ESLint config (`apps/agents/eslint.config.mjs`) and wired into `lint` script
+- Added `WEB_URL` to required env contract in `apps/agents/src/env.ts`
+- Wired ESLint step into CI for agents in `.github/workflows/ci.yml`
+
+### Phase 5 (continued): CI/CD and Ops
+
+- Added concurrency groups to 4 workflows: supabase-typegen, pr-size-label, scorecards, stale-branch-cleanup
+- Fixed repo name in `.github/ISSUE_TEMPLATE/config.yml` (`sentinel-trading-platform` -> `Trading-App`)
+- Upgraded issue templates from Markdown to YAML forms (bug-report, feature-request, ai-task)
+
+### Phase 0 (continued): Program Setup
+
+- Committed roadmap as `docs/audit/modernization-roadmap.md`
+
 ## Residual Backlog (Not Fixed — Documented)
 
 | Item                                                                        | Reason                                                | Priority |
 | --------------------------------------------------------------------------- | ----------------------------------------------------- | -------- |
 | Vitest 4.1.2 regression                                                     | Known issue; web/agents/shared pinned at 4.1.1        | Medium   |
-| Major version upgrades (OpenTelemetry, @vitejs/plugin-react, @supabase/ssr) | Need explicit review tickets                          | Medium   |
+| Major version upgrades (OpenTelemetry, @vitejs/plugin-react, @supabase/ssr) | Resolved — all at target versions                     | Done     |
 | 13 unused exports in packages/shared/src (state-machine, onboarding-state)  | Shared contracts; may be used by future features      | Low      |
 | pip 24.0 CVEs (CVE-2025-8869, CVE-2026-1703)                                | Dev tool, not runtime; engine venv only               | Low      |
 | npm audit blocked by registry 400                                           | Transient Cloudflare error; retry later               | Low      |
