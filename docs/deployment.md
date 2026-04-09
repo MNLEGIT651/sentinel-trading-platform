@@ -138,8 +138,35 @@ All upstream URL resolution, auth headers, timeouts, and retries are centralized
 | `apps/web/Dockerfile`      | Web container                   | Local / CI  |
 | `apps/engine/Dockerfile`   | Engine container                | Railway     |
 | `apps/agents/Dockerfile`   | Agents container                | Railway     |
-| `vercel.json`              | Change-detection ignore command | Vercel      |
+| `apps/web/vercel.json`     | Install/build/dev/ignore/crons  | Vercel      |
 | `apps/engine/railway.toml` | Health check + restart policy   | Railway     |
+
+## Vercel web app — dashboard vs `apps/web/vercel.json`
+
+**Source of truth:** [`apps/web/vercel.json`](../apps/web/vercel.json). For install, build, development, and ignored-build-step commands, Vercel applies `vercel.json` over the matching fields in **Project → Settings → Build & Development** ([install](https://vercel.com/docs/project-configuration/vercel-json#installcommand), [build](https://vercel.com/docs/project-configuration/vercel-json#buildcommand), [dev](https://vercel.com/docs/project-configuration/vercel-json#devcommand), [ignore](https://vercel.com/docs/project-configuration/vercel-json#ignorecommand)). Keep the dashboard either **cleared** (no custom override) or **identical** to the table below so the UI matches what actually runs.
+
+### Git-connected project checklist
+
+| Dashboard field   | Set to                         | Why |
+| ----------------- | ------------------------------ | --- |
+| **Root Directory** | `apps/web`                     | Install/build `cd` to the monorepo root; `turbo` and `pnpm-workspace.yaml` live at repo root. |
+| **Framework Preset** | Next.js                    | Matches `"framework": "nextjs"` in `vercel.json`. |
+| **Node.js Version** | 22.x                          | Match [`.nvmrc`](../.nvmrc) and root `package.json` `engines.node`. |
+| **Install Command** | *(leave default / empty)*   | Do not rely on a conflicting dashboard override; `vercel.json` supplies the install command. |
+| **Build Command**   | *(leave default / empty)*   | Same; use `vercel.json` `buildCommand`. |
+| **Development Command** | *(leave default / empty)* | Same; use `vercel.json` `devCommand` for `vercel dev`. |
+| **Output Directory** | *(Next.js default)*          | Only set if you intentionally change Next output (normally leave unset). |
+
+### Commands defined in `apps/web/vercel.json`
+
+| Key              | Value |
+| ---------------- | ----- |
+| `installCommand` | `cd ../.. && pnpm install --frozen-lockfile` |
+| `buildCommand`   | `turbo run build --filter=@sentinel/web` |
+| `devCommand`     | `pnpm dev` (runs `next dev` for this package) |
+| `ignoreCommand`  | `bash ../../scripts/vercel-ignore-command.sh` |
+
+If a deployment log shows a different install or build command than this table, open the deployment’s **Build Settings** summary: an enabled dashboard override can still confuse operators even when the effective behavior matches. Prefer turning **off** custom Install / Build / Dev overrides so only `vercel.json` defines them.
 
 ## Cutover Order
 

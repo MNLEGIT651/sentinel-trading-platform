@@ -30,6 +30,10 @@ jobs:
     name: Validate Release
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Optional: set TURBO_TOKEN + TURBO_TEAM in repo secrets for Turborepo Remote Cache.
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
     outputs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
