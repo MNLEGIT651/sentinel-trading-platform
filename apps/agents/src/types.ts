@@ -2,6 +2,10 @@
  * Type definitions for the Sentinel Agent Orchestrator.
  */
 
+import type { AlertSeverity } from '@sentinel/shared';
+
+export type { AlertSeverity };
+
 export type AgentRole =
   | 'market_sentinel'
   | 'strategy_analyst'
@@ -14,8 +18,6 @@ export type AgentRole =
 export type AgentStatus = 'idle' | 'running' | 'error' | 'cooldown';
 
 export type SignalDirection = 'long' | 'short' | 'flat';
-
-export type AlertSeverity = 'info' | 'warning' | 'critical';
 
 export interface AgentConfig {
   role: AgentRole;

@@ -35,17 +35,7 @@ const eventColors: Record<MemoryEventType, string> = {
   preference_auto_expired: 'text-muted-foreground',
 };
 
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
-}
+import { formatRelativeTime } from '@/lib/format-time';
 
 export function MemoryTimeline({ events, isLoading, className }: MemoryTimelineProps) {
   if (isLoading) {
