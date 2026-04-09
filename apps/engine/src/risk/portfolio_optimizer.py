@@ -208,10 +208,7 @@ class PortfolioOptimizer:
 
         raw_weights = inv_cov @ excess_ret
         w_sum = np.sum(raw_weights)
-        if w_sum == 0:
-            weights = np.full(n, 1.0 / n)
-        else:
-            weights = raw_weights / w_sum
+        weights = np.full(n, 1.0 / n) if w_sum == 0 else raw_weights / w_sum
 
         weights = self._apply_constraints(weights)
         return self._build_result(weights, exp_ret, cov, tickers, "max_sharpe")
@@ -290,7 +287,7 @@ class PortfolioOptimizer:
         sharpe = (port_return - self.risk_free_rate) / port_vol if port_vol > 0 else 0
 
         return OptimizationResult(
-            weights={t: float(w) for t, w in zip(tickers, weights)},
+            weights={t: float(w) for t, w in zip(tickers, weights, strict=False)},
             expected_return=port_return,
             expected_volatility=port_vol,
             sharpe_ratio=sharpe,

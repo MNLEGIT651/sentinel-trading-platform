@@ -18,7 +18,7 @@ from src.api.models.responses import (
     RiskAssessmentResponse,
     RiskLimitsResponse,
 )
-from src.db import get_db
+from src.db import SupabaseDB, get_db
 from src.risk.position_sizer import PositionSizer, RiskLimits
 from src.risk.risk_manager import PortfolioState, RiskManager
 from src.telemetry import get_tracer
@@ -326,7 +326,7 @@ class RiskPolicyUpdateRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _require_db():
+def _require_db() -> SupabaseDB:
     db = get_db()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not configured.")
