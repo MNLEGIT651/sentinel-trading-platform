@@ -33,6 +33,7 @@ Always report exact commands with PASS/FAIL/SKIPPED and reason for any skip.
 
 Use these custom agents for recurring workflows:
 
+- `repo-commander` — full-access operations agent (PRs, settings, CI/CD, quality)
 - `platform-sync-auditor`
 - `runtime-smoke-guardian`
 - `supabase-boundary-guardian`

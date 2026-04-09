@@ -1,0 +1,36 @@
+name: "Copilot Setup Steps"
+
+on: workflow_dispatch
+
+jobs:
+  copilot-setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # ── Node.js + pnpm ────────────────────────────────────────────────
+      - name: Setup Node 22
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+
+      - name: Enable corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Python 3.12 + engine venv ─────────────────────────────────────
+      - name: Setup Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version-file: '.python-version'
+
+      - name: Install uv
+        run: pip install uv==0.11.4
+
+      - name: Create engine venv and install dependencies
+        working-directory: apps/engine
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ".[dev]"
