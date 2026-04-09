@@ -517,7 +517,7 @@ curl -sf https://sentinel-agents.railway.app/health | jq -e '.status == "ok"'
 2. Check `reason` field in the log entry
 3. Query `operator_actions` table for recent manual interventions
 4. Query `system_controls` table for current `autonomy_mode`
-5. If caused by incident monitor: check `incident-monitor.fallback.triggered` logs
+5. Check `system_controls` table for recent `autonomy_mode` changes
 
 ---
 

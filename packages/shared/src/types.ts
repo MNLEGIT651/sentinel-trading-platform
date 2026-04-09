@@ -165,42 +165,8 @@ export interface Instrument {
 }
 
 /**
- * A single OHLCV candle stored in the `market_data` table.
- * Each row represents one completed bar for a given instrument and timeframe.
- */
-export interface MarketDataRow {
-  /** UUID primary key. */
-  id: string;
-  /** Foreign key → `instruments.id`. */
-  instrument_id: string;
-  /** Bar open time as an ISO 8601 timestamp (UTC). */
-  timestamp: string;
-  /** Opening price for the bar. */
-  open: number;
-  /** Highest traded price during the bar. */
-  high: number;
-  /** Lowest traded price during the bar. */
-  low: number;
-  /** Closing price for the bar. */
-  close: number;
-  /** Total shares/contracts/units traded during the bar. */
-  volume: number;
-  /** Volume-weighted average price for the bar. `null` if not provided by the data source. */
-  vwap: number | null;
-  /** Number of individual trades executed during the bar. `null` if not provided. */
-  trade_count: number | null;
-  /** Candlestick interval this row represents. */
-  timeframe: Timeframe;
-  /** Data provider identifier (e.g. `"alpaca"`, `"polygon"`). */
-  source: string;
-  /** ISO 8601 row insertion timestamp. */
-  created_at: string;
-}
-
-/**
  * Lightweight OHLCV tuple used in-memory by the engine and agents.
- * Omits database identity fields — prefer this type in computation contexts
- * and {@link MarketDataRow} for persistence contexts.
+ * Omits database identity fields — prefer this type in computation contexts.
  */
 export interface OHLCV {
   /** Bar open time as an ISO 8601 timestamp (UTC). */
@@ -839,11 +805,6 @@ export interface OperatorAction {
   created_at: string;
 }
 
-// ─── Signal Runs ────────────────────────────────────────────────────
-
-/** Status of a signal scan run. */
-export type SignalRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
-
 // ─── Universe Restrictions ──────────────────────────────────────────
 
 /** Restriction type for universe filtering. */
@@ -863,17 +824,6 @@ export interface UniverseRestriction {
   enabled: boolean;
   created_at: string;
   created_by: string | null;
-}
-
-// ─── Incident State ─────────────────────────────────────────────────
-
-/** State of the automatic incident fallback monitor. */
-export interface IncidentState {
-  isActive: boolean;
-  triggeredAt: string | null;
-  reason: string | null;
-  previousMode: string | null;
-  recoveryEligibleAt: string | null;
 }
 
 // ─── Workflow Jobs (Durable Workflow Engine) ─────────────────────────
@@ -954,25 +904,6 @@ export interface WorkflowStats {
   cancelled: number;
   avg_duration_ms: number | null;
   failure_rate: number | null;
-}
-
-/**
- * Metadata for a signal scan execution.
- * Mirrors the `signal_runs` table.
- */
-export interface SignalRun {
-  id: string;
-  started_at: string;
-  finished_at: string | null;
-  requested_by: string;
-  universe: string[];
-  strategies: string[];
-  days: number;
-  min_strength: number;
-  total_signals: number;
-  status: SignalRunStatus;
-  errors: unknown[];
-  created_at: string;
 }
 
 // ─── Strategy Health ────────────────────────────────────────────────
