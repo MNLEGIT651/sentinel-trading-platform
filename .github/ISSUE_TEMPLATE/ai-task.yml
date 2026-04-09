@@ -1,0 +1,39 @@
+name: AI task
+description: Structured implementation request for Claude, Codex, or a human contributor
+title: '<area>: <outcome>'
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What should be true when this task is done?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which files or modules are allowed to change?
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Which commands must pass before handoff?
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden Changes
+      description: What must stay untouched?
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Add links, screenshots, logs, or architectural notes here.
+    validations:
+      required: false

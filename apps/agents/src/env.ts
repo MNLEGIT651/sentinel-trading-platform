@@ -12,6 +12,7 @@ export const REQUIRED_AGENT_ENV_VARS = [
   'SUPABASE_JWT_SECRET',
   'ENGINE_URL',
   'ENGINE_API_KEY',
+  'WEB_URL',
 ] as const;
 
 export const AGENTS_ENV_GUIDANCE =
@@ -23,8 +24,6 @@ export function getMissingAgentEnvVars(
   return REQUIRED_AGENT_ENV_VARS.filter((key) => !env[key]);
 }
 
-export function formatMissingAgentEnvMessage(
-  missing: ReadonlyArray<string>,
-): string {
+export function formatMissingAgentEnvMessage(missing: ReadonlyArray<string>): string {
   return `Missing required environment variables: ${missing.join(', ')}. See .env.example for guidance.`;
 }

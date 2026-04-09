@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a new feature or improvement
+title: 'feat: '
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your preferred solution or approach.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: List any alternative approaches and why they were ruled out.
+    validations:
+      required: false
+  - type: checkboxes
+    id: components
+    attributes:
+      label: Affected Components
+      options:
+        - label: 'apps/web -- Dashboard'
+        - label: 'apps/engine -- Quant engine'
+        - label: 'apps/agents -- Agent orchestrator'
+        - label: 'packages/shared -- Shared contracts'
+        - label: 'supabase/ -- Database / migrations'
+        - label: '.github/ -- CI / workflows'
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any mockups, references, or architectural notes here.
+    validations:
+      required: false

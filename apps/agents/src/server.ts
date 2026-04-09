@@ -36,7 +36,7 @@ import { logger } from './logger.js';
 import { getSupabaseClient } from './supabase-client.js';
 import { randomUUID } from 'node:crypto';
 import { startRecommendationWorkflow } from './workflows/recommendation-lifecycle.js';
-import { CORRELATION_HEADER, withCorrelationId, getCorrelationId } from './correlation.js';
+import { CORRELATION_HEADER, withCorrelationId } from './correlation.js';
 
 const CYCLE_LOCK_NAME = 'agent_cycle';
 
@@ -533,7 +533,6 @@ export function createApp(orchestrator: Orchestrator): Express {
 
   // ── Global error handler ─────────────────────────────────────────
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     logger.error('server.unhandled_error', { error: err.message });
     res.status(500).json({ error: 'internal_error', detail: err.message });

@@ -8,6 +8,10 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+concurrency:
+  group: pr-size-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   pull-requests: write
 
