@@ -172,7 +172,7 @@ jobs:
           SECRETS_FOUND=false
 
           # Basic secret patterns (supplement Gitleaks, not replace)
-          if echo "$DIFF" | grep -qEi '(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|AKIA[A-Z0-9]{16}|password\s*=\s*["\x27][^"\x27]{8,})'; then
+          if echo "$DIFF" | grep -qEi "(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|AKIA[A-Z0-9]{16}|password\s*=\s*[\"'][^\"']{8,})"; then
             SECRETS_FOUND=true
           fi
 
@@ -204,7 +204,7 @@ jobs:
           fi
 
           CHECK_TABLE=$(cat /tmp/check-table.txt)
-          RISK_JSON=$(echo "$RISK" | sed 's/,/", "/g' | sed 's/^/"/;s/$/"/')
+          RISK_JSON=$(echo "$RISK" | tr ',' '\n' | jq -R . | jq -sc '.')
 
           # Write comment body to file to avoid heredoc indentation issues
           {
@@ -261,7 +261,7 @@ jobs:
             echo "{"
             echo "  \"agent\": \"pr-owner-operator\","
             echo "  \"decision\": \"${DECISION}\","
-            echo "  \"risk_classification\": [${RISK_JSON}],"
+            echo "  \"risk_classification\": ${RISK_JSON},"
             echo "  \"secrets_detected\": ${SECRETS_FOUND},"
             echo "  \"all_checks_green\": ${ALL_GREEN},"
             echo "  \"failed_checks\": \"${FAILED}\","
