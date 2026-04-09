@@ -4,12 +4,10 @@ on:
   pull_request:
     paths:
       - '.github/workflows/**'
-      - 'apps/web/src/components/settings/**'
   push:
     branches: [main]
     paths:
       - '.github/workflows/**'
-      - 'apps/web/src/components/settings/**'
 
 permissions:
   contents: read
