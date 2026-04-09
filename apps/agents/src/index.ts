@@ -14,6 +14,13 @@
  *  ⚡  Execution Monitor  — Trade recommendations
  */
 
+import { config as loadRootEnv } from 'dotenv';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __agentsDir = dirname(fileURLToPath(import.meta.url));
+loadRootEnv({ path: join(__agentsDir, '..', '..', '..', '.env') });
+
 // Telemetry must be initialised before any other imports so the SDK can
 // monkey-patch HTTP / Express modules before they are loaded.
 import { initTelemetry, shutdownTelemetry } from './telemetry.js';

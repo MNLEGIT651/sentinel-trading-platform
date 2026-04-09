@@ -1,6 +1,11 @@
 import { join } from 'path';
+import { config as loadRootEnv } from 'dotenv';
 import type { NextConfig } from 'next';
 import bundleAnalyzer from '@next/bundle-analyzer';
+
+// Monorepo: load repo-root `.env` so one file can drive local web + engine + agents.
+// Next.js still merges `apps/web/.env.local` with higher precedence.
+loadRootEnv({ path: join(__dirname, '..', '..', '.env') });
 
 // ─── Content-Security-Policy ──────────────────────────────────────────────────
 //
@@ -84,6 +89,8 @@ const nextConfig: NextConfig = {
   // On Vercel, standard output is expected — standalone causes 404s.
   // Set STANDALONE_BUILD=1 in Docker (or any non-Vercel) builds.
   ...(process.env.STANDALONE_BUILD === '1' ? { output: 'standalone' } : {}),
+  // Monorepo: trace workspace packages (@sentinel/shared) from repo root for leaner serverless output.
+  outputFileTracingRoot: join(__dirname, '..', '..'),
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
@@ -93,12 +100,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
   },
   experimental: {
-    optimizePackageImports: [
-      '@supabase/supabase-js',
-      '@tanstack/react-query',
-      'lucide-react',
-      'recharts',
-    ],
+    optimizePackageImports: ['@supabase/supabase-js', '@tanstack/react-query', 'lucide-react'],
   },
   turbopack: {
     root: join(__dirname, '..', '..'),
