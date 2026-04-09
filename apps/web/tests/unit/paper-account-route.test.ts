@@ -19,12 +19,6 @@ vi.mock('@/lib/api-error', () => ({
 
 import { POST } from '@/app/api/onboarding/paper-account/route';
 
-function makeRequest(): Request {
-  return new Request('http://localhost/api/onboarding/paper-account', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-  });
-}
 
 describe('/api/onboarding/paper-account', () => {
   beforeEach(() => {
@@ -38,7 +32,7 @@ describe('/api/onboarding/paper-account', () => {
 
   it('returns 401 when not authenticated', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-    const res = await POST(makeRequest());
+    const res = await POST();
     expect(res.status).toBe(401);
   });
 
@@ -55,7 +49,7 @@ describe('/api/onboarding/paper-account', () => {
       }),
     });
 
-    const res = await POST(makeRequest());
+    const res = await POST();
     const body = await res.json();
     expect(body.id).toBe('acc-existing');
     expect(body.already_existed).toBe(true);
@@ -88,7 +82,7 @@ describe('/api/onboarding/paper-account', () => {
       return { insert: vi.fn().mockResolvedValue({ error: null }) };
     });
 
-    const res = await POST(makeRequest());
+    const res = await POST();
     expect(res.status).toBe(201);
 
     expect(insertedData).toBeDefined();

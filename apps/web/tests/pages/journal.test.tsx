@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 const mockUseJournalQuery = vi.fn(() => ({
-  data: undefined,
+  data: undefined as { entries: JournalEntry[]; total: number; limit: number; offset: number } | undefined,
   isLoading: false,
   isError: false,
 }));
@@ -19,7 +19,7 @@ vi.mock('@/hooks/queries', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/hooks/queries')>();
   return {
     ...actual,
-    useJournalQuery: (...args: unknown[]) => mockUseJournalQuery(...args),
+    useJournalQuery: () => mockUseJournalQuery(),
     useJournalStatsQuery: vi.fn(() => ({ data: undefined, isLoading: false })),
     useGradeJournalMutation: vi.fn(() => ({
       mutate: vi.fn(),

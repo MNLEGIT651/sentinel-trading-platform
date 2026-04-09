@@ -1,14 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "pnpm install",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "turbo run build --filter=@sentinel/web",
+  "devCommand": "pnpm dev",
   "ignoreCommand": "bash ../../scripts/vercel-ignore-command.sh",
   "regions": ["iad1"],
   "crons": [
     {
       "path": "/api/internal/cron/health",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/10 * * * *"
     }
   ]
 }

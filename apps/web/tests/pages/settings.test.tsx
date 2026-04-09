@@ -230,7 +230,7 @@ describe('SettingsPage', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getAllByRole('tab', { name: /Risk/i })[0]);
+    fireEvent.click(screen.getAllByRole('tab', { name: /Risk/i })[0]!);
     await waitFor(() => {
       expect(screen.getByText('Position Limits')).toBeInTheDocument();
       expect(screen.getByText('Circuit Breakers')).toBeInTheDocument();
@@ -242,7 +242,7 @@ describe('SettingsPage', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Alerts/i })[0]).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getAllByRole('tab', { name: /Alerts/i })[0]);
+    fireEvent.click(screen.getAllByRole('tab', { name: /Alerts/i })[0]!);
     await waitFor(() => {
       expect(screen.getByText('Critical Alerts')).toBeInTheDocument();
       expect(screen.getByText('Warning Alerts')).toBeInTheDocument();
@@ -257,7 +257,7 @@ describe('SettingsPage', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
+    fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]!);
     await waitFor(() => {
       expect(screen.getByText('Paper Trading Mode')).toBeInTheDocument();
       expect(screen.getByText('Auto Trading')).toBeInTheDocument();
@@ -272,7 +272,7 @@ describe('SettingsPage', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Trading/i })[0]).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]);
+    fireEvent.click(screen.getAllByRole('tab', { name: /Trading/i })[0]!);
     await waitFor(() => expect(screen.getByText('9.9.9-test')).toBeInTheDocument());
   });
 
@@ -303,7 +303,7 @@ describe('SettingsPage', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('tab', { name: /Risk/i })[0]).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getAllByRole('tab', { name: /Risk/i })[0]);
+    fireEvent.click(screen.getAllByRole('tab', { name: /Risk/i })[0]!);
     await waitFor(() => {
       // Design system Input components have data-slot="input"
       const inputs = document.querySelectorAll('[data-slot="input"]');

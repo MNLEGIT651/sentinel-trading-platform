@@ -98,7 +98,7 @@ describe('SystemControlsPage', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useSystemControlsQuery>);
+    } as unknown as ReturnType<typeof useSystemControlsQuery>);
 
     renderWithProviders(<SystemControlsPage />);
     expect(screen.getByText('Halted')).toBeInTheDocument();

@@ -115,7 +115,7 @@ describe('ApprovalsPage', () => {
       isLoading: false,
       isError: false,
       error: null,
-    } as ReturnType<typeof useRecommendationsQuery>);
+    } as unknown as ReturnType<typeof useRecommendationsQuery>);
 
     renderWithProviders(<ApprovalsPage />);
     expect(screen.getByText(/all caught up/i)).toBeInTheDocument();

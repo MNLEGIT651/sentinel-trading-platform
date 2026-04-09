@@ -6,7 +6,7 @@ Use these instructions for Copilot Chat, Copilot code review, and Copilot coding
 
 - Keep diffs minimal and scoped to the request.
 - Do not modify protected files without explicit request:
-  - `package.json`, `pnpm-lock.yaml`, `turbo.json`, `vercel.json`
+  - `package.json`, `pnpm-lock.yaml`, `turbo.json`, `apps/web/vercel.json`
   - `supabase/migrations/*`
   - `packages/shared/src/*`
 - Preserve offline/fallback provenance behavior (`OfflineBanner`, `SimulatedBadge`).

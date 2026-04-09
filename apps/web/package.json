@@ -47,6 +47,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "dotenv": "^16.6.1",
     "@chromatic-com/storybook": "^5.1.1",
     "@next/bundle-analyzer": "^16",
     "@playwright/test": "^1",
