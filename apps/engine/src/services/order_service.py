@@ -9,8 +9,8 @@ import logging
 from fastapi import HTTPException
 
 from src.db import get_db
-from src.execution.broker_interface import BrokerInterface
-from src.risk.risk_manager import PortfolioState, RiskManager, RiskResult
+from src.execution.broker_interface import BrokerAdapter
+from src.risk.risk_manager import PortfolioState, PreTradeCheck, RiskManager
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ async def check_trading_halts(experiment_id: str | None = None) -> None:
             logger.warning("Could not check experiment halt status: %s", exc)
 
 
-async def fetch_live_price(broker: BrokerInterface, symbol: str) -> float | None:
+async def fetch_live_price(broker: BrokerAdapter, symbol: str) -> float | None:
     """Fetch the latest price via Polygon for non-Alpaca brokers.
 
     Returns None when using Alpaca (which provides its own fill price).
@@ -74,12 +74,12 @@ async def fetch_live_price(broker: BrokerInterface, symbol: str) -> float | None
 
 
 async def run_pre_trade_risk_check(
-    broker: BrokerInterface,
+    broker: BrokerAdapter,
     ticker: str,
     quantity: int,
     price: float,
     side: str,
-) -> RiskResult:
+) -> PreTradeCheck:
     """Build portfolio state from the broker and run the pre-trade risk check."""
     acct, positions_raw = await broker.get_account(), await broker.get_positions()
     positions_value: dict[str, float] = {

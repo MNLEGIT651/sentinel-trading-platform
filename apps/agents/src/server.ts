@@ -76,7 +76,6 @@ export function createApp(orchestrator: Orchestrator): Express {
   app.use(researchRouter(orchestrator));
 
   // ── Global error handler ─────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     logger.error('server.unhandled_error', { error: err.message });
     res.status(500).json({ error: 'internal_error', detail: err.message });

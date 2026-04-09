@@ -61,8 +61,8 @@ async def create_signal_run(
 async def fetch_market_data(
     tickers: list[str],
     days: int,
-    fetch_cached_fn,  # noqa: ANN001 — callable type varies
-    fetch_polygon_fn,  # noqa: ANN001
+    fetch_cached_fn,
+    fetch_polygon_fn,
 ) -> tuple[dict[str, OHLCVData], list[str]]:
     """Fetch OHLCV data for each ticker, trying cache first then Polygon.
 
