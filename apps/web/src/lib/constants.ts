@@ -64,14 +64,8 @@ export const DEFAULT_SIGNAL_TICKERS = 'AAPL,MSFT,GOOGL,AMZN,NVDA';
 /** Duration to show toast / success messages (ms) */
 export const TOAST_DURATION = 2000;
 
-/** Delay before redirect after an action (ms) */
-export const REDIRECT_DELAY = 2000;
-
 /** Default polling interval for live data (ms) */
 export const POLL_INTERVAL = 30_000;
-
-/** Threshold before data is considered stale (ms) */
-export const STALE_THRESHOLD = 60_000;
 
 // ─── Pagination ─────────────────────────────────────────────────────────
 

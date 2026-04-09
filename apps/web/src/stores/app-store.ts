@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 
+import type { AlertSeverity } from '@sentinel/shared';
 import type { DeviceType } from '@/hooks/use-device-detect';
-
-export type AlertSeverity = 'info' | 'warning' | 'critical';
 
 export interface StoreAlert {
   id: string;

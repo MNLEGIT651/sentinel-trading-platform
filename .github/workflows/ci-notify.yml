@@ -19,6 +19,7 @@ jobs:
   sync-default-branch-ci-issue:
     name: Sync Default Branch CI Issue
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     permissions:
       issues: write
     steps:

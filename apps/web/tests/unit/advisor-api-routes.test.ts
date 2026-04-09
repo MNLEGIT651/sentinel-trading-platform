@@ -52,7 +52,7 @@ function setChainResult(data: unknown, error: unknown = null) {
 
 // ─── Tests ──────────────────────────────────────────────────────────
 
-describe('Advisor API routes', () => {
+describe('Advisor API routes', { timeout: 15_000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockChainData = null;

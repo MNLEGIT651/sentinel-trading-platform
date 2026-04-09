@@ -69,30 +69,3 @@ export const DEFAULT_AGENT_PROMPTS: Readonly<Record<string, string>> = {
   execution_monitor:
     'Check for any open orders. If there are approved trades from this cycle that pass risk checks, prepare them for execution. Report on execution quality for any fills.',
 };
-
-// ─── GitHub Ops Commander ────────────────────────────────────────────────────
-
-/**
- * GitHub repository slug used by the ops commander script and skill.
- * Can be overridden via GITHUB_REPO env var.
- */
-export const GITHUB_REPO = process.env.GITHUB_REPO ?? 'stevenschling13/sentinel-trading-platform';
-
-/**
- * Alert thresholds used by github-ops.ts. Centralised here so the skill
- * documentation and the script stay in sync.
- */
-export const OPS_THRESHOLDS = {
-  /** Days an open PR can go without review before triggering a WARN */
-  PR_WARN_AGE_DAYS: 5,
-  /** Days an open PR can go without review before triggering a FAIL */
-  PR_FAIL_AGE_DAYS: 10,
-  /** Days without issue activity before WARN */
-  ISSUE_WARN_AGE_DAYS: 14,
-  /** Days without issue activity before FAIL */
-  ISSUE_FAIL_AGE_DAYS: 30,
-  /** Fraction of recent CI runs failing to trigger WARN */
-  CI_FAIL_RATE_WARN: 0.15,
-  /** Fraction of recent CI runs failing to trigger FAIL */
-  CI_FAIL_RATE_FAIL: 0.3,
-} as const;

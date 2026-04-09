@@ -8,7 +8,7 @@ Maps Sentinel's security controls to OWASP ASVS v4.0 and NIST SSDF categories.
 | ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------- |
 | A01 Broken Access Control     | Supabase RLS + middleware auth gate                            | `proxy.ts`, `supabase/migrations/00002_*`                     |
 | A02 Cryptographic Failures    | TLS enforced, HSTS header, no plaintext secrets                | `next.config.ts`, `.env.example`                              |
-| A03 Injection                 | Supabase parameterized queries, Zod validation                 | `engine/src/api/validators.py`, shared types                  |
+| A03 Injection                 | Supabase parameterized queries, Zod validation                 | Pydantic route models, shared types                           |
 | A04 Insecure Design           | Human-in-the-loop trade approval, risk circuit breakers        | `agents/src/orchestrator.ts`, `engine/src/risk/`              |
 | A05 Security Misconfiguration | CSP headers, Dependabot, CodeQL, workflow lint, security audit | `.github/workflows/`, `next.config.ts`                        |
 | A06 Vulnerable Components     | Dependabot, dependency-review, pip-audit, pnpm audit           | `.github/dependabot.yml`, `scripts/security-audit.mjs`        |
