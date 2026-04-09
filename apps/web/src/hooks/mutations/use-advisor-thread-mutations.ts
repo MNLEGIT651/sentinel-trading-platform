@@ -1,7 +1,7 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
+import { useMutationWithInvalidation } from '@/hooks/use-mutation-with-invalidation';
 import type { AdvisorThread, AdvisorThreadCreate, AdvisorThreadUpdate } from '@sentinel/shared';
 
 async function createThread(input: AdvisorThreadCreate): Promise<AdvisorThread> {
@@ -33,31 +33,13 @@ async function deleteThread(id: string): Promise<void> {
 }
 
 export function useCreateThreadMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: createThread,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.advisor.threads.all() });
-    },
-  });
+  return useMutationWithInvalidation(createThread, [queryKeys.advisor.threads.all()]);
 }
 
 export function useUpdateThreadMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updateThread,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.advisor.threads.all() });
-    },
-  });
+  return useMutationWithInvalidation(updateThread, [queryKeys.advisor.threads.all()]);
 }
 
 export function useDeleteThreadMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteThread,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.advisor.threads.all() });
-    },
-  });
+  return useMutationWithInvalidation(deleteThread, [queryKeys.advisor.threads.all()]);
 }

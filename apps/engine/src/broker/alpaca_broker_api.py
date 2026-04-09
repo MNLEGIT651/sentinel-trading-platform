@@ -37,6 +37,8 @@ class AlpacaBrokerAPI:
     """Client for Alpaca Broker API v1.
 
     Authenticates with Basic auth using broker API key + secret.
+    Reuses a single httpx.AsyncClient for connection pooling.
+    Call close() when done, or use as an async context manager.
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
@@ -44,6 +46,21 @@ class AlpacaBrokerAPI:
         self._base_url = s.alpaca_broker_api_url.rstrip("/")
         self._key = s.alpaca_broker_api_key
         self._secret = s.alpaca_broker_api_secret
+        self._client = httpx.AsyncClient(
+            base_url=self._base_url,
+            timeout=30.0,
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client."""
+        await self._client.aclose()
+
+    async def __aenter__(self) -> AlpacaBrokerAPI:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        await self.close()
 
     @property
     def is_configured(self) -> bool:
@@ -61,11 +78,11 @@ class AlpacaBrokerAPI:
         json_body: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        url = f"{self._base_url}{path}"
         headers = {**self._auth_header(), "Content-Type": "application/json"}
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.request(method, url, headers=headers, json=json_body, params=params)
+        resp = await self._client.request(
+            method, path, headers=headers, json=json_body, params=params
+        )
 
         if resp.status_code >= 400:
             detail = resp.text[:500]

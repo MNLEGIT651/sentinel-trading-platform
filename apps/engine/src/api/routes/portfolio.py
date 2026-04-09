@@ -15,11 +15,14 @@ from src.api.models.responses import (
     PositionResponse,
     StoredOrderResponse,
 )
-from src.db import get_db
 from src.execution import get_broker
 from src.execution.broker_interface import OrderRequest
 from src.execution.order_store import TERMINAL_STATUSES, get_order_store
-from src.risk.risk_manager import PortfolioState, RiskManager
+from src.services.order_service import (
+    check_trading_halts,
+    fetch_live_price,
+    run_pre_trade_risk_check,
+)
 from src.telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
@@ -82,83 +85,25 @@ async def get_positions() -> list[PositionResponse]:
 @router.post("/orders", response_model=OrderSubmitResponse)
 async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
     """Submit a new order to the broker (pre-trade risk check enforced)."""
-    # ── Trading halt check ──────────────────────────────────────────
-    try:
-        db = get_db()
-        if db is not None:
-            row = db.table("system_controls").select("trading_halted").limit(1).single().execute()
-            if row.data and row.data.get("trading_halted"):
-                raise HTTPException(
-                    status_code=403,
-                    detail="Trading is halted. Cannot submit orders.",
-                )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.warning("Could not check trading halt status: %s", exc)
+    from src.config import Settings as _Settings
+    from src.execution.alpaca_broker import AlpacaBroker
 
-    # ── Experiment halt check ───────────────────────────────────────
-    try:
-        from src.config import Settings as _Settings
-
-        exp_id = _Settings().experiment_id
-        db = get_db()
-        if exp_id and db is not None:
-            exp_row = db.table("experiments").select("halted").eq("id", exp_id).single().execute()
-            if exp_row.data and exp_row.data.get("halted"):
-                raise HTTPException(
-                    status_code=403,
-                    detail="Experiment is halted. Cannot submit orders.",
-                )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.warning("Could not check experiment halt status: %s", exc)
-    # ────────────────────────────────────────────────────────────────
+    exp_id = _Settings().experiment_id
+    await check_trading_halts(experiment_id=exp_id)
 
     try:
         broker = get_broker()
+        symbol = body.symbol.upper()
 
-        from src.execution.alpaca_broker import AlpacaBroker
-
-        # Fetch live price for risk check and paper fills
-        price: float | None = None
-        if isinstance(broker, AlpacaBroker):
-            # Alpaca will provide the fill price; use a rough estimate for risk check
-            pass
-        else:
-            from src.config import Settings
-            from src.data.polygon_client import PolygonClient
-
-            settings = Settings()
-            polygon = PolygonClient(settings.polygon_api_key)
-            try:
-                bar = await polygon.get_latest_price(body.symbol.upper(), interactive=True)
-                price = bar.close if bar else 100.0
-            finally:
-                await polygon.close()
-
-        # ── Pre-trade risk check ────────────────────────────────────────
-        acct, positions_raw = await broker.get_account(), await broker.get_positions()
-        positions_value: dict[str, float] = {
-            p["instrument_id"]: p.get("market_value", p["quantity"] * p.get("avg_price", 0))
-            for p in positions_raw
-        }
+        price = await fetch_live_price(broker, symbol)
         check_price = price or body.limit_price or 100.0
-        state = PortfolioState(
-            equity=acct["equity"],
-            cash=acct["cash"],
-            peak_equity=acct.get("initial_capital", acct["equity"]),
-            daily_starting_equity=acct.get("initial_capital", acct["equity"]),
-            positions=positions_value,
-            position_sectors={},
-        )
-        risk_result = RiskManager().pre_trade_check(
-            ticker=body.symbol.upper(),
-            shares=int(body.quantity),
+
+        risk_result = await run_pre_trade_risk_check(
+            broker=broker,
+            ticker=symbol,
+            quantity=int(body.quantity),
             price=check_price,
             side=body.side.value,
-            state=state,
         )
         if not risk_result.allowed:
             raise HTTPException(
@@ -166,10 +111,9 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
                 detail=f"Risk check blocked order: {risk_result.reason}",
             )
         effective_quantity = risk_result.adjusted_shares or int(body.quantity)
-        # ─────────────────────────────────────────────────────────────────
 
         request = OrderRequest(
-            instrument_id=body.symbol.upper(),
+            instrument_id=symbol,
             side=body.side.value,
             order_type=body.order_type.value,
             quantity=float(effective_quantity),
@@ -180,7 +124,7 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
         with _tracer.start_as_current_span(
             "portfolio.submit_order",
             attributes={
-                "order.symbol": body.symbol.upper(),
+                "order.symbol": symbol,
                 "order.side": body.side.value,
                 "order.type": body.order_type.value,
                 "order.quantity": float(effective_quantity),
