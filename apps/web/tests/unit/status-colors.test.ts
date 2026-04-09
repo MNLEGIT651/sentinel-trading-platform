@@ -84,8 +84,8 @@ describe('orderStatusColors', () => {
   it.each(expectedStatuses)('order status "%s" has bg and text properties', (status) => {
     const style = orderStatusColors[status];
     expect(style).toBeDefined();
-    expect(style.bg).toEqual(expect.any(String));
-    expect(style.text).toEqual(expect.any(String));
+    expect(style!.bg).toEqual(expect.any(String));
+    expect(style!.text).toEqual(expect.any(String));
   });
 
   it('DEFAULT_ORDER_STYLE has bg and text', () => {

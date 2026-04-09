@@ -87,8 +87,7 @@ describe('/api/onboarding/broker', () => {
   describe('POST', () => {
     it('returns 401 when not authenticated', async () => {
       mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-      const req = makeRequest('POST');
-      const res = await POST(req);
+      const res = await POST();
       expect(res.status).toBe(401);
     });
 
@@ -104,8 +103,7 @@ describe('/api/onboarding/broker', () => {
         }),
       });
 
-      const req = makeRequest('POST');
-      const res = await POST(req);
+      const res = await POST();
       expect(res.status).toBe(409);
       const body = await res.json();
       expect(body.error).toContain('already exists');
@@ -142,8 +140,7 @@ describe('/api/onboarding/broker', () => {
         return { insert: vi.fn().mockResolvedValue({ error: null }) };
       });
 
-      const req = makeRequest('POST');
-      const res = await POST(req);
+      const res = await POST();
       expect(res.status).toBe(201);
 
       expect(insertedData).toBeDefined();

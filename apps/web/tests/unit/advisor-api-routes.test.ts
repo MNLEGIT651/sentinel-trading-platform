@@ -62,8 +62,8 @@ describe('Advisor API routes', { timeout: 15_000 }, () => {
   describe('GET /api/advisor/profile', () => {
     it('returns 401 when not authenticated', async () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: { message: 'Not authenticated' },
+        data: { user: null as never },
+        error: { message: 'Not authenticated' } as never,
       });
 
       const { GET } = await import('@/app/api/advisor/profile/route');
@@ -90,8 +90,8 @@ describe('Advisor API routes', { timeout: 15_000 }, () => {
   describe('GET /api/advisor/memory-events', () => {
     it('returns 401 when not authenticated', async () => {
       mockSupabase.auth.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: { message: 'Not authenticated' },
+        data: { user: null as never },
+        error: { message: 'Not authenticated' } as never,
       });
 
       const { GET } = await import('@/app/api/advisor/memory-events/route');

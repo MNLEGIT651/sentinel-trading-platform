@@ -28,7 +28,7 @@ describe('buildAdvisorContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset the from mock to default empty responses
-    mockSupabase.from.mockImplementation((table: string) => {
+    mockSupabase.from.mockImplementation(((table: string) => {
       if (table === 'advisor_profiles') {
         return chainable({ profile: { risk_tolerance: 'moderate' } });
       }
@@ -51,7 +51,7 @@ describe('buildAdvisorContext', () => {
         return chainable([]);
       }
       return chainable();
-    });
+    }) as never);
   });
 
   it('assembles context with profile and preferences', async () => {
@@ -68,7 +68,7 @@ describe('buildAdvisorContext', () => {
   });
 
   it('handles missing profile gracefully', async () => {
-    mockSupabase.from.mockImplementation((table: string) => {
+    mockSupabase.from.mockImplementation(((table: string) => {
       if (table === 'advisor_profiles') {
         return chainable(null, { code: 'PGRST116' });
       }
@@ -76,7 +76,7 @@ describe('buildAdvisorContext', () => {
         return chainable([]);
       }
       return chainable(null, { code: 'PGRST116' });
-    });
+    }) as never);
 
     const { buildAdvisorContext } = await import('@/lib/advisor-context');
     const ctx = await buildAdvisorContext('user-1');
