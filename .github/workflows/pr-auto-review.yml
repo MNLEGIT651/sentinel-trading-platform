@@ -337,7 +337,7 @@ jobs:
     steps:
       - name: Dispatch Copilot to fix CI failures
         env:
-          GH_TOKEN: ${{ secrets.PR_MERGE_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ needs.review.outputs.pr_number }}
           FAILED: ${{ needs.review.outputs.failed }}
           MISSING: ${{ needs.review.outputs.missing }}
@@ -401,9 +401,12 @@ jobs:
           gh pr review "$PR_NUMBER" --approve --body \
             "✅ **Auto-approved by pr-owner-operator** — all required CI gates are green."
 
+          # Use the original PR title as the merge commit subject
+          PR_TITLE=$(gh pr view "$PR_NUMBER" --json title --jq '.title')
+
           echo "Merging PR #${PR_NUMBER} (squash)..."
           gh pr merge "$PR_NUMBER" --squash --auto \
-            --subject "chore: auto-merge PR #${PR_NUMBER}" \
+            --subject "${PR_TITLE} (#${PR_NUMBER})" \
             --body "Auto-merged by pr-owner-operator workflow. Risk: ${RISK}."
 
           echo "✅ PR #${PR_NUMBER} approved and squash-merge queued."
