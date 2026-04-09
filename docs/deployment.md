@@ -132,14 +132,15 @@ All upstream URL resolution, auth headers, timeouts, and retries are centralized
 
 ## Deployment Assets
 
-| File                       | Purpose                         | Environment |
-| -------------------------- | ------------------------------- | ----------- |
-| `docker-compose.yml`       | Full local stack                | Local only  |
-| `apps/web/Dockerfile`      | Web container                   | Local / CI  |
-| `apps/engine/Dockerfile`   | Engine container                | Railway     |
-| `apps/agents/Dockerfile`   | Agents container                | Railway     |
-| `apps/web/vercel.json`     | Install/build/dev/ignore/crons  | Vercel      |
-| `apps/engine/railway.toml` | Health check + restart policy   | Railway     |
+| File                       | Purpose                        | Environment |
+| -------------------------- | ------------------------------ | ----------- |
+| `docker-compose.yml`       | Full local stack               | Local only  |
+| `apps/web/Dockerfile`      | Web container                  | Local / CI  |
+| `apps/engine/Dockerfile`   | Engine container               | Railway     |
+| `apps/agents/Dockerfile`   | Agents container               | Railway     |
+| `apps/web/vercel.json`     | Install/build/dev/ignore/crons | Vercel      |
+| `apps/engine/railway.toml` | Engine health check + restart  | Railway     |
+| `railway.toml`             | Agents health check + restart  | Railway     |
 
 ## Vercel web app — dashboard vs `apps/web/vercel.json`
 
@@ -147,22 +148,22 @@ All upstream URL resolution, auth headers, timeouts, and retries are centralized
 
 ### Git-connected project checklist
 
-| Dashboard field   | Set to                         | Why |
-| ----------------- | ------------------------------ | --- |
-| **Root Directory** | `apps/web`                     | Install/build `cd` to the monorepo root; `turbo` and `pnpm-workspace.yaml` live at repo root. |
-| **Framework Preset** | Next.js                    | Matches `"framework": "nextjs"` in `vercel.json`. |
-| **Node.js Version** | 22.x                          | Match [`.nvmrc`](../.nvmrc) and root `package.json` `engines.node`. |
-| **Install Command** | *(leave default / empty)*   | Do not rely on a conflicting dashboard override; `vercel.json` supplies the install command. |
-| **Build Command**   | *(leave default / empty)*   | Same; use `vercel.json` `buildCommand`. |
-| **Development Command** | *(leave default / empty)* | Same; use `vercel.json` `devCommand` for `vercel dev`. |
-| **Output Directory** | *(Next.js default)*          | Only set if you intentionally change Next output (normally leave unset). |
+| Dashboard field         | Set to                    | Why                                                                                           |
+| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
+| **Root Directory**      | `apps/web`                | Install/build `cd` to the monorepo root; `turbo` and `pnpm-workspace.yaml` live at repo root. |
+| **Framework Preset**    | Next.js                   | Matches `"framework": "nextjs"` in `vercel.json`.                                             |
+| **Node.js Version**     | 22.x                      | Match [`.nvmrc`](../.nvmrc) and root `package.json` `engines.node`.                           |
+| **Install Command**     | _(leave default / empty)_ | Do not rely on a conflicting dashboard override; `vercel.json` supplies the install command.  |
+| **Build Command**       | _(leave default / empty)_ | Same; use `vercel.json` `buildCommand`.                                                       |
+| **Development Command** | _(leave default / empty)_ | Same; use `vercel.json` `devCommand` for `vercel dev`.                                        |
+| **Output Directory**    | _(Next.js default)_       | Only set if you intentionally change Next output (normally leave unset).                      |
 
 ### Commands defined in `apps/web/vercel.json`
 
-| Key              | Value |
-| ---------------- | ----- |
-| `installCommand` | `cd ../.. && pnpm install --frozen-lockfile` |
-| `buildCommand`   | `turbo run build --filter=@sentinel/web` |
+| Key              | Value                                         |
+| ---------------- | --------------------------------------------- |
+| `installCommand` | `cd ../.. && pnpm install --frozen-lockfile`  |
+| `buildCommand`   | `turbo run build --filter=@sentinel/web`      |
 | `devCommand`     | `pnpm dev` (runs `next dev` for this package) |
 | `ignoreCommand`  | `bash ../../scripts/vercel-ignore-command.sh` |
 

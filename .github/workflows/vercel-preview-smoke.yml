@@ -37,8 +37,14 @@ jobs:
           VERCEL_PREVIEW_SMOKE_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
           if [ -z "$VERCEL_PREVIEW_SMOKE_URL" ]; then
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Missing required secret: VERCEL_PREVIEW_SMOKE_URL. Skipping preview smoke checks."
+            # Fork PRs cannot access secrets — warn and skip
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              echo "::warning::Fork PR — secrets unavailable. Skipping preview smoke checks."
+            else
+              echo "::error::Missing required secret: VERCEL_PREVIEW_SMOKE_URL"
+              exit 1
+            fi
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi

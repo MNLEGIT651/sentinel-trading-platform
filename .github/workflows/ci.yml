@@ -163,7 +163,7 @@ jobs:
             uv-${{ runner.os }}-py3.12-
 
       - name: Install uv
-        run: pip install uv
+        run: pip install uv==0.11.5
 
       - name: Create venv and install engine dependencies
         working-directory: apps/engine
@@ -275,7 +275,7 @@ jobs:
           python-version-file: '.python-version'
 
       - name: Install uv
-        run: pip install uv
+        run: pip install uv==0.11.5
 
       - name: Create venv and install engine audit dependencies
         working-directory: apps/engine

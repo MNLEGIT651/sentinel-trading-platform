@@ -75,7 +75,7 @@ Each staging service needs its own env vars pointing to staging resources:
 ```env
 # Supabase — point to staging database
 SUPABASE_URL=https://<staging-project>.supabase.co
-SUPABASE_SERVICE_KEY=<staging-service-key>
+SUPABASE_SERVICE_ROLE_KEY=<staging-service-key>
 
 # Market data — use paper trading keys
 ALPACA_API_KEY=<paper-trading-key>
@@ -98,7 +98,7 @@ ENGINE_URL=http://engine-staging.railway.internal
 
 # Supabase staging
 SUPABASE_URL=https://<staging-project>.supabase.co
-SUPABASE_SERVICE_KEY=<staging-service-key>
+SUPABASE_SERVICE_ROLE_KEY=<staging-service-key>
 
 # Anthropic — same key, lower rate limits if needed
 ANTHROPIC_API_KEY=<same-key>
@@ -114,9 +114,9 @@ Vercel preview deployments automatically deploy on PRs. Configure staging backen
 
 1. Go to **Vercel Dashboard → Project Settings → Environment Variables**
 2. Add variables scoped to **Preview** environment:
-   - `ENGINE_URL` → staging Railway engine internal URL
+   - `ENGINE_URL` → staging Railway engine public URL (e.g. `https://engine-staging.up.railway.app`)
    - `ENGINE_API_KEY` → staging engine API key
-   - `AGENTS_URL` → staging Railway agents internal URL
+   - `AGENTS_URL` → staging Railway agents public URL (e.g. `https://agents-staging.up.railway.app`)
    - `NEXT_PUBLIC_SUPABASE_URL` → staging Supabase URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → staging anon key
 

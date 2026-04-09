@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { ComponentType } from 'react';
 
 // Mock TanStack Query
 vi.mock('@tanstack/react-query', () => ({
@@ -8,19 +9,33 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })),
 }));
 
+// Pre-load components once to avoid per-test dynamic import overhead
+let ExplanationCard: ComponentType<Record<string, unknown>>;
+let ConfidenceMeter: ComponentType<Record<string, unknown>>;
+let PreferenceCard: ComponentType<Record<string, unknown>>;
+let MemoryTimeline: ComponentType<Record<string, unknown>>;
+
+beforeAll(async () => {
+  [{ ExplanationCard }, { ConfidenceMeter }, { PreferenceCard }, { MemoryTimeline }] =
+    await Promise.all([
+      import('@/components/advisor/explanation-card'),
+      import('@/components/advisor/confidence-meter'),
+      import('@/components/advisor/preference-card'),
+      import('@/components/advisor/memory-timeline'),
+    ]);
+});
+
 // ─── ExplanationCard ────────────────────────────────────────────────
 
 describe('ExplanationCard', () => {
-  it('renders loading state', async () => {
-    const { ExplanationCard } = await import('@/components/advisor/explanation-card');
+  it('renders loading state', () => {
     const { container } = render(<ExplanationCard explanation={undefined} isLoading />);
 
     const skeleton = container.querySelector('.animate-pulse');
     expect(skeleton).toBeTruthy();
   });
 
-  it('renders null when no explanation exists', async () => {
-    const { ExplanationCard } = await import('@/components/advisor/explanation-card');
+  it('renders null when no explanation exists', () => {
     const { container } = render(<ExplanationCard explanation={null} />);
 
     expect(container.innerHTML).toBe('');
@@ -30,25 +45,21 @@ describe('ExplanationCard', () => {
 // ─── ConfidenceMeter ────────────────────────────────────────────────
 
 describe('ConfidenceMeter', () => {
-  it('renders confidence value and label', async () => {
-    const { ConfidenceMeter } = await import('@/components/advisor/confidence-meter');
+  it('renders confidence value and label', () => {
     render(<ConfidenceMeter confidence={0.85} />);
 
-    // Renders as single text node: "85% high"
     expect(screen.getByText(/85%/)).toBeInTheDocument();
     expect(screen.getByText(/high/i)).toBeInTheDocument();
   });
 
-  it('shows medium for mid-range confidence', async () => {
-    const { ConfidenceMeter } = await import('@/components/advisor/confidence-meter');
+  it('shows medium for mid-range confidence', () => {
     render(<ConfidenceMeter confidence={0.55} />);
 
     expect(screen.getByText(/55%/)).toBeInTheDocument();
     expect(screen.getByText(/medium/i)).toBeInTheDocument();
   });
 
-  it('shows low for low confidence', async () => {
-    const { ConfidenceMeter } = await import('@/components/advisor/confidence-meter');
+  it('shows low for low confidence', () => {
     render(<ConfidenceMeter confidence={0.2} />);
 
     expect(screen.getByText(/20%/)).toBeInTheDocument();
@@ -59,8 +70,7 @@ describe('ConfidenceMeter', () => {
 // ─── PreferenceCard ─────────────────────────────────────────────────
 
 describe('PreferenceCard', () => {
-  it('renders preference content', async () => {
-    const { PreferenceCard } = await import('@/components/advisor/preference-card');
+  it('renders preference content', () => {
     const pref = {
       id: 'pref-1',
       user_id: 'u1',
@@ -82,8 +92,7 @@ describe('PreferenceCard', () => {
     expect(screen.getByText('Bad experience with MRNA')).toBeInTheDocument();
   });
 
-  it('shows confirm/dismiss for pending preferences', async () => {
-    const { PreferenceCard } = await import('@/components/advisor/preference-card');
+  it('shows confirm/dismiss for pending preferences', () => {
     const pref = {
       id: 'pref-2',
       user_id: 'u1',
@@ -110,23 +119,20 @@ describe('PreferenceCard', () => {
 // ─── MemoryTimeline ─────────────────────────────────────────────────
 
 describe('MemoryTimeline', () => {
-  it('renders empty state', async () => {
-    const { MemoryTimeline } = await import('@/components/advisor/memory-timeline');
+  it('renders empty state', () => {
     render(<MemoryTimeline events={[]} />);
 
     expect(screen.getByText(/no memory events yet/i)).toBeInTheDocument();
   });
 
-  it('renders loading state', async () => {
-    const { MemoryTimeline } = await import('@/components/advisor/memory-timeline');
+  it('renders loading state', () => {
     const { container } = render(<MemoryTimeline events={[]} isLoading />);
 
     const skeletons = container.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
-  it('renders events', async () => {
-    const { MemoryTimeline } = await import('@/components/advisor/memory-timeline');
+  it('renders events', () => {
     const events = [
       {
         id: 'e1',
