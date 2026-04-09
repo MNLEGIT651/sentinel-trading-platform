@@ -66,9 +66,9 @@ export type Exchange = 'NYSE' | 'NASDAQ' | 'AMEX' | 'ARCA' | 'BATS' | 'OTC';
  * The directional bias of a trading signal.
  * - `long`  — bullish: expect price to rise; open or hold a buy position.
  * - `short` — bearish: expect price to fall; open or hold a sell/short position.
- * - `close` — neutral: exit the current position in either direction.
+ * - `flat`  — neutral: exit the current position; no directional bias.
  */
-export type SignalDirection = 'long' | 'short' | 'close';
+export type SignalDirection = 'long' | 'short' | 'flat';
 
 /**
  * Qualitative label for how strongly the engine rates a signal.
