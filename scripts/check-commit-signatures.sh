@@ -6,6 +6,7 @@ source "$(dirname "$0")/lib/commit-signing.sh"
 RANGE="${1:-}"
 EXCEPTIONS_FILE="${2:-docs/security/commit-signing-exceptions.txt}"
 TRUSTED_SIGNERS_FILE="${3:-.github/trusted_signers}"
+TRUSTED_BOT_LOGINS_FILE="${4:-.github/trusted_bot_logins}"
 
 if [[ ! -f "$TRUSTED_SIGNERS_FILE" ]]; then
   echo "Trusted signers file not found: $TRUSTED_SIGNERS_FILE" >&2
@@ -55,6 +56,12 @@ while read -r sha status; do
   if [[ "$github_verification_enabled" -eq 1 ]] &&
     is_github_verified_commit "$gh_cli" "$repo_slug" "$sha"; then
     echo "GITHUB-VERIFIED: $sha status=$status"
+    continue
+  fi
+
+  if [[ "$github_verification_enabled" -eq 1 ]] &&
+    is_trusted_bot_commit "$gh_cli" "$repo_slug" "$sha" "$TRUSTED_BOT_LOGINS_FILE"; then
+    echo "TRUSTED-BOT: $sha status=$status"
     continue
   fi
 

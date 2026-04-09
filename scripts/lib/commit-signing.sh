@@ -67,3 +67,53 @@ is_github_verified_commit() {
 
   [[ "$verified" == "true" ]]
 }
+
+is_trusted_login() {
+  local login="$1"
+  local trusted_logins_file="$2"
+
+  [[ -n "$login" && -f "$trusted_logins_file" ]] || return 1
+
+  while IFS= read -r candidate || [[ -n "$candidate" ]]; do
+    candidate="${candidate%%#*}"
+    candidate="${candidate#"${candidate%%[![:space:]]*}"}"
+    candidate="${candidate%"${candidate##*[![:space:]]}"}"
+    [[ -n "$candidate" ]] || continue
+    [[ "$candidate" == "$login" ]] && return 0
+  done <"$trusted_logins_file"
+
+  return 1
+}
+
+is_trusted_bot_commit() {
+  local gh_cli="$1"
+  local repo="$2"
+  local sha="$3"
+  local trusted_logins_file="$4"
+  local commit_data
+  local author_login
+  local author_type
+  local author_email
+  local committer_login
+  local committer_email
+  local verification_reason
+
+  [[ -f "$trusted_logins_file" ]] || return 1
+
+  commit_data="$(
+    "$gh_cli" api "repos/${repo}/commits/${sha}" \
+      --jq '[.author.login // "", .author.type // "", .commit.author.email // "", .committer.login // "", .commit.committer.email // "", .commit.verification.reason // ""] | @tsv' \
+      2>/dev/null || true
+  )"
+
+  [[ -n "$commit_data" ]] || return 1
+
+  IFS=$'\t' read -r author_login author_type author_email committer_login committer_email verification_reason <<<"$commit_data"
+
+  [[ "$author_type" == "Bot" ]] || return 1
+  is_trusted_login "$author_login" "$trusted_logins_file" || return 1
+  [[ "$committer_login" == "web-flow" ]] || return 1
+  [[ "$committer_email" == "noreply@github.com" ]] || return 1
+  [[ "$author_email" =~ ^[0-9]+\+[^@]+@users\.noreply\.github\.com$ ]] || return 1
+  [[ "$verification_reason" == "unsigned" ]] || return 1
+}

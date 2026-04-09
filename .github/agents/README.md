@@ -18,7 +18,7 @@ specialized instruction body.
 - `platform-sync-auditor.agent.md` — Deployment drift and workflow permission checks.
 - `runtime-smoke-guardian.agent.md` — Post-deploy health probes and promotion gating.
 - `supabase-boundary-guardian.agent.md` — Supabase RLS/auth, typegen, and CLI hygiene.
-- `pr-owner-operator.agent.md` — PR risk classification, auto-fix, and merge decisions.
+- `pr-owner-operator.agent.md` — PR risk classification and merge decisions.
 
 ## Architecture
 

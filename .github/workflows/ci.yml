@@ -223,6 +223,9 @@ jobs:
       - name: Type-check agents
         run: pnpm --filter agents build
 
+      - name: Lint agents
+        run: pnpm --filter agents lint
+
       - name: Run agents tests
         run: pnpm --filter agents test
 

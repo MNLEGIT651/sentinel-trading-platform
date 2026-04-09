@@ -7,6 +7,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: scorecards-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   security-events: write
   id-token: write

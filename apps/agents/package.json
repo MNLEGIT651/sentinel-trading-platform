@@ -11,7 +11,8 @@
     "start": "node dist/index.js",
     "build": "tsc",
     "test": "vitest run",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit && eslint",
+    "lint:eslint": "eslint"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.85.0",
@@ -22,8 +23,7 @@
     "express": "^5",
     "jose": "^6.2.2",
     "node-cron": "^4",
-    "yaml": "^2.8.3",
-    "zod": "^4.3.6"
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@opentelemetry/api": "^1.9.0",
@@ -35,7 +35,9 @@
     "@types/express": "^5",
     "@types/node": "^25.5.2",
     "@types/supertest": "^7",
+    "eslint": "^10",
     "supertest": "^7",
+    "typescript-eslint": "^8",
     "tsx": "^4",
     "typescript": "^6",
     "vitest": "^4"

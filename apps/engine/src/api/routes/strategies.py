@@ -6,7 +6,6 @@ and managing strategy configurations.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
@@ -15,14 +14,18 @@ import numpy as np
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from src.api.routes.data import _get_polygon
 from src.db import get_db
+from src.services.signal_service import (
+    complete_signal_run,
+    create_signal_run,
+    fetch_market_data,
+    generate_signals,
+)
 from src.strategies.base import OHLCVData
 
 if TYPE_CHECKING:
     from src.data.polygon_client import PolygonClient
 from src.strategies.registry import FAMILY_MAP, list_strategies
-from src.strategies.signal_generator import SignalGenerator
 from src.telemetry import get_tracer
 
 logger = logging.getLogger(__name__)
@@ -194,85 +197,18 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
     db = get_db()
     run_id: str | None = None
     if db is not None:
-        try:
-            strategy_names = list(list_strategies().keys())
-            result = (
-                db.table("signal_runs")
-                .insert(
-                    {
-                        "requested_by": "api",
-                        "universe": request.tickers,
-                        "strategies": strategy_names,
-                        "days": request.days,
-                        "min_strength": float(request.min_strength),
-                        "status": "running",
-                    }
-                )
-                .select("id")
-                .single()
-                .execute()
-            )
-            raw_id = result.data["id"] if result.data else None
-            run_id = str(raw_id) if raw_id is not None else None
-        except Exception as exc:
-            logger.warning("Failed to create signal_run record: %s", exc)
+        run_id = await create_signal_run(db, request.tickers, request.days, request.min_strength)
 
-    data_map: dict[str, OHLCVData] = {}
-    fetch_errors: list[str] = []
-    polygon: PolygonClient | None = None
-    polygon_error: HTTPException | None = None
-
-    try:
-        tickers = [t.strip().upper() for t in request.tickers]
-        for i, ticker in enumerate(tickers):
-            try:
-                cached_ohlcv = _fetch_cached_ohlcv(ticker, request.days)
-                if cached_ohlcv:
-                    data_map[ticker] = cached_ohlcv
-                    continue
-
-                if polygon is None and polygon_error is None:
-                    try:
-                        polygon = _get_polygon()
-                    except HTTPException as exc:
-                        polygon_error = exc
-
-                if polygon is None:
-                    if polygon_error and not data_map:
-                        raise polygon_error
-                    fetch_errors.append(f"{ticker}: historical data unavailable in cache")
-                    continue
-
-                ohlcv = await _fetch_ohlcv(polygon, ticker, request.days)
-                if ohlcv:
-                    data_map[ticker] = ohlcv
-                else:
-                    fetch_errors.append(f"{ticker}: insufficient data (< 20 bars)")
-            except HTTPException:
-                if not data_map:
-                    raise
-                fetch_errors.append(f"{ticker}: historical data unavailable")
-            except Exception as exc:
-                fetch_errors.append(f"{ticker}: {exc}")
-            if polygon is not None and i < len(tickers) - 1:
-                await asyncio.sleep(0.3)
-    finally:
-        if polygon is not None:
-            await polygon.close()
+    tickers = [t.strip().upper() for t in request.tickers]
+    data_map, fetch_errors = await fetch_market_data(
+        tickers, request.days, _fetch_cached_ohlcv, _fetch_ohlcv
+    )
 
     if not data_map:
         if db is not None and run_id is not None:
-            try:
-                db.table("signal_runs").update(
-                    {
-                        "finished_at": datetime.now(UTC).isoformat(),
-                        "total_signals": 0,
-                        "status": "failed",
-                        "errors": fetch_errors,
-                    }
-                ).eq("id", run_id).execute()
-            except Exception as exc:
-                logger.warning("Failed to update signal_run record: %s", exc)
+            await complete_signal_run(
+                db, run_id, total_signals=0, status="failed", errors=fetch_errors
+            )
         return ScanResponse(
             signals=[],
             total_signals=0,
@@ -291,12 +227,7 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
             "scan.min_strength": request.min_strength,
         },
     ):
-        generator = SignalGenerator(min_signal_strength=request.min_strength)
-        if request.use_composite:
-            batch = generator.scan_with_composite(data_map)
-        else:
-            batch = generator.scan(data_map)
-
+        batch = generate_signals(data_map, request.min_strength, request.use_composite)
         signals_out = [
             SignalOut(
                 ticker=s.ticker,
@@ -310,17 +241,13 @@ async def scan_signals(request: ScanRequest) -> ScanResponse:
         ]
 
     if db is not None and run_id is not None:
-        try:
-            db.table("signal_runs").update(
-                {
-                    "finished_at": datetime.now(UTC).isoformat(),
-                    "total_signals": len(signals_out),
-                    "status": "completed",
-                    "errors": fetch_errors + batch.errors,
-                }
-            ).eq("id", run_id).execute()
-        except Exception as exc:
-            logger.warning("Failed to update signal_run record: %s", exc)
+        await complete_signal_run(
+            db,
+            run_id,
+            total_signals=len(signals_out),
+            status="completed",
+            errors=fetch_errors + batch.errors,
+        )
 
     return ScanResponse(
         signals=signals_out,

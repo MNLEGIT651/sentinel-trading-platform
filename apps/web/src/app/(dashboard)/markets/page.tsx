@@ -13,6 +13,11 @@ import { OfflineBanner } from '@/components/ui/offline-banner';
 import { DataProvenance } from '@/components/ui/data-provenance';
 import { ConfigBanner } from '@/components/ui/config-banner';
 import { ErrorBoundary } from '@/components/error-boundary';
+import {
+  PageContainer,
+  ResponsivePaneLayout,
+  SectionStack,
+} from '@/components/layout/responsive-primitives';
 import { ErrorState } from '@/components/ui/error-state';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -127,161 +132,169 @@ function MarketsContent() {
 
   if (quotesError && engineOnline === true) {
     return (
-      <div className="flex h-full flex-col gap-4 p-3 sm:p-4 page-enter">
+      <PageContainer className="page-enter" density="compact">
         <ErrorState
           title="Failed to load market data"
           message={quotesErrorObj?.message ?? 'Could not fetch quotes from the engine.'}
           onRetry={() => refetchQuotes()}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-3 sm:p-4 page-enter">
-      {engineOnline === false && <OfflineBanner service="engine" />}
-      {engineOnline === true && !isLive && !loading && (
-        <ConfigBanner
-          message="Showing simulated data. Configure your Polygon API key for live market data."
-          linkHref="/settings"
-          linkLabel="Go to Settings"
-        />
-      )}
-      <div className="flex flex-1 flex-col gap-4 min-h-0 lg:flex-row stagger-grid">
-        {/* Watchlist panel */}
-        <Card
-          className="w-full shrink-0 bg-card border-border lg:w-72"
-          role="region"
-          aria-label="Watchlist panel"
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Watchlist</CardTitle>
-              {loading ? (
-                <Spinner size="sm" className="text-muted-foreground" />
-              ) : (
-                <DataProvenance
-                  mode={quotesMode}
-                  lastUpdated={quotesUpdatedAt ? new Date(quotesUpdatedAt) : null}
-                  staleThresholdMs={60_000}
-                />
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-48 lg:h-[calc(100vh-12rem)]">
-              <Table aria-label="Watchlist stocks">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Symbol</TableHead>
-                    <TableHead className="text-right text-xs">Price</TableHead>
-                    <TableHead className="text-right text-xs">Change</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {watchlist.map((stock) => {
-                    const changeColors = getStatusColors(stock.change >= 0 ? 'success' : 'error');
-
-                    return (
-                      <TableRow
-                        key={stock.ticker}
-                        onClick={() => setSelectedTicker(stock.ticker)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setSelectedTicker(stock.ticker);
-                          }
-                        }}
-                        tabIndex={0}
-                        aria-label={`View chart for ${stock.ticker}`}
-                        aria-current={selectedTicker === stock.ticker || undefined}
-                        className={cn(
-                          'cursor-pointer transition-colors',
-                          selectedTicker === stock.ticker
-                            ? 'bg-accent text-foreground'
-                            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
-                        )}
-                      >
-                        <TableCell className="py-2.5">
-                          <p className="text-sm font-medium">{stock.ticker}</p>
-                          <p className="text-[11px] text-muted-foreground">{stock.name}</p>
-                        </TableCell>
-                        <TableCell numeric className="py-2.5 text-right text-sm font-medium">
-                          {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '--'}
-                        </TableCell>
-                        <TableCell
-                          numeric
+    <PageContainer className="page-enter" density="compact">
+      <SectionStack spacing="default">
+        {engineOnline === false && <OfflineBanner service="engine" />}
+        {engineOnline === true && !isLive && !loading && (
+          <ConfigBanner
+            message="Showing simulated data. Configure your Polygon API key for live market data."
+            linkHref="/settings"
+            linkLabel="Go to Settings"
+          />
+        )}
+        <ResponsivePaneLayout
+          className="stagger-grid"
+          primary={
+            <Card className="bg-card border-border" role="region" aria-label="Price chart panel">
+              <CardHeader className="pb-2">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <CardTitle className="text-lg font-bold">{selectedTicker}</CardTitle>
+                  {selectedStock && (
+                    <>
+                      <span className="text-sm text-muted-foreground">{selectedStock.name}</span>
+                      <span className="text-lg font-semibold text-data-primary">
+                        {selectedStock.price > 0 ? `$${selectedStock.price.toFixed(2)}` : '--'}
+                      </span>
+                      {selectedStock.price > 0 && (
+                        <span
                           className={cn(
-                            'py-2.5 text-right text-[11px] font-medium',
-                            changeColors.text,
+                            'text-sm font-medium',
+                            getStatusColors(selectedStock.change >= 0 ? 'success' : 'error').text,
                           )}
                         >
-                          {stock.price > 0
-                            ? `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%`
-                            : '--'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Chart panel */}
-        <Card className="flex-1 bg-card border-border" role="region" aria-label="Price chart panel">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-3">
-              <CardTitle className="text-lg font-bold">{selectedTicker}</CardTitle>
-              {selectedStock && (
-                <>
-                  <span className="text-sm text-muted-foreground">{selectedStock.name}</span>
-                  <span className="text-lg font-semibold text-data-primary">
-                    {selectedStock.price > 0 ? `$${selectedStock.price.toFixed(2)}` : '--'}
-                  </span>
-                  {selectedStock.price > 0 && (
-                    <span
-                      className={cn(
-                        'text-sm font-medium',
-                        getStatusColors(selectedStock.change >= 0 ? 'success' : 'error').text,
+                          {selectedStock.change >= 0 ? '+' : ''}
+                          {selectedStock.change.toFixed(2)}%
+                        </span>
                       )}
-                    >
-                      {selectedStock.change >= 0 ? '+' : ''}
-                      {selectedStock.change.toFixed(2)}%
-                    </span>
+                    </>
                   )}
-                </>
-              )}
-              {chartFetching && <Spinner size="sm" className="text-muted-foreground" />}
-              {!chartFetching && (
-                <DataProvenance
-                  mode={chartMode}
-                  lastUpdated={barsUpdatedAt ? new Date(barsUpdatedAt) : null}
-                  staleThresholdMs={120_000}
-                />
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="h-[calc(100vh-14rem)] p-0 px-4 pb-4">
-            {barsError && engineOnline === true ? (
-              <ErrorState
-                title="Chart data unavailable"
-                message={barsErrorObj?.message ?? 'Could not load price history.'}
-                onRetry={() => refetchBars()}
-                className="flex h-full items-center justify-center"
-              />
-            ) : (
-              <PriceChart
-                data={chartData}
-                loading={chartLoading || loading}
-                className="rounded-md"
-              />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+                  {chartFetching && <Spinner size="sm" className="text-muted-foreground" />}
+                  {!chartFetching && (
+                    <DataProvenance
+                      mode={chartMode}
+                      lastUpdated={barsUpdatedAt ? new Date(barsUpdatedAt) : null}
+                      staleThresholdMs={120_000}
+                    />
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="min-h-[18rem] p-0 px-2 pb-2 sm:px-4 sm:pb-4 lg:min-h-[30rem]">
+                {barsError && engineOnline === true ? (
+                  <ErrorState
+                    title="Chart data unavailable"
+                    message={barsErrorObj?.message ?? 'Could not load price history.'}
+                    onRetry={() => refetchBars()}
+                    className="flex h-full items-center justify-center"
+                  />
+                ) : (
+                  <PriceChart
+                    data={chartData}
+                    loading={chartLoading || loading}
+                    className="rounded-md"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          }
+          secondary={
+            <Card
+              className="w-full shrink-0 bg-card border-border"
+              role="region"
+              aria-label="Watchlist panel"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Watchlist
+                  </CardTitle>
+                  {loading ? (
+                    <Spinner size="sm" className="text-muted-foreground" />
+                  ) : (
+                    <DataProvenance
+                      mode={quotesMode}
+                      lastUpdated={quotesUpdatedAt ? new Date(quotesUpdatedAt) : null}
+                      staleThresholdMs={60_000}
+                    />
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[min(44svh,24rem)] lg:h-[min(64dvh,40rem)]">
+                  <Table aria-label="Watchlist stocks">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Symbol</TableHead>
+                        <TableHead className="text-right text-xs">Price</TableHead>
+                        <TableHead className="text-right text-xs">Change</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {watchlist.map((stock) => {
+                        const changeColors = getStatusColors(
+                          stock.change >= 0 ? 'success' : 'error',
+                        );
+
+                        return (
+                          <TableRow
+                            key={stock.ticker}
+                            onClick={() => setSelectedTicker(stock.ticker)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedTicker(stock.ticker);
+                              }
+                            }}
+                            tabIndex={0}
+                            aria-label={`View chart for ${stock.ticker}`}
+                            aria-current={selectedTicker === stock.ticker || undefined}
+                            className={cn(
+                              'cursor-pointer transition-colors',
+                              selectedTicker === stock.ticker
+                                ? 'bg-accent text-foreground'
+                                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                            )}
+                          >
+                            <TableCell className="py-2.5">
+                              <p className="text-sm font-medium">{stock.ticker}</p>
+                              <p className="text-[11px] text-muted-foreground">{stock.name}</p>
+                            </TableCell>
+                            <TableCell numeric className="py-2.5 text-right text-sm font-medium">
+                              {stock.price > 0 ? `$${stock.price.toFixed(2)}` : '--'}
+                            </TableCell>
+                            <TableCell
+                              numeric
+                              className={cn(
+                                'py-2.5 text-right text-[11px] font-medium',
+                                changeColors.text,
+                              )}
+                            >
+                              {stock.price > 0
+                                ? `${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%`
+                                : '--'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          }
+        />
+      </SectionStack>
+    </PageContainer>
   );
 }
 

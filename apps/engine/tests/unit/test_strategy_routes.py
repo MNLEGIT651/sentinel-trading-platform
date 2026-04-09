@@ -82,8 +82,8 @@ class TestStrategyDetail:
 
 
 class TestStrategyScan:
-    @patch("src.api.routes.strategies.SignalGenerator")
-    @patch("src.api.routes.strategies._get_polygon")
+    @patch("src.services.signal_service.SignalGenerator")
+    @patch("src.services.signal_service._get_polygon")
     @patch("src.api.routes.strategies.get_db")
     def test_scan_uses_cached_market_data_without_polygon(
         self,
@@ -136,8 +136,8 @@ class TestStrategyScan:
         assert response.json()["tickers_scanned"] == 1
         mock_get_polygon.assert_not_called()
 
-    @patch("src.api.routes.strategies.SignalGenerator")
-    @patch("src.api.routes.strategies._get_polygon")
+    @patch("src.services.signal_service.SignalGenerator")
+    @patch("src.services.signal_service._get_polygon")
     @patch("src.api.routes.strategies.get_db")
     def test_scan_falls_back_to_polygon_when_cache_is_empty(
         self,
@@ -196,7 +196,7 @@ class TestStrategyScan:
         assert response.json()["tickers_scanned"] == 1
         mock_get_polygon.assert_called_once()
 
-    @patch("src.api.routes.strategies._get_polygon")
+    @patch("src.services.signal_service._get_polygon")
     @patch("src.api.routes.strategies.get_db")
     def test_scan_returns_errors_instead_of_failing_when_polygon_rate_limits(
         self,

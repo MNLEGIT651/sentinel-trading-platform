@@ -32,7 +32,7 @@ cp .env.example .env
 | **Polygon**   | `POLYGON_API_KEY`                                                                        | Engine data routes            |
 | **Alpaca**    | `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`                                                    | Engine portfolio/orders       |
 | **Anthropic** | `ANTHROPIC_API_KEY`                                                                      | Agents app only               |
-| **Internal**  | `NEXT_PUBLIC_ENGINE_URL`, `ENGINE_API_KEY`, `CORS_ORIGINS`, etc.                         | Optional — have safe defaults |
+| **Internal**  | `ENGINE_URL`, `ENGINE_API_KEY`, `AGENTS_URL`, `CORS_ORIGINS`, etc.                       | Optional — have safe defaults |
 
 The script distinguishes required (missing = service won't start) from optional (missing = uses default).
 

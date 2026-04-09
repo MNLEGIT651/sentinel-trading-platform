@@ -54,7 +54,7 @@ async def test_scan_returns_503_without_polygon_key(client, monkeypatch):
     with (
         patch("src.api.routes.strategies.get_db", return_value=None),
         patch(
-            "src.api.routes.strategies._get_polygon",
+            "src.services.signal_service._get_polygon",
             side_effect=HTTPException(status_code=503, detail="POLYGON_API_KEY not set."),
         ),
     ):
@@ -73,7 +73,7 @@ async def test_scan_returns_scan_response_shape_with_polygon_key(client, monkeyp
     mock_polygon.get_bars.return_value = []
     mock_polygon.close = AsyncMock()
 
-    with patch("src.api.routes.strategies._get_polygon", return_value=mock_polygon):
+    with patch("src.services.signal_service._get_polygon", return_value=mock_polygon):
         response = await client.post(
             "/api/v1/strategies/scan",
             json={"tickers": ["AAPL"]},

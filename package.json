@@ -26,6 +26,7 @@
     "typecheck": "turbo run typecheck",
     "clean": "turbo clean",
     "env:check": "node scripts/check-env-contract.mjs",
+    "security:routes": "node scripts/check-route-security.mjs",
     "test:env-contract": "node --test scripts/check-env-contract.test.mjs",
     "test:scripts": "node --test scripts/check-env-contract.test.mjs scripts/validate-railway-supabase-env.test.mjs",
     "prepare": "husky"

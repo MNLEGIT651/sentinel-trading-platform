@@ -21,7 +21,7 @@ def _get_otel_context() -> dict[str, str]:
                 "trace_id": format(ctx.trace_id, "032x"),
                 "span_id": format(ctx.span_id, "016x"),
             }
-    except Exception:  # noqa: BLE001 – OTel may not be installed
+    except Exception:
         pass
     return {}
 

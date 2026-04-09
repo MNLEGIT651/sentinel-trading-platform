@@ -27,6 +27,7 @@ import { RiskSummary } from '@/components/portfolio/risk-summary';
 import { QuickOrder, type OrderType, type TimeInForce } from '@/components/portfolio/quick-order';
 import { RecentOrders } from '@/components/portfolio/recent-orders';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
+import { PageContainer, SectionStack } from '@/components/layout/responsive-primitives';
 import { TICKER_NAMES, SECTOR_MAP, SECTOR_COLORS } from '@/lib/portfolio-data';
 import { mapOrderError } from '@/lib/order-errors';
 import {
@@ -265,7 +266,10 @@ export default function PortfolioPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center" aria-label="Loading portfolio">
+      <div
+        className="flex min-h-[40svh] items-center justify-center"
+        aria-label="Loading portfolio"
+      >
         <Spinner size="md" />
         <span className="ml-2 text-sm text-muted-foreground animate-pulse">
           Connecting to engine...
@@ -276,138 +280,133 @@ export default function PortfolioPage() {
 
   return (
     <ErrorBoundary>
-      <div className="space-y-4 p-4 page-enter">
-        {engineOnline === false && <OfflineBanner service="engine" />}
-        {provenanceMode === 'simulated' && engineOnline === true && (
-          <ConfigBanner
-            message="Showing simulated portfolio. Configure Alpaca API keys for live/paper trading."
-            linkHref="/settings"
-            linkLabel="Go to Settings"
-          />
-        )}
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <PieChart className="h-5 w-5 text-primary" aria-hidden="true" />
-            <div>
-              <h1 className="text-heading-page text-foreground">Portfolio</h1>
-              <p className="text-xs text-muted-foreground">
-                {positions.length} position{positions.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-            <DataProvenance
-              mode={provenanceMode}
-              lastUpdated={provenanceLastUpdated}
-              staleThresholdMs={60_000}
+      <PageContainer className="page-enter" density="compact">
+        <SectionStack spacing="default">
+          {engineOnline === false && <OfflineBanner service="engine" />}
+          {provenanceMode === 'simulated' && engineOnline === true && (
+            <ConfigBanner
+              message="Showing simulated portfolio. Configure Alpaca API keys for live/paper trading."
+              linkHref="/settings"
+              linkLabel="Go to Settings"
             />
-          </div>
-          <button
-            aria-label="Refresh portfolio data"
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.account() });
-              queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.positions() });
-            }}
-            disabled={engineOnline !== true}
-            className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
+          )}
 
-        <SnapshotMetrics
-          portfolioTotal={portfolioTotal}
-          totalPnl={totalPnl}
-          totalPnlPct={totalPnlPct}
-          totalCost={totalCost}
-          cashBalance={cashBalance}
-          positionCount={positions.length}
-          totalValue={totalValue}
-        />
-
-        <QuickOrder
-          symbol={orderSymbol}
-          side={orderSide}
-          qty={orderQty}
-          orderType={orderType}
-          timeInForce={timeInForce}
-          limitPrice={limitPrice}
-          status={orderStatus}
-          submitting={submitOrder.isPending}
-          disabled={engineOnline !== true}
-          tickerSuggestions={TICKER_SYMBOLS}
-          onSymbolChange={setOrderSymbol}
-          onSideChange={setOrderSide}
-          onQtyChange={setOrderQty}
-          onOrderTypeChange={setOrderType}
-          onTimeInForceChange={setTimeInForce}
-          onLimitPriceChange={setLimitPrice}
-          onSubmit={handleSubmitOrder}
-        />
-
-        <div className="space-y-1">
+          {/* Header */}
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Recent Orders
-              {isPolling && <span className="ml-1.5 text-amber-400 animate-pulse">polling...</span>}
-            </span>
-          </div>
-          <RecentOrders orders={recentOrders} pollingOrderId={pollingOrderId} />
-        </div>
-
-        <Tabs defaultValue="positions" className="space-y-3">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="positions">Positions</TabsTrigger>
-            <TabsTrigger value="allocation">Allocation</TabsTrigger>
-            <TabsTrigger value="risk">Risk</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="positions">
-            {positions.length === 0 ? (
-              <Card className="bg-muted/30 border-border/50">
-                <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    {provenanceMode === 'live' &&
-                      'No open positions. Use Quick Order above to place your first trade.'}
-                    {provenanceMode === 'cached' &&
-                      'Cached data \u2014 no positions found. Reconnect engine for live updates.'}
-                    {provenanceMode === 'simulated' &&
-                      'Showing simulated portfolio \u2014 connect the engine for live data.'}
-                    {provenanceMode === 'offline' && 'No data available \u2014 engine is offline.'}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <PositionsTable
-                sortedPositions={sortedPositions}
-                sortField={sortField}
-                sortDir={sortDir}
-                onToggleSort={toggleSort}
+            <div className="flex items-center gap-3">
+              <PieChart className="h-5 w-5 text-primary" aria-hidden="true" />
+              <div>
+                <h1 className="text-heading-page text-foreground">Portfolio</h1>
+                <p className="text-xs text-muted-foreground">
+                  {positions.length} position{positions.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <DataProvenance
+                mode={provenanceMode}
+                lastUpdated={provenanceLastUpdated}
+                staleThresholdMs={60_000}
               />
-            )}
-          </TabsContent>
+            </div>
+            <button
+              aria-label="Refresh portfolio data"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.account() });
+                queryClient.invalidateQueries({ queryKey: queryKeys.portfolio.positions() });
+              }}
+              disabled={engineOnline !== true}
+              className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              Refresh
+            </button>
+          </div>
 
-          <TabsContent value="allocation">
-            <AllocationChart
-              positions={positions}
-              allocations={allocations}
-              totalValue={totalValue}
-              loading={loading}
-            />
-          </TabsContent>
+          <SnapshotMetrics
+            portfolioTotal={portfolioTotal}
+            totalPnl={totalPnl}
+            totalPnlPct={totalPnlPct}
+            totalCost={totalCost}
+            cashBalance={cashBalance}
+            positionCount={positions.length}
+            totalValue={totalValue}
+          />
 
-          <TabsContent value="risk">
-            <RiskSummary
-              positions={positions}
-              portfolioTotal={portfolioTotal}
-              totalValue={totalValue}
-              totalCost={totalCost}
-              totalPnlPct={totalPnlPct}
-              allocations={allocations}
-            />
-            <div className="mt-4">
-              <OrderHistory
+          <QuickOrder
+            symbol={orderSymbol}
+            side={orderSide}
+            qty={orderQty}
+            orderType={orderType}
+            timeInForce={timeInForce}
+            limitPrice={limitPrice}
+            status={orderStatus}
+            submitting={submitOrder.isPending}
+            disabled={engineOnline !== true}
+            tickerSuggestions={TICKER_SYMBOLS}
+            onSymbolChange={setOrderSymbol}
+            onSideChange={setOrderSide}
+            onQtyChange={setOrderQty}
+            onOrderTypeChange={setOrderType}
+            onTimeInForceChange={setTimeInForce}
+            onLimitPriceChange={setLimitPrice}
+            onSubmit={handleSubmitOrder}
+          />
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Recent Orders
+                {isPolling && (
+                  <span className="ml-1.5 text-amber-400 animate-pulse">polling...</span>
+                )}
+              </span>
+            </div>
+            <RecentOrders orders={recentOrders} pollingOrderId={pollingOrderId} />
+          </div>
+
+          <Tabs defaultValue="positions" className="space-y-3">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="positions">Positions</TabsTrigger>
+              <TabsTrigger value="allocation">Allocation</TabsTrigger>
+              <TabsTrigger value="risk">Risk</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="positions">
+              {positions.length === 0 ? (
+                <Card className="bg-muted/30 border-border/50">
+                  <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {provenanceMode === 'live' &&
+                        'No open positions. Use Quick Order above to place your first trade.'}
+                      {provenanceMode === 'cached' &&
+                        'Cached data \u2014 no positions found. Reconnect engine for live updates.'}
+                      {provenanceMode === 'simulated' &&
+                        'Showing simulated portfolio \u2014 connect the engine for live data.'}
+                      {provenanceMode === 'offline' &&
+                        'No data available \u2014 engine is offline.'}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <PositionsTable
+                  sortedPositions={sortedPositions}
+                  sortField={sortField}
+                  sortDir={sortDir}
+                  onToggleSort={toggleSort}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="allocation">
+              <AllocationChart
+                positions={positions}
+                allocations={allocations}
+                totalValue={totalValue}
+                loading={loading}
+              />
+            </TabsContent>
+
+            <TabsContent value="risk">
+              <RiskSummary
                 positions={positions}
                 portfolioTotal={portfolioTotal}
                 totalValue={totalValue}
@@ -415,10 +414,20 @@ export default function PortfolioPage() {
                 totalPnlPct={totalPnlPct}
                 allocations={allocations}
               />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+              <div className="mt-4">
+                <OrderHistory
+                  positions={positions}
+                  portfolioTotal={portfolioTotal}
+                  totalValue={totalValue}
+                  totalCost={totalCost}
+                  totalPnlPct={totalPnlPct}
+                  allocations={allocations}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </SectionStack>
+      </PageContainer>
     </ErrorBoundary>
   );
 }

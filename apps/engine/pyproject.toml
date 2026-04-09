@@ -52,7 +52,15 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP"]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "RUF001",  # ambiguous unicode in strings (intentional: × in formulas)
+    "RUF003",  # ambiguous unicode in comments
+    "RUF012",  # mutable class-level defaults (standard pattern in strategy configs)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B", "SIM", "RUF059"]
 
 [tool.ruff.format]
 quote-style = "double"
