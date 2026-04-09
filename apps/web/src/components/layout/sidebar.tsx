@@ -51,10 +51,11 @@ const navSections: NavSection[] = [
   {
     section: 'Trading',
     items: [
-      { label: 'Strategies', href: '/strategies', icon: Brain },
-      { label: 'Signals', href: '/signals', icon: Zap },
       { label: 'Portfolio', href: '/portfolio', icon: PieChart },
+      { label: 'Signals', href: '/signals', icon: Zap },
       { label: 'Orders', href: '/orders', icon: ArrowUpDown },
+      { label: 'Agents', href: '/agents', icon: Bot },
+      { label: 'Strategies', href: '/strategies', icon: Brain },
       { label: 'Journal', href: '/journal', icon: BookOpen },
       { label: 'Advisor', href: '/advisor', icon: Sparkles },
     ],
@@ -74,10 +75,9 @@ const navSections: NavSection[] = [
   {
     section: 'Operations',
     items: [
-      { label: 'Agents', href: '/agents', icon: Bot },
-      { label: 'Experiment', href: '/experiment', icon: Beaker },
       { label: 'Approvals', href: '/approvals', icon: CheckSquare },
       { label: 'Workflows', href: '/workflows', icon: Workflow },
+      { label: 'Experiment', href: '/experiment', icon: Beaker },
     ],
   },
   {
@@ -104,7 +104,6 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
 
-  // Persist collapse state in localStorage
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   useEffect(() => {
     try {
@@ -134,29 +133,24 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
   return (
     <aside
       className={cn(
-        'flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300 relative',
+        'relative flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300',
         collapsed ? 'w-16' : 'w-56',
       )}
     >
-      {/* Accent line along right edge */}
-      <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
-
-      {/* Logo area */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="font-mono text-xs font-bold tracking-[0.25em] text-primary">
+            <span className="font-mono text-xs font-semibold tracking-[0.2em] text-foreground/85">
               SENTINEL
             </span>
           </div>
         )}
-        {collapsed && <div className="h-2 w-2 rounded-full bg-primary animate-pulse mx-auto" />}
+        {collapsed && <span className="mx-auto h-1.5 w-1.5 rounded-full bg-foreground/70" />}
         <button
           type="button"
           onClick={handleToggle}
           className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
+            'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
             collapsed && 'mx-auto mt-1',
           )}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -170,12 +164,11 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
         </button>
       </div>
 
-      {/* Navigation */}
       <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 py-3">
         {navSections.map((section) => (
           <div key={section.section} role="group" aria-label={section.section} className="mb-4">
             {!collapsed && (
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/55">
                 {section.section}
               </p>
             )}
@@ -192,28 +185,22 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
                       prefetch={false}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         isActive
-                          ? 'bg-primary/10 text-primary'
+                          ? 'bg-accent text-foreground'
                           : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
                         collapsed && 'justify-center px-2',
                       )}
                       title={collapsed ? item.label : undefined}
                     >
                       <item.icon
-                        className={cn(
-                          'h-4 w-4 shrink-0 transition-colors',
-                          isActive
-                            ? 'text-primary'
-                            : 'text-muted-foreground group-hover:text-foreground',
-                        )}
+                        className={cn('h-4 w-4 shrink-0', isActive && 'text-foreground')}
                       />
                       {!collapsed && <span>{item.label}</span>}
                     </Link>
-                    {/* Tooltip for collapsed mode */}
                     {collapsed && (
-                      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover:flex items-center">
-                        <div className="whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg animate-tooltip">
+                      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 group-hover:flex items-center">
+                        <div className="animate-tooltip whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg">
                           {item.label}
                         </div>
                       </div>
@@ -226,8 +213,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-border p-4 space-y-3">
+      <div className="space-y-3 border-t border-border p-4">
         <button
           type="button"
           disabled={signingOut}
@@ -244,7 +230,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
             }
             window.location.href = '/login';
           }}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
           title="Sign out"
         >
           {signingOut ? (
@@ -257,7 +243,7 @@ export function Sidebar({ collapsed: controlledCollapsed, onToggle }: SidebarPro
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-profit" />
-            <p className="font-mono text-[10px] text-muted-foreground tracking-wider">v0.1.0</p>
+            <p className="font-mono text-[10px] tracking-wider text-muted-foreground">v0.1.0</p>
           </div>
         )}
       </div>

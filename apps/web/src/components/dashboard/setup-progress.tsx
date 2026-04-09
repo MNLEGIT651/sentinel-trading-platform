@@ -70,7 +70,7 @@ export function SetupProgress() {
   const progressPct = Math.round((completedCount / TOTAL_SETUP_STEPS) * 100);
 
   return (
-    <Card className="card-interactive bg-card/50">
+    <Card className="border-border bg-card/70">
       <CardHeader className="relative pb-0">
         <CardTitle className="text-sm font-medium">Setup Progress</CardTitle>
         <button
@@ -84,7 +84,7 @@ export function SetupProgress() {
       </CardHeader>
       <CardContent className="space-y-3">
         {allComplete ? (
-          <p className="text-center text-sm font-medium">🎉 Setup complete!</p>
+          <p className="text-center text-sm font-medium">Setup complete.</p>
         ) : (
           <>
             <p className="text-xs text-muted-foreground">
@@ -94,10 +94,7 @@ export function SetupProgress() {
             {/* Progress bar */}
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className={cn(
-                  'h-full rounded-full bg-primary transition-all duration-500',
-                  progressPct > 80 && 'progress-glow',
-                )}
+                className="h-full rounded-full bg-primary transition-all duration-500"
                 style={{ width: `${String(progressPct)}%` }}
               />
             </div>

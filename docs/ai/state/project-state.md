@@ -98,7 +98,8 @@ Before editing files:
 
 | REL-ORCH-20260407 | done | Codex | `work` | `artifacts/*`, platform audit evidence collection, `docs/ai/state/project-state.md` | `git diff --check`; `pnpm lint`; `pnpm test`; `pnpm build`; `pnpm lint:engine`; `pnpm format:check:engine`; `pnpm test:engine`; `/workspace/Trading-App/.bin/actionlint`; GitHub API PR sweep | 2026-04-07 | Completed release-owner multi-platform verification artifacts and per-PR matrix; reran full validation suite with passing lint/test/build/engine/actionlint evidence; result CHANGES_REQUESTED/NO_GO. |
 
----
+| UI-2026-04-08 | done | Codex | `work` | `apps/web/src/app/globals.css`, `apps/web/src/app/(dashboard)/page.tsx`, `apps/web/src/components/dashboard/*`, `apps/web/src/components/layout/header.tsx`, `apps/web/src/components/layout/sidebar.tsx`, `docs/ai/state/project-state.md` | `pnpm lint`; `pnpm test:web`; `pnpm --filter @sentinel/web build` | 2026-04-08 | Professional dashboard restraint pass completed: removed decorative UI tells, re-centered workflow surfaces around watchlist/signals/alerts/execution state, and tightened sidebar/header prioritization without breaking accessibility tests. |
+| UI-2026-04-08B | done | Codex | `work` | `apps/web` visual verification artifacts, `docs/ai/state/project-state.md` | `pnpm --filter @sentinel/web build`; `pnpm --filter @sentinel/web exec playwright install chromium`; `pnpm --filter @sentinel/web exec playwright install-deps chromium`; screenshot capture command | 2026-04-08 | Installed Playwright Chromium + system deps and captured dashboard screenshot artifact for UI review (`artifacts/dashboard-workspace.png`). |
 
 ## Blockers / decisions needed
 
