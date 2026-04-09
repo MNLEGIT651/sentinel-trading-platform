@@ -130,11 +130,11 @@ Report exact command, pass/fail, and reason for any skip.
 
 Automatically dispatch specialist agents when a PR touches their scope:
 
-| Trigger files                                                     | Dispatch to                  |
-| ----------------------------------------------------------------- | ---------------------------- |
-| `.github/workflows/**`, `docs/deployment.md`, `vercel.json`, `railway.toml` | `platform-sync-auditor`      |
-| Deploy/release workflows, push to main                            | `runtime-smoke-guardian`     |
-| `supabase/**`, typegen, auth/env docs                             | `supabase-boundary-guardian` |
+| Trigger files                                                                                     | Dispatch to                  |
+| ------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `.github/workflows/**`, `docs/deployment.md`, `apps/web/vercel.json`, `apps/engine/railway.toml`, `railway.toml` | `platform-sync-auditor`      |
+| Deploy/release workflows, push to main                                                            | `runtime-smoke-guardian`     |
+| `supabase/**`, typegen, auth/env docs                                                             | `supabase-boundary-guardian` |
 
 Collect specialist results and include them in the merge decision.
 

@@ -41,12 +41,12 @@ commander's merge decision.
 
 ## Trigger mapping
 
-| Trigger files / events                                  | Specialist dispatched        |
-| ------------------------------------------------------- | ---------------------------- |
-| `.github/workflows/**`, `vercel.json`, `railway.toml`   | `platform-sync-auditor`      |
-| Deploy/release workflows, push to main                  | `runtime-smoke-guardian`     |
-| `supabase/**`, typegen, auth/env docs                   | `supabase-boundary-guardian` |
-| Any PR (risk classification + merge gate)               | `pr-owner-operator`          |
+| Trigger files / events                                                                 | Specialist dispatched        |
+| -------------------------------------------------------------------------------------- | ---------------------------- |
+| `.github/workflows/**`, `apps/web/vercel.json`, `apps/engine/railway.toml`, `docs/runbooks/**` | `platform-sync-auditor`      |
+| Deploy/release workflows, push to main                                                 | `runtime-smoke-guardian`     |
+| `supabase/**`, typegen, auth/env docs                                                  | `supabase-boundary-guardian` |
+| Any PR (risk classification + merge gate)                                              | `pr-owner-operator`          |
 
 ## Environment setup
 

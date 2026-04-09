@@ -34,3 +34,4 @@ jobs:
         run: |
           uv venv .venv
           uv pip install --python .venv/bin/python -e ".[dev]"
+          uv pip install --python .venv/bin/python pip-audit
