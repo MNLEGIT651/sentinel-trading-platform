@@ -1,9 +1,15 @@
-# PR Owner Review
+# PR Auto-Review, Auto-Fix, and Auto-Merge
 # Automatically classifies risk, checks CI gates, dispatches specialist agents,
-# and posts a structured merge decision on every non-draft pull request.
-# Mirrors the pr-owner-operator agent contract.
+# posts a structured merge decision, triggers Copilot to auto-fix failures,
+# and auto-merges when all gates pass.
+#
+# Required secrets:
+#   PR_MERGE_TOKEN — PAT with repo scope to approve+merge past branch protection
+#
+# The Copilot coding agent is triggered via @copilot comment when CI fails.
+# Auto-merge uses squash strategy when all gates are green.
 
-name: PR Owner Review
+name: PR Auto-Review
 
 on:
   pull_request:
@@ -14,24 +20,38 @@ on:
     types: [completed]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   checks: read
   actions: read
+  issues: write
 
 concurrency:
   group: pr-review-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
   cancel-in-progress: true
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Review — classify risk, check gates, post structured decision
+  # ---------------------------------------------------------------------------
   review:
-    name: PR Owner Review
+    name: PR Auto-Review
     runs-on: ubuntu-latest
     # Skip drafts; for workflow_run events only run if there's an associated PR
     if: |
       (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.pull_requests[0])
     timeout-minutes: 5
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      head_ref: ${{ steps.pr.outputs.head_ref }}
+      decision: ${{ steps.decide.outputs.decision }}
+      risk: ${{ steps.classify.outputs.risk }}
+      all_green: ${{ steps.gates.outputs.all_green }}
+      failed: ${{ steps.gates.outputs.failed }}
+      missing: ${{ steps.gates.outputs.missing }}
+      secrets_found: ${{ steps.secrets.outputs.found }}
 
     steps:
       - name: Checkout
@@ -41,15 +61,25 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER_INPUT: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          WR_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            {
+              echo "number=${PR_NUMBER_INPUT}"
+              echo "head_sha=${PR_HEAD_SHA}"
+              echo "head_ref=${PR_HEAD_REF}"
+            } >> "$GITHUB_OUTPUT"
           else
-            PR_NUM="${{ github.event.workflow_run.pull_requests[0].number }}"
-            HEAD_SHA=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUM}" --jq '.head.sha')
-            echo "number=${PR_NUM}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+            PR_DATA=$(gh api "repos/${{ github.repository }}/pulls/${WR_PR_NUMBER}" --jq '{sha: .head.sha, ref: .head.ref}')
+            {
+              echo "number=${WR_PR_NUMBER}"
+              echo "head_sha=$(echo "$PR_DATA" | jq -r '.sha')"
+              echo "head_ref=$(echo "$PR_DATA" | jq -r '.ref')"
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Classify risk
@@ -178,6 +208,20 @@ jobs:
 
           echo "found=$SECRETS_FOUND" >> "$GITHUB_OUTPUT"
 
+      - name: Determine decision
+        id: decide
+        env:
+          ALL_GREEN: ${{ steps.gates.outputs.all_green }}
+          SECRETS_FOUND: ${{ steps.secrets.outputs.found }}
+        run: |
+          if [ "$SECRETS_FOUND" = "true" ]; then
+            echo "decision=BLOCK" >> "$GITHUB_OUTPUT"
+          elif [ "$ALL_GREEN" = "true" ]; then
+            echo "decision=APPROVE" >> "$GITHUB_OUTPUT"
+          else
+            echo "decision=FIX" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Post review decision
         env:
           GH_TOKEN: ${{ github.token }}
@@ -188,31 +232,28 @@ jobs:
           FAILED: ${{ steps.gates.outputs.failed }}
           MISSING: ${{ steps.gates.outputs.missing }}
           SECRETS_FOUND: ${{ steps.secrets.outputs.found }}
+          DECISION: ${{ steps.decide.outputs.decision }}
         run: |
           TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-          # Determine decision
-          if [ "$SECRETS_FOUND" = "true" ]; then
-            DECISION="CHANGES_REQUESTED"
-            EMOJI="🚨"
-          elif [ "$ALL_GREEN" = "true" ]; then
-            DECISION="APPROVE"
-            EMOJI="✅"
-          else
-            DECISION="CHANGES_REQUESTED"
-            EMOJI="❌"
-          fi
+          case "$DECISION" in
+            APPROVE) EMOJI="✅"; ACTION_TEXT="All gates green — **auto-merging** this PR." ;;
+            FIX)     EMOJI="🔧"; ACTION_TEXT="CI failures detected — **dispatching Copilot to auto-fix**." ;;
+            BLOCK)   EMOJI="🚨"; ACTION_TEXT="**Blocked** — secrets detected in diff. Manual intervention required." ;;
+          esac
 
           CHECK_TABLE=$(cat /tmp/check-table.txt)
           RISK_JSON=$(echo "$RISK" | tr ',' '\n' | jq -R . | jq -sc '.')
 
           # Write comment body to file to avoid heredoc indentation issues
           {
-            echo "## ${EMOJI} PR Owner Review — ${DECISION}"
+            echo "## ${EMOJI} PR Auto-Review — ${DECISION}"
             echo ""
             echo "**Agent:** pr-owner-operator"
             echo "**Risk Classification:** \`${RISK}\`"
             echo "**Timestamp:** ${TIMESTAMP}"
+            echo ""
+            echo "> ${ACTION_TEXT}"
             echo ""
             echo "### Required CI Gates"
             echo "| Check | Status |"
@@ -274,7 +315,7 @@ jobs:
 
           # Delete previous bot review comments to avoid spam
           EXISTING_COMMENTS=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
-            --jq '[.[] | select(.body | contains("PR Owner Review")) | .id] | .[]' 2>/dev/null || echo "")
+            --jq '[.[] | select(.body | contains("PR Auto-Review") or contains("PR Owner Review")) | .id] | .[]' 2>/dev/null || echo "")
 
           for COMMENT_ID in $EXISTING_COMMENTS; do
             gh api -X DELETE "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" 2>/dev/null || true
@@ -282,3 +323,87 @@ jobs:
 
           # Post the new comment
           gh pr comment "$PR_NUMBER" --body-file /tmp/pr-review-body.md
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Auto-Fix — trigger Copilot coding agent to fix CI failures
+  # ---------------------------------------------------------------------------
+  auto-fix:
+    name: Auto-Fix via Copilot
+    needs: review
+    runs-on: ubuntu-latest
+    if: needs.review.outputs.decision == 'FIX'
+    timeout-minutes: 2
+
+    steps:
+      - name: Dispatch Copilot to fix CI failures
+        env:
+          GH_TOKEN: ${{ secrets.PR_MERGE_TOKEN || github.token }}
+          PR_NUMBER: ${{ needs.review.outputs.pr_number }}
+          FAILED: ${{ needs.review.outputs.failed }}
+          MISSING: ${{ needs.review.outputs.missing }}
+        run: |
+          # Build a targeted fix instruction for Copilot
+          FIX_MSG="@copilot The following CI checks are failing on this PR:\n\n"
+
+          if [ -n "$FAILED" ]; then
+            FIX_MSG="${FIX_MSG}**Failed checks:** ${FAILED}\n"
+          fi
+          if [ -n "$MISSING" ]; then
+            FIX_MSG="${FIX_MSG}**Missing/pending checks:** ${MISSING}\n"
+          fi
+
+          FIX_MSG="${FIX_MSG}\nPlease investigate the CI failure logs, identify the root cause, and push a fix commit to this PR branch. Follow these guidelines:\n"
+          FIX_MSG="${FIX_MSG}- Run the relevant validation commands (pnpm lint, pnpm test, pnpm test:engine) locally before pushing\n"
+          FIX_MSG="${FIX_MSG}- Keep the fix minimal and scoped to the failing checks\n"
+          FIX_MSG="${FIX_MSG}- Do not modify unrelated files\n"
+          FIX_MSG="${FIX_MSG}- If the fix requires changes to protected files, note that in your commit message"
+
+          printf '%b' "$FIX_MSG" > /tmp/fix-comment.txt
+
+          # Post the @copilot comment to trigger the coding agent
+          gh pr comment "$PR_NUMBER" --body-file /tmp/fix-comment.txt
+
+          echo "✅ Dispatched Copilot coding agent to fix PR #${PR_NUMBER}"
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Auto-Merge — approve and squash-merge when all gates pass
+  # ---------------------------------------------------------------------------
+  auto-merge:
+    name: Auto-Merge
+    needs: review
+    runs-on: ubuntu-latest
+    if: needs.review.outputs.decision == 'APPROVE'
+    timeout-minutes: 5
+
+    steps:
+      - name: Approve and merge PR
+        env:
+          GH_TOKEN: ${{ secrets.PR_MERGE_TOKEN }}
+          PR_NUMBER: ${{ needs.review.outputs.pr_number }}
+          RISK: ${{ needs.review.outputs.risk }}
+        run: |
+          # Guard: require the elevated token for merge operations
+          if [ -z "$GH_TOKEN" ]; then
+            echo "⚠️ PR_MERGE_TOKEN secret not configured — cannot auto-merge."
+            echo "Add a PAT with 'repo' scope as repository secret PR_MERGE_TOKEN."
+            exit 1
+          fi
+
+          # Skip data-contract and security PRs — require human sign-off
+          if echo "$RISK" | grep -qE 'data-contract|security'; then
+            echo "⚠️ PR #${PR_NUMBER} classified as '${RISK}' — requires human approval."
+            gh pr comment "$PR_NUMBER" --body \
+              "⚠️ **Auto-merge skipped** — this PR is classified as \`${RISK}\` and requires human sign-off before merge."
+            exit 0
+          fi
+
+          echo "Approving PR #${PR_NUMBER}..."
+          gh pr review "$PR_NUMBER" --approve --body \
+            "✅ **Auto-approved by pr-owner-operator** — all required CI gates are green."
+
+          echo "Merging PR #${PR_NUMBER} (squash)..."
+          gh pr merge "$PR_NUMBER" --squash --auto \
+            --subject "chore: auto-merge PR #${PR_NUMBER}" \
+            --body "Auto-merged by pr-owner-operator workflow. Risk: ${RISK}."
+
+          echo "✅ PR #${PR_NUMBER} approved and squash-merge queued."
