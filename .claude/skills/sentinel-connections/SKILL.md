@@ -11,37 +11,35 @@ The single source of truth for where every environment variable lives across all
 
 ## Environment Variable Matrix
 
-| Variable                             | Local `.env` | Vercel Preview | Vercel Production | GitHub Secrets | Used By                   |
-| ------------------------------------ | :----------: | :------------: | :---------------: | :------------: | ------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`           |      ✓       |       ✓        |         ✓         |       —        | Web, Engine               |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`      |      ✓       |       ✓        |         ✓         |       —        | Web                       |
-| `SUPABASE_SERVICE_ROLE_KEY`          |      ✓       |       ✓        |         ✓         |       —        | Engine, Web (server-side) |
-| `POLYGON_API_KEY`                    |      ✓       |       —        |         —         |       —        | Engine only               |
-| `ALPACA_API_KEY`                     |      ✓       |       —        |         —         |       —        | Engine only               |
-| `ALPACA_SECRET_KEY`                  |      ✓       |       —        |         —         |       —        | Engine only               |
-| `ALPACA_BASE_URL`                    |      ✓       |       —        |         —         |       —        | Engine only               |
-| `BROKER_MODE`                        |      ✓       |       —        |         —         |       —        | Engine only               |
-| `ANTHROPIC_API_KEY`                  |      ✓       |       —        |         —         |       —        | Agents only               |
-| `NEXT_PUBLIC_ENGINE_URL`             |      ✓       |      ✓ ⚠️      |       ✓ ⚠️        |       —        | Web → Engine              |
-| `ENGINE_API_KEY`                     |      ✓       |       —        |         —         |       —        | Engine internal           |
-| `CORS_ORIGINS`                       |      ✓       |       —        |         —         |       —        | Engine internal           |
-| `NEXT_PUBLIC_AGENTS_URL`             |      ✓       |      ✓ ⚠️      |       ✓ ⚠️        |       —        | Web → Agents              |
-| `AGENTS_PORT`                        |      ✓       |       —        |         —         |       —        | Agents internal           |
-| `DATA_INGESTION_INTERVAL_MINUTES`    |      ✓       |       —        |         —         |       —        | Engine scheduler          |
-| `SIGNAL_GENERATION_INTERVAL_MINUTES` |      ✓       |       —        |         —         |       —        | Engine scheduler          |
-| `RISK_UPDATE_INTERVAL_MINUTES`       |      ✓       |       —        |         —         |       —        | Engine scheduler          |
-
-**⚠️ = Must NOT be `localhost`** — these must point to deployed service URLs in Vercel.
+| Variable                             | Local `.env` | Vercel Preview | Vercel Production | GitHub Secrets | Used By                          |
+| ------------------------------------ | :----------: | :------------: | :---------------: | :------------: | -------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`           |      ✓       |       ✓        |         ✓         |       —        | Web, Engine                      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`      |      ✓       |       ✓        |         ✓         |       —        | Web                              |
+| `SUPABASE_SERVICE_ROLE_KEY`          |      ✓       |       ✓        |         ✓         |       —        | Engine, Web (server-side)        |
+| `POLYGON_API_KEY`                    |      ✓       |       —        |         —         |       —        | Engine only                      |
+| `ALPACA_API_KEY`                     |      ✓       |       —        |         —         |       —        | Engine only                      |
+| `ALPACA_SECRET_KEY`                  |      ✓       |       —        |         —         |       —        | Engine only                      |
+| `ALPACA_BASE_URL`                    |      ✓       |       —        |         —         |       —        | Engine only                      |
+| `BROKER_MODE`                        |      ✓       |       —        |         —         |       —        | Engine only                      |
+| `ANTHROPIC_API_KEY`                  |      ✓       |       —        |         —         |       —        | Agents only                      |
+| `ENGINE_URL`                         |      ✓       |       ✓        |         ✓         |       —        | Web → Engine (server-side proxy) |
+| `ENGINE_API_KEY`                     |      ✓       |       ✓        |         ✓         |       —        | Engine auth (server-side)        |
+| `CORS_ORIGINS`                       |      ✓       |       —        |         —         |       —        | Engine internal                  |
+| `AGENTS_URL`                         |      ✓       |       ✓        |         ✓         |       —        | Web → Agents (server-side proxy) |
+| `AGENTS_PORT`                        |      ✓       |       —        |         —         |       —        | Agents internal                  |
+| `DATA_INGESTION_INTERVAL_MINUTES`    |      ✓       |       —        |         —         |       —        | Engine scheduler                 |
+| `SIGNAL_GENERATION_INTERVAL_MINUTES` |      ✓       |       —        |         —         |       —        | Engine scheduler                 |
+| `RISK_UPDATE_INTERVAL_MINUTES`       |      ✓       |       —        |         —         |       —        | Engine scheduler                 |
 
 ---
 
 ## The Most Common Production Break
 
-`NEXT_PUBLIC_ENGINE_URL=http://localhost:8000` in Vercel.
+`ENGINE_URL` or `AGENTS_URL` missing or set to `localhost` in Vercel.
 
-The web app calls this URL from the browser — `localhost` in Vercel's environment points to nothing. Set it to the actual deployed engine URL.
+The web app's same-origin proxy (`/api/engine/*`, `/api/agents/*`) forwards requests server-side using these variables. If they're missing or point to `localhost`, the proxy returns 502 errors.
 
-Same applies to `NEXT_PUBLIC_AGENTS_URL`.
+> **Note:** The old `NEXT_PUBLIC_ENGINE_URL`, `NEXT_PUBLIC_ENGINE_API_KEY`, and `NEXT_PUBLIC_AGENTS_URL` are **fully deprecated and removed**. All engine/agents calls now use the server-side same-origin proxy via `ENGINE_URL` and `AGENTS_URL`.
 
 ---
 
@@ -59,8 +57,10 @@ Only what the **web app** needs server-side and client-side:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-NEXT_PUBLIC_ENGINE_URL          ← deployed engine URL
-NEXT_PUBLIC_AGENTS_URL          ← deployed agents URL (if agents are deployed)
+ENGINE_URL                      ← deployed engine URL (server-side proxy)
+ENGINE_API_KEY                  ← engine auth key (server-side proxy)
+AGENTS_URL                      ← deployed agents URL (server-side proxy)
+CRON_SECRET                     ← Vercel cron authentication
 ```
 
 Polygon, Alpaca, Anthropic, and scheduling vars are only consumed by the engine and agents processes — they do not belong in Vercel unless the engine/agents are deployed there too.
@@ -78,8 +78,8 @@ Browser
   └─→ apps/web (Vercel)
         ├─→ Supabase (NEXT_PUBLIC_SUPABASE_URL + ANON_KEY)    [client-side]
         ├─→ Supabase (SUPABASE_SERVICE_ROLE_KEY)              [server-side/API routes]
-        ├─→ Engine   (NEXT_PUBLIC_ENGINE_URL)                  [REST API calls]
-        └─→ Agents   (NEXT_PUBLIC_AGENTS_URL)                  [REST API calls]
+        ├─→ Engine   (ENGINE_URL via /api/engine/* proxy)       [server-side proxy]
+        └─→ Agents   (AGENTS_URL via /api/agents/* proxy)      [server-side proxy]
 
 apps/engine (local or deployed)
   ├─→ Supabase       (SUPABASE_SERVICE_ROLE_KEY)
@@ -106,8 +106,8 @@ apps/agents (local or deployed)
 
 ```bash
 # Add to both preview and production
-vercel env add NEXT_PUBLIC_ENGINE_URL production
-vercel env add NEXT_PUBLIC_ENGINE_URL preview
+vercel env add ENGINE_URL production
+vercel env add ENGINE_URL preview
 
 # Pull all Vercel env vars to local file
 vercel env pull apps/web/.env.local
