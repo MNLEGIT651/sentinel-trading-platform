@@ -54,6 +54,16 @@ export interface AgentAlert {
   acknowledged: boolean;
 }
 
+export interface AlertsCursor {
+  lastCreatedAt: string;
+  lastId: string;
+}
+
+export interface AlertsPage {
+  alerts: AgentAlert[];
+  nextCursor: AlertsCursor | null;
+}
+
 export interface ApproveResult {
   orderId: string;
   status: string;
@@ -150,8 +160,15 @@ export const agentsClient = {
     });
   },
 
-  /** Get the 50 most recent agent-generated alerts. */
-  getAlerts(): Promise<{ alerts: AgentAlert[] }> {
-    return agentsFetch<{ alerts: AgentAlert[] }>('/alerts');
+  /** Get a page of agent-generated alerts (newest first, keyset cursor). */
+  getAlerts(params?: { limit?: number; cursor?: AlertsCursor }): Promise<AlertsPage> {
+    const sp = new URLSearchParams();
+    if (params?.limit) sp.set('limit', String(params.limit));
+    if (params?.cursor) {
+      sp.set('lastCreatedAt', params.cursor.lastCreatedAt);
+      sp.set('lastId', params.cursor.lastId);
+    }
+    const qs = sp.toString();
+    return agentsFetch<AlertsPage>(`/alerts${qs ? `?${qs}` : ''}`);
   },
 };

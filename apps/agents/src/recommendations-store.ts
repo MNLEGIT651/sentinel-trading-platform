@@ -166,13 +166,40 @@ export async function createAlert(alert: AlertCreate): Promise<AgentAlert> {
   return data as AgentAlert;
 }
 
-export async function listAlerts(limit = 50): Promise<AgentAlert[]> {
+export interface AlertsCursor {
+  lastCreatedAt: string;
+  lastId: string;
+}
+
+export interface AlertsPage {
+  alerts: AgentAlert[];
+  nextCursor: AlertsCursor | null;
+}
+
+export async function listAlerts(limit = 50, cursor?: AlertsCursor): Promise<AlertsPage> {
   const db = getSupabaseClient();
-  const { data, error } = await db
+  // Fetch one extra row to determine if there's a next page
+  let query = db
     .from('agent_alerts')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .order('id', { ascending: false });
+
+  if (cursor) {
+    // Keyset pagination: rows older than the cursor position
+    query = query.or(
+      `created_at.lt.${cursor.lastCreatedAt},and(created_at.eq.${cursor.lastCreatedAt},id.lt.${cursor.lastId})`,
+    );
+  }
+
+  const { data, error } = await query.limit(limit + 1);
   if (error) throw new Error(error.message);
-  return (data ?? []) as AgentAlert[];
+  const rows = (data ?? []) as AgentAlert[];
+  const hasMore = rows.length > limit;
+  const alerts = hasMore ? rows.slice(0, limit) : rows;
+  const last = alerts[alerts.length - 1];
+  return {
+    alerts,
+    nextCursor: hasMore && last ? { lastCreatedAt: last.created_at, lastId: last.id } : null,
+  };
 }

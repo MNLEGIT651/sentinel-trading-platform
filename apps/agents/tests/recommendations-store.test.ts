@@ -257,7 +257,20 @@ describe('markRiskBlocked', () => {
 describe('listAlerts', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('queries agent_alerts and returns an array', async () => {
+  // Helper to build the Supabase mock chain for listAlerts
+  // Chain: from → select → order(created_at) → order(id) → [or →] limit
+  function mockAlertQuery(data: unknown[] | null, error: { message: string } | null = null) {
+    const limitMock = vi.fn().mockResolvedValue({ data, error });
+    const orMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const order2Mock = vi.fn().mockReturnValue({ or: orMock, limit: limitMock });
+    const order1Mock = vi.fn().mockReturnValue({ order: order2Mock });
+    const selectMock = vi.fn().mockReturnValue({ order: order1Mock });
+    mockFrom.mockReturnValue({ select: selectMock });
+    return { selectMock, order1Mock, order2Mock, limitMock, orMock };
+  }
+
+  it('returns alerts page with nextCursor when more rows exist', async () => {
+    // 3 rows returned = 2 + 1 extra → hasMore=true, nextCursor set
     const rows = [
       {
         id: 'alt-1',
@@ -265,7 +278,7 @@ describe('listAlerts', () => {
         title: 'Alert 1',
         message: 'msg1',
         acknowledged: false,
-        created_at: '',
+        created_at: '2026-01-02T00:00:00Z',
       },
       {
         id: 'alt-2',
@@ -273,58 +286,78 @@ describe('listAlerts', () => {
         title: 'Alert 2',
         message: 'msg2',
         acknowledged: false,
-        created_at: '',
+        created_at: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'alt-3',
+        severity: 'info',
+        title: 'Alert 3',
+        message: 'msg3',
+        acknowledged: false,
+        created_at: '2026-01-01T00:00:00Z',
       },
     ];
-    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
-    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
-    mockFrom.mockReturnValue({ select: selectMock });
+    mockAlertQuery(rows);
 
-    const result = await listAlerts();
+    const result = await listAlerts(2);
     expect(mockFrom).toHaveBeenCalledWith('agent_alerts');
-    expect(result).toHaveLength(2);
-    expect(result[0].severity).toBe('warning');
+    expect(result.alerts).toHaveLength(2);
+    expect(result.alerts[0].severity).toBe('warning');
+    expect(result.nextCursor).toEqual({
+      lastCreatedAt: '2026-01-01T00:00:00Z',
+      lastId: 'alt-2',
+    });
   });
 
-  it('returns empty array when no alerts exist', async () => {
-    const limitMock = vi.fn().mockResolvedValue({ data: null, error: null });
-    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
-    mockFrom.mockReturnValue({ select: selectMock });
+  it('returns null nextCursor on last page', async () => {
+    // Only 1 row (limit=2 → fetch 3, got 1 → no more)
+    const rows = [
+      {
+        id: 'alt-1',
+        severity: 'info',
+        title: 'Alert 1',
+        message: 'msg1',
+        acknowledged: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ];
+    mockAlertQuery(rows);
 
+    const result = await listAlerts(2);
+    expect(result.alerts).toHaveLength(1);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('returns empty page when no alerts exist', async () => {
+    mockAlertQuery(null);
     const result = await listAlerts();
-    expect(result).toEqual([]);
+    expect(result.alerts).toEqual([]);
+    expect(result.nextCursor).toBeNull();
   });
 
-  it('uses custom limit parameter', async () => {
-    const rows = [{ id: 'alt-1', severity: 'info', title: 'Test', message: 'msg', acknowledged: false, created_at: '' }];
-    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
-    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
-    mockFrom.mockReturnValue({ select: selectMock });
-
-    await listAlerts(100);
-    expect(limitMock).toHaveBeenCalledWith(100);
+  it('fetches limit+1 rows for has-more detection', async () => {
+    const { limitMock } = mockAlertQuery([]);
+    await listAlerts(25);
+    expect(limitMock).toHaveBeenCalledWith(26); // 25 + 1
   });
 
-  it('uses default limit of 50', async () => {
-    const rows = [];
-    const limitMock = vi.fn().mockResolvedValue({ data: rows, error: null });
-    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
-    mockFrom.mockReturnValue({ select: selectMock });
-
+  it('defaults to limit 50 (fetches 51)', async () => {
+    const { limitMock } = mockAlertQuery([]);
     await listAlerts();
-    expect(limitMock).toHaveBeenCalledWith(50);
+    expect(limitMock).toHaveBeenCalledWith(51); // 50 + 1
+  });
+
+  it('applies cursor filter via .or() when cursor provided', async () => {
+    const { orMock } = mockAlertQuery([]);
+    const cursor = { lastCreatedAt: '2026-01-01T00:00:00Z', lastId: 'alt-1' };
+    await listAlerts(50, cursor);
+    expect(orMock).toHaveBeenCalledWith(
+      'created_at.lt.2026-01-01T00:00:00Z,and(created_at.eq.2026-01-01T00:00:00Z,id.lt.alt-1)',
+    );
   });
 
   it('throws on Supabase error', async () => {
-    const limitMock = vi.fn().mockResolvedValue({ data: null, error: { message: 'query failed' } });
-    const orderMock = vi.fn().mockReturnValue({ limit: limitMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
-    mockFrom.mockReturnValue({ select: selectMock });
-
+    mockAlertQuery(null, { message: 'query failed' });
     await expect(listAlerts()).rejects.toThrow('query failed');
   });
 });
@@ -333,7 +366,12 @@ describe('rejectRecommendation', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('atomically rejects a pending recommendation', async () => {
-    const rejected = { id: 'uuid-1', status: 'rejected', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    const rejected = {
+      id: 'uuid-1',
+      status: 'rejected',
+      ticker: 'AAPL',
+      reviewed_at: '2026-03-26T10:00:00Z',
+    };
     mockFrom.mockReturnValue({
       update: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -374,7 +412,12 @@ describe('rejectRecommendation', () => {
         eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'reject failed' } }),
+              single: vi
+                .fn()
+                .mockResolvedValue({
+                  data: null,
+                  error: { code: 'OTHER', message: 'reject failed' },
+                }),
             }),
           }),
         }),
@@ -401,7 +444,12 @@ describe('Edge Cases and Data Integrity', () => {
       signal_strength: 0.92,
       metadata: { rsi: 75, volume: 'high' },
     };
-    const inserted = { id: 'uuid-2', status: 'pending', created_at: '2026-03-26T10:00:00Z', ...rec };
+    const inserted = {
+      id: 'uuid-2',
+      status: 'pending',
+      created_at: '2026-03-26T10:00:00Z',
+      ...rec,
+    };
     mockFrom.mockReturnValue({
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
@@ -424,7 +472,12 @@ describe('Edge Cases and Data Integrity', () => {
       quantity: 1,
       order_type: 'market' as const,
     };
-    const inserted = { id: 'uuid-3', status: 'pending', created_at: '2026-03-26T11:00:00Z', ...rec };
+    const inserted = {
+      id: 'uuid-3',
+      status: 'pending',
+      created_at: '2026-03-26T11:00:00Z',
+      ...rec,
+    };
     mockFrom.mockReturnValue({
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
@@ -457,7 +510,12 @@ describe('Edge Cases and Data Integrity', () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'permission denied' } }),
+          single: vi
+            .fn()
+            .mockResolvedValue({
+              data: null,
+              error: { code: 'OTHER', message: 'permission denied' },
+            }),
         }),
       }),
     });
@@ -471,7 +529,12 @@ describe('Edge Cases and Data Integrity', () => {
         eq: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'constraint violation' } }),
+              single: vi
+                .fn()
+                .mockResolvedValue({
+                  data: null,
+                  error: { code: 'OTHER', message: 'constraint violation' },
+                }),
             }),
           }),
         }),
@@ -501,7 +564,11 @@ describe('Edge Cases and Data Integrity', () => {
         }),
       });
 
-      const result = await createAlert({ severity, title: `${severity} alert`, message: 'Test message' });
+      const result = await createAlert({
+        severity,
+        title: `${severity} alert`,
+        message: 'Test message',
+      });
       expect(result.severity).toBe(severity);
     }
   });
@@ -524,7 +591,12 @@ describe('Edge Cases and Data Integrity', () => {
       }),
     });
 
-    const result = await createAlert({ severity: 'warning', title: 'Price Alert', message: 'AAPL dropped 5%', ticker: 'AAPL' });
+    const result = await createAlert({
+      severity: 'warning',
+      title: 'Price Alert',
+      message: 'AAPL dropped 5%',
+      ticker: 'AAPL',
+    });
     expect(result.ticker).toBe('AAPL');
   });
 
@@ -537,7 +609,9 @@ describe('Edge Cases and Data Integrity', () => {
       }),
     });
 
-    await expect(createAlert({ severity: 'info', title: 'Test', message: 'Test message' })).rejects.toThrow('insert failed');
+    await expect(
+      createAlert({ severity: 'info', title: 'Test', message: 'Test message' }),
+    ).rejects.toThrow('insert failed');
   });
 });
 
@@ -546,7 +620,12 @@ describe('Race Condition Prevention', () => {
 
   it('atomicApprove prevents double-approval via status check', async () => {
     // First approval succeeds
-    const approved = { id: 'uuid-1', status: 'approved', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    const approved = {
+      id: 'uuid-1',
+      status: 'approved',
+      ticker: 'AAPL',
+      reviewed_at: '2026-03-26T10:00:00Z',
+    };
     mockFrom.mockReturnValue({
       update: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -581,7 +660,12 @@ describe('Race Condition Prevention', () => {
 
   it('rejectRecommendation prevents double-rejection via status check', async () => {
     // First rejection succeeds
-    const rejected = { id: 'uuid-1', status: 'rejected', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    const rejected = {
+      id: 'uuid-1',
+      status: 'rejected',
+      ticker: 'AAPL',
+      reviewed_at: '2026-03-26T10:00:00Z',
+    };
     mockFrom.mockReturnValue({
       update: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -616,7 +700,12 @@ describe('Race Condition Prevention', () => {
 
   it('atomicApprove and rejectRecommendation cannot both succeed', async () => {
     // Approval succeeds first
-    const approved = { id: 'uuid-1', status: 'approved', ticker: 'AAPL', reviewed_at: '2026-03-26T10:00:00Z' };
+    const approved = {
+      id: 'uuid-1',
+      status: 'approved',
+      ticker: 'AAPL',
+      reviewed_at: '2026-03-26T10:00:00Z',
+    };
     mockFrom.mockReturnValue({
       update: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -658,7 +747,9 @@ describe('Timestamp and Metadata Handling', () => {
       eq: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: 'uuid-1', status: 'approved' }, error: null }),
+            single: vi
+              .fn()
+              .mockResolvedValue({ data: { id: 'uuid-1', status: 'approved' }, error: null }),
           }),
         }),
       }),
@@ -677,7 +768,9 @@ describe('Timestamp and Metadata Handling', () => {
       eq: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: 'uuid-1', status: 'rejected' }, error: null }),
+            single: vi
+              .fn()
+              .mockResolvedValue({ data: { id: 'uuid-1', status: 'rejected' }, error: null }),
           }),
         }),
       }),
