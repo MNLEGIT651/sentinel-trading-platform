@@ -100,7 +100,7 @@ nightly reconciliation, SLO dashboards, Sentry wire-up) remain as follow-ups.
   immediately after `get_broker()`, before pre-trade risk checks.
 - `apps/engine/src/execution/alpaca_broker.py` — exposed `self.base_url` as a
   public attribute so the gate can detect live venues without touching private state.
-- `apps/engine/tests/unit/test_portfolio_routes.py` — added 4 new unit tests:
+- `apps/engine/tests/unit/test_portfolio_routes.py` — added 5 new unit tests:
   (1) Alpaca paper bypass, (2) fail-closed on DB=None, (3) block when flag off,
   (4) block when global_mode=paper, (5) allow when both conditions hold.
 - `docs/runbooks/release-checklist.md` — added §5.4 "Live Trading Activation Gate"
@@ -108,7 +108,7 @@ nightly reconciliation, SLO dashboards, Sentry wire-up) remain as follow-ups.
 
 **Validation**:
 
-- `pnpm test:engine` — 479/479 pass (added 4 new tests)
+- `pnpm test:engine` — 479/479 pass (added 5 new tests)
 - `pnpm lint:engine` (ruff check) — clean
 - `pnpm format:check:engine` (ruff format) — clean
 
