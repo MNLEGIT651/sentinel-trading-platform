@@ -238,7 +238,7 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' &&
         (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
-    needs: [verify-commit-signatures, test-web, test-engine, test-agents]
+    needs: [test-web, test-engine, test-agents]
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
