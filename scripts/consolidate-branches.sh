@@ -72,7 +72,12 @@ days_since() {
   local now
   now=$(date +%s)
   local then
-  then=$(date -d "$date_str" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$date_str" +%s 2>/dev/null || echo "$now")
+  then=$(date -d "$date_str" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$date_str" +%s 2>/dev/null || echo "")
+  if [[ -z "$then" ]]; then
+    warn "Could not parse date '$date_str' — treating as very stale (999 days)"
+    echo 999
+    return
+  fi
   echo $(( (now - then) / 86400 ))
 }
 
@@ -401,18 +406,21 @@ else
       # Run validation
       info "Running validation after merge..."
       VALIDATION_PASSED=true
+      VALIDATION_LOG=$(mktemp)
 
       if command -v pnpm &>/dev/null; then
-        pnpm install --frozen-lockfile 2>/dev/null || true
-        pnpm lint 2>/dev/null || { warn "Lint failed after merging $branch"; VALIDATION_PASSED=false; }
-        pnpm test 2>/dev/null || { warn "Tests failed after merging $branch"; VALIDATION_PASSED=false; }
-        pnpm build 2>/dev/null || { warn "Build failed after merging $branch"; VALIDATION_PASSED=false; }
+        pnpm install --frozen-lockfile >> "$VALIDATION_LOG" 2>&1 || true
+        pnpm lint >> "$VALIDATION_LOG" 2>&1 || { warn "Lint failed after merging $branch"; VALIDATION_PASSED=false; }
+        pnpm test >> "$VALIDATION_LOG" 2>&1 || { warn "Tests failed after merging $branch"; VALIDATION_PASSED=false; }
+        pnpm build >> "$VALIDATION_LOG" 2>&1 || { warn "Build failed after merging $branch"; VALIDATION_PASSED=false; }
       else
         warn "pnpm not available — skipping validation"
       fi
 
       if ! $VALIDATION_PASSED; then
         warn "Validation failed — reverting merge of $branch"
+        warn "Validation output:"
+        tail -30 "$VALIDATION_LOG"
         git reset --hard HEAD~1
         # Reclassify as HOLD
         echo "  ⚠️  Reverted merge of \`$branch\` (validation failure)" >> "$REPORT_FILE"

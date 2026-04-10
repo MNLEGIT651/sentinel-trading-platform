@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 # than substring matching on the full URL — prevents reverse-proxy or custom
 # hostnames that happen to contain "paper" in the path/subdomain from
 # inadvertently bypassing the gate.
+#
+# To add a new paper endpoint: append the hostname here and add a corresponding
+# test in test_portfolio_routes.py → test_is_paper_endpoint_*. As of 2026-04,
+# Alpaca has only one paper-trading hostname.
 _ALPACA_PAPER_HOSTS: frozenset[str] = frozenset(
     {
         "paper-api.alpaca.markets",
