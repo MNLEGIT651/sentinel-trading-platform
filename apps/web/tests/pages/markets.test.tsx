@@ -232,13 +232,12 @@ describe('MarketsPage', () => {
     expect(nvdaElements.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows Offline provenance badge when engine is unavailable', async () => {
+  it('shows Offline provenance badges when engine is unavailable', async () => {
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Offline')).toBeInTheDocument();
+      const offlineBadges = screen.getAllByText('Offline');
+      expect(offlineBadges.length).toBeGreaterThanOrEqual(1);
     });
-    // Chart shows simulated since synthetic data is displayed
-    expect(screen.getByText('Simulated')).toBeInTheDocument();
     // Both badges use the accessible DataProvenance component
     const statusEls = screen.getAllByRole('status');
     expect(statusEls.length).toBeGreaterThanOrEqual(2);
@@ -273,7 +272,7 @@ describe('MarketsPage', () => {
     });
   });
 
-  it('shows Simulated for chart when engine online but bars empty', async () => {
+  it('shows Offline for chart when engine online but bars empty', async () => {
     useAppStore.setState({ engineOnline: true });
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
@@ -287,7 +286,7 @@ describe('MarketsPage', () => {
 
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Simulated')).toBeInTheDocument();
+      expect(screen.getByText('No chart data available')).toBeInTheDocument();
     });
   });
 
@@ -311,10 +310,12 @@ describe('MarketsPage', () => {
     expect(screen.getByText('$378.91')).toBeInTheDocument();
   });
 
-  it('shows fallback prices when engine is offline', async () => {
+  it('shows dashes for prices when engine is offline', async () => {
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('$178.72').length).toBeGreaterThanOrEqual(1);
+      // With no fallback data, prices should display as '--'
+      const dashes = screen.getAllByText('--');
+      expect(dashes.length).toBeGreaterThanOrEqual(1);
     });
   });
 

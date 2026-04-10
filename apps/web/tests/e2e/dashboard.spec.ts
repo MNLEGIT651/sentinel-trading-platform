@@ -78,11 +78,11 @@ test.describe('Dashboard — offline/fallback mode', () => {
     }
   });
 
-  test('shows the SimulatedBadge when engine is offline', async ({ page }) => {
+  test('shows the Paper badge when engine is offline', async ({ page }) => {
     await page.goto('/');
 
-    // SimulatedBadge renders when isLive is false (fetch fails → keep fallback)
-    await expect(page.getByText(/simulated/i)).toBeVisible();
+    // Paper badge renders when isLive is false (fetch fails → engine offline)
+    await expect(page.getByText(/offline|paper/i)).toBeVisible();
   });
 });
 

@@ -1,4 +1,11 @@
 import type { TradeEntry } from './trade-log';
+import type { BacktestSummary } from './metrics-table';
+
+export interface BacktestResult {
+  summary: BacktestSummary;
+  equity_curve: number[];
+  trades: TradeEntry[];
+}
 
 export interface EngineBacktestSummary {
   strategy: string;

@@ -24,7 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { OfflineBanner } from '@/components/ui/offline-banner';
-import { SimulatedBadge } from '@/components/ui/simulated-badge';
 import { InfoTooltip } from '@/components/ui/info-tooltip';
 import { useAppStore } from '@/stores/app-store';
 import type { Alert } from '@sentinel/shared';
@@ -38,13 +37,7 @@ import {
   useAgentStatusQuery,
 } from '@/hooks/queries';
 import { useOnboardingProfile, useInvalidateOnboarding } from '@/hooks/use-onboarding';
-import {
-  TICKER_SYMBOLS,
-  FALLBACK_TICKER_DATA,
-  POLL_INTERVAL,
-  FALLBACK_ACCOUNT,
-  MAX_LIVE_SCAN_TICKERS,
-} from '@/lib/constants';
+import { TICKER_SYMBOLS, POLL_INTERVAL, MAX_LIVE_SCAN_TICKERS } from '@/lib/constants';
 import { sideColors, getSignalStrengthColor, getStatusColors } from '@/lib/status-colors';
 
 function DashboardContent() {
@@ -65,7 +58,7 @@ function DashboardContent() {
   const isLive = engineOnline === true && !!quotes;
 
   const tickerData = useMemo(() => {
-    if (!quotes) return [...FALLBACK_TICKER_DATA];
+    if (!quotes) return [];
     return TICKER_SYMBOLS.map((sym) => {
       const q = quotes.find((q) => q.ticker === sym);
       return {
@@ -105,8 +98,8 @@ function DashboardContent() {
     }));
   }, [filledRecs]);
 
-  const equity = account?.equity ?? FALLBACK_ACCOUNT.equity;
-  const pnl = equity - (account?.initial_capital ?? FALLBACK_ACCOUNT.initial_capital);
+  const equity = account?.equity ?? 0;
+  const pnl = account ? equity - account.initial_capital : 0;
   const pnlPct = account?.initial_capital ? (pnl / account.initial_capital) * 100 : 0;
 
   const tradingColors = getStatusColors(systemControls?.trading_halted ? 'error' : 'success');
@@ -185,14 +178,19 @@ function DashboardContent() {
                 <div className="mt-2 flex justify-end">
                   {isLive ? (
                     <span
-                      className="inline-flex items-center gap-1 rounded border border-profit/30 bg-profit/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-profit"
+                      className="inline-flex items-center gap-1 rounded-full border border-profit/30 bg-profit/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-profit"
                       aria-label="Live market data"
                     >
-                      <span className="h-1 w-1 rounded-full bg-profit" aria-hidden="true" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-profit" aria-hidden="true" />
                       Live
                     </span>
                   ) : (
-                    <SimulatedBadge />
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400"
+                      aria-label={engineOnline === false ? 'Engine offline' : 'Paper trading mode'}
+                    >
+                      {engineOnline === false ? 'Offline' : 'Paper'}
+                    </span>
                   )}
                 </div>
               </CardContent>
@@ -291,23 +289,13 @@ function DashboardContent() {
                       <InfoTooltip content="Uninvested cash available for new trades." />
                     </>
                   }
-                  value={
-                    <AnimatedNumber
-                      value={account?.cash ?? FALLBACK_ACCOUNT.cash}
-                      prefix="$"
-                      decimals={2}
-                    />
-                  }
+                  value={<AnimatedNumber value={account?.cash ?? 0} prefix="$" decimals={2} />}
                   icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
                 />
                 <MetricCard
                   label="Positions Value"
                   value={
-                    <AnimatedNumber
-                      value={account?.positions_value ?? FALLBACK_ACCOUNT.positions_value}
-                      prefix="$"
-                      decimals={2}
-                    />
+                    <AnimatedNumber value={account?.positions_value ?? 0} prefix="$" decimals={2} />
                   }
                   icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
                 />
@@ -326,7 +314,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between border-b border-border/60 pb-2">
                 <span className="text-muted-foreground">Market data</span>
                 <span className="font-medium text-foreground">
-                  {isLive ? 'Live feed' : 'Simulated feed'}
+                  {isLive ? 'Live feed' : 'Unavailable'}
                 </span>
               </div>
               <div className="flex items-center justify-between border-b border-border/60 pb-2">

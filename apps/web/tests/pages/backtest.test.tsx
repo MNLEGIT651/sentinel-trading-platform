@@ -37,21 +37,20 @@ describe('BacktestPage', () => {
     expect(screen.getByText(/Configure a strategy and click/)).toBeInTheDocument();
   });
 
-  it('runs backtest and shows results', async () => {
+  it('shows error when engine is unavailable on backtest run', async () => {
     render(<BacktestPage />);
     const runButton = screen.getByText('Run Backtest');
     fireEvent.click(runButton);
 
     await waitFor(
       () => {
-        expect(screen.getByText('Total Return')).toBeInTheDocument();
+        expect(screen.getByText('Backtesting requires the engine')).toBeInTheDocument();
       },
       { timeout: 3000 },
     );
 
-    expect(screen.getByText('Sharpe Ratio')).toBeInTheDocument();
-    expect(screen.getByText('Win Rate')).toBeInTheDocument();
-    expect(screen.getByText('Max Drawdown')).toBeInTheDocument();
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
   });
 
   it('allows switching trend options', () => {
@@ -70,36 +69,35 @@ describe('BacktestPage', () => {
     expect(badge).toBeInTheDocument();
   });
 
-  it('shows Simulated badge after fallback run', async () => {
+  it('shows Offline badge when engine is unavailable', async () => {
     render(<BacktestPage />);
     fireEvent.click(screen.getByText('Run Backtest'));
 
     await waitFor(
       () => {
-        expect(screen.getByText('Total Return')).toBeInTheDocument();
+        expect(screen.getByText('Backtesting requires the engine')).toBeInTheDocument();
       },
       { timeout: 3000 },
     );
 
-    // Engine is not available in test, so results come from synthetic fallback
-    const badge = screen.getByRole('status');
-    expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Simulated'));
+    // Engine is not available in test, so the error is shown
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
   });
 
-  it('shows engine error explanation when engine fails', async () => {
+  it('shows engine error with retry button when engine fails', async () => {
     render(<BacktestPage />);
     fireEvent.click(screen.getByText('Run Backtest'));
 
     await waitFor(
       () => {
-        expect(screen.getByText('Total Return')).toBeInTheDocument();
+        expect(screen.getByText('Backtesting requires the engine')).toBeInTheDocument();
       },
       { timeout: 3000 },
     );
 
     const alert = screen.getByRole('alert');
     expect(alert).toBeInTheDocument();
-    expect(alert).toHaveTextContent(/Engine unavailable/);
-    expect(alert).toHaveTextContent(/client-side simulation/);
+    expect(screen.getByText('Retry')).toBeInTheDocument();
   });
 });

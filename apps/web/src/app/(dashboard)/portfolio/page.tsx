@@ -40,12 +40,7 @@ import {
 } from '@/hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import {
-  FALLBACK_ACCOUNT,
-  ORDER_TERMINAL_STATUSES,
-  TICKER_SYMBOLS,
-  PAGE_SIZE_ORDERS,
-} from '@/lib/constants';
+import { ORDER_TERMINAL_STATUSES, TICKER_SYMBOLS, PAGE_SIZE_ORDERS } from '@/lib/constants';
 
 export default function PortfolioPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
@@ -101,7 +96,7 @@ export default function PortfolioPage() {
   const provenanceMode: DataProvenanceProps['mode'] = useMemo(() => {
     if (engineOnline === true && account) return 'live';
     if (engineOnline === false && account) return 'cached';
-    if (engineOnline === false && !account) return 'simulated';
+    if (engineOnline === false && !account) return 'offline';
     return 'offline';
   }, [engineOnline, account]);
 
@@ -132,7 +127,7 @@ export default function PortfolioPage() {
 
   const recentOrders = orderHistory ?? [];
 
-  const effectiveAccount = account ?? (engineOnline !== true ? FALLBACK_ACCOUNT : null);
+  const effectiveAccount = account ?? null;
 
   const formatTerminalStatus = useCallback((status: string, orderId: string): string => {
     switch (status) {
@@ -283,9 +278,9 @@ export default function PortfolioPage() {
       <PageContainer className="page-enter" density="compact">
         <SectionStack spacing="default">
           {engineOnline === false && <OfflineBanner service="engine" />}
-          {provenanceMode === 'simulated' && engineOnline === true && (
+          {provenanceMode === 'offline' && engineOnline === true && (
             <ConfigBanner
-              message="Showing simulated portfolio. Configure Alpaca API keys for live/paper trading."
+              message="No portfolio data available. Configure Alpaca API keys for live/paper trading."
               linkHref="/settings"
               linkLabel="Go to Settings"
             />
@@ -379,8 +374,6 @@ export default function PortfolioPage() {
                         'No open positions. Use Quick Order above to place your first trade.'}
                       {provenanceMode === 'cached' &&
                         'Cached data \u2014 no positions found. Reconnect engine for live updates.'}
-                      {provenanceMode === 'simulated' &&
-                        'Showing simulated portfolio \u2014 connect the engine for live data.'}
                       {provenanceMode === 'offline' &&
                         'No data available \u2014 engine is offline.'}
                     </p>

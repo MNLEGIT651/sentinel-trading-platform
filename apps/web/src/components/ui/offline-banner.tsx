@@ -11,7 +11,7 @@ interface OfflineBannerProps {
 const messages = {
   engine: {
     title: 'Engine Offline',
-    detail: 'Start the FastAPI engine to see live data. Data shown below is simulated.',
+    detail: 'No live data available. Start the FastAPI engine to see real data.',
   },
   agents: {
     title: 'Agents Offline',
