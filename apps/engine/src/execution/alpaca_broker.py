@@ -26,6 +26,7 @@ class AlpacaBroker(BrokerAdapter):
         normalized = base_url.rstrip("/")
         if normalized.endswith("/v2"):
             normalized = normalized[:-3]
+        self.base_url = normalized
         self._http = httpx.AsyncClient(
             base_url=normalized,
             headers={

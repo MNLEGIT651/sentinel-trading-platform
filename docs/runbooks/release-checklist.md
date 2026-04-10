@@ -221,6 +221,51 @@ Run these within 5 minutes of production deploy completing.
 - [ ] Railway agents logs: clean startup
 - [ ] Correlation IDs flowing (check a sample request trace per [correlation-id-flow.md](correlation-id-flow.md))
 
+### 5.4 Live Trading Activation Gate
+
+> **Scope:** Only relevant when promoting the environment from paper to live trading.
+> For paper-only deploys, skip this section — the defaults already block live execution.
+
+The engine order-submission path (`apps/engine/src/api/routes/portfolio.py:submit_order`)
+calls `check_live_execution_gate()` (`apps/engine/src/services/order_service.py`) which
+**fails closed**: any order routed to an Alpaca **live** base URL is rejected unless
+**both** of these conditions hold in the `system_controls` table:
+
+| Field                    | Required value | Effect when missing                                        |
+| ------------------------ | -------------- | ---------------------------------------------------------- |
+| `live_execution_enabled` | `true`         | Engine returns `403 Live execution is disabled`            |
+| `global_mode`            | `'live'`       | Engine returns `403 System is in '<mode>' mode`            |
+
+Paper brokers (`PaperBroker`) and Alpaca paper endpoints
+(`*paper-api.alpaca.markets*`) bypass the gate because they cannot move real capital.
+
+**Activation checklist** (operator role required, one-way door — treat as deploy):
+
+- [ ] Alpaca **live** credentials rotated into Railway engine secrets:
+      - `ALPACA_API_KEY` (production)
+      - `ALPACA_SECRET_KEY` (production)
+      - `ALPACA_BASE_URL=https://api.alpaca.markets`
+- [ ] Engine redeployed and `GET /api/engine/health` returns 200
+- [ ] Engine logs show `Using Alpaca broker (live)` on startup
+- [ ] Dry-run order **before** flipping the gate: `POST /api/v1/portfolio/orders`
+      must return `403 Live execution is disabled` (proves the gate is active)
+- [ ] Flip the gate via the Web UI (operator role) or `PATCH /api/system-controls`:
+      ```json
+      { "live_execution_enabled": true, "global_mode": "live" }
+      ```
+- [ ] Verify the operator action was logged in `operator_actions` with
+      `action_type = "change_mode"`
+- [ ] Submit a $1 smoke order against a safe symbol and verify it reaches Alpaca
+- [ ] Set `trading_halted = true` immediately if anything looks wrong
+      (kill switch remains in place; see §6 Rollback)
+
+**Rollback from live → paper** is always available:
+```json
+PATCH /api/system-controls
+{ "live_execution_enabled": false, "global_mode": "paper" }
+```
+No redeploy required. Any in-flight order path will then be rejected by the gate.
+
 ---
 
 ## 6. Rollback Procedures
