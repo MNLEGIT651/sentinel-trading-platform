@@ -7,6 +7,7 @@ on:
       - 'packages/shared/**'
       - '.github/workflows/vercel-preview-smoke.yml'
       - 'scripts/health-check.sh'
+      - 'scripts/smoke-test.sh'
   push:
     branches: [main]
     paths:
@@ -14,6 +15,7 @@ on:
       - 'packages/shared/**'
       - '.github/workflows/vercel-preview-smoke.yml'
       - 'scripts/health-check.sh'
+      - 'scripts/smoke-test.sh'
   workflow_dispatch:
 
 permissions:
@@ -43,9 +45,18 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run synthetic proxy health checks
+      - name: Run health checks
         if: steps.target.outputs.available == 'true'
         env:
           VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
+          chmod +x scripts/health-check.sh
           ./scripts/health-check.sh --verbose
+
+      - name: Run smoke tests
+        if: steps.target.outputs.available == 'true'
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
+        run: |
+          chmod +x scripts/smoke-test.sh
+          ./scripts/smoke-test.sh --verbose

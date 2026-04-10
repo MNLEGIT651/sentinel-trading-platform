@@ -1,0 +1,34 @@
+# Composite action: Node 22 + pnpm 10 + dependency cache
+# Eliminates duplicated setup steps across CI jobs.
+name: Setup Node & pnpm
+description: Install Node 22, enable pnpm via corepack, and restore dependency cache.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node 22
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      with:
+        node-version-file: '.nvmrc'
+        package-manager-cache: false
+
+    - name: Enable corepack and install pnpm
+      shell: bash
+      run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+    - name: Get pnpm store path
+      id: pnpm-cache
+      shell: bash
+      run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+      with:
+        path: ${{ steps.pnpm-cache.outputs.store }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
