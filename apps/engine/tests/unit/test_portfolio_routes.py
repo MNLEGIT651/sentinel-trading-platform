@@ -230,6 +230,40 @@ class TestPortfolioEndpoints:
 
     @patch(_PATCH_GET_DB)
     @patch(_PATCH_GET_BROKER)
+    def test_submit_order_live_gate_does_not_bypass_on_url_containing_paper(
+        self, mock_get_broker, mock_get_db
+    ):
+        """Regression: a live URL containing 'paper' in path/subdomain must NOT bypass the gate.
+
+        Protects against substring-based hostname matching. Hostname matching
+        must use an explicit allowlist; any unknown hostname (even one with
+        'paper' in the path or subdomain) is treated as live.
+        """
+        from src.execution.alpaca_broker import AlpacaBroker
+
+        for hostile_url in (
+            "https://api.alpaca.markets/paper-compat",
+            "https://live.alpaca.markets/v2/paper",
+            "https://paper-monitor.corp.internal/alpaca",
+            "https://alpaca-paper-proxy.example.com",
+        ):
+            alpaca = AlpacaBroker.__new__(AlpacaBroker)
+            alpaca.base_url = hostile_url
+            alpaca._http = MagicMock()
+            mock_get_broker.return_value = alpaca
+            mock_get_db.return_value = None  # fail-closed path
+
+            response = self.client.post(
+                "/api/v1/portfolio/orders",
+                json={"symbol": "AAPL", "side": "buy", "quantity": 1},
+            )
+            assert response.status_code == 503, (
+                f"URL {hostile_url!r} must not bypass the gate, got {response.status_code}"
+            )
+            assert "database is not configured" in response.json()["detail"].lower()
+
+    @patch(_PATCH_GET_DB)
+    @patch(_PATCH_GET_BROKER)
     def test_submit_order_live_gate_blocks_without_db(self, mock_get_broker, mock_get_db):
         """Live Alpaca orders must fail-closed with 503 when the database is unavailable."""
         from src.execution.alpaca_broker import AlpacaBroker
