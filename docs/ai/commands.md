@@ -74,6 +74,12 @@ Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`
   - pull requests targeting `main` or `release/*` branches
 - State clearly what you could not verify locally
 
+### Branch Consolidation / Cleanup
+
+- `pnpm consolidate` — Audit all branches (dry-run, no changes)
+- `pnpm consolidate:execute` — Audit + delete stale branches
+- `gh workflow run "Stale Branch Cleanup"` — Trigger automated weekly cleanup manually
+
 ## Handoff Format
 
 When reporting validation, always include:
