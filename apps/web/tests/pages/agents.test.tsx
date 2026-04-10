@@ -59,7 +59,7 @@ describe('AgentsPage', () => {
     const { agentsClient } = await import('@/lib/agents-client');
     vi.mocked(agentsClient.getStatus).mockResolvedValue(mockStatus);
     vi.mocked(agentsClient.getRecommendations).mockResolvedValue({ recommendations: [mockRec] });
-    vi.mocked(agentsClient.getAlerts).mockResolvedValue({ alerts: [] });
+    vi.mocked(agentsClient.getAlerts).mockResolvedValue({ alerts: [], nextCursor: null });
     vi.mocked(agentsClient.runCycle).mockResolvedValue(undefined);
     vi.mocked(agentsClient.halt).mockResolvedValue(undefined);
     vi.mocked(agentsClient.resume).mockResolvedValue(undefined);
@@ -182,7 +182,7 @@ describe('AgentsPage', () => {
     vi.mocked(agentsClient.getStatus).mockRejectedValue(new Error('500 Internal Server Error'));
     // recommendations and alerts succeed with empty data
     vi.mocked(agentsClient.getRecommendations).mockResolvedValue({ recommendations: [] });
-    vi.mocked(agentsClient.getAlerts).mockResolvedValue({ alerts: [] });
+    vi.mocked(agentsClient.getAlerts).mockResolvedValue({ alerts: [], nextCursor: null });
     renderWithProviders(<AgentsPage />);
     await waitFor(() =>
       expect(screen.getByText(/unable to load agent status/i)).toBeInTheDocument(),

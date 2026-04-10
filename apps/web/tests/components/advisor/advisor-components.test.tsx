@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { ComponentType } from 'react';
+
+type ExplanationCardType = typeof import('@/components/advisor/explanation-card').ExplanationCard;
+type ConfidenceMeterType = typeof import('@/components/advisor/confidence-meter').ConfidenceMeter;
+type PreferenceCardType = typeof import('@/components/advisor/preference-card').PreferenceCard;
+type MemoryTimelineType = typeof import('@/components/advisor/memory-timeline').MemoryTimeline;
 
 // Mock TanStack Query
 vi.mock('@tanstack/react-query', () => ({
@@ -10,10 +14,10 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 
 // Pre-load components once to avoid per-test dynamic import overhead
-let ExplanationCard: ComponentType<Record<string, unknown>>;
-let ConfidenceMeter: ComponentType<Record<string, unknown>>;
-let PreferenceCard: ComponentType<Record<string, unknown>>;
-let MemoryTimeline: ComponentType<Record<string, unknown>>;
+let ExplanationCard: ExplanationCardType;
+let ConfidenceMeter: ConfidenceMeterType;
+let PreferenceCard: PreferenceCardType;
+let MemoryTimeline: MemoryTimelineType;
 
 beforeAll(async () => {
   [{ ExplanationCard }, { ConfidenceMeter }, { PreferenceCard }, { MemoryTimeline }] =
