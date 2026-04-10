@@ -5,6 +5,7 @@ discrete functions so the route handler stays thin.
 """
 
 import logging
+from urllib.parse import urlparse
 
 from fastapi import HTTPException
 
@@ -13,6 +14,35 @@ from src.execution.broker_interface import BrokerAdapter
 from src.risk.risk_manager import PortfolioState, PreTradeCheck, RiskManager
 
 logger = logging.getLogger(__name__)
+
+# Allowlist of known Alpaca paper-trading hostnames. Any broker whose base URL
+# hostname is NOT in this set is treated as a live venue and is subject to the
+# system_controls live-execution gate. Using exact hostname matching — rather
+# than substring matching on the full URL — prevents reverse-proxy or custom
+# hostnames that happen to contain "paper" in the path/subdomain from
+# inadvertently bypassing the gate.
+_ALPACA_PAPER_HOSTS: frozenset[str] = frozenset(
+    {
+        "paper-api.alpaca.markets",
+    }
+)
+
+
+def _is_paper_endpoint(base_url: str) -> bool:
+    """Return True iff base_url points at a known paper-trading endpoint.
+
+    Parses the URL and compares the hostname (case-insensitive) against
+    ``_ALPACA_PAPER_HOSTS``. Returns False for malformed URLs, missing
+    hostnames, or any hostname not in the allowlist — fail-closed so that
+    unknown endpoints are treated as live and gated accordingly.
+    """
+    try:
+        host = urlparse(base_url).hostname
+    except ValueError:
+        return False
+    if not host:
+        return False
+    return host.lower() in _ALPACA_PAPER_HOSTS
 
 
 async def check_trading_halts(experiment_id: str | None = None) -> None:
@@ -71,8 +101,10 @@ async def check_live_execution_gate(broker: BrokerAdapter) -> None:
     if not isinstance(broker, AlpacaBroker):
         return
 
-    # Alpaca paper endpoint also cannot move real capital.
-    if "paper" in broker.base_url.lower():
+    # Alpaca paper endpoint also cannot move real capital. Match by hostname
+    # against an explicit allowlist so that live URLs containing "paper" in
+    # the path or subdomain (e.g., reverse proxies) cannot bypass the gate.
+    if _is_paper_endpoint(broker.base_url):
         return
 
     db = get_db()
