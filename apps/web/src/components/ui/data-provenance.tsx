@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface DataProvenanceProps {
-  mode: 'live' | 'cached' | 'simulated' | 'offline';
+  mode: 'live' | 'cached' | 'paper' | 'offline';
   lastUpdated?: Date | string | null;
   /** Milliseconds before live data is considered stale. Default 60 000 (1 min). */
   staleThresholdMs?: number;
@@ -14,7 +14,7 @@ export interface DataProvenanceProps {
 const MODE_CONFIG = {
   live: { dot: 'bg-emerald-400', text: 'text-emerald-400', label: 'Live' },
   cached: { dot: 'bg-yellow-400', text: 'text-yellow-400', label: 'Cached' },
-  simulated: { dot: 'bg-amber-400', text: 'text-amber-400', label: 'Simulated' },
+  paper: { dot: 'bg-amber-400', text: 'text-amber-400', label: 'Paper' },
   offline: { dot: 'bg-red-400', text: 'text-red-400', label: 'Offline' },
 } as const;
 
@@ -90,7 +90,7 @@ export function DataProvenance({
         'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase',
         effectiveMode === 'live' && 'border-emerald-500/30 bg-emerald-500/15',
         effectiveMode === 'cached' && 'border-yellow-500/30 bg-yellow-500/15',
-        effectiveMode === 'simulated' && 'border-amber-500/30 bg-amber-500/15',
+        effectiveMode === 'paper' && 'border-amber-500/30 bg-amber-500/15',
         effectiveMode === 'offline' && 'border-red-500/30 bg-red-500/15',
         className,
       )}

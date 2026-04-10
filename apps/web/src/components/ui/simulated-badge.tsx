@@ -10,7 +10,7 @@ export function SimulatedBadge({ className }: { className?: string }) {
         className,
       )}
     >
-      Simulated
+      Paper
     </span>
   );
 }

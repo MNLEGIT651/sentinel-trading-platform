@@ -39,13 +39,13 @@ describe('DataProvenance', () => {
     expect(screen.getByText(/2m ago/)).toBeInTheDocument();
   });
 
-  it('renders simulated mode with amber styling', () => {
-    render(<DataProvenance mode="simulated" />);
+  it('renders paper mode with amber styling', () => {
+    render(<DataProvenance mode="paper" />);
     flushAgeComputation();
-    expect(screen.getByText('Simulated')).toBeInTheDocument();
+    expect(screen.getByText('Paper')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveAttribute(
       'aria-label',
-      expect.stringContaining('Simulated'),
+      expect.stringContaining('Paper'),
     );
   });
 
