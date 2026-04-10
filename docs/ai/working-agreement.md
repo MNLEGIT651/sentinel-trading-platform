@@ -24,8 +24,12 @@ If any of those fields are missing, the agent should infer the smallest safe sco
 
 - One task, one branch.
 - Use a separate worktree for parallel work when more than one agent is active.
+- Create worktrees with `bash scripts/agent-worktree.sh create <branch> <agent-name>`.
 - Never let two agents edit the same file at the same time.
+- No agent may have more than 2 open PRs simultaneously.
 - Rebase or merge only after the owning agent finishes and the branch passes validation.
+- Always run `pnpm pre-pr` before opening a PR.
+- Always update `WORKLOG.md` at session end.
 
 ## Commit Signing Policy (main + release branches)
 
@@ -115,3 +119,42 @@ Every handoff or PR must include:
 - unresolved risks or assumptions
 
 Use `docs/ai/task-template.md` when you need a copy-paste prompt skeleton.
+
+## Multi-Agent Coordination Protocol
+
+When multiple AI agents (Claude, Codex, Copilot) are active in the same repo:
+
+### Before starting work
+
+1. Read `WORKLOG.md` to check for active context and failed approaches
+2. Run `gh pr list --state open` to check for in-flight work
+3. Run `bash scripts/agent-worktree.sh list` to see active worktrees
+4. Claim your ticket in `project-state.md` before editing any files
+5. If another agent is active on overlapping files, STOP and wait
+
+### During work
+
+- Stay within your claimed file scope — if you need to expand, update the claim first
+- Keep PRs under 20 files and focused on one concern
+- Run `pnpm pre-pr:quick` periodically to check for drift
+- Do not touch files in another agent's claimed scope
+
+### Before creating a PR
+
+1. `pnpm pre-pr` must pass (full validation)
+2. `gh pr list --state open` must show <2 of your PRs
+3. Check for overlap: review other open PR file lists
+4. If overlap exists, coordinate or wait for the other PR to merge
+
+### After finishing
+
+1. Update `WORKLOG.md` with session entry
+2. Update `project-state.md` with task status
+3. Remove your worktree: `bash scripts/agent-worktree.sh remove <branch>`
+4. If your PR is merged, clean up: `bash scripts/agent-worktree.sh clean`
+
+### Conflict resolution
+
+- If two agents need the same file, the one with the earlier claim wins
+- If claims are simultaneous, prefer the smaller-scope task
+- The human owner (`stevenschling13`) is the final arbiter

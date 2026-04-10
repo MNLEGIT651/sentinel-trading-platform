@@ -9,13 +9,14 @@ and a Python engine that is validated separately from the Node workspaces.
 
 ## Read Order
 
-1. `docs/ai/working-agreement.md`
-2. `docs/ai/architecture.md`
-3. `docs/ai/commands.md`
-4. `docs/ai/review-checklist.md`
-5. `docs/ai/state/project-state.md`
-6. `docs/ai/agent-ops.md`
-7. `CLAUDE.md` when using Claude Code
+1. `WORKLOG.md` — check active context and failed approaches
+2. `docs/ai/working-agreement.md`
+3. `docs/ai/architecture.md`
+4. `docs/ai/commands.md`
+5. `docs/ai/review-checklist.md`
+6. `docs/ai/state/project-state.md`
+7. `docs/ai/agent-ops.md`
+8. `CLAUDE.md` when using Claude Code
 
 ## Repository Map
 
@@ -64,7 +65,17 @@ Advisory warnings (do not block, but expect review feedback):
 
 ### Self-Validation Checklist (Run Before Creating a PR)
 
-Every agent must verify these before opening a PR:
+Every agent must verify these before opening a PR. Use the automated gate:
+
+```bash
+# Preferred: automated pre-PR gate (runs all checks below)
+pnpm pre-pr
+
+# Quick mode for draft PRs (guardian checks only, no build/test)
+pnpm pre-pr:quick
+```
+
+Or manually:
 
 ```bash
 # 1. Branch is fresh from main
@@ -83,6 +94,9 @@ pnpm typecheck                          # catches hallucinated types
 # 5. Standard validation
 pnpm lint && pnpm test && pnpm build    # Node workspaces
 pnpm lint:engine && pnpm test:engine    # Python engine (if touched)
+
+# 6. Check for PR overlap
+gh pr list --state open                 # must have <2 of your PRs
 ```
 
 ## Validation Rules
