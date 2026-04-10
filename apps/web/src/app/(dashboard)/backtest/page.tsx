@@ -19,6 +19,7 @@ import { TradeLog } from '@/components/backtest/trade-log';
 import { runSyntheticBacktest, type BacktestResult } from '@/components/backtest/synthetic-runner';
 import { type EngineBacktestResponse, parsePct } from '@/components/backtest/engine-types';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
+import { humanizeFetchError } from '@/lib/humanize-fetch-error';
 
 /** Execution source of the most recent backtest run. */
 type ExecutionSource = 'engine' | 'synthetic';
@@ -89,8 +90,7 @@ export default function BacktestPage() {
       ran = true;
       setExecutionSource('engine');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Engine unavailable — unknown error';
-      setEngineError(message);
+      setEngineError(humanizeFetchError(error, { subject: 'backtest engine' }));
     }
 
     if (!ran) {

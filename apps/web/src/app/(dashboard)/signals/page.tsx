@@ -22,6 +22,7 @@ import { DEFAULT_SIGNAL_TICKERS, MAX_LIVE_SCAN_TICKERS } from '@/lib/constants';
 import { SignalTimeline, type SortField, type SortDir } from '@/components/signals/signal-timeline';
 import type { SignalRow } from '@/components/signals/signal-card';
 import { markPageVisited } from '@/components/dashboard/setup-progress';
+import { humanizeFetchError } from '@/lib/humanize-fetch-error';
 import {
   MetricGroup,
   PageContainer,
@@ -95,11 +96,11 @@ export default function SignalsPage() {
       setLastScanTime(new Date().toLocaleTimeString());
       toast.success(`Scan complete — ${rows.length} signal${rows.length !== 1 ? 's' : ''} found`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Scan failed';
+      const raw = err instanceof Error ? err.message : 'Scan failed';
       setError(
-        message.includes('timed out')
+        raw.includes('timed out')
           ? `Signal scan exceeded the live data time budget. Limit scans to ${MAX_LIVE_SCAN_TICKERS} tickers or wait for cached data to refresh.`
-          : message,
+          : humanizeFetchError(err, { subject: 'signal scan' }),
       );
       setSignals([]);
       setScanMeta(null);
