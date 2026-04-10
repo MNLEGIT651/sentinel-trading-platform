@@ -7,6 +7,8 @@ const PriceChart = dynamic(
   () => import('@/components/charts/price-chart').then((m) => ({ default: m.PriceChart })),
   { ssr: false },
 );
+import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBanner } from '@/components/ui/offline-banner';
@@ -111,6 +113,18 @@ function MarketsContent() {
   const quotesMode = isLive ? 'live' : engineOnline === false ? 'offline' : 'cached';
   const chartMode = bars && bars.length > 0 ? 'live' : 'simulated';
 
+  const barsErrorMessage = useMemo(() => {
+    if (!barsError) return null;
+    const raw = barsErrorObj?.message ?? '';
+    const match = raw.match(/Bars fetch failed:\s*(\d+)/);
+    const status = match ? Number(match[1]) : null;
+    if (status === 503) return 'Live market data is temporarily unavailable upstream.';
+    if (status === 429) return 'Live market data rate limit reached. Please retry shortly.';
+    if (status === 404) return 'No historical bars found for this ticker.';
+    if (status && status >= 500) return 'The market data service is having trouble right now.';
+    return 'Could not load live price history.';
+  }, [barsError, barsErrorObj]);
+
   const watchlist: WatchlistItem[] = useMemo(() => {
     if (!quotes)
       return engineOnline === false
@@ -190,20 +204,30 @@ function MarketsContent() {
                 </div>
               </CardHeader>
               <CardContent className="min-h-[18rem] p-0 px-2 pb-2 sm:px-4 sm:pb-4 lg:min-h-[30rem]">
-                {barsError && engineOnline === true ? (
-                  <ErrorState
-                    title="Chart data unavailable"
-                    message={barsErrorObj?.message ?? 'Could not load price history.'}
-                    onRetry={() => refetchBars()}
-                    className="flex h-full items-center justify-center"
-                  />
-                ) : (
-                  <PriceChart
-                    data={chartData}
-                    loading={chartLoading || loading}
-                    className="rounded-md"
-                  />
+                {barsError && engineOnline === true && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="mx-2 mt-2 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 sm:mx-0"
+                  >
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">{barsErrorMessage} Showing simulated data.</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => refetchBars()}
+                      className="h-7 gap-1 px-2 text-xs text-amber-100 hover:bg-amber-500/20 hover:text-amber-50"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Retry
+                    </Button>
+                  </div>
                 )}
+                <PriceChart
+                  data={chartData}
+                  loading={chartLoading || loading}
+                  className="rounded-md"
+                />
               </CardContent>
             </Card>
           }
