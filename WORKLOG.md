@@ -50,6 +50,21 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-10 — Codex (Live-data hardening pass)
+
+**Goal**: Remove dashboard-level simulated/fallback UI data paths and enforce explicit unavailable states when engine data is missing.
+
+**What changed**:
+
+- Removed web fallback constants for account/ticker/watchlist synthetic values.
+- Dashboard now renders watchlist/metrics from real query data only (no hardcoded substitutions).
+- Markets page no longer generates synthetic OHLCV or offline fallback prices; empty bars now surface an explicit unavailable state.
+- Portfolio page no longer injects fallback account values and no longer advertises simulated mode.
+- Backtest page no longer falls back to client-side synthetic runs when engine calls fail.
+- Updated page tests for markets/backtest/portfolio to verify offline/cached/unavailable behavior.
+
+**Validation**: `pnpm --filter @sentinel/web lint` (pass), `pnpm --filter @sentinel/web test -- --run tests/pages/markets.test.tsx tests/pages/backtest.test.tsx tests/pages/portfolio.test.tsx tests/pages/dashboard.test.tsx` (pass).
+
 ### 2026-04-10 — Copilot (PR Guardian System)
 
 **Goal**: Build automated guardrails to prevent AI agent drift and quality issues.

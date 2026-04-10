@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { DataProvenance } from '@/components/ui/data-provenance';
-import { ConfigBanner } from '@/components/ui/config-banner';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
   PageContainer,
@@ -31,14 +30,8 @@ import {
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import { getStatusColors } from '@/lib/status-colors';
-import type { OHLCV } from '@sentinel/shared';
 import { useQuotesQuery, useBarsQuery } from '@/hooks/queries';
-import {
-  TICKER_SYMBOLS,
-  WATCHLIST_TICKERS,
-  FALLBACK_PRICES,
-  FALLBACK_CHANGES,
-} from '@/lib/constants';
+import { TICKER_SYMBOLS, WATCHLIST_TICKERS } from '@/lib/constants';
 
 const TICKER_NAMES = WATCHLIST_TICKERS.map((w) => w.ticker);
 
@@ -47,40 +40,6 @@ interface WatchlistItem {
   name: string;
   price: number;
   change: number;
-}
-
-function buildFallbackWatchlist(): WatchlistItem[] {
-  return WATCHLIST_TICKERS.map((w, i) => ({
-    ...w,
-    price: FALLBACK_PRICES[i] ?? 0,
-    change: FALLBACK_CHANGES[i] ?? 0,
-  }));
-}
-
-// Generate synthetic OHLCV (fallback when engine is offline)
-function generateSampleData(basePrice: number): OHLCV[] {
-  const data: OHLCV[] = [];
-  let current = basePrice * 0.9;
-  for (let i = 90; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    if (d.getDay() === 0 || d.getDay() === 6) continue;
-    const vol = current * 0.02;
-    const open = current + (Math.random() - 0.5) * vol;
-    const close = open + (Math.random() - 0.45) * vol;
-    const high = Math.max(open, close) + Math.random() * vol * 0.5;
-    const low = Math.min(open, close) - Math.random() * vol * 0.5;
-    data.push({
-      timestamp: d.toISOString(),
-      open: +open.toFixed(2),
-      high: +high.toFixed(2),
-      low: +low.toFixed(2),
-      close: +close.toFixed(2),
-      volume: Math.floor(1_000_000 + Math.random() * 5_000_000),
-    });
-    current = close;
-  }
-  return data;
 }
 
 function MarketsContent() {
@@ -109,24 +68,20 @@ function MarketsContent() {
   const loading = engineOnline === null || (engineOnline === true && quotesLoading);
 
   const quotesMode = isLive ? 'live' : engineOnline === false ? 'offline' : 'cached';
-  const chartMode = bars && bars.length > 0 ? 'live' : 'simulated';
+  const chartMode =
+    bars && bars.length > 0 ? 'live' : engineOnline === false ? 'offline' : 'cached';
 
   const watchlist: WatchlistItem[] = useMemo(() => {
-    if (!quotes)
-      return engineOnline === false
-        ? buildFallbackWatchlist()
-        : WATCHLIST_TICKERS.map((w) => ({ ...w, price: 0, change: 0 }));
+    if (!quotes) return WATCHLIST_TICKERS.map((w) => ({ ...w, price: 0, change: 0 }));
     return WATCHLIST_TICKERS.map((w) => {
       const q = quotes.find((q) => q.ticker === w.ticker);
       return { ...w, price: q?.close ?? 0, change: q?.change_pct ?? 0 };
     });
-  }, [quotes, engineOnline]);
+  }, [quotes]);
 
-  const chartData: OHLCV[] = useMemo(() => {
-    if (bars && bars.length > 0) return bars;
-    const stock = watchlist.find((w) => w.ticker === selectedTicker);
-    return generateSampleData(stock?.price || 150);
-  }, [bars, watchlist, selectedTicker]);
+  const chartData = useMemo(() => {
+    return bars && bars.length > 0 ? bars : [];
+  }, [bars]);
 
   const selectedStock = watchlist.find((w) => w.ticker === selectedTicker);
 
@@ -146,13 +101,6 @@ function MarketsContent() {
     <PageContainer className="page-enter" density="compact">
       <SectionStack spacing="default">
         {engineOnline === false && <OfflineBanner service="engine" />}
-        {engineOnline === true && !isLive && !loading && (
-          <ConfigBanner
-            message="Showing simulated data. Configure your Polygon API key for live market data."
-            linkHref="/settings"
-            linkLabel="Go to Settings"
-          />
-        )}
         <ResponsivePaneLayout
           className="stagger-grid"
           primary={
@@ -194,6 +142,13 @@ function MarketsContent() {
                   <ErrorState
                     title="Chart data unavailable"
                     message={barsErrorObj?.message ?? 'Could not load price history.'}
+                    onRetry={() => refetchBars()}
+                    className="flex h-full items-center justify-center"
+                  />
+                ) : chartData.length === 0 && !chartLoading ? (
+                  <ErrorState
+                    title="Chart data unavailable"
+                    message="No historical bars were returned by the engine for this ticker."
                     onRetry={() => refetchBars()}
                     className="flex h-full items-center justify-center"
                   />

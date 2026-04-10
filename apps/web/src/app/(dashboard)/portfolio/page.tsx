@@ -5,7 +5,6 @@ import { PieChart, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OfflineBanner } from '@/components/ui/offline-banner';
-import { ConfigBanner } from '@/components/ui/config-banner';
 import { DataProvenance } from '@/components/ui/data-provenance';
 import type { DataProvenanceProps } from '@/components/ui/data-provenance';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -40,12 +39,7 @@ import {
 } from '@/hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
-import {
-  FALLBACK_ACCOUNT,
-  ORDER_TERMINAL_STATUSES,
-  TICKER_SYMBOLS,
-  PAGE_SIZE_ORDERS,
-} from '@/lib/constants';
+import { ORDER_TERMINAL_STATUSES, TICKER_SYMBOLS, PAGE_SIZE_ORDERS } from '@/lib/constants';
 
 export default function PortfolioPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
@@ -101,7 +95,6 @@ export default function PortfolioPage() {
   const provenanceMode: DataProvenanceProps['mode'] = useMemo(() => {
     if (engineOnline === true && account) return 'live';
     if (engineOnline === false && account) return 'cached';
-    if (engineOnline === false && !account) return 'simulated';
     return 'offline';
   }, [engineOnline, account]);
 
@@ -132,7 +125,7 @@ export default function PortfolioPage() {
 
   const recentOrders = orderHistory ?? [];
 
-  const effectiveAccount = account ?? (engineOnline !== true ? FALLBACK_ACCOUNT : null);
+  const effectiveAccount = account ?? null;
 
   const formatTerminalStatus = useCallback((status: string, orderId: string): string => {
     switch (status) {
@@ -216,10 +209,10 @@ export default function PortfolioPage() {
   const totalPnl = positions.reduce((s, p) => s + pnl(p), 0);
   const totalCost = positions.reduce((s, p) => s + p.avgEntry * p.shares, 0);
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
-  const cashBalance = effectiveAccount?.cash ?? 100_000;
+  const cashBalance = effectiveAccount?.cash ?? 0;
   const portfolioTotal =
-    (effectiveAccount?.equity ?? cashBalance) > 0
-      ? (effectiveAccount?.equity ?? cashBalance + totalValue)
+    effectiveAccount?.equity && effectiveAccount.equity > 0
+      ? effectiveAccount.equity
       : cashBalance + totalValue;
 
   const toggleSort = (field: SortField) => {
@@ -283,13 +276,6 @@ export default function PortfolioPage() {
       <PageContainer className="page-enter" density="compact">
         <SectionStack spacing="default">
           {engineOnline === false && <OfflineBanner service="engine" />}
-          {provenanceMode === 'simulated' && engineOnline === true && (
-            <ConfigBanner
-              message="Showing simulated portfolio. Configure Alpaca API keys for live/paper trading."
-              linkHref="/settings"
-              linkLabel="Go to Settings"
-            />
-          )}
 
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -379,8 +365,6 @@ export default function PortfolioPage() {
                         'No open positions. Use Quick Order above to place your first trade.'}
                       {provenanceMode === 'cached' &&
                         'Cached data \u2014 no positions found. Reconnect engine for live updates.'}
-                      {provenanceMode === 'simulated' &&
-                        'Showing simulated portfolio \u2014 connect the engine for live data.'}
                       {provenanceMode === 'offline' &&
                         'No data available \u2014 engine is offline.'}
                     </p>
