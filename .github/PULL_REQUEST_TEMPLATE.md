@@ -2,13 +2,25 @@
 
 Describe the outcome in 2-5 lines.
 
+## Agent Metadata
+
+<!-- Required for AI-generated PRs. Human PRs may leave agent as "Human". -->
+
+| Field              | Value                                          |
+| ------------------ | ---------------------------------------------- |
+| **Agent**          | <!-- Claude Code / Codex / Copilot / Human --> |
+| **Claimed ticket** | <!-- e.g., SENT-42 or "untracked audit" -->    |
+
 ## Scope
 
 - Files or modules intentionally changed:
 - Files or modules intentionally untouched:
+- Workspace areas touched: <!-- e.g., apps/web only -->
+- Estimated file count: <!-- aim for <20 files per PR -->
 
 ## Validation
 
+- [ ] Branch created from current `main` HEAD
 - [ ] `git diff --check`
 - [ ] Relevant commands from `docs/ai/commands.md` were run
 - [ ] Exact command results are listed below
@@ -17,8 +29,11 @@ Describe the outcome in 2-5 lines.
 
 - `command`: pass/fail
 
-## Forbidden Changes Checked
+## Quality Checks
 
+- [ ] No file exceeds 400 lines (or decomposition plan included)
+- [ ] All imports resolve — no hallucinated modules/types
+- [ ] Single concern — PR does not mix unrelated changes
 - [ ] No accidental shared contract drift
 - [ ] No accidental migration or env contract change
 - [ ] No secrets or credentials in the diff

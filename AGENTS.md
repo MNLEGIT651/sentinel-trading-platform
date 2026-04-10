@@ -40,6 +40,51 @@ supabase/        PostgreSQL migrations and seed data
 - No secrets in code, docs, tests, fixtures, screenshots, or commits.
 - Prefer minimal diffs. Do not refactor unrelated code while implementing a narrow task.
 
+## PR Quality Gates (Enforced by CI)
+
+The `PR Guardian` workflow (`scripts/pr-guardian.mjs`) runs on every PR and will **block merge**
+if any of the following are violated:
+
+| Rule                  | Threshold                                                        | Action                                  |
+| --------------------- | ---------------------------------------------------------------- | --------------------------------------- |
+| **File count**        | >30 files                                                        | ❌ Fail — split the PR                  |
+| **Line churn**        | >1500 lines                                                      | ❌ Fail — reduce scope                  |
+| **File size growth**  | Creating a file >500 lines, or growing a large file by >50 lines | ❌ Fail — decompose first               |
+| **Staleness + risk**  | >15 commits behind `main` AND touches high-risk paths            | ❌ Fail — rebase first                  |
+| **High-risk overlap** | >8 files shared with another PR in high-risk paths               | ❌ Fail — coordinate or close duplicate |
+| **Workspace spread**  | >5 workspace areas                                               | ❌ Fail — split by concern              |
+
+Advisory warnings (do not block, but expect review feedback):
+
+- File count >20, line churn >800
+- Any changed file already >400 lines
+- > 3 files overlap with another open PR
+- Unresolved relative imports (possible hallucination)
+- > 3 workspace areas touched
+
+### Self-Validation Checklist (Run Before Creating a PR)
+
+Every agent must verify these before opening a PR:
+
+```bash
+# 1. Branch is fresh from main
+git fetch origin && git rev-list --count HEAD..origin/main  # must be ≤5
+
+# 2. Scope is reasonable
+git diff --stat origin/main | tail -1   # aim for <20 files
+
+# 3. No file exceeds 400 lines
+find . -name '*.ts' -o -name '*.tsx' -o -name '*.py' | \
+  xargs wc -l | sort -rn | head -20    # check top files
+
+# 4. All imports resolve (TypeScript)
+pnpm typecheck                          # catches hallucinated types
+
+# 5. Standard validation
+pnpm lint && pnpm test && pnpm build    # Node workspaces
+pnpm lint:engine && pnpm test:engine    # Python engine (if touched)
+```
+
 ## Validation Rules
 
 - `pnpm lint`, `pnpm test`, and `pnpm build` cover the Node/Turborepo workspaces only.

@@ -29,6 +29,8 @@
     "security:routes": "node scripts/check-route-security.mjs",
     "test:env-contract": "node --test scripts/check-env-contract.test.mjs",
     "test:scripts": "node --test scripts/check-env-contract.test.mjs scripts/validate-railway-supabase-env.test.mjs",
+    "guardian": "node scripts/pr-guardian.mjs --local",
+    "guardian:dry-run": "node scripts/pr-guardian.mjs --dry-run",
     "prepare": "husky"
   },
   "devDependencies": {
