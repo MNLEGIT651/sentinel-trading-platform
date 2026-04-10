@@ -46,8 +46,10 @@ class PaperBroker(BrokerAdapter):
         self.commission_per_share = commission_per_share
         self.fill_latency_range_ms = fill_latency_range_ms
         self._orders: dict[str, OrderRequest] = {}  # order_id -> request
-        # PDT tracking: list of (instrument_id, open_date, close_date)
-        self._day_trades: list[tuple[str, str, str]] = []
+        # PDT tracking: list of (instrument_id, trade_date)
+        self._day_trades: list[tuple[str, str]] = []
+        # Track buy dates per instrument for same-day round-trip detection
+        self._open_dates: dict[str, list[str]] = {}
 
     def _apply_slippage(self, price: float, side: str) -> float:
         """Apply random slippage between 0 and slippage_bps basis points."""
@@ -60,28 +62,45 @@ class PaperBroker(BrokerAdapter):
     def _track_day_trade(self, order: OrderRequest) -> None:
         """Record a potential day-trade (open+close same instrument same day).
 
+        A day-trade occurs when a position in the same instrument is opened
+        and closed on the same calendar day.  We track buy timestamps per
+        instrument and check sells against them.
+
         Logs a warning if account equity is below the PDT threshold and the
-        5-day day-trade count reaches the limit.
+        rolling 5-business-day day-trade count reaches the limit.
         """
         today = datetime.now(UTC).strftime("%Y-%m-%d")
-        if order.side == "sell" and order.instrument_id in self.positions:
-            self._day_trades.append((order.instrument_id, today, today))
-            # Prune entries older than 5 business days
-            self._day_trades = [
-                (sym, od, cd)
-                for sym, od, cd in self._day_trades
-                if (datetime.now(UTC) - datetime.fromisoformat(cd).replace(tzinfo=UTC)).days <= 7
-            ]
-            equity = self.cash + sum(
-                abs(p["quantity"]) * p["avg_price"] for p in self.positions.values()
-            )
-            if equity < _PDT_EQUITY_THRESHOLD and len(self._day_trades) >= _PDT_MAX_DAY_TRADES:
-                logger.warning(
-                    "PDT warning: %d day-trades in rolling window with equity $%.2f (< $%.2f)",
-                    len(self._day_trades),
-                    equity,
-                    _PDT_EQUITY_THRESHOLD,
+
+        if order.side == "buy":
+            # Record the buy date for the instrument
+            self._open_dates.setdefault(order.instrument_id, []).append(today)
+            return
+
+        if order.side == "sell":
+            # Check if there was a buy for this instrument today
+            open_dates = self._open_dates.get(order.instrument_id, [])
+            if today in open_dates:
+                # Same-day round-trip → day trade
+                open_dates.remove(today)
+                self._day_trades.append((order.instrument_id, today))
+                # Prune entries older than 5 business days (~7 calendar days
+                # is conservative; real PDT uses rolling 5 *business* days)
+                cutoff = datetime.now(UTC)
+                self._day_trades = [
+                    (sym, dt)
+                    for sym, dt in self._day_trades
+                    if (cutoff - datetime.fromisoformat(dt).replace(tzinfo=UTC)).days <= 7
+                ]
+                equity = self.cash + sum(
+                    abs(p["quantity"]) * p["avg_price"] for p in self.positions.values()
                 )
+                if equity < _PDT_EQUITY_THRESHOLD and len(self._day_trades) >= _PDT_MAX_DAY_TRADES:
+                    logger.warning(
+                        "PDT warning: %d day-trades in rolling window with equity $%.2f (< $%.2f)",
+                        len(self._day_trades),
+                        equity,
+                        _PDT_EQUITY_THRESHOLD,
+                    )
 
     async def submit_order(self, order: OrderRequest, **kwargs) -> OrderResult:
         """Execute a paper order with realistic modeling.
