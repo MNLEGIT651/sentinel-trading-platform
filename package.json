@@ -33,6 +33,8 @@
     "guardian:dry-run": "node scripts/pr-guardian.mjs --dry-run",
     "pre-pr": "node scripts/pre-pr-check.mjs",
     "pre-pr:quick": "node scripts/pre-pr-check.mjs --quick",
+    "consolidate": "bash scripts/consolidate-branches.sh",
+    "consolidate:execute": "bash scripts/consolidate-branches.sh --execute",
     "worktree": "bash scripts/agent-worktree.sh",
     "prepare": "husky"
   },
