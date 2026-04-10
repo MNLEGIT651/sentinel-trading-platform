@@ -14,7 +14,45 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 0: Commit signature policy gate
+  # Job 0: Detect which apps changed — skip irrelevant jobs on PRs
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      engine: ${{ steps.filter.outputs.engine }}
+      agents: ${{ steps.filter.outputs.agents }}
+      shared: ${{ steps.filter.outputs.shared }}
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+            engine:
+              - 'apps/engine/**'
+            agents:
+              - 'apps/agents/**'
+              - 'packages/shared/**'
+            shared:
+              - 'packages/shared/**'
+            infra:
+              - '.github/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+              - 'tsconfig.base.json'
+
+  # ---------------------------------------------------------------------------
+  # Job 1: Commit signature policy gate
   # ---------------------------------------------------------------------------
   verify-commit-signatures:
     name: Verify Commit Signatures
@@ -46,10 +84,45 @@ jobs:
           scripts/check-commit-signatures.sh "$RANGE"
 
   # ---------------------------------------------------------------------------
-  # Job 1: Next.js web app
+  # Job 2: Lint all TypeScript workspaces (single job, leverages Turbo cache)
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint
+    needs: changes
+    if: >-
+      github.event_name == 'push' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.agents == 'true' ||
+      needs.changes.outputs.shared == 'true' ||
+      needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node & pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Lint all workspaces
+        run: pnpm lint
+
+      - name: Run env contract tests
+        run: pnpm test:scripts
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Next.js web app — test + build
   # ---------------------------------------------------------------------------
   test-web:
     name: Test Web
+    needs: changes
+    if: >-
+      github.event_name == 'push' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -62,9 +135,6 @@ jobs:
       - name: Setup Node & pnpm
         uses: ./.github/actions/setup-node-pnpm
 
-      - name: Run env contract + Railway Supabase validator tests
-        run: pnpm test:scripts
-
       - name: Cache Next.js build
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
@@ -73,9 +143,6 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             nextjs-${{ runner.os }}-
-
-      - name: Run monorepo lint
-        run: pnpm lint
 
       - name: Run web tests
         run: pnpm --filter web test
@@ -98,12 +165,10 @@ jobs:
             fi
             echo ""
             echo '```'
-            # Parse route manifest for sizes
             if [ -f apps/web/.next/routes-manifest.json ]; then
               echo "Static routes: $(jq '.staticRoutes | length' apps/web/.next/routes-manifest.json)"
               echo "Dynamic routes: $(jq '.dynamicRoutes | length' apps/web/.next/routes-manifest.json)"
             fi
-            # Report JS chunk sizes
             if [ -d apps/web/.next/static/chunks ]; then
               total=$(du -sh apps/web/.next/static/chunks 2>/dev/null | cut -f1)
               echo "Total JS chunks: $total"
@@ -115,10 +180,15 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
-  # Job 2: Python quant engine
+  # Job 4: Python quant engine
   # ---------------------------------------------------------------------------
   test-engine:
     name: Test Engine
+    needs: changes
+    if: >-
+      github.event_name == 'push' ||
+      needs.changes.outputs.engine == 'true' ||
+      needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -130,18 +200,11 @@ jobs:
         with:
           python-version-file: '.python-version'
 
-      - name: Cache uv / pip
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+      - name: Setup uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.3.1
         with:
-          path: |
-            ~/.cache/uv
-            ~/.cache/pip
-          key: uv-${{ runner.os }}-py3.12-${{ hashFiles('apps/engine/pyproject.toml') }}
-          restore-keys: |
-            uv-${{ runner.os }}-py3.12-
-
-      - name: Install uv
-        run: pip install uv
+          enable-cache: true
+          cache-dependency-glob: 'apps/engine/pyproject.toml'
 
       - name: Create venv and install engine dependencies
         working-directory: apps/engine
@@ -164,12 +227,20 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
 
   # ---------------------------------------------------------------------------
-  # Job 3: Agents TypeScript service
+  # Job 5: Agents TypeScript service
   # ---------------------------------------------------------------------------
   test-agents:
     name: Test Agents
+    needs: changes
+    if: >-
+      github.event_name == 'push' ||
+      needs.changes.outputs.agents == 'true' ||
+      needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -177,25 +248,32 @@ jobs:
       - name: Setup Node & pnpm
         uses: ./.github/actions/setup-node-pnpm
 
-      - name: Type-check agents
+      # Build first (produces dist/), then lint ESLint only (skip redundant tsc)
+      - name: Build agents
         run: pnpm --filter agents build
 
-      - name: Lint agents
-        run: pnpm --filter agents lint
+      - name: Lint agents (ESLint only)
+        run: pnpm --filter agents lint:eslint
 
       - name: Run agents tests
         run: pnpm --filter agents test
 
   # ---------------------------------------------------------------------------
-  # Job 4: Dependency vulnerability scanning
+  # Job 6: Dependency vulnerability scanning
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' &&
-        (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
-    needs: [verify-commit-signatures, test-web, test-engine, test-agents]
+    # Run after all test jobs complete (skipped deps are OK, failures are not).
+    needs: [verify-commit-signatures, lint, test-web, test-engine, test-agents]
+    if: >-
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'pull_request' &&
+          (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -210,8 +288,11 @@ jobs:
         with:
           python-version-file: '.python-version'
 
-      - name: Install uv
-        run: pip install uv
+      - name: Setup uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.3.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'apps/engine/pyproject.toml'
 
       - name: Create venv and install engine audit dependencies
         working-directory: apps/engine

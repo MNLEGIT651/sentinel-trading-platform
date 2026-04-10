@@ -68,20 +68,13 @@ jobs:
       - name: Setup Python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: '3.12'
+          python-version-file: '.python-version'
 
-      - name: Cache uv / pip
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+      - name: Setup uv
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.3.1
         with:
-          path: |
-            ~/.cache/uv
-            ~/.cache/pip
-          key: uv-${{ runner.os }}-py3.12-${{ hashFiles('apps/engine/pyproject.toml') }}
-          restore-keys: |
-            uv-${{ runner.os }}-py3.12-
-
-      - name: Install uv
-        run: pip install uv
+          enable-cache: true
+          cache-dependency-glob: 'apps/engine/pyproject.toml'
 
       - name: Create venv and install engine dependencies
         working-directory: apps/engine
