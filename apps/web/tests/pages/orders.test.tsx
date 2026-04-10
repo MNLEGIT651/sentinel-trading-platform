@@ -297,38 +297,37 @@ describe('OrdersPage', () => {
 
   // ─── Error state ──────────────────────────────────────────────────────
 
-  it('shows ErrorState component when queries fail', async () => {
+  it('shows ErrorState component when all queries fail', async () => {
     const { useFillsQuery, useRiskEvaluationsQuery, useOrderHistoryQuery } =
       await import('@/hooks/queries');
     vi.mocked(useFillsQuery).mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
-      error: new Error('fetch failed'),
+      error: new Error('Fills fetch failed: 503'),
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useFillsQuery>);
     vi.mocked(useRiskEvaluationsQuery).mockReturnValue({
       data: undefined,
       isLoading: false,
-      isError: false,
-      error: null,
+      isError: true,
+      error: new Error('Risk fetch failed: 503'),
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useRiskEvaluationsQuery>);
     vi.mocked(useOrderHistoryQuery).mockReturnValue({
       data: undefined,
       isLoading: false,
-      isError: false,
-      error: null,
+      isError: true,
+      error: new Error('Order history fetch failed: 503'),
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useOrderHistoryQuery>);
 
     renderWithProviders(<OrdersPage />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByText('Failed to load data')).toBeInTheDocument();
     expect(screen.getByText('Try Again')).toBeInTheDocument();
   });
 
-  it('ErrorState retry button triggers refetch', async () => {
+  it('ErrorState retry button triggers refetch on all queries when all fail', async () => {
     const refetchFills = vi.fn();
     const refetchRisk = vi.fn();
     const refetchOrders = vi.fn();
@@ -339,18 +338,54 @@ describe('OrdersPage', () => {
       data: undefined,
       isLoading: false,
       isError: true,
-      error: new Error('fail'),
+      error: new Error('Fills fetch failed: 503'),
       refetch: refetchFills,
     } as unknown as ReturnType<typeof useFillsQuery>);
     vi.mocked(useRiskEvaluationsQuery).mockReturnValue({
       data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error('Risk fetch failed: 503'),
+      refetch: refetchRisk,
+    } as unknown as ReturnType<typeof useRiskEvaluationsQuery>);
+    vi.mocked(useOrderHistoryQuery).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error('Order history fetch failed: 503'),
+      refetch: refetchOrders,
+    } as unknown as ReturnType<typeof useOrderHistoryQuery>);
+
+    renderWithProviders(<OrdersPage />);
+    fireEvent.click(screen.getByText('Try Again'));
+    expect(refetchFills).toHaveBeenCalled();
+    expect(refetchRisk).toHaveBeenCalled();
+    expect(refetchOrders).toHaveBeenCalled();
+  });
+
+  it('shows inline warning with partial data when only some queries fail', async () => {
+    const refetchFills = vi.fn();
+    const refetchRisk = vi.fn();
+    const refetchOrders = vi.fn();
+
+    const { useFillsQuery, useRiskEvaluationsQuery, useOrderHistoryQuery } =
+      await import('@/hooks/queries');
+    vi.mocked(useFillsQuery).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error('Fills fetch failed: 503'),
+      refetch: refetchFills,
+    } as unknown as ReturnType<typeof useFillsQuery>);
+    vi.mocked(useRiskEvaluationsQuery).mockReturnValue({
+      data: { data: [], total: 0 },
       isLoading: false,
       isError: false,
       error: null,
       refetch: refetchRisk,
     } as unknown as ReturnType<typeof useRiskEvaluationsQuery>);
     vi.mocked(useOrderHistoryQuery).mockReturnValue({
-      data: undefined,
+      data: [],
       isLoading: false,
       isError: false,
       error: null,
@@ -358,7 +393,12 @@ describe('OrdersPage', () => {
     } as unknown as ReturnType<typeof useOrderHistoryQuery>);
 
     renderWithProviders(<OrdersPage />);
-    fireEvent.click(screen.getByText('Try Again'));
+    expect(screen.queryByText('Failed to load data')).not.toBeInTheDocument();
+    expect(screen.getByText(/Some data sources failed to load/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Fills — Fills service is temporarily unavailable/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
     expect(refetchFills).toHaveBeenCalled();
     expect(refetchRisk).toHaveBeenCalled();
     expect(refetchOrders).toHaveBeenCalled();

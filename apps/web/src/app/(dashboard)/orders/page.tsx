@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { ArrowUpDown, Activity } from 'lucide-react';
+import { ArrowUpDown, Activity, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorState } from '@/components/ui/error-state';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -11,6 +12,7 @@ import type { Fill, RiskEvaluation } from '@sentinel/shared';
 import type { OrderHistoryEntry } from '@/hooks/queries/use-order-history-query';
 import type { SortState } from '@/components/ui/table';
 import { PAGE_SIZE_ORDERS } from '@/lib/constants';
+import { humanizeFetchError } from '@/lib/humanize-fetch-error';
 import {
   StatsRow,
   OrderFilters,
@@ -46,11 +48,46 @@ export default function OrdersPage() {
   const ordersQuery = useOrderHistoryQuery(200);
 
   const isLoading = fillsQuery.isLoading || riskQuery.isLoading || ordersQuery.isLoading;
-  const isError = fillsQuery.isError || riskQuery.isError || ordersQuery.isError;
 
   const fills = useMemo(() => fillsQuery.data?.data ?? [], [fillsQuery.data]);
   const riskEvals = useMemo(() => riskQuery.data?.data ?? [], [riskQuery.data]);
   const orders = useMemo(() => ordersQuery.data ?? [], [ordersQuery.data]);
+
+  const failedSources = useMemo(() => {
+    const sources: { label: string; message: string }[] = [];
+    if (fillsQuery.isError)
+      sources.push({
+        label: 'Fills',
+        message: humanizeFetchError(fillsQuery.error, { subject: 'fills' }),
+      });
+    if (riskQuery.isError)
+      sources.push({
+        label: 'Risk evaluations',
+        message: humanizeFetchError(riskQuery.error, { subject: 'risk evaluations' }),
+      });
+    if (ordersQuery.isError)
+      sources.push({
+        label: 'Orders',
+        message: humanizeFetchError(ordersQuery.error, { subject: 'order history' }),
+      });
+    return sources;
+  }, [
+    fillsQuery.isError,
+    fillsQuery.error,
+    riskQuery.isError,
+    riskQuery.error,
+    ordersQuery.isError,
+    ordersQuery.error,
+  ]);
+
+  const allFailed = failedSources.length === 3;
+  const hasPartialFailure = failedSources.length > 0 && !allFailed;
+
+  const retryAll = useCallback(() => {
+    void fillsQuery.refetch();
+    void riskQuery.refetch();
+    void ordersQuery.refetch();
+  }, [fillsQuery, riskQuery, ordersQuery]);
 
   // Build unified timeline
   const timeline = useMemo(() => {
@@ -234,19 +271,39 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {isError && (
+        {hasPartialFailure && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span className="flex-1">
+              Some data sources failed to load:{' '}
+              {failedSources.map((s) => `${s.label} — ${s.message}`).join(' · ')} Showing available
+              entries.
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={retryAll}
+              className="h-7 gap-1 px-2 text-xs text-amber-100 hover:bg-amber-500/20 hover:text-amber-50"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {allFailed && (
           <ErrorState
             title="Failed to load data"
-            message="Failed to load execution data. Please try again."
-            onRetry={() => {
-              void fillsQuery.refetch();
-              void riskQuery.refetch();
-              void ordersQuery.refetch();
-            }}
+            message={failedSources[0]?.message ?? 'Could not load execution data.'}
+            onRetry={retryAll}
           />
         )}
 
-        {!isLoading && !isError && pagedEntries.length === 0 && (
+        {!isLoading && !allFailed && pagedEntries.length === 0 && (
           <Card className="border-zinc-800 bg-zinc-900/50">
             <CardContent className="p-12 text-center">
               <Activity className="mx-auto h-10 w-10 text-zinc-700" />
@@ -258,7 +315,7 @@ export default function OrdersPage() {
           </Card>
         )}
 
-        {!isLoading && !isError && pagedEntries.length > 0 && (
+        {!isLoading && !allFailed && pagedEntries.length > 0 && (
           <OrderTimelineTable
             pagedEntries={pagedEntries}
             sortState={sortState}

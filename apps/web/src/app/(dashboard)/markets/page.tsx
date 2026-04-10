@@ -33,6 +33,7 @@ import {
 import { useAppStore } from '@/stores/app-store';
 import { cn } from '@/lib/utils';
 import { getStatusColors } from '@/lib/status-colors';
+import { humanizeFetchError } from '@/lib/humanize-fetch-error';
 import type { OHLCV } from '@sentinel/shared';
 import { useQuotesQuery, useBarsQuery } from '@/hooks/queries';
 import {
@@ -115,14 +116,7 @@ function MarketsContent() {
 
   const barsErrorMessage = useMemo(() => {
     if (!barsError) return null;
-    const raw = barsErrorObj?.message ?? '';
-    const match = raw.match(/Bars fetch failed:\s*(\d+)/);
-    const status = match ? Number(match[1]) : null;
-    if (status === 503) return 'Live market data is temporarily unavailable upstream.';
-    if (status === 429) return 'Live market data rate limit reached. Please retry shortly.';
-    if (status === 404) return 'No historical bars found for this ticker.';
-    if (status && status >= 500) return 'The market data service is having trouble right now.';
-    return 'Could not load live price history.';
+    return humanizeFetchError(barsErrorObj, { subject: 'live price history' });
   }, [barsError, barsErrorObj]);
 
   const watchlist: WatchlistItem[] = useMemo(() => {
@@ -149,7 +143,7 @@ function MarketsContent() {
       <PageContainer className="page-enter" density="compact">
         <ErrorState
           title="Failed to load market data"
-          message={quotesErrorObj?.message ?? 'Could not fetch quotes from the engine.'}
+          message={humanizeFetchError(quotesErrorObj, { subject: 'market quotes' })}
           onRetry={() => refetchQuotes()}
         />
       </PageContainer>

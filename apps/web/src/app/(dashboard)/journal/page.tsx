@@ -16,11 +16,14 @@ import {
   ShoppingCart,
   Link as LinkIcon,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useJournalQuery, useJournalStatsQuery, useGradeJournalMutation } from '@/hooks/queries';
 import type { JournalEntry, TradeGrade } from '@sentinel/shared';
 import Link from 'next/link';
 import { PAGE_SIZE_JOURNAL } from '@/lib/constants';
+import { humanizeFetchError } from '@/lib/humanize-fetch-error';
+import { RotateCcw } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -353,10 +356,11 @@ export default function JournalPage() {
     [eventFilter, tickerFilter, page],
   );
 
-  const { data, isLoading, isError } = useJournalQuery(filters);
+  const { data, isLoading, isError, error, refetch } = useJournalQuery(filters);
   const entries = data?.entries ?? [];
   const totalEntries = data?.total ?? 0;
   const totalPages = Math.ceil(totalEntries / PAGE_SIZE_JOURNAL);
+  const hasStaleData = entries.length > 0;
 
   return (
     <div className="space-y-6 page-enter">
@@ -429,15 +433,44 @@ export default function JournalPage() {
         </div>
       )}
 
-      {isError && (
+      {isError && hasStaleData && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            {humanizeFetchError(error, { subject: 'journal entries' })} Showing previously loaded
+            entries.
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => void refetch()}
+            className="h-7 gap-1 px-2 text-xs text-amber-100 hover:bg-amber-500/20 hover:text-amber-50"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {isError && !hasStaleData && (
         <Card className="border-red-900/50 bg-red-950/20">
-          <CardContent className="p-6 text-center text-red-400">
-            Failed to load journal entries. Please try again.
+          <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
+            <p className="text-sm text-red-400">
+              {humanizeFetchError(error, { subject: 'journal entries' })}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void refetch()} className="gap-1.5">
+              <RotateCcw className="h-4 w-4" />
+              Try Again
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {!isLoading && !isError && entries.length === 0 && (
+      {!isLoading && (!isError || hasStaleData) && entries.length === 0 && (
         <Card className="border-zinc-800 bg-zinc-900/50">
           <CardContent className="p-12 text-center">
             <BookOpen className="mx-auto h-10 w-10 text-zinc-700" />
@@ -449,7 +482,7 @@ export default function JournalPage() {
         </Card>
       )}
 
-      {!isLoading && !isError && entries.length > 0 && (
+      {!isLoading && entries.length > 0 && (
         <div className="space-y-3">
           {entries.map((entry) => (
             <JournalCard key={entry.id} entry={entry} />
