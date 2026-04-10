@@ -64,6 +64,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     configure_logging(level=log_level)
 
     _settings.validate()
+
+    # Log broker mode clearly at startup
+    import logging as _logging
+
+    _startup_logger = _logging.getLogger("sentinel.startup")
+    _startup_logger.info(
+        "Engine starting — broker_mode=%s, alpaca_base_url=%s",
+        _settings.broker_mode,
+        _settings.alpaca_base_url,
+    )
     yield
     # Shutdown
 

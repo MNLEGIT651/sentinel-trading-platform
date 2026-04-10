@@ -19,9 +19,17 @@ class AlpacaBroker(BrokerAdapter):
         api_key: str,
         secret_key: str,
         base_url: str = "https://paper-api.alpaca.markets",
+        *,
+        broker_mode: str = "paper",
     ) -> None:
         if not api_key or not secret_key:
             raise ValueError("Alpaca API key and secret key are required")
+        # Enforce: live mode must NOT point to the paper-api endpoint.
+        if broker_mode == "live" and "paper" in base_url:
+            raise ValueError(
+                "broker_mode is 'live' but base_url points to the paper API. "
+                "Set ALPACA_BASE_URL=https://api.alpaca.markets for live trading."
+            )
         # Normalize: strip trailing /v2 if user included it in their base URL
         normalized = base_url.rstrip("/")
         if normalized.endswith("/v2"):

@@ -1,5 +1,7 @@
 """Paper trading broker for simulated order execution."""
 
+import asyncio
+import logging
 import random
 import uuid
 from datetime import UTC, datetime
@@ -7,20 +9,45 @@ from datetime import UTC, datetime
 from src.execution.broker_interface import BrokerAdapter, OrderRequest, OrderResult
 from src.execution.order_store import StoredOrder, get_order_store
 
+logger = logging.getLogger(__name__)
+
+# ── Realistic defaults ────────────────────────────────────────────────────
+_COMMISSION_PER_SHARE: float = 0.005  # $0.005 / share (industry average)
+_PDT_EQUITY_THRESHOLD: float = 25_000.0  # FINRA pattern day-trader threshold
+_PDT_MAX_DAY_TRADES: int = 3  # max day-trades in 5 rolling business days
+_FILL_LATENCY_MIN_MS: int = 50  # realistic fill delay lower bound
+_FILL_LATENCY_MAX_MS: int = 200  # realistic fill delay upper bound
+
 
 class PaperBroker(BrokerAdapter):
-    """Simulated broker for paper trading with slippage modeling."""
+    """Simulated broker for paper trading with realistic execution modeling.
+
+    Includes:
+    * Slippage modeling (random within ``slippage_bps``)
+    * Per-share commission ($0.005/share)
+    * Pattern day-trade (PDT) tracking for accounts < $25 000
+    * Configurable fill latency (50-200 ms)
+    """
 
     def __init__(
         self,
         initial_capital: float = 100_000.0,
         slippage_bps: float = 5.0,
+        commission_per_share: float = _COMMISSION_PER_SHARE,
+        fill_latency_range_ms: tuple[int, int] = (
+            _FILL_LATENCY_MIN_MS,
+            _FILL_LATENCY_MAX_MS,
+        ),
     ) -> None:
         self.initial_capital = initial_capital
         self.cash = initial_capital
         self.positions: dict[str, dict] = {}  # instrument_id -> {quantity, avg_price}
         self.slippage_bps = slippage_bps
+        self.commission_per_share = commission_per_share
+        self.fill_latency_range_ms = fill_latency_range_ms
         self._orders: dict[str, OrderRequest] = {}  # order_id -> request
+        # PDT tracking: list of (instrument_id, open_date, close_date)
+        self._day_trades: list[tuple[str, str, str]] = []
 
     def _apply_slippage(self, price: float, side: str) -> float:
         """Apply random slippage between 0 and slippage_bps basis points."""
@@ -30,19 +57,58 @@ class PaperBroker(BrokerAdapter):
         else:
             return price * (1 - slip_fraction)
 
+    def _track_day_trade(self, order: OrderRequest) -> None:
+        """Record a potential day-trade (open+close same instrument same day).
+
+        Logs a warning if account equity is below the PDT threshold and the
+        5-day day-trade count reaches the limit.
+        """
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        if order.side == "sell" and order.instrument_id in self.positions:
+            self._day_trades.append((order.instrument_id, today, today))
+            # Prune entries older than 5 business days
+            self._day_trades = [
+                (sym, od, cd)
+                for sym, od, cd in self._day_trades
+                if (datetime.now(UTC) - datetime.fromisoformat(cd).replace(tzinfo=UTC)).days <= 7
+            ]
+            equity = self.cash + sum(
+                abs(p["quantity"]) * p["avg_price"] for p in self.positions.values()
+            )
+            if equity < _PDT_EQUITY_THRESHOLD and len(self._day_trades) >= _PDT_MAX_DAY_TRADES:
+                logger.warning(
+                    "PDT warning: %d day-trades in rolling window with equity $%.2f (< $%.2f)",
+                    len(self._day_trades),
+                    equity,
+                    _PDT_EQUITY_THRESHOLD,
+                )
+
     async def submit_order(self, order: OrderRequest, **kwargs) -> OrderResult:
-        """Execute a paper order. Requires current_price kwarg."""
+        """Execute a paper order with realistic modeling.
+
+        Requires ``current_price`` kwarg.  Applies slippage, per-share
+        commission, PDT checks and configurable fill latency.
+        """
         current_price = kwargs.get("current_price")
         if current_price is None:
             raise ValueError("PaperBroker requires 'current_price' kwarg")
 
         order_id = str(uuid.uuid4())
+
+        # ── Fill latency ─────────────────────────────────────────────────
+        lo, hi = self.fill_latency_range_ms
+        if hi > 0:
+            delay_s = random.randint(lo, hi) / 1000.0
+            await asyncio.sleep(delay_s)
+
         fill_price = self._apply_slippage(current_price, order.side)
         slippage = abs(fill_price - current_price)
+        commission = self.commission_per_share * order.quantity
         cost = fill_price * order.quantity
 
         if order.side == "buy":
-            if cost > self.cash:
+            total_cost = cost + commission
+            if total_cost > self.cash:
                 get_order_store().add(
                     StoredOrder(
                         order_id=order_id,
@@ -65,7 +131,7 @@ class PaperBroker(BrokerAdapter):
                     fill_quantity=None,
                     slippage=None,
                 )
-            self.cash -= cost
+            self.cash -= total_cost
             pos = self.positions.get(order.instrument_id)
             if pos:
                 total_qty = pos["quantity"] + order.quantity
@@ -93,7 +159,10 @@ class PaperBroker(BrokerAdapter):
                     "quantity": -order.quantity,
                     "avg_price": fill_price,
                 }
-            self.cash += cost
+            self.cash += cost - commission
+
+        # ── PDT tracking ─────────────────────────────────────────────────
+        self._track_day_trade(order)
 
         self._orders[order_id] = order
         now = datetime.now(UTC).isoformat()

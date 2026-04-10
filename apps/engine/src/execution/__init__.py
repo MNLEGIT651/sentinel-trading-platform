@@ -38,6 +38,7 @@ def get_broker() -> BrokerAdapter:
             api_key=settings.alpaca_api_key,
             secret_key=settings.alpaca_secret_key,
             base_url=settings.alpaca_base_url,
+            broker_mode="live",
         )
 
     # Paper mode
@@ -52,6 +53,7 @@ def get_broker() -> BrokerAdapter:
             api_key=settings.alpaca_api_key,
             secret_key=settings.alpaca_secret_key,
             base_url=settings.alpaca_base_url,
+            broker_mode="paper",
         )
 
     logger.info("Alpaca credentials not set — using in-memory PaperBroker")

@@ -28,6 +28,10 @@ def _otel_enabled() -> bool:
 def _init_tracing() -> None:
     """Initialise the global TracerProvider (called once)."""
     if not _otel_enabled():
+        logger.warning(
+            "OpenTelemetry is disabled (OTEL_ENABLED is not set). "
+            "Set OTEL_ENABLED=true for production observability."
+        )
         return
 
     from opentelemetry import trace
