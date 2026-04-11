@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     # Experiment
     experiment_id: str = ""
 
+    # Order reconciliation — periodic sweep of non-terminal Alpaca orders.
+    # 30s is tight enough to keep the UI fresh without stressing the 200 req/min
+    # Alpaca rate limit. Set to 0 to disable (paper-only deployments, tests).
+    order_reconciliation_interval_seconds: float = 30.0
+
     def validate(self) -> None:
         """Raise ValueError if any required environment variable is missing."""
         required = {

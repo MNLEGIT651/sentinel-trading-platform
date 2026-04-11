@@ -50,6 +50,62 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-11 — Claude (Phase 1 Blocker #3 — Order Reconciliation Loop)
+
+**Goal**: Close the last tractable Phase 1 code blocker — periodic reconciliation
+of non-terminal Alpaca orders — so that asynchronously-filled live orders settle
+in the local store without manual `GET /orders/{id}` calls. Per the 2026-04-10
+decision, reconciliation belongs in the engine (not the web webhook) because
+Alpaca's Trading API uses SSE, not HTTP webhooks.
+
+**What changed**:
+
+- `apps/engine/src/services/order_reconciliation.py` — new background service.
+  Exposes `reconcile_once()` (single sweep) and `reconciliation_loop(interval)` +
+  `start_reconciliation_task(interval)` (long-running loop). Sweep is a no-op
+  for PaperBroker, sequential per-order refresh to stay under Alpaca's 200 req/min,
+  per-order errors swallowed so one bad ID cannot stall the loop, cooperative
+  cancellation on shutdown.
+- `apps/engine/src/config.py` — `order_reconciliation_interval_seconds: float = 30.0`
+  (set to 0 to disable; env var `ORDER_RECONCILIATION_INTERVAL_SECONDS`).
+- `apps/engine/src/api/main.py` — lifespan starts the task after `_settings.validate()`,
+  cancels + awaits it during shutdown, swallows `CancelledError` from the awaited task.
+- `apps/engine/tests/unit/test_order_reconciliation.py` — 10 new unit tests covering
+  PaperBroker no-op, terminal-order skip, successful multi-order refresh, per-order
+  failure isolation, None-result not counted, disabled/negative interval, clean
+  cancellation, loop exits immediately when disabled, loop swallows sweep exceptions.
+- `docs/runbooks/release-checklist.md` — added §5.5 "Order Reconciliation" with
+  log-verification checklist and disable-with-caution note.
+
+**Validation**:
+
+- `pnpm test:engine` — 490/490 pass (+10 new tests)
+- `pnpm lint:engine` — clean
+- `pnpm format:check:engine` — clean
+
+**Decisions**:
+
+- Sequential (not concurrent) per-order refresh — keeps us well under Alpaca's
+  rate limit and avoids head-of-line blocking if one request hangs; bounded
+  worst case is `len(non_terminal) * 15s httpx timeout` ≈ 150s for 10 orders,
+  which is still shorter than the 30s loop interval on the steady state.
+- Loop swallows all non-`CancelledError` exceptions and continues — maximum
+  uptime for live-order state is the goal; one sweep failure must not
+  silently leave the entire engine without reconciliation.
+- Defaulted to 30s interval — tight enough for UI freshness without stressing
+  the rate limit. Operators can tune via env var without code changes.
+- Did NOT switch to Alpaca's streaming API (`wss://paper-api.alpaca.markets/stream`) —
+  polling is simpler to reason about, survives reconnects without custom logic,
+  and 30s latency is acceptable for equity orders. Revisit if we move to
+  sub-second strategies.
+
+**Next steps (remaining Phase 1 / Phase 2)**:
+
+1. **Env rotation** (ops task, no code) — still pending.
+2. **Live-account KYC handshake** — still blocked on product/legal sign-off.
+3. **Phase 2**: Sentry DSN wire-up in Vercel prod, nightly cash/position
+   reconciliation cron (different from this intra-day sweep), SLO dashboards.
+
 ### 2026-04-10 — Claude (Production Readiness Audit + Phase 1 Blocker #1)
 
 **Goal**: Audit production readiness of Sentinel and close the #1 critical blocker

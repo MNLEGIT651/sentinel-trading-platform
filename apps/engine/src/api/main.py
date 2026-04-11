@@ -1,4 +1,6 @@
+import asyncio
 import hmac
+import logging
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -21,7 +23,10 @@ from src.config import Settings
 from src.logging_config import configure_logging
 from src.middleware.rate_limit import RateLimitMiddleware
 from src.middleware.tracing import CorrelationIDMiddleware
+from src.services.order_reconciliation import start_reconciliation_task
 from src.telemetry import instrument_fastapi
+
+_main_logger = logging.getLogger(__name__)
 
 # Paths that don't require an API key (health checks, OpenAPI docs)
 _PUBLIC_PATHS = frozenset({"/health", "/docs", "/openapi.json", "/redoc"})
@@ -64,8 +69,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     configure_logging(level=log_level)
 
     _settings.validate()
-    yield
-    # Shutdown
+
+    # Start background order reconciliation for live Alpaca orders.
+    # No-op when broker is PaperBroker or when the interval is 0.
+    reconciliation_task = start_reconciliation_task(_settings.order_reconciliation_interval_seconds)
+
+    try:
+        yield
+    finally:
+        # Shutdown: cancel the reconciliation task and wait for it to stop.
+        if reconciliation_task is not None:
+            reconciliation_task.cancel()
+            try:
+                await reconciliation_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:  # pragma: no cover - defensive
+                _main_logger.exception("order_reconciliation: task raised during shutdown")
 
 
 app = FastAPI(

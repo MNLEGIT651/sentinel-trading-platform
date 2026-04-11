@@ -266,6 +266,32 @@ PATCH /api/system-controls
 ```
 No redeploy required. Any in-flight order path will then be rejected by the gate.
 
+### 5.5 Order Reconciliation (Non-Terminal Sweep)
+
+The engine runs a background task (`apps/engine/src/services/order_reconciliation.py`)
+that sweeps non-terminal orders against Alpaca every
+`ORDER_RECONCILIATION_INTERVAL_SECONDS` seconds (default **30**). The sweep
+calls `AlpacaBroker.refresh_order()` for each order whose status is not in
+`TERMINAL_STATUSES` (`filled`, `rejected`, `cancelled`) and updates the local
+order store. This keeps the UI, risk engine, and P&L in sync when Alpaca
+fills an order asynchronously.
+
+- **PaperBroker deployments:** the sweep is a no-op — `get_broker()` is not
+  `AlpacaBroker`, so no action is needed.
+- **Live deployments:** confirm the loop is running by checking engine logs
+  for `order_reconciliation: starting loop (interval=30.0s)` on startup.
+- **Disabling:** set `ORDER_RECONCILIATION_INTERVAL_SECONDS=0` in Railway
+  engine env (not recommended for live — non-terminal orders will never
+  settle in the local store).
+
+Post-deploy verification:
+
+- [ ] Engine logs contain `order_reconciliation: starting loop` on startup
+- [ ] After submitting a dry-run live order, engine logs eventually show
+      `order_reconciliation: refreshed 1/1 non-terminal orders`
+- [ ] `/api/v1/portfolio/orders/history` shows the final `filled` status
+      without manually hitting `GET /orders/{id}`
+
 ---
 
 ## 6. Rollback Procedures
