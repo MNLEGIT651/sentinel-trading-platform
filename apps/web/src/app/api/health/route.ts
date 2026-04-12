@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 10;
 
-type DependencyStatus = 'connected' | 'disconnected' | 'not_configured';
+type DependencyStatus = 'connected' | 'degraded' | 'disconnected' | 'not_configured';
 
 async function checkDependency(service: ServiceName): Promise<DependencyStatus> {
   const config = getServiceConfig(service);
@@ -22,7 +22,15 @@ async function checkDependency(service: ServiceName): Promise<DependencyStatus> 
       cache: 'no-store',
     });
 
-    return response.ok ? 'connected' : 'disconnected';
+    // Parse body to detect self-reported degraded state
+    const body = (await response.json().catch(() => null)) as { status?: string } | null;
+
+    if (response.ok) {
+      return body?.status === 'degraded' ? 'degraded' : 'connected';
+    }
+    // Non-200 but body matches health contract → degraded, not offline
+    if (body?.status === 'degraded') return 'degraded';
+    return 'disconnected';
   } catch (error) {
     console.error('health.GET', error);
     return 'disconnected';
@@ -35,8 +43,12 @@ export async function GET() {
     checkDependency('agents'),
   ]);
 
-  // Return degraded status when any configured service is unreachable
-  const hasDegraded = engine === 'disconnected' || agents === 'disconnected';
+  // Return degraded status when any configured service is not fully connected
+  const hasDegraded =
+    engine === 'disconnected' ||
+    agents === 'disconnected' ||
+    engine === 'degraded' ||
+    agents === 'degraded';
 
   const status = hasDegraded ? 'degraded' : 'ok';
 

@@ -4,10 +4,11 @@ from src.api.main import app
 
 
 def test_health_endpoint():
-    """Test health endpoint returns correct body (may be degraded in test env)."""
+    """Test health endpoint always returns 200 (liveness semantics)."""
     client = TestClient(app)
     response = client.get("/health")
-    assert response.status_code in (200, 503)
+    # Health endpoint always returns 200 — degraded state is in the body, not HTTP status
+    assert response.status_code == 200
     data = response.json()
     assert data["status"] in ("ok", "degraded")
     assert data["service"] == "sentinel-engine"

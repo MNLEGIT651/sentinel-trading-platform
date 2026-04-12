@@ -48,7 +48,11 @@ async def health_check() -> JSONResponse:
         ),
     )
 
+    # Always return 200 — the process is alive and can serve requests.
+    # Dependency degradation is reported in the body, not the HTTP status.
+    # Returning 503 caused the web UI to show "Engine Offline" during
+    # transient Supabase hiccups, which is misleading.
     return JSONResponse(
         content=body.model_dump(),
-        status_code=503 if degraded else 200,
+        status_code=200,
     )

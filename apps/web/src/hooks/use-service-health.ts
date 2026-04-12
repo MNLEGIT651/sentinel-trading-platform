@@ -13,7 +13,9 @@ async function checkEngine(): Promise<boolean> {
     const res = await fetch(ENGINE_HEALTH_URL, {
       signal: AbortSignal.timeout(4000),
     });
-    return res.ok;
+    // 200 = healthy, 503 = degraded but alive — engine is online either way.
+    // Only network errors / timeouts (caught below) mean truly offline.
+    return res.ok || res.status === 503;
   } catch {
     return false;
   }
@@ -32,6 +34,8 @@ async function checkAgents(): Promise<boolean | null> {
           ? null
           : false;
       }
+      // 503 without not_configured means degraded but alive
+      return true;
     }
     return res.ok;
   } catch {

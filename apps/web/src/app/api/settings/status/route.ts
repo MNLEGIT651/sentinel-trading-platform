@@ -4,7 +4,7 @@ import { getServiceConfig } from '@/lib/server/service-config';
 
 export const maxDuration = 10;
 
-type ServiceStatus = 'connected' | 'disconnected' | 'not_configured';
+type ServiceStatus = 'connected' | 'degraded' | 'disconnected' | 'not_configured';
 
 interface StatusResponse {
   engine: ServiceStatus;
@@ -34,8 +34,13 @@ interface AgentsHealthResponse {
 function dependencyStatus(ownerStatus: ServiceStatus, configured?: boolean): ServiceStatus {
   if (ownerStatus === 'not_configured') return 'not_configured';
   if (ownerStatus === 'disconnected') return 'disconnected';
+  // Owner is connected or degraded — dependency state depends on its own health
   if (configured === true) return 'connected';
-  if (configured === false) return 'not_configured';
+  if (configured === false) {
+    // When owner is degraded, false means the dependency is configured but
+    // unreachable (e.g., Supabase configured on engine but probe failed).
+    return ownerStatus === 'degraded' ? 'disconnected' : 'not_configured';
+  }
   return 'disconnected';
 }
 
@@ -54,8 +59,34 @@ async function fetchConfiguredServiceJson<T>(
       signal: AbortSignal.timeout(timeoutMs),
       cache: 'no-store',
     });
-    if (!response.ok) throw new Error(`${response.status}`);
-    return { status: 'connected', data: (await response.json()) as T };
+
+    // Any parseable response means the service process is alive.
+    // Parse the body even from non-200 so we capture dependency info.
+    let data: T | null = null;
+    try {
+      data = (await response.json()) as T;
+    } catch {
+      // Body wasn't valid JSON — service may be misconfigured or broken
+      if (!response.ok) return { status: 'disconnected', data: null };
+    }
+
+    if (!response.ok) {
+      // Only classify as degraded if body matches health contract
+      const bodyStatus = (data as Record<string, unknown> | null)?.status;
+      if (bodyStatus === 'degraded') {
+        return { status: 'degraded', data };
+      }
+      // Non-200 with unexpected body (auth error, crash) is truly disconnected
+      return { status: 'disconnected', data: null };
+    }
+
+    // Check if the service self-reports as degraded even on 200
+    const bodyStatus = (data as Record<string, unknown> | null)?.status;
+    if (bodyStatus === 'degraded') {
+      return { status: 'degraded', data };
+    }
+
+    return { status: 'connected', data };
   } catch (error) {
     console.error('settings.status.GET', error);
     return { status: 'disconnected', data: null };

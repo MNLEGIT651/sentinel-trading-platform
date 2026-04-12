@@ -82,4 +82,110 @@ describe('/api/health', () => {
       },
     });
   });
+
+  it('reports engine as degraded when health returns 200 with degraded body', async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    process.env.ENGINE_URL = 'https://engine.example';
+    process.env.ENGINE_API_KEY = 'secret-key';
+    process.env.AGENTS_URL = 'https://agents.example';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === 'https://engine.example/health') {
+          return new Response(
+            JSON.stringify({ status: 'degraded', dependencies: { supabase: false } }),
+            { status: 200 },
+          );
+        }
+
+        if (url === 'https://agents.example/health') {
+          return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
+        }
+
+        throw new Error(`Unexpected fetch: ${url}`);
+      }),
+    );
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: 'degraded',
+      dependencies: {
+        engine: 'degraded',
+        agents: 'connected',
+      },
+    });
+  });
+
+  it('reports engine as degraded when health returns 503 with degraded body', async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    process.env.ENGINE_URL = 'https://engine.example';
+    process.env.ENGINE_API_KEY = 'secret-key';
+    delete process.env.AGENTS_URL;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === 'https://engine.example/health') {
+          return new Response(
+            JSON.stringify({ status: 'degraded', dependencies: { supabase: false } }),
+            { status: 503 },
+          );
+        }
+
+        throw new Error(`Unexpected fetch: ${url}`);
+      }),
+    );
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: 'degraded',
+      dependencies: {
+        engine: 'degraded',
+        agents: 'not_configured',
+      },
+    });
+  });
+
+  it('reports engine as disconnected for non-degraded error responses', async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    process.env.ENGINE_URL = 'https://engine.example';
+    process.env.ENGINE_API_KEY = 'secret-key';
+    delete process.env.AGENTS_URL;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url === 'https://engine.example/health') {
+          return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
+        }
+
+        throw new Error(`Unexpected fetch: ${url}`);
+      }),
+    );
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      status: 'degraded',
+      dependencies: {
+        engine: 'disconnected',
+        agents: 'not_configured',
+      },
+    });
+  });
 });

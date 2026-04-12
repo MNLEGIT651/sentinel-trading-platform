@@ -6,7 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
-export type ServiceStatus = 'connected' | 'disconnected' | 'not_configured' | 'checking';
+export type ServiceStatus =
+  | 'connected'
+  | 'degraded'
+  | 'disconnected'
+  | 'not_configured'
+  | 'checking';
 
 export interface ServiceStatuses {
   engine: ServiceStatus;
@@ -50,6 +55,11 @@ const statusConfig: Record<ServiceStatus, { color: string; badge: string; text: 
     color: 'text-profit',
     badge: 'bg-profit/15 text-profit border-profit/30',
     text: 'Connected',
+  },
+  degraded: {
+    color: 'text-amber-400',
+    badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    text: 'Degraded',
   },
   disconnected: {
     color: 'text-loss',

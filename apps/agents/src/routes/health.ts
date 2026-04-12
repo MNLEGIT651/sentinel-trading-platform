@@ -43,7 +43,11 @@ export function healthRouter(orchestrator: Orchestrator): Router {
     const hasDegraded =
       (engineConfigured && !engineReachable) || (supabaseConfigured && !supabaseReachable);
 
-    res.status(hasDegraded ? 503 : 200).json({
+    // Always return 200 — the process is alive and can serve requests.
+    // Dependency degradation is reported in the body, not the HTTP status.
+    // Returning 503 caused the web to mark agents as "offline" during
+    // transient dependency hiccups, which is misleading.
+    res.status(200).json({
       status: hasDegraded ? 'degraded' : 'ok',
       service: 'sentinel-agents',
       timestamp: new Date().toISOString(),
