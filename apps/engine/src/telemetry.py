@@ -98,6 +98,40 @@ class _NoOpTracer:
         return _NoOpSpan()
 
 
+def init_sentry(dsn: str, environment: str = "", traces_sample_rate: float = 0.1) -> bool:
+    """Initialise Sentry error tracking (opt-in via DSN).
+
+    Returns True if Sentry was successfully initialised, False otherwise.
+    No-op (returns False) when:
+      - ``dsn`` is empty/falsy
+      - ``sentry-sdk`` is not installed
+    """
+    if not dsn:
+        logger.debug("Sentry disabled (no DSN configured)")
+        return False
+
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+    except ModuleNotFoundError:
+        logger.warning("SENTRY_DSN is set but sentry-sdk is not installed — skipping")
+        return False
+
+    sentry_sdk.init(
+        dsn=dsn,
+        environment=environment or os.getenv("RAILWAY_ENVIRONMENT", "development"),
+        traces_sample_rate=traces_sample_rate,
+        send_default_pii=False,
+        integrations=[
+            StarletteIntegration(transaction_style="endpoint"),
+            FastApiIntegration(transaction_style="endpoint"),
+        ],
+    )
+    logger.info("Sentry initialised (env=%s, sample_rate=%.2f)", environment, traces_sample_rate)
+    return True
+
+
 def instrument_fastapi(app) -> None:
     """Instrument a FastAPI application if OTEL is enabled."""
     if not _otel_enabled():

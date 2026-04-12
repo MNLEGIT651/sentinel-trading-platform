@@ -292,6 +292,34 @@ Post-deploy verification:
 - [ ] `/api/v1/portfolio/orders/history` shows the final `filled` status
       without manually hitting `GET /orders/{id}`
 
+### 5.6 Sentry Error Tracking (Engine)
+
+The engine initialises Sentry during lifespan startup (`src/telemetry.py:init_sentry`).
+It is **opt-in**: no `SENTRY_DSN` env var → no SDK calls, no overhead.
+
+| Env Var                        | Required | Default         | Notes                                        |
+| ------------------------------ | -------- | --------------- | -------------------------------------------- |
+| `SENTRY_DSN`                   | No       | _(empty)_       | Set to enable; leave blank to disable        |
+| `SENTRY_ENVIRONMENT`           | No       | `RAILWAY_ENVIRONMENT` fallback | e.g. `production`, `staging` |
+| `SENTRY_TRACES_SAMPLE_RATE`    | No       | `0.1`           | 0.0–1.0; keep low in production              |
+
+Post-deploy verification (only when `SENTRY_DSN` is set):
+
+- [ ] Engine logs contain `Sentry initialised (env=..., sample_rate=...)` on startup
+- [ ] Trigger a test error (e.g. invalid order payload) and verify it appears in Sentry dashboard
+- [ ] Confirm `send_default_pii=False` — no user emails/IPs in events
+
+### 5.7 CI Environment Prerequisites
+
+The following secrets/env vars must be configured in GitHub repo settings for
+CI workflows to pass. Missing values cause workflow failures that are **not code bugs**.
+
+| Secret / Variable              | Used By                        | Notes                                     |
+| ------------------------------ | ------------------------------ | ----------------------------------------- |
+| `VERCEL_PREVIEW_SMOKE_URL`     | Synthetic Proxy Smoke workflow | Vercel preview URL for smoke tests        |
+| `VERCEL_TOKEN`                 | Vercel deploy workflows        | Vercel API token                          |
+| `SENTRY_DSN`                   | Engine (Railway)               | Optional; omit to disable error tracking  |
+
 ---
 
 ## 6. Rollback Procedures

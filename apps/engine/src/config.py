@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     # Experiment
     experiment_id: str = ""
 
+    # Sentry — error tracking and performance monitoring.
+    # Leave sentry_dsn empty to disable (no SDK calls, no overhead).
+    sentry_dsn: str = ""
+    sentry_environment: str = ""
+    sentry_traces_sample_rate: float = 0.1
+
     # Order reconciliation — periodic sweep of non-terminal Alpaca orders.
     # 30s is tight enough to keep the UI fresh without stressing the 200 req/min
     # Alpaca rate limit. Set to 0 to disable (paper-only deployments, tests).

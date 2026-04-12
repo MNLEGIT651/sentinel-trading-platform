@@ -24,7 +24,7 @@ from src.logging_config import configure_logging
 from src.middleware.rate_limit import RateLimitMiddleware
 from src.middleware.tracing import CorrelationIDMiddleware
 from src.services.order_reconciliation import start_reconciliation_task
-from src.telemetry import instrument_fastapi
+from src.telemetry import init_sentry, instrument_fastapi
 
 _main_logger = logging.getLogger(__name__)
 
@@ -67,6 +67,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Initialize structured logging
     log_level = os.getenv("LOG_LEVEL", "INFO")
     configure_logging(level=log_level)
+
+    # Initialize Sentry before validate() so startup errors are captured.
+    init_sentry(
+        dsn=_settings.sentry_dsn,
+        environment=_settings.sentry_environment,
+        traces_sample_rate=_settings.sentry_traces_sample_rate,
+    )
 
     _settings.validate()
 

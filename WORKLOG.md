@@ -50,6 +50,60 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-12 — Claude (Phase 2 — Sentry SDK Wire-up + PR Hygiene)
+
+**Goal**: Wire Sentry error tracking into the FastAPI engine (opt-in via DSN env
+var) so production errors surface immediately in an observability dashboard.
+Close redundant PR #309 to unblock PR Guardian on PR #306.
+
+**What changed**:
+
+- `apps/engine/src/telemetry.py` — added `init_sentry(dsn, environment,
+  traces_sample_rate)` function. Lazy-imports `sentry_sdk` + FastAPI/Starlette
+  integrations; returns False gracefully if DSN is empty or SDK is missing.
+  Uses `send_default_pii=False`, falls back to `RAILWAY_ENVIRONMENT` when
+  environment param is empty.
+- `apps/engine/src/config.py` — added `sentry_dsn`, `sentry_environment`,
+  `sentry_traces_sample_rate` settings (all opt-in, empty/0.1 defaults).
+- `apps/engine/src/api/main.py` — calls `init_sentry()` in lifespan before
+  `_settings.validate()` so startup errors are captured.
+- `apps/engine/pyproject.toml` — added `sentry-sdk[fastapi]>=2.0` dependency.
+- `apps/engine/uv.lock` — regenerated (sentry-sdk v2.57.0 resolved).
+- `apps/engine/tests/unit/test_sentry_init.py` — 5 unit tests: no-op on empty
+  DSN, no-op on None DSN, no-op when SDK not installed, successful init with
+  correct kwargs, RAILWAY_ENVIRONMENT fallback.
+- `docs/runbooks/release-checklist.md` — added §5.6 "Sentry Error Tracking
+  (Engine)" with env var matrix and post-deploy checks; added §5.7 "CI
+  Environment Prerequisites" documenting `VERCEL_PREVIEW_SMOKE_URL` and other
+  required secrets.
+- Closed PR #309 (redundant cherry-pick of active branch commits; caused PR
+  Guardian overlap failure on PR #306).
+
+**Validation**:
+
+- `pnpm test:engine` — pass (+ 5 new tests)
+- `pnpm lint:engine` — clean
+- `pnpm format:check:engine` — clean
+
+**Decisions**:
+
+- Sentry init runs before `_settings.validate()` — captures startup crashes
+  (missing env vars, DB unreachable) which are the highest-value errors in prod.
+- `send_default_pii=False` — never ship user IPs/emails to Sentry. If needed
+  later, requires explicit opt-in + privacy review.
+- Kept sentry-sdk as a hard dep (not optional) because it's a core production
+  observability tool. The init_sentry() function is still a no-op when DSN is
+  empty, so dev/test environments pay zero cost.
+- PR #309 closed rather than merged — it cherry-picked from the active branch
+  inverting source-of-truth and blocking Guardian with 9-file overlap.
+
+**Next steps**:
+
+1. **Ops**: Set `SENTRY_DSN` in Railway engine production secrets.
+2. **Ops**: Set `VERCEL_PREVIEW_SMOKE_URL` in GitHub repo secrets.
+3. **Phase 2 continued**: Nightly cash/position reconciliation cron, SLO
+   dashboards.
+
 ### 2026-04-11 — Claude (Phase 1 Blocker #3 — Order Reconciliation Loop)
 
 **Goal**: Close the last tractable Phase 1 code blocker — periodic reconciliation
