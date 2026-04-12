@@ -5,6 +5,7 @@ discrete functions so the route handler stays thin.
 """
 
 import logging
+from urllib.parse import urlparse
 
 from fastapi import HTTPException
 
@@ -101,3 +102,88 @@ async def run_pre_trade_risk_check(
         side=side,
         state=state,
     )
+
+
+# ---------------------------------------------------------------------------
+# Live execution gate
+# ---------------------------------------------------------------------------
+
+_ALPACA_PAPER_HOSTS: frozenset[str] = frozenset({"paper-api.alpaca.markets"})
+
+
+def _is_paper_endpoint(base_url: str) -> bool:
+    """Return True only for known Alpaca paper-trading hostnames.
+
+    Fail-closed: malformed URLs, missing hostnames, or unknown hosts
+    return False (treated as live).
+    """
+    try:
+        host = urlparse(base_url).hostname
+    except ValueError:
+        return False
+    if not host:
+        return False
+    return host.lower() in _ALPACA_PAPER_HOSTS
+
+
+async def check_live_execution_gate(broker: BrokerAdapter) -> None:
+    """Block live-broker orders unless system_controls authorizes live execution.
+
+    Gate semantics:
+    - PaperBroker: always allowed (cannot move real capital).
+    - AlpacaBroker + paper hostname: always allowed.
+    - AlpacaBroker + live URL + DB unavailable: 503 (fail-closed).
+    - AlpacaBroker + live URL + live_execution_enabled=false: 403.
+    - AlpacaBroker + live URL + global_mode != 'live': 403.
+    - AlpacaBroker + live URL + both conditions true: allowed.
+    """
+    from src.execution.alpaca_broker import AlpacaBroker
+
+    # PaperBroker bypass — cannot move real capital
+    if not isinstance(broker, AlpacaBroker):
+        return
+
+    # Alpaca paper endpoint bypass — hostname allowlist (not substring)
+    if _is_paper_endpoint(broker.base_url):
+        return
+
+    # Fail-closed: DB must be reachable to verify controls
+    db = get_db()
+    if db is None:
+        logger.error("Live execution gate: database not configured — blocking order (fail-closed)")
+        raise HTTPException(
+            status_code=503,
+            detail="Live execution requires system_controls verification, "
+            "but the database is not configured.",
+        )
+
+    # Query system_controls — fail-closed on any error
+    try:
+        row = (
+            db.table("system_controls")
+            .select("live_execution_enabled,global_mode")
+            .limit(1)
+            .single()
+            .execute()
+        )
+    except Exception as exc:
+        logger.error("Failed to read system_controls for live execution gate: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Live execution gate check failed; refusing order as a safety default.",
+        ) from exc
+
+    controls = row.data or {}
+
+    if not controls.get("live_execution_enabled", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Live execution is disabled in system_controls.",
+        )
+
+    mode = controls.get("global_mode", "paper")
+    if mode != "live":
+        raise HTTPException(
+            status_code=403,
+            detail=f"System is in '{mode}' mode; live execution requires 'live' mode.",
+        )

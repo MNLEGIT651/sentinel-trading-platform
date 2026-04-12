@@ -1,3 +1,7 @@
+# Secrets / tokens (never commit)
+gh pr token*
+*github_pat_*
+
 # Dependencies
 node_modules/
 
