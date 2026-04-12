@@ -8,6 +8,7 @@ on: pull_request
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 jobs:
@@ -15,21 +16,59 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node 22
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+
       - name: Fetch Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@ffa630c65fa7e0ecfa0625b5ceda64399aea1b36 # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Collect pull request files and labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --paginate --jq '.[].filename' > changed-files.txt
+          jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH" > pr-labels.txt
+
+      - name: Evaluate guarded-auto policy
+        id: policy
+        run: |
+          set +e
+          node scripts/control-plane-policy.mjs \
+            --files-file changed-files.txt \
+            --labels-file pr-labels.txt \
+            --actor "${{ github.actor }}" \
+            --json-out policy-verdict.json > /tmp/dependabot-policy.json
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          echo "decision=$(node -e \"process.stdout.write(JSON.parse(require('node:fs').readFileSync('policy-verdict.json','utf8')).decision)\")" >> "$GITHUB_OUTPUT"
+
       - name: Auto-approve patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        if: |
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+            steps.metadata.outputs.update-type == 'version-update:semver-minor') &&
+          steps.policy.outputs.exit_code == '0' &&
+          steps.policy.outputs.decision == 'APPROVE'
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        if: |
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+            steps.metadata.outputs.update-type == 'version-update:semver-minor') &&
+          steps.policy.outputs.exit_code == '0' &&
+          steps.policy.outputs.decision == 'APPROVE'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

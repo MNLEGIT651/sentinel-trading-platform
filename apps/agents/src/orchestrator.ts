@@ -117,20 +117,19 @@ export class Orchestrator {
       lastCycleAt: null,
     };
 
-    // Load cycle sequence from workflow — fall back to hardcoded order
+    // Load cycle sequence from workflow — fail explicitly if missing
     try {
       const cycle = loadCycle();
       this.cycleSequence = cycle.sequence;
     } catch (err) {
-      logger.warn('orchestrator.workflow.fallback', {
-        error: err instanceof Error ? err.message : String(err),
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error('orchestrator.workflow.load_failed', {
+        error: message,
       });
-      this.cycleSequence = [
-        'market_sentinel',
-        'strategy_analyst',
-        'risk_monitor',
-        'execution_monitor',
-      ];
+      throw new Error(
+        `Failed to load agent cycle workflow: ${message}. ` +
+          'Ensure WAT workflow files are present and valid.',
+      );
     }
   }
 

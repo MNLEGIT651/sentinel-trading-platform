@@ -85,3 +85,7 @@ supabase/[0-9a-f]*/
 
 .vercel
 .env*.local
+
+# Local GitHub token scratch files
+github_pat_*.txt
+gh pr token github_pat_*.txt

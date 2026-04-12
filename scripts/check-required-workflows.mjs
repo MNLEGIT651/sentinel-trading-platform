@@ -8,10 +8,13 @@ const root = path.resolve(__dirname, '..');
 
 const required = [
   '.github/workflows/ci.yml',
+  '.github/workflows/policy-verdict.yml',
   '.github/workflows/railway-deploy.yml',
   '.github/workflows/dependency-review.yml',
   '.github/workflows/supabase-typegen.yml',
   '.github/workflows/ci-notify.yml',
+  '.github/workflows/control-plane-nightly.yml',
+  '.github/workflows/workflow-lint.yml',
   '.github/workflows/vercel-preview-smoke.yml',
   '.github/workflows/gitleaks.yml',
 ];

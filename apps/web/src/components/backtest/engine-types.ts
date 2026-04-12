@@ -1,4 +1,12 @@
+import type { BacktestSummary } from './results-chart';
 import type { TradeEntry } from './trade-log';
+
+/** Unified backtest result shape used by the backtest page. */
+export interface BacktestResult {
+  summary: BacktestSummary;
+  equity_curve: number[];
+  trades: TradeEntry[];
+}
 
 export interface EngineBacktestSummary {
   strategy: string;

@@ -21,6 +21,7 @@ Use this before opening a PR or handing work back to another agent.
 - The commands from `docs/ai/commands.md` were run for every changed area.
 - The PR or handoff message lists exact commands and results.
 - CI changes are mirrored by a local validation attempt when practical.
+- PRs include a current `Policy Verdict` artifact or summary when workflow/policy files change.
 
 ## Review Readiness
 
@@ -28,6 +29,13 @@ Use this before opening a PR or handing work back to another agent.
 - New or changed behavior is covered by tests when appropriate.
 - Docs were updated if commands, contracts, or workflow rules changed.
 - No secrets, tokens, or local machine paths leaked into the diff.
+
+## Merge Gate
+
+- `Policy Verdict` is green for low-risk PRs before merge or auto-merge.
+- Escalated PRs carry `decision/escalate` until review is complete.
+- The human owner applies `decision/human-approved` before an escalated PR can merge.
+- `decision/changes-requested` must be cleared before the PR is mergeable.
 
 ## Critical-Path Quality Gates
 

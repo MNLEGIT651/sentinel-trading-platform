@@ -101,10 +101,24 @@ if [[ "$RULESETS" -gt 0 ]]; then
   pass "Repository rulesets configured ($RULESETS ruleset(s))"
 
   # Check for a ruleset that targets the default branch
-  MAIN_RULESET=$(gh api "repos/$REPO/rulesets" \
-    --jq "[.[] | select(.conditions.ref_name.include[]? | test(\"main|default\"))] | length" 2>/dev/null || echo "0")
+  RULESETS_JSON=$(gh api "repos/$REPO/rulesets" 2>/dev/null || echo "[]")
+  MAIN_RULESET=$(echo "$RULESETS_JSON" | jq \
+    --arg branch "refs/heads/$DEFAULT_BRANCH" \
+    '[.[] | select(any(.conditions.ref_name.include[]?; . == $branch or . == "refs/heads/release/*"))] | length' 2>/dev/null || echo "0")
   if [[ "$MAIN_RULESET" -gt 0 ]]; then
     pass "Ruleset targets $DEFAULT_BRANCH branch"
+
+    RULESET_CONTEXTS=$(echo "$RULESETS_JSON" | jq -r \
+      --arg branch "refs/heads/$DEFAULT_BRANCH" \
+      '.[] | select(any(.conditions.ref_name.include[]?; . == $branch or . == "refs/heads/release/*")) | .rules[]? | select(.type == "required_status_checks") | .parameters.required_status_checks[]?.context' 2>/dev/null || echo "")
+
+    for ctx in "Verify Commit Signatures" "Test Web" "Test Engine" "Test Agents" "Security Audit" "Policy Verdict"; do
+      if echo "$RULESET_CONTEXTS" | grep -qF "$ctx"; then
+        pass "Required check: $ctx"
+      else
+        warn "Expected required check '$ctx' not found in ruleset"
+      fi
+    done
   else
     warn "No ruleset explicitly targets '$DEFAULT_BRANCH' — verify in Settings → Rules"
   fi
@@ -128,7 +142,7 @@ else
       STRICT=$(echo "$BP" | jq '.required_status_checks.strict')
       pass "Required status checks enabled (strict: $STRICT)"
       CONTEXTS=$(echo "$BP" | jq -r '.required_status_checks.contexts[]?' 2>/dev/null || echo "")
-      for ctx in "Test Web" "Test Engine" "Test Agents"; do
+      for ctx in "Verify Commit Signatures" "Test Web" "Test Engine" "Test Agents" "Security Audit" "Policy Verdict"; do
         if echo "$CONTEXTS" | grep -qF "$ctx"; then
           pass "Required check: $ctx"
         else
@@ -148,6 +162,30 @@ else
   else
     fail "No branch protection on $DEFAULT_BRANCH"
   fi
+fi
+
+# === 1b. Repository merge settings ==========================================
+
+section "Repository Merge Settings"
+
+REPO_SETTINGS=$(gh api "repos/$REPO" 2>/dev/null || echo "{}")
+
+if echo "$REPO_SETTINGS" | jq -e '.allow_auto_merge == true' &>/dev/null; then
+  pass "Allow auto-merge enabled"
+else
+  warn "Allow auto-merge disabled"
+fi
+
+if echo "$REPO_SETTINGS" | jq -e '.delete_branch_on_merge == true' &>/dev/null; then
+  pass "Automatically delete head branches enabled"
+else
+  warn "Automatically delete head branches disabled"
+fi
+
+if echo "$REPO_SETTINGS" | jq -e '.allow_merge_commit == false and .allow_squash_merge == true' &>/dev/null; then
+  pass "Merge methods constrained to guarded-auto defaults"
+else
+  warn "Merge methods do not match guarded-auto defaults"
 fi
 
 # === 2. Dependabot configuration =============================================

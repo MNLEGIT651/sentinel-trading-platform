@@ -86,14 +86,25 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
     } catch (error) {
       console.error('recommendations.risk-preview.GET', error);
-      // Engine is optional for this endpoint ΓÇö when unavailable,
-      // fall through and compute risk preview with fallback values
     }
   }
 
-  const equity = account?.equity ?? 100_000;
+  if (!account) {
+    return NextResponse.json(
+      { error: 'Cannot compute risk preview — account data unavailable from engine.' },
+      { status: 503 },
+    );
+  }
+
+  const equity = account.equity;
   const tradeValue = rec.quantity * (rec.limit_price ?? 0);
-  const estimatedTradeValue = tradeValue > 0 ? tradeValue : rec.quantity * 100;
+  if (tradeValue <= 0) {
+    return NextResponse.json(
+      { error: 'Cannot compute risk preview — no limit_price set on recommendation.' },
+      { status: 422 },
+    );
+  }
+  const estimatedTradeValue = tradeValue;
 
   // Compute policy impacts
   const impacts = [];

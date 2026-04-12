@@ -1,8 +1,16 @@
-# GitHub Pro Settings — Recommended Configuration
+# GitHub Control Plane Settings — Guarded Auto Configuration
 
 > This guide documents the GitHub repository settings that should be configured
-> through the GitHub web UI after upgrading to GitHub Pro. These settings cannot
-> be managed through code alone.
+> for the Sentinel guarded-auto engineering control plane. Prefer
+> `node scripts/sync-github-control-plane.mjs --apply` for repo settings, labels,
+> and protected-branch rules. Use the GitHub UI only for features without a stable
+> API surface.
+
+## 0. Sync command
+
+```bash
+node scripts/sync-github-control-plane.mjs --apply --repo stevenschling13/Trading-App --default-branch main
+```
 
 ## 1. Branch Protection Rules
 
@@ -10,19 +18,25 @@ Navigate to **Settings → Branches → Add branch ruleset** (or classic protect
 
 ### `main` Branch
 
-| Setting                                          | Value | Why                                                        |
-| ------------------------------------------------ | ----- | ---------------------------------------------------------- |
-| Require a pull request before merging            | ✅ On | Prevent direct pushes to `main`                            |
-| Required approving reviews                       | 1     | At least one review before merge                           |
-| Dismiss stale pull request approvals             | ✅ On | Re-review after new commits                                |
-| Require review from code owners                  | ✅ On | Enforces `.github/CODEOWNERS` (Pro feature)                |
-| Require status checks to pass before merging     | ✅ On | Gate merges on CI                                          |
-| — Required checks                                |       | `Test Web`, `Test Engine`, `Test Agents`, `Security Audit` |
-| Require branches to be up to date before merging | ✅ On | Prevent merge skew                                         |
-| Require conversation resolution before merging   | ✅ On | All review threads must be resolved                        |
-| Require signed commits                           | ✅ On | Verify commit authenticity via GPG/SSH signatures          |
-| Require linear history                           | ✅ On | Clean history; no merge commits on `main`                  |
-| Include administrators                           | ✅ On | Rules apply to repo owner too                              |
+| Setting                                          | Value    | Why                                                                                                      |
+| ------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------- |
+| Require a pull request before merging            | ✅ On    | Prevent direct pushes to `main`                                                                          |
+| Required approving reviews                       | 0        | Low-risk PRs may auto-merge after checks                                                                 |
+| Dismiss stale pull request approvals             | ✅ On    | Re-review after new commits                                                                              |
+| Require review from code owners                  | ❌ Off   | Human approval is conditional, not blanket                                                               |
+| Require status checks to pass before merging     | ✅ On    | Gate merges on CI                                                                                        |
+| — Required checks                                |          | `Verify Commit Signatures`, `Test Web`, `Test Engine`, `Test Agents`, `Security Audit`, `Policy Verdict` |
+| Require branches to be up to date before merging | ✅ On    | Prevent merge skew                                                                                       |
+| Require conversation resolution before merging   | ✅ On    | All review threads must be resolved                                                                      |
+| Require signed commits                           | Optional | Use only if it does not block trusted bot/web-flow commits                                               |
+| Require linear history                           | ✅ On    | Clean history; no merge commits on `main`                                                                |
+| Include administrators                           | ✅ On    | Rules apply to repo owner too                                                                            |
+
+### Escalated PR flow
+
+- Protected-path, auth, schema, deployment, and trust-boundary changes must receive
+  `decision/human-approved` from the human owner before merge.
+- `Policy Verdict` enforces that requirement automatically.
 
 ### Why This Matters
 
@@ -49,18 +63,20 @@ conditions:
 rules:
   - type: pull_request
     parameters:
-      required_approving_review_count: 1
+      required_approving_review_count: 0
       dismiss_stale_reviews_on_push: true
-      require_code_owner_review: true
+      require_code_owner_review: false
       require_last_push_approval: false
   - type: required_status_checks
     parameters:
       strict_required_status_checks_policy: true
       required_status_checks:
+        - context: Verify Commit Signatures
         - context: Test Web
         - context: Test Engine
         - context: Test Agents
         - context: Security Audit
+        - context: Policy Verdict
   - type: non_fast_forward
 ```
 
@@ -161,6 +177,11 @@ Navigate to **Settings → General → Pull Requests**:
 | Automatically delete head branches | ✅ Enable      |
 | Allow squash merging               | ✅ Enable      |
 | Default to squash merge            | ✅ Recommended |
+
+Auto-merge should remain guarded by the policy workflow:
+
+- low-risk PRs: auto-merge allowed after all required checks pass
+- escalated PRs: blocked until `decision/human-approved`
 
 ---
 

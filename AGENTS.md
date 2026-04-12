@@ -67,7 +67,13 @@ supabase/        PostgreSQL migrations and seed data
 
 ## Collaboration Defaults
 
+- Engineering-control-plane PRs are gated by `Policy Verdict` plus the CI job checks
+  defined in the protected-branch ruleset.
+- Low-risk PRs can auto-merge after all required checks pass.
+- Escalated PRs must receive the `decision/human-approved` label from the human owner
+  before merge.
 - Claude is best used for ambiguous debugging, architecture choices, and review.
 - Codex is best used for isolated implementation, test additions, and mechanical changes.
+- GitHub custom agents own PR classification, routing, and merge-policy summaries.
 - Small tasks do not need a multi-step handoff; large or risky tasks do.
 - CI is the final gate. Prompts and repo docs guide behavior, but passing checks decide merge readiness.

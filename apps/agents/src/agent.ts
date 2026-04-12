@@ -11,6 +11,7 @@ import type { AgentConfig, AgentResult, AgentRole } from './types.js';
 import { getToolsForAgent } from './tools.js';
 import { ToolExecutor } from './tool-executor.js';
 import { loadWorkflow } from './wat/workflow-loader.js';
+import { logger } from './logger.js';
 
 const SYSTEM_PROMPTS: Record<AgentRole, string> = {
   market_sentinel: `You are the Market Sentinel agent for the Sentinel Trading Platform.
@@ -108,6 +109,12 @@ export class Agent {
     const startTime = Date.now();
     const tools = getToolsForAgent(this.config.role);
     const workflow = loadWorkflow(this.config.role);
+    if (!workflow) {
+      logger.warn('agent.workflow.missing', {
+        role: this.config.role,
+        message: `No WAT workflow file found for ${this.config.role} — using built-in system prompt.`,
+      });
+    }
     const systemPrompt = workflow?.systemPrompt ?? SYSTEM_PROMPTS[this.config.role];
 
     const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userPrompt }];

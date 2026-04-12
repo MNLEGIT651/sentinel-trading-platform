@@ -26,6 +26,9 @@ If any of those fields are missing, the agent should infer the smallest safe sco
 - Use a separate worktree for parallel work when more than one agent is active.
 - Never let two agents edit the same file at the same time.
 - Rebase or merge only after the owning agent finishes and the branch passes validation.
+- Guarded auto-merge is the default: low-risk PRs may auto-merge after all required checks pass.
+- PRs that touch protected paths or sensitive deployment/auth/schema surfaces must stay blocked
+  until the human owner applies `decision/human-approved`.
 
 ## Commit Signing Policy (main + release branches)
 
@@ -33,7 +36,9 @@ If any of those fields are missing, the agent should infer the smallest safe sco
 - Policy: all new commits that land on protected targets must be either **trusted-good** under `git log --pretty='%H %G?'` or marked `verified: true` by the GitHub commit API.
 - Trust result required by policy: `%G? == G` or a GitHub-verified commit.
 - Any other result (`N`, `E`, `B`, `U`, `X`, `Y`, `R`) is treated as untrusted and fails CI unless the commit SHA is explicitly grandfathered in `docs/security/commit-signing-exceptions.txt`.
-- Branch protection should also enable platform-native **Require signed commits** for `main` and `release/*` when available.
+- The CI signature gate is the canonical enforcement path because trusted bot and GitHub
+  web-flow commits use repository-managed exceptions. Platform-native "Require signed commits"
+  should only be enabled if it does not block that trusted-bot path.
 
 ### Local setup (developers and bots)
 
