@@ -24,6 +24,7 @@ from src.logging_config import configure_logging
 from src.middleware.rate_limit import RateLimitMiddleware
 from src.middleware.tracing import CorrelationIDMiddleware
 from src.services.order_reconciliation import start_reconciliation_task
+from src.services.portfolio_reconciliation import start_portfolio_reconciliation_task
 from src.telemetry import init_sentry, instrument_fastapi
 
 _main_logger = logging.getLogger(__name__)
@@ -81,18 +82,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # No-op when broker is PaperBroker or when the interval is 0.
     reconciliation_task = start_reconciliation_task(_settings.order_reconciliation_interval_seconds)
 
+    # Start portfolio reconciliation (cash/position audit against Alpaca).
+    # No-op when broker is PaperBroker or when the interval is 0.
+    portfolio_task = start_portfolio_reconciliation_task(
+        _settings.portfolio_reconciliation_interval_seconds
+    )
+
     try:
         yield
     finally:
-        # Shutdown: cancel the reconciliation task and wait for it to stop.
-        if reconciliation_task is not None:
-            reconciliation_task.cancel()
-            try:
-                await reconciliation_task
-            except asyncio.CancelledError:
-                pass
-            except Exception:  # pragma: no cover - defensive
-                _main_logger.exception("order_reconciliation: task raised during shutdown")
+        # Shutdown: cancel background tasks and wait for them to stop.
+        for task, name in [
+            (reconciliation_task, "order_reconciliation"),
+            (portfolio_task, "portfolio_reconciliation"),
+        ]:
+            if task is not None:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+                except Exception:  # pragma: no cover - defensive
+                    _main_logger.exception("%s: task raised during shutdown", name)
 
 
 app = FastAPI(

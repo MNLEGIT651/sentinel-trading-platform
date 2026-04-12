@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     # Alpaca rate limit. Set to 0 to disable (paper-only deployments, tests).
     order_reconciliation_interval_seconds: float = 30.0
 
+    # Portfolio reconciliation — periodic full audit of cash/positions against
+    # Alpaca. Detects unaccounted positions (manual trades, dividends, corporate
+    # actions) and phantom orders. Default 3600s (1h). Set to 0 to disable.
+    portfolio_reconciliation_interval_seconds: float = 3600.0
+
     def validate(self) -> None:
         """Raise ValueError if any required environment variable is missing."""
         required = {

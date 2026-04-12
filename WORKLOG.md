@@ -50,6 +50,53 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-12 — Claude (Phase 2 — Portfolio Reconciliation Service)
+
+**Goal**: Implement nightly cash/position reconciliation — full audit of
+portfolio state against Alpaca to detect drift from manual trades, dividends,
+corporate actions, or bugs in the order flow.
+
+**What changed**:
+
+- `apps/engine/src/services/portfolio_reconciliation.py` — new service with:
+  - `reconcile_portfolio_once()` — fetches Alpaca account + positions,
+    cross-references against filled orders in local store, flags unaccounted
+    positions (in Alpaca but not local) and phantom orders (local but not
+    in Alpaca). Persists snapshots to Supabase (best-effort).
+  - `portfolio_reconciliation_loop(interval)` + `start_portfolio_reconciliation_task()`
+    — same async loop pattern as order reconciliation.
+  - `ReconciliationReport` dataclass for structured results.
+- `apps/engine/src/config.py` — `portfolio_reconciliation_interval_seconds: float = 3600.0`
+  (env var `PORTFOLIO_RECONCILIATION_INTERVAL_SECONDS`, set 0 to disable).
+- `apps/engine/src/api/main.py` — starts portfolio task in lifespan alongside
+  order reconciliation; shutdown cancels both tasks in a loop.
+- `apps/engine/tests/unit/test_portfolio_reconciliation.py` — 12 unit tests:
+  PaperBroker no-op, clean reconciliation, unaccounted positions detection,
+  phantom orders detection, net-zero not flagged, non-filled orders ignored,
+  snapshot persist failure swallowed, disabled (0 and -1), clean cancellation,
+  loop exits when disabled, loop swallows exceptions.
+- `docs/runbooks/release-checklist.md` — added §5.6 "Portfolio Reconciliation"
+  with env var matrix and post-deploy verification checklist.
+
+**Validation**:
+
+- `pnpm test:engine` — 507/507 pass (+12 new tests)
+- `pnpm lint:engine` — clean
+- `pnpm format:check:engine` — clean
+
+**Decisions**:
+
+- Default interval 3600s (1h) — tight enough to catch drift within market
+  hours without hammering Alpaca. Operators can set 86400 for true nightly.
+- Snapshot persistence is best-effort (swallows DB errors) — reconciliation
+  must not fail because the audit table is unavailable.
+- Net position calculation uses filled_qty from local orders — partially-filled
+  orders still in transit may cause transient phantom flags; operators should
+  correlate with order reconciliation logs.
+- Did NOT add a Supabase migration for `reconciliation_snapshots` table —
+  that's an ops task requiring schema design review (JSONB vs columns for
+  the arrays, retention policy, indexes).
+
 ### 2026-04-12 — Claude (Phase 2 — Sentry SDK Wire-up + PR Hygiene)
 
 **Goal**: Wire Sentry error tracking into the FastAPI engine (opt-in via DSN env

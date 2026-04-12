@@ -292,7 +292,38 @@ Post-deploy verification:
 - [ ] `/api/v1/portfolio/orders/history` shows the final `filled` status
       without manually hitting `GET /orders/{id}`
 
-### 5.6 Sentry Error Tracking (Engine)
+### 5.6 Portfolio Reconciliation (Cash/Position Audit)
+
+The engine runs a background task (`apps/engine/src/services/portfolio_reconciliation.py`)
+that performs a full audit of portfolio state against Alpaca every
+`PORTFOLIO_RECONCILIATION_INTERVAL_SECONDS` seconds (default **3600** = 1 hour).
+
+Unlike the order reconciliation (§5.5), which refreshes individual order statuses,
+this service:
+- Fetches authoritative account (cash, equity) and all positions from Alpaca
+- Cross-references Alpaca positions against filled orders in the local store
+- Flags **unaccounted positions** (manual trades, dividends, corporate actions)
+- Flags **phantom orders** (filled locally but missing from Alpaca)
+- Persists reconciliation snapshots to Supabase (`reconciliation_snapshots` table)
+
+| Env Var                                      | Default | Notes                                  |
+| -------------------------------------------- | ------- | -------------------------------------- |
+| `PORTFOLIO_RECONCILIATION_INTERVAL_SECONDS`  | `3600`  | Set to `0` to disable; `86400` = daily |
+
+- **PaperBroker deployments:** no-op (returns immediately).
+- **Live deployments:** confirm via engine logs on startup:
+  `portfolio_reconciliation: starting loop (interval=3600.0s)`
+- **Discrepancy alerts:** look for WARNING-level log:
+  `portfolio_reconciliation: discrepancies detected`
+
+Post-deploy verification:
+
+- [ ] Engine logs contain `portfolio_reconciliation: starting loop` on startup
+- [ ] After first interval elapses, logs show either `clean` or `discrepancies detected`
+- [ ] If `reconciliation_snapshots` table exists in Supabase, verify rows are inserted
+- [ ] No false-positive phantom orders from partially-filled orders still in transit
+
+### 5.7 Sentry Error Tracking (Engine)
 
 The engine initialises Sentry during lifespan startup (`src/telemetry.py:init_sentry`).
 It is **opt-in**: no `SENTRY_DSN` env var → no SDK calls, no overhead.
@@ -309,7 +340,7 @@ Post-deploy verification (only when `SENTRY_DSN` is set):
 - [ ] Trigger a test error (e.g. invalid order payload) and verify it appears in Sentry dashboard
 - [ ] Confirm `send_default_pii=False` — no user emails/IPs in events
 
-### 5.7 CI Environment Prerequisites
+### 5.8 CI Environment Prerequisites
 
 The following secrets/env vars must be configured in GitHub repo settings for
 CI workflows to pass. Missing values cause workflow failures that are **not code bugs**.
