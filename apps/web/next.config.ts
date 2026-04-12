@@ -2,6 +2,7 @@ import { join } from 'path';
 import { config as loadRootEnv } from 'dotenv';
 import type { NextConfig } from 'next';
 import bundleAnalyzer from '@next/bundle-analyzer';
+import { withSentryConfig } from '@sentry/nextjs';
 
 // Monorepo: load repo-root `.env` so one file can drive local web + engine + agents.
 // Next.js still merges `apps/web/.env.local` with higher precedence.
@@ -20,6 +21,7 @@ loadRootEnv({ path: join(__dirname, '..', '..', '.env') });
 //  connect-src   'self' wss: https://*.supabase.co — Supabase REST + Realtime WebSocket
 //                https://vitals.vercel-insights.com  — Vercel Analytics beacon
 //                https://va.vercel-scripts.com       — Vercel Analytics script
+//                https://*.ingest.us.sentry.io       — Sentry error & performance telemetry
 //  font-src      'self'                          — no external font CDNs (next/font serves locally)
 //  frame-src     'none'                          — no iframes (mirrors X-Frame-Options: DENY)
 //  object-src    'none'                          — no plugins
@@ -39,7 +41,7 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
-  "connect-src 'self' wss: https://*.supabase.co https://vitals.vercel-insights.com https://va.vercel-scripts.com",
+  "connect-src 'self' wss: https://*.supabase.co https://vitals.vercel-insights.com https://va.vercel-scripts.com https://*.ingest.us.sentry.io",
   "font-src 'self'",
   "frame-src 'none'",
   "object-src 'none'",
@@ -114,4 +116,15 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
-export default withBundleAnalyzer(nextConfig);
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
+  // Upload source maps for better stack traces
+  org: 'trading-app-mk',
+  project: 'javascript-nextjs',
+  silent: !process.env.CI,
+
+  // Route browser requests through Next.js to avoid ad blockers
+  tunnelRoute: '/monitoring',
+
+  // Automatically tree-shake Sentry logger statements in production
+  disableLogger: true,
+});

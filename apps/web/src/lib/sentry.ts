@@ -1,22 +1,11 @@
 /**
- * Sentry integration stub.
- * When SENTRY_DSN is set and @sentry/nextjs is installed, this will
- * initialise Sentry. Otherwise it's a no-op.
+ * Sentry integration helper.
+ * Sentry is now configured via sentry.client.config.ts, sentry.server.config.ts,
+ * and sentry.edge.config.ts at the project root. This function is kept for
+ * backward-compatible call sites but is a no-op — initialization happens
+ * automatically via the instrumentation hook.
  */
 export function initSentry(): void {
-  if (!process.env.SENTRY_DSN) return;
-
-  // Dynamic import so @sentry/nextjs is optional
-  // @ts-expect-error -- @sentry/nextjs is an optional peer dependency
-  import('@sentry/nextjs')
-    .then((Sentry) => {
-      Sentry.init({
-        dsn: process.env.SENTRY_DSN,
-        tracesSampleRate: 0.1,
-        environment: process.env.NODE_ENV,
-      });
-    })
-    .catch(() => {
-      // @sentry/nextjs not installed — skip silently
-    });
+  // Sentry is now initialized via instrumentation.ts and sentry.*.config.ts files.
+  // This function is intentionally a no-op.
 }
