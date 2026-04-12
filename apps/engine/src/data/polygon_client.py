@@ -238,7 +238,10 @@ class PolygonClient:
                 stale = _read_cache(_bars_cache, cache_key, allow_stale=True)
                 if stale is not None:
                     logger.warning(
-                        "Serving stale Polygon bars for %s after live fetch failed: %s", ticker, exc
+                        "Serving STALE cached bars for %s (live fetch failed: %s). "
+                        "Data may be outdated.",
+                        ticker,
+                        exc,
                     )
                     return stale
             raise
@@ -274,7 +277,8 @@ class PolygonClient:
                 stale = _read_cache(_quote_cache, ticker, allow_stale=True)
                 if stale is not None:
                     logger.warning(
-                        "Serving stale Polygon quote for %s after live fetch failed: %s",
+                        "Serving STALE cached quote for %s (live fetch failed: %s). "
+                        "Data may be outdated.",
                         ticker,
                         exc,
                     )

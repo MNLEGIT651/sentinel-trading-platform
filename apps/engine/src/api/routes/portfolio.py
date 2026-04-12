@@ -96,7 +96,13 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
         symbol = body.symbol.upper()
 
         price = await fetch_live_price(broker, symbol)
-        check_price = price or body.limit_price or 100.0
+        check_price = price or body.limit_price
+        if check_price is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Cannot determine price for risk check. "
+                "Provide a limit_price or ensure market data is available.",
+            )
 
         risk_result = await run_pre_trade_risk_check(
             broker=broker,

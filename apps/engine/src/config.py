@@ -55,15 +55,20 @@ class Settings(BaseSettings):
                 "See .env.example for guidance."
             )
         if not self.polygon_api_key:
-            logger.warning(
-                "Polygon-backed market data features are disabled because "
-                "optional configuration is missing."
-            )
-        if not self.alpaca_api_key or not self.alpaca_secret_key:
-            logger.warning(
-                "Broker-backed trading features are disabled because broker "
-                "configuration is incomplete."
-            )
+            logger.warning("POLYGON_API_KEY is not set. Market data endpoints will return errors.")
+        if self.broker_mode == "live":
+            broker_required = {
+                "ALPACA_API_KEY": self.alpaca_api_key,
+                "ALPACA_SECRET_KEY": self.alpaca_secret_key,
+            }
+            broker_missing = [name for name, value in broker_required.items() if not value]
+            if broker_missing:
+                raise ValueError(
+                    f"broker_mode is 'live' but missing: {', '.join(broker_missing)}. "
+                    "Cannot start in live mode without broker credentials."
+                )
+        elif not self.alpaca_api_key or not self.alpaca_secret_key:
+            logger.warning("Alpaca credentials not set — running in paper-only mode.")
         if not self.alpaca_broker_api_key or not self.alpaca_broker_api_secret:
             logger.warning(
                 "Alpaca Broker API (account creation, KYC) is disabled because "

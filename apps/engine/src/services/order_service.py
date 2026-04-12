@@ -68,7 +68,9 @@ async def fetch_live_price(broker: BrokerAdapter, symbol: str) -> float | None:
     polygon = PolygonClient(settings.polygon_api_key)
     try:
         bar = await polygon.get_latest_price(symbol, interactive=True)
-        return bar.close if bar else 100.0
+        if bar is None:
+            raise RuntimeError(f"No price data available for {symbol}")
+        return bar.close
     finally:
         await polygon.close()
 
