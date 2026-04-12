@@ -19,6 +19,7 @@ from src.execution import get_broker
 from src.execution.broker_interface import OrderRequest
 from src.execution.order_store import TERMINAL_STATUSES, get_order_store
 from src.services.order_service import (
+    check_live_execution_gate,
     check_trading_halts,
     fetch_live_price,
     run_pre_trade_risk_check,
@@ -93,6 +94,10 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
 
     try:
         broker = get_broker()
+
+        # Gate live-broker orders on system_controls
+        await check_live_execution_gate(broker)
+
         symbol = body.symbol.upper()
 
         price = await fetch_live_price(broker, symbol)

@@ -26,6 +26,7 @@ class AlpacaBroker(BrokerAdapter):
         normalized = base_url.rstrip("/")
         if normalized.endswith("/v2"):
             normalized = normalized[:-3]
+        self._base_url = normalized
         self._http = httpx.AsyncClient(
             base_url=normalized,
             headers={
@@ -34,6 +35,11 @@ class AlpacaBroker(BrokerAdapter):
             },
             timeout=15.0,
         )
+
+    @property
+    def base_url(self) -> str:
+        """Normalized base URL used for live/paper endpoint detection."""
+        return self._base_url
 
     async def get_account(self) -> dict:
         """Get Alpaca account summary."""

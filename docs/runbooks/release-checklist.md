@@ -221,6 +221,45 @@ Run these within 5 minutes of production deploy completing.
 - [ ] Railway agents logs: clean startup
 - [ ] Correlation IDs flowing (check a sample request trace per [correlation-id-flow.md](correlation-id-flow.md))
 
+### 5.4 Live Trading Activation Gate
+
+> **⚠️ `BROKER_MODE` is NOT a safety control.** The `BROKER_MODE` env var in `config.py`
+> is informational only — the engine selects Alpaca vs PaperBroker based on whether
+> Alpaca credentials are present, not on `BROKER_MODE`. Do not rely on it to prevent
+> live execution.
+
+The engine enforces a **fail-closed live execution gate** in the order submission path
+(`POST /api/v1/portfolio/orders`). Live orders require **both** conditions in
+`system_controls`:
+
+| Condition                                | Required Value | Default   |
+| ---------------------------------------- | -------------- | --------- |
+| `system_controls.live_execution_enabled` | `true`         | `false`   |
+| `system_controls.global_mode`            | `'live'`       | `'paper'` |
+
+**If either condition is false, or if the database is unreachable, live orders are blocked.**
+
+Paper orders (PaperBroker or Alpaca paper endpoint) bypass this gate entirely.
+
+#### Activation Checklist (Paper → Live)
+
+1. [ ] Rotate `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_BASE_URL` to live credentials in Railway
+2. [ ] Redeploy engine; verify `/health` returns 200
+3. [ ] **Dry-run**: Submit a test order — expect **403** (`Live execution is disabled`)
+4. [ ] Flip gate: `UPDATE system_controls SET live_execution_enabled = true, global_mode = 'live' WHERE id = (SELECT id FROM system_controls LIMIT 1);`
+5. [ ] Submit a small smoke order ($1 notional) — expect **200** (filled)
+6. [ ] Monitor logs for 5 minutes — no unexpected errors
+7. [ ] Confirm rollback: `UPDATE system_controls SET live_execution_enabled = false, global_mode = 'paper';`
+
+#### Rollback (Live → Paper)
+
+```sql
+UPDATE system_controls
+SET live_execution_enabled = false, global_mode = 'paper';
+```
+
+No redeploy required. Gate takes effect on the next order submission.
+
 ---
 
 ## 6. Rollback Procedures
