@@ -57,4 +57,9 @@ jobs:
         env:
           VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
-          ./scripts/health-check.sh --verbose
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Advisory on PRs — report but don't block (PR code isn't deployed yet)
+            ./scripts/health-check.sh --verbose || echo "::warning::Smoke check failed — advisory only on PRs"
+          else
+            ./scripts/health-check.sh --verbose
+          fi
