@@ -57,7 +57,7 @@ Use this as the minimum production bar before deploy approval:
 
 1. Confirm Railway engine and agents are healthy.
 2. Merge the PR to `main` (or push to `main`).
-3. Vercel auto-deploys production (if `apps/web` or `packages/shared` changed).
+3. Vercel auto-deploys production on every push to `main` (ignore command bypasses diff check for production).
 4. Wait for the Vercel build to reach `READY` state.
 5. Run production smoke tests.
 
