@@ -99,8 +99,14 @@ jobs:
       - name: Run monorepo lint
         run: pnpm lint
 
+      - name: Type check monorepo
+        run: pnpm typecheck
+
       - name: Run web tests
         run: pnpm --filter web test
+
+      - name: Audit route security (CSRF + auth coverage)
+        run: pnpm security:routes
 
       - name: Build web
         run: pnpm --filter web build
