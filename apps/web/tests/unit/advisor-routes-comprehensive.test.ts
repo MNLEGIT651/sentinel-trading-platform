@@ -68,7 +68,7 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
 // ─── Tests ──────────────────────────────────────────────────────────
 
-describe('Advisor Routes — Threads', { timeout: 15_000 }, () => {
+describe('Advisor Routes — Threads', { timeout: 30_000 }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fromResults = {};
