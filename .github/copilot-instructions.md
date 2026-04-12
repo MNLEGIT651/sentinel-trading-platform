@@ -28,6 +28,8 @@ Always report exact commands with PASS/FAIL/SKIPPED and reason for any skip.
 - No silent skip on smoke/health/deploy gates.
 - Deterministic tooling only (pinned CLI/action versions).
 - Fail closed for missing secrets in deploy workflows.
+- Respect guarded auto-merge: low-risk PRs may auto-merge after checks; escalated PRs
+  require `decision/human-approved`.
 
 ## Custom specialist agents
 
@@ -38,3 +40,9 @@ Use these custom agents for recurring workflows:
 - `runtime-smoke-guardian`
 - `supabase-boundary-guardian`
 - `pr-owner-operator`
+
+## Multi-provider defaults
+
+- GitHub custom agents own PR policy classification and merge summaries.
+- Claude is the escalation path for architecture ambiguity, debugging, and review.
+- Codex is the default implementation agent for bounded code and test changes.

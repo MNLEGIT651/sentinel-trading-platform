@@ -23,6 +23,8 @@ For every PR:
 - Enforce **no silent skip** on health/deploy gates.
 - Enforce deterministic tooling (pinned CLI/action versions).
 - `APPROVE` only when all required gates are green.
+- Protected-path or sensitive deploy/auth/schema changes must return `ESCALATE`
+  until the human owner applies `decision/human-approved`.
 - Otherwise return `CHANGES_REQUESTED` with prioritized remediation.
 
 ## Specialist dispatch rules (auto-request)
@@ -49,7 +51,7 @@ Run post-deploy verification. If verification fails, open incident issue automat
 ```json
 {
   "agent": "pr-owner-operator",
-  "decision": "APPROVE|CHANGES_REQUESTED",
+  "decision": "APPROVE|CHANGES_REQUESTED|ESCALATE",
   "risk_classification": ["infra", "runtime"],
   "required_checks": [{ "name": "check-name", "status": "green|missing|failed" }],
   "specialist_results": [{ "agent": "platform-sync-auditor", "status": "pass|fail" }],

@@ -37,16 +37,18 @@ auditor    guardian      guardian
 
 `repo-commander` automatically dispatches specialist agents when a PR touches
 their scope. Specialists return structured JSON verdicts that feed into the
-commander's merge decision.
+commander's merge decision. The repository's `Policy Verdict` workflow is the
+deterministic merge gate; high-risk PRs remain blocked until the human owner
+adds `decision/human-approved`.
 
 ## Trigger mapping
 
-| Trigger files / events                                                                 | Specialist dispatched        |
-| -------------------------------------------------------------------------------------- | ---------------------------- |
+| Trigger files / events                                                                         | Specialist dispatched        |
+| ---------------------------------------------------------------------------------------------- | ---------------------------- |
 | `.github/workflows/**`, `apps/web/vercel.json`, `apps/engine/railway.toml`, `docs/runbooks/**` | `platform-sync-auditor`      |
-| Deploy/release workflows, push to main                                                 | `runtime-smoke-guardian`     |
-| `supabase/**`, typegen, auth/env docs                                                  | `supabase-boundary-guardian` |
-| Any PR (risk classification + merge gate)                                              | `pr-owner-operator`          |
+| Deploy/release workflows, push to main                                                         | `runtime-smoke-guardian`     |
+| `supabase/**`, typegen, auth/env docs                                                          | `supabase-boundary-guardian` |
+| Any PR (risk classification + merge gate)                                                      | `pr-owner-operator`          |
 
 ## Environment setup
 
