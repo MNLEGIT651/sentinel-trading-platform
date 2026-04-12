@@ -5,15 +5,31 @@ set -euo pipefail
 # - Exit 0 => skip build
 # - Exit 1 => run build
 #
+# Strategy:
+#   Production (main) → ALWAYS build — production must track latest main.
+#   Preview (PRs)     → skip if no web/shared changes (saves build minutes).
+#
 # We run from apps/web via vercel.json and move to repo root.
 cd "$(dirname "$0")/.."
 
+# ── Production: always build ─────────────────────────────────
+if [ "${VERCEL_ENV:-}" = "production" ]; then
+  echo "Production environment detected; running build."
+  exit 1
+fi
+
+if [ "${VERCEL_GIT_COMMIT_REF:-}" = "main" ]; then
+  echo "Branch is main; running build."
+  exit 1
+fi
+
+# ── Preview: diff-based optimization ─────────────────────────
 TARGETS=(
   "apps/web/"
   "packages/shared/"
 )
 
-DEFAULT_BRANCH="${VERCEL_GIT_COMMIT_REF:-main}"
+DEFAULT_BRANCH="main"
 REMOTE_BASE="origin/${DEFAULT_BRANCH}"
 
 # In shallow/non-standard clones, origin/<branch> may not exist.
@@ -27,9 +43,9 @@ else
 fi
 
 if git diff --quiet "$BASE" HEAD -- "${TARGETS[@]}"; then
-  echo "No web/shared changes since ${BASE}; skipping Vercel build."
+  echo "Preview: no web/shared changes since ${BASE}; skipping build."
   exit 0
 fi
 
-echo "Detected web/shared changes since ${BASE}; running Vercel build."
+echo "Preview: detected web/shared changes since ${BASE}; running build."
 exit 1
