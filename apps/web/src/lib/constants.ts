@@ -1,5 +1,3 @@
-import type { BrokerAccount } from '@/lib/engine-client';
-
 // ─── Ticker / Watchlist Data ────────────────────────────────────────────
 
 export const TICKER_SYMBOLS: string[] = [
@@ -25,34 +23,6 @@ export const WATCHLIST_TICKERS = [
   { ticker: 'V', name: 'Visa Inc.' },
   { ticker: 'SPY', name: 'SPDR S&P 500' },
 ] as const;
-
-export const FALLBACK_TICKER_DATA = [
-  { ticker: 'AAPL', price: 178.72, change: 1.24 },
-  { ticker: 'MSFT', price: 378.91, change: 0.82 },
-  { ticker: 'GOOGL', price: 141.8, change: -0.56 },
-  { ticker: 'AMZN', price: 178.25, change: 1.89 },
-  { ticker: 'NVDA', price: 495.22, change: 3.12 },
-  { ticker: 'TSLA', price: 248.48, change: -2.15 },
-  { ticker: 'META', price: 355.64, change: 0.45 },
-  { ticker: 'SPY', price: 456.38, change: 0.62 },
-] as const;
-
-export const FALLBACK_PRICES = [
-  178.72, 378.91, 141.8, 178.25, 495.22, 248.48, 355.64, 172.96, 261.53, 456.38,
-] as const;
-
-export const FALLBACK_CHANGES = [
-  1.24, 0.82, -0.56, 1.89, 3.12, -2.15, 0.45, 0.33, 0.78, 0.62,
-] as const;
-
-// ─── Fallback Account ───────────────────────────────────────────────────
-
-export const FALLBACK_ACCOUNT: BrokerAccount = {
-  cash: 100_000,
-  positions_value: 0,
-  equity: 100_000,
-  initial_capital: 100_000,
-};
 
 // ─── Signal Defaults ────────────────────────────────────────────────────
 

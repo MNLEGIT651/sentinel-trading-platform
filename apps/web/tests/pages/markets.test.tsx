@@ -235,11 +235,10 @@ describe('MarketsPage', () => {
   it('shows Offline provenance badge when engine is unavailable', async () => {
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Offline')).toBeInTheDocument();
+      const offlineBadges = screen.getAllByText('Offline');
+      expect(offlineBadges.length).toBeGreaterThanOrEqual(1);
     });
-    // Chart shows simulated since synthetic data is displayed
-    expect(screen.getByText('Simulated')).toBeInTheDocument();
-    // Both badges use the accessible DataProvenance component
+    // Both watchlist and chart show Offline since no live/cached data exists
     const statusEls = screen.getAllByRole('status');
     expect(statusEls.length).toBeGreaterThanOrEqual(2);
   });
@@ -273,7 +272,7 @@ describe('MarketsPage', () => {
     });
   });
 
-  it('shows Simulated for chart when engine online but bars empty', async () => {
+  it('shows Offline for chart when engine online but bars empty', async () => {
     useAppStore.setState({ engineOnline: true });
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
@@ -287,7 +286,9 @@ describe('MarketsPage', () => {
 
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getByText('Simulated')).toBeInTheDocument();
+      // Chart provenance is 'offline' when bars are empty (no simulated data)
+      const offlineBadges = screen.getAllByText('Offline');
+      expect(offlineBadges.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -311,10 +312,11 @@ describe('MarketsPage', () => {
     expect(screen.getByText('$378.91')).toBeInTheDocument();
   });
 
-  it('shows fallback prices when engine is offline', async () => {
+  it('shows placeholder prices when engine is offline', async () => {
     renderWithProviders(<MarketsPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('$178.72').length).toBeGreaterThanOrEqual(1);
+      // Without engine, prices default to 0 which renders as '--' (no fallback data)
+      expect(screen.getAllByText('--').length).toBeGreaterThanOrEqual(1);
     });
   });
 

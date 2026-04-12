@@ -38,13 +38,7 @@ import {
   useAgentStatusQuery,
 } from '@/hooks/queries';
 import { useOnboardingProfile, useInvalidateOnboarding } from '@/hooks/use-onboarding';
-import {
-  TICKER_SYMBOLS,
-  FALLBACK_TICKER_DATA,
-  POLL_INTERVAL,
-  FALLBACK_ACCOUNT,
-  MAX_LIVE_SCAN_TICKERS,
-} from '@/lib/constants';
+import { TICKER_SYMBOLS, POLL_INTERVAL, MAX_LIVE_SCAN_TICKERS } from '@/lib/constants';
 import { sideColors, getSignalStrengthColor, getStatusColors } from '@/lib/status-colors';
 
 function DashboardContent() {
@@ -65,7 +59,7 @@ function DashboardContent() {
   const isLive = engineOnline === true && !!quotes;
 
   const tickerData = useMemo(() => {
-    if (!quotes) return [...FALLBACK_TICKER_DATA];
+    if (!quotes) return [];
     return TICKER_SYMBOLS.map((sym) => {
       const q = quotes.find((q) => q.ticker === sym);
       return {
@@ -105,8 +99,8 @@ function DashboardContent() {
     }));
   }, [filledRecs]);
 
-  const equity = account?.equity ?? FALLBACK_ACCOUNT.equity;
-  const pnl = equity - (account?.initial_capital ?? FALLBACK_ACCOUNT.initial_capital);
+  const equity = account?.equity ?? 0;
+  const pnl = equity - (account?.initial_capital ?? equity);
   const pnlPct = account?.initial_capital ? (pnl / account.initial_capital) * 100 : 0;
 
   const tradingColors = getStatusColors(systemControls?.trading_halted ? 'error' : 'success');
@@ -291,23 +285,13 @@ function DashboardContent() {
                       <InfoTooltip content="Uninvested cash available for new trades." />
                     </>
                   }
-                  value={
-                    <AnimatedNumber
-                      value={account?.cash ?? FALLBACK_ACCOUNT.cash}
-                      prefix="$"
-                      decimals={2}
-                    />
-                  }
+                  value={<AnimatedNumber value={account?.cash ?? 0} prefix="$" decimals={2} />}
                   icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
                 />
                 <MetricCard
                   label="Positions Value"
                   value={
-                    <AnimatedNumber
-                      value={account?.positions_value ?? FALLBACK_ACCOUNT.positions_value}
-                      prefix="$"
-                      decimals={2}
-                    />
+                    <AnimatedNumber value={account?.positions_value ?? 0} prefix="$" decimals={2} />
                   }
                   icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
                 />

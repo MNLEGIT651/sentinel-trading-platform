@@ -124,22 +124,22 @@ describe('PortfolioPage', () => {
     });
   });
 
-  it('shows Simulated provenance badge when engine is offline with no cached data', async () => {
+  it('shows Offline provenance badge when engine is offline with no cached data', async () => {
     useAppStore.setState({ engineOnline: false });
     global.fetch = vi.fn(() => Promise.resolve({ ok: false } as Response)) as typeof fetch;
     renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
       const badge = screen.getByRole('status');
-      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Simulated'));
+      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Offline'));
     });
   });
 
-  it('shows mode-appropriate empty state when offline', async () => {
+  it('shows offline empty state when engine is unavailable', async () => {
     useAppStore.setState({ engineOnline: false });
     global.fetch = vi.fn(() => Promise.resolve({ ok: false } as Response)) as typeof fetch;
     renderWithProviders(<PortfolioPage />);
     await waitFor(() => {
-      expect(screen.getByText(/simulated portfolio/)).toBeInTheDocument();
+      expect(screen.getByText(/engine is offline/)).toBeInTheDocument();
     });
   });
 

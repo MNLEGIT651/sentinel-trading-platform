@@ -16,12 +16,9 @@ import {
 import { MetricsTable } from '@/components/backtest/metrics-table';
 import { ResultsChart } from '@/components/backtest/results-chart';
 import { TradeLog } from '@/components/backtest/trade-log';
-import { runSyntheticBacktest, type BacktestResult } from '@/components/backtest/synthetic-runner';
+import type { BacktestResult } from '@/components/backtest/engine-types';
 import { type EngineBacktestResponse, parsePct } from '@/components/backtest/engine-types';
 import { engineUrl, engineHeaders } from '@/lib/engine-fetch';
-
-/** Execution source of the most recent backtest run. */
-type ExecutionSource = 'engine' | 'synthetic';
 
 export default function BacktestPage() {
   const engineOnline = useAppStore((s) => s.engineOnline);
@@ -31,7 +28,6 @@ export default function BacktestPage() {
   const [capital, setCapital] = useState(100_000);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
-  const [executionSource, setExecutionSource] = useState<ExecutionSource | null>(null);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [lastRunTime, setLastRunTime] = useState<Date | null>(null);
 
@@ -39,7 +35,6 @@ export default function BacktestPage() {
     setIsRunning(true);
     setEngineError(null);
 
-    let ran = false;
     try {
       const seed = Math.floor(Math.random() * 100_000);
       const res = await fetch(engineUrl('/api/v1/backtest/run'), {
@@ -86,30 +81,19 @@ export default function BacktestPage() {
         equity_curve: data.equity_curve,
         trades: data.trades,
       });
-      ran = true;
-      setExecutionSource('engine');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Engine unavailable — unknown error';
+      const message = error instanceof Error ? error.message : 'Engine unavailable';
       setEngineError(message);
-    }
-
-    if (!ran) {
-      await new Promise((r) => setTimeout(r, 800));
-      const seed = Math.floor(Math.random() * 100_000);
-      setResult(runSyntheticBacktest(strategy, bars, trend, capital, seed));
-      setExecutionSource('synthetic');
     }
 
     setLastRunTime(new Date());
     setIsRunning(false);
   }, [strategy, bars, trend, capital]);
 
-  /** Derive the DataProvenance mode from engine health and last execution source. */
+  /** Derive the DataProvenance mode from engine health. */
   function deriveProvenanceMode(): DataProvenanceProps['mode'] {
     if (engineOnline === false) return 'offline';
-    if (executionSource === 'synthetic') return 'simulated';
-    if (executionSource === 'engine') return 'live';
-    // No run yet — reflect current engine health
+    if (result) return 'live';
     return engineOnline === true ? 'live' : 'offline';
   }
 
@@ -131,18 +115,17 @@ export default function BacktestPage() {
         <DataProvenance mode={deriveProvenanceMode()} lastUpdated={lastRunTime} />
       </div>
 
-      {/* Engine error explanation */}
-      {engineError && executionSource === 'synthetic' && (
+      {/* Engine error */}
+      {engineError && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300"
+          className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
         >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
           <div>
-            <p className="font-medium">Engine unavailable — results are simulated</p>
-            <p className="mt-0.5 text-amber-300/70">
-              The backtest engine could not be reached ({engineError}). Results below were generated
-              using client-side simulation and may differ from engine output.
+            <p className="font-medium">Backtest failed</p>
+            <p className="mt-0.5 text-red-300/70">
+              The backtest engine returned an error: {engineError}
             </p>
           </div>
         </div>
