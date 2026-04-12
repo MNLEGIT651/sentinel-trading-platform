@@ -30,6 +30,7 @@ if ! git rev-parse --verify --quiet "${RANGE%%..*}" >/dev/null; then
 fi
 
 violations=0
+checked=0
 gh_cli=""
 repo_slug=""
 github_verification_enabled=0
@@ -38,13 +39,18 @@ if gh_cli="$(resolve_github_cli 2>/dev/null)" &&
   repo_slug="$(resolve_github_repo 2>/dev/null)" &&
   github_verification_available "$gh_cli"; then
   github_verification_enabled=1
+  echo "GitHub commit-verification API: enabled (repo=${repo_slug})"
+else
+  echo "GitHub commit-verification API: disabled (gh CLI or auth unavailable)"
 fi
 
 echo "Auditing commit signatures for range: $RANGE"
 while read -r sha status; do
   [[ -z "$sha" ]] && continue
+  checked=$((checked + 1))
 
   if [[ "$status" == "G" ]]; then
+    echo "TRUSTED-SIGNED: $sha"
     continue
   fi
 
@@ -68,6 +74,8 @@ while read -r sha status; do
   echo "UNTRUSTED: $sha status=$status"
   violations=$((violations + 1))
 done < <(git log --pretty='%H %G?' "$RANGE")
+
+echo "Checked $checked commit(s)."
 
 if [[ "$violations" -gt 0 ]]; then
   echo "Found $violations untrusted commit signature(s)."

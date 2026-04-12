@@ -16,7 +16,16 @@
 
 - `.github/trusted_signers` is the repository trust store used by `git` SSH signature verification.
 - Developers and bots using SSH signing must add their signer identities to this file before opening protected-branch PRs.
-- GitHub-generated verified commits (for example GitHub UI merges and Dependabot commits) are accepted through the GitHub commit-verification API fallback used by CI.
+- GitHub-generated verified commits (for example GitHub UI merges and Dependabot commits) are accepted through the GitHub commit-verification API fallback used by CI. The API check retries up to 3 times to tolerate transient failures.
+
+## Trusted bot logins
+
+`.github/trusted_bot_logins` lists GitHub App/Bot logins whose unsigned commits are accepted when they match one of two patterns:
+
+1. **Web-flow pattern** — authored by the bot, committed by `web-flow` (GitHub UI), unsigned.
+2. **Workflow-push pattern** — authored by the bot, committed by a trusted bot login, noreply email.
+
+Current trusted bots: `Codex`, `Copilot`, `dependabot[bot]`, `github-actions[bot]`.
 
 ## Full-history audit and grandfathering
 

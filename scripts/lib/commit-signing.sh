@@ -58,12 +58,27 @@ is_github_verified_commit() {
   local gh_cli="$1"
   local repo="$2"
   local sha="$3"
-  local verified
+  local verified=""
+  local attempt
 
-  verified="$(
-    "$gh_cli" api "repos/${repo}/commits/${sha}" \
-      --jq '.commit.verification.verified' 2>/dev/null || true
-  )"
+  # Retry up to 3 times to handle transient API failures.  Without this,
+  # a single network blip silently marks a genuinely-verified commit as
+  # UNTRUSTED and fails the entire CI run.
+  for attempt in 1 2 3; do
+    verified="$(
+      "$gh_cli" api "repos/${repo}/commits/${sha}" \
+        --jq '.commit.verification.verified' 2>/dev/null || true
+    )"
+
+    if [[ "$verified" == "true" || "$verified" == "false" ]]; then
+      break
+    fi
+
+    # Empty / unexpected response — brief pause before retry
+    if (( attempt < 3 )); then
+      sleep 1
+    fi
+  done
 
   [[ "$verified" == "true" ]]
 }
@@ -112,8 +127,25 @@ is_trusted_bot_commit() {
 
   [[ "$author_type" == "Bot" ]] || return 1
   is_trusted_login "$author_login" "$trusted_logins_file" || return 1
-  [[ "$committer_login" == "web-flow" ]] || return 1
-  [[ "$committer_email" == "noreply@github.com" ]] || return 1
-  [[ "$author_email" =~ ^[0-9]+\+[^@]+@users\.noreply\.github\.com$ ]] || return 1
-  [[ "$verification_reason" == "unsigned" ]] || return 1
+
+  # Pattern 1: Bot commit via GitHub web-flow (PR merges, Dependabot PRs,
+  # Copilot/Codex web-based edits).  The commit is unsigned but the author
+  # is a recognised bot and the committer is web-flow.
+  if [[ "$committer_login" == "web-flow" &&
+        "$committer_email" == "noreply@github.com" &&
+        "$author_email" =~ ^[0-9]+\+[^@]+@users\.noreply\.github\.com$ &&
+        "$verification_reason" == "unsigned" ]]; then
+    return 0
+  fi
+
+  # Pattern 2: Bot commit pushed directly by a GitHub Actions workflow
+  # (e.g. supabase-typegen auto-commit).  The committer is the same bot
+  # (or github-actions[bot]) and the email follows the GitHub noreply
+  # pattern.  We still require the author to be a trusted bot.
+  if [[ "$committer_email" =~ ^[0-9]+\+[^@]+@users\.noreply\.github\.com$ ||
+        "$committer_email" == "noreply@github.com" ]]; then
+    is_trusted_login "$committer_login" "$trusted_logins_file" && return 0
+  fi
+
+  return 1
 }
