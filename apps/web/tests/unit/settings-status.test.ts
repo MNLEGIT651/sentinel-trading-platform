@@ -1,4 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mockUser = { id: 'test-user', email: 'test@example.com' };
+const mockSupabase = {};
+
+vi.mock('@/lib/auth/require-auth', () => ({
+  requireAuth: vi.fn(async () => ({ user: mockUser, supabase: mockSupabase })),
+  requireRole: vi.fn(async () => ({ user: mockUser, supabase: mockSupabase })),
+}));
+
 import { GET } from '@/app/api/settings/status/route';
 
 const originalEnv = {

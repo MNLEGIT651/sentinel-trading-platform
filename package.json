@@ -66,6 +66,7 @@
       "unrs-resolver"
     ],
     "overrides": {
+      "axios": ">=1.15.0",
       "flatted": ">=3.4.2",
       "path-to-regexp": ">=8.4.0",
       "minimatch@3>brace-expansion": "1.1.13",

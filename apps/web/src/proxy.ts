@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/server';
 import { proxyRateLimiter, rateLimitResponse } from '@/lib/server/rate-limiter';
+import { checkCsrf, checkMutationRateLimit } from '@/lib/server/csrf';
 import { getSupabaseKey } from '@/lib/env';
 
 // ─── Matcher ──────────────────────────────────────────────────────────────
@@ -33,12 +34,22 @@ const PUBLIC_API_PATHS = new Set([
   '/api/engine/health',
   '/api/agents/health',
   '/api/agents/status',
-  '/api/settings/status',
   '/api/internal/cron/health',
 ]);
 
 /** Static assets and well-known files that never need auth. */
 const PUBLIC_FILES = new Set(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
+
+// ─── CSRF configuration ───────────────────────────────────────────────────
+
+/** HTTP methods that mutate state and require CSRF validation. */
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * API path prefixes exempt from CSRF checks.
+ * Webhooks use signature verification; internal/health routes are non-mutating.
+ */
+const CSRF_EXEMPT_PREFIXES = ['/api/webhooks/', '/api/internal/', '/api/health'];
 
 /**
  * Returns true for paths that are API routes (start with /api/).
@@ -132,6 +143,19 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set('next', pathname);
     }
     return NextResponse.redirect(url);
+  }
+
+  // ─── CSRF + mutation rate limiting (authenticated mutating API requests) ──
+  if (
+    isApiRoute(pathname) &&
+    MUTATION_METHODS.has(request.method) &&
+    !CSRF_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))
+  ) {
+    const csrfResponse = checkCsrf(request);
+    if (csrfResponse) return csrfResponse;
+
+    const mrl = checkMutationRateLimit(user.id);
+    if (mrl) return mrl;
   }
 
   return supabaseResponse;

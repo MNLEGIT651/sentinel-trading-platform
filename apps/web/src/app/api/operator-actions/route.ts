@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole, type OperatorRole } from '@/lib/auth/require-auth';
 import { parseBody } from '@/lib/api/validation';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import type { OperatorActionType } from '@sentinel/shared';
@@ -23,6 +23,21 @@ const VALID_ACTION_TYPES: OperatorActionType[] = [
   'system_config_change',
 ];
 
+/** Minimum role required per action type. */
+const ACTION_ROLE_MAP: Record<string, OperatorRole> = {
+  approve_recommendation: 'approver',
+  reject_recommendation: 'approver',
+  halt_trading: 'operator',
+  resume_trading: 'operator',
+  update_policy: 'operator',
+  change_mode: 'operator',
+  override_risk: 'operator',
+  cancel_order: 'operator',
+  manual_order: 'operator',
+  role_change: 'operator',
+  system_config_change: 'operator',
+};
+
 const postBodySchema = z.object({
   action_type: z.enum(VALID_ACTION_TYPES as [string, ...string[]]),
   target_type: z.string().optional(),
@@ -31,9 +46,9 @@ const postBodySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
-/** GET /api/operator-actions ΓÇö list operator actions with optional filters */
+/** GET /api/operator-actions — list operator actions with optional filters */
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requireRole('observer');
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
@@ -88,19 +103,22 @@ export async function GET(request: NextRequest) {
   });
 }
 
-/** POST /api/operator-actions ΓÇö record a new operator action */
+/** POST /api/operator-actions — record a new operator action */
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth();
+  // First parse the body to determine which action is being attempted
+  const parsed = await parseBody(request, postBodySchema);
+  if (parsed instanceof NextResponse) return parsed;
+
+  const { action_type, target_type, target_id, reason, metadata } = parsed;
+
+  // Enforce per-action role authorization
+  const minimumRole = ACTION_ROLE_MAP[action_type] ?? 'operator';
+  const auth = await requireRole(minimumRole);
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
   const rl = checkApiRateLimit(user.id);
   if (rl) return rl;
-
-  const parsed = await parseBody(request, postBodySchema);
-  if (parsed instanceof NextResponse) return parsed;
-
-  const { action_type, target_type, target_id, reason, metadata } = parsed;
 
   const { data, error } = await supabase
     .from('operator_actions')

@@ -101,6 +101,7 @@ export default function SettingsPage() {
     setCheckingConnections(true);
     try {
       const r = await fetch('/api/settings/status');
+      if (!r.ok) throw new Error(`Status check failed: ${r.status}`);
       const data = (await r.json()) as ServiceStatuses;
       setServiceStatus(data);
     } catch {

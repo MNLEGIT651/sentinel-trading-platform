@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
- * CI guard: verifies the Next.js CSRF middleware is in place and that
- * all non-exempt API mutation routes are covered.
+ * CI guard: verifies CSRF enforcement via proxy.ts and that all
+ * non-exempt API mutation routes have proper auth coverage.
  *
  * Checks:
- * 1. apps/web/src/middleware.ts exists and exports the correct matcher
- * 2. All API route files that export mutation handlers (POST/PUT/PATCH/DELETE)
- *    are covered by the middleware matcher pattern
- * 3. requireAuth is called in mutation handlers (defence-in-depth)
+ * 1. apps/web/src/proxy.ts exists with CSRF enforcement for mutations
+ * 2. All mutation routes (POST/PUT/PATCH/DELETE) call requireAuth or requireRole
+ * 3. No mutating routes are in PUBLIC_API_PATHS / PUBLIC_PREFIXES
  *
  * Usage:
  *   node scripts/check-route-security.mjs
@@ -19,10 +18,10 @@ import { globSync } from 'node:fs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const webRoot = join(root, 'apps', 'web', 'src');
-const middlewarePath = join(webRoot, 'middleware.ts');
+const proxyPath = join(webRoot, 'proxy.ts');
 
 const MUTATION_EXPORTS = /export\s+(?:async\s+)?function\s+(POST|PUT|PATCH|DELETE)\b/g;
-const REQUIRE_AUTH = /requireAuth/;
+const AUTH_CHECK = /requireAuth|requireRole/;
 
 /** Glob API route files. */
 function findRouteFiles() {
@@ -34,25 +33,21 @@ function findRouteFiles() {
 }
 
 const errors = [];
-const warnings = [];
 
-// ─── Check 1: Middleware exists ───────────────────────────────────────────
-if (!existsSync(middlewarePath)) {
-  errors.push('CRITICAL: apps/web/src/middleware.ts is missing. CSRF protection is not active.');
+// ─── Check 1: Proxy-level CSRF enforcement ───────────────────────────────
+if (!existsSync(proxyPath)) {
+  errors.push('CRITICAL: apps/web/src/proxy.ts is missing. No edge-level security.');
 } else {
-  const content = readFileSync(middlewarePath, 'utf8');
+  const content = readFileSync(proxyPath, 'utf8');
 
-  if (!content.includes("matcher")) {
-    errors.push('middleware.ts does not export a config.matcher — routes are unprotected.');
+  if (!content.includes('checkCsrf')) {
+    errors.push('proxy.ts does not call checkCsrf — CSRF protection is not active.');
   }
-  if (!content.includes('/api/')) {
-    errors.push('middleware.ts matcher does not target /api/ routes.');
+  if (!content.includes('MUTATION_METHODS')) {
+    errors.push('proxy.ts does not define MUTATION_METHODS — mutation filtering is missing.');
   }
-  if (!content.includes('MUTATION_METHODS') && !content.includes('POST')) {
-    errors.push('middleware.ts does not check mutation methods (POST/PUT/PATCH/DELETE).');
-  }
-  if (!content.includes('csrf') && !content.includes('CSRF') && !content.includes('origin')) {
-    errors.push('middleware.ts does not appear to implement CSRF validation.');
+  if (!content.includes('CSRF_EXEMPT_PREFIXES')) {
+    errors.push('proxy.ts does not define CSRF_EXEMPT_PREFIXES — exemption model is missing.');
   }
 }
 
@@ -70,35 +65,30 @@ for (const { relative, absolute } of routeFiles) {
   if (mutations.length === 0) continue;
   mutationRouteCount++;
 
-  // Skip exempt routes
+  // Skip exempt routes (webhooks use signature verification, proxied routes use upstream auth)
   if (EXEMPT_PREFIXES.some((p) => relative.startsWith(p))) continue;
 
-  // Check that requireAuth is called
-  if (!REQUIRE_AUTH.test(content)) {
-    warnings.push(`${relative}: exports ${mutations.join(', ')} but does not call requireAuth()`);
+  // Check that requireAuth or requireRole is called
+  if (!AUTH_CHECK.test(content)) {
+    errors.push(`${relative}: exports ${mutations.join(', ')} but does not call requireAuth() or requireRole()`);
     authMissingCount++;
   }
 }
 
 // ─── Report ──────────────────────────────────────────────────────────────
 console.log('\n=== Route Security Audit ===\n');
-console.log(`Middleware:       ${existsSync(middlewarePath) ? 'PRESENT' : 'MISSING'}`);
+console.log(`Proxy CSRF:       ${existsSync(proxyPath) ? 'PRESENT' : 'MISSING'}`);
 console.log(`Mutation routes:  ${mutationRouteCount}`);
-console.log(`Auth warnings:    ${authMissingCount}`);
+console.log(`Auth missing:     ${authMissingCount}`);
 
 if (errors.length > 0) {
   console.log('\nERRORS:');
   for (const e of errors) console.error(`  ✗ ${e}`);
 }
 
-if (warnings.length > 0) {
-  console.log('\nWARNINGS:');
-  for (const w of warnings) console.warn(`  ⚠ ${w}`);
+if (errors.length === 0) {
+  console.log('\n✓ All checks passed.');
 }
 
-if (errors.length === 0 && warnings.length === 0) {
-  console.log('\nAll checks passed.');
-}
-
-// Only fail CI on errors, not warnings
+// Fail CI on any error (CSRF gaps or missing auth)
 process.exit(errors.length > 0 ? 1 : 0);

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireAuth, requireRole } from '@/lib/auth/require-auth';
 import { parseBody } from '@/lib/api/validation';
 import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import type { TradingPolicy } from '@sentinel/shared';
@@ -90,7 +90,7 @@ export async function GET(): Promise<Response> {
 
 export async function PUT(request: Request): Promise<Response> {
   try {
-    const auth = await requireAuth();
+    const auth = await requireRole('operator');
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 

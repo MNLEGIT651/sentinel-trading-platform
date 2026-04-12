@@ -41,6 +41,9 @@ jobs:
             if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
               echo "available=false" >> "$GITHUB_OUTPUT"
               echo "::warning::Fork PR — secrets unavailable. Skipping preview smoke checks."
+            elif [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              echo "::warning::VERCEL_PREVIEW_SMOKE_URL not set — skipping preview smoke on PR."
             else
               echo "::error::Missing required secret: VERCEL_PREVIEW_SMOKE_URL"
               exit 1
@@ -54,4 +57,9 @@ jobs:
         env:
           VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
         run: |
-          ./scripts/health-check.sh --verbose
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Advisory on PRs — report but don't block (PR code isn't deployed yet)
+            ./scripts/health-check.sh --verbose || echo "::warning::Smoke check failed — advisory only on PRs"
+          else
+            ./scripts/health-check.sh --verbose
+          fi

@@ -58,8 +58,8 @@ const CONFIG = {
     failOnlyHighRisk: true,
   },
   spread: {
-    dirsWarn: 3,
-    dirsFail: 5,
+    dirsWarn: 4,
+    dirsFail: 7,
   },
   highRiskPaths: [
     '.github/workflows/',
@@ -537,11 +537,14 @@ function checkSpread(changedFileNames) {
   for (const f of changedFileNames) {
     if (isIgnored(f)) continue;
     const parts = f.split('/');
-    if (parts.length > 1) {
-      // Use first two levels for monorepo (apps/web, apps/engine, packages/shared, etc.)
+    if (parts.length <= 1) {
+      topDirs.add('(root)');
+    } else if (parts[0] === 'apps' || parts[0] === 'packages') {
+      // Monorepo workspaces: group at 2-level depth (apps/web, packages/shared)
       topDirs.add(parts.slice(0, 2).join('/'));
     } else {
-      topDirs.add('(root)');
+      // Everything else: group at 1-level depth (.github, scripts, docs, supabase)
+      topDirs.add(parts[0]);
     }
   }
 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/auth/require-auth';
 import { getServiceConfig } from '@/lib/server/service-config';
 
 export const maxDuration = 10;
@@ -62,6 +63,9 @@ async function fetchConfiguredServiceJson<T>(
 }
 
 export async function GET(): Promise<NextResponse<StatusResponse>> {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth as NextResponse<StatusResponse>;
+
   const engineConfig = getServiceConfig('engine');
   const agentsConfig = getServiceConfig('agents');
 
