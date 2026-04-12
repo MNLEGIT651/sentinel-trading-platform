@@ -50,6 +50,36 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-12 — Claude (Phase 2 — SLO Metrics Endpoint)
+
+**Goal**: Add a real-time SLO health endpoint to the engine so the go/no-go
+gate in the release checklist can be queried programmatically, and operators
+get instant visibility into system health against targets.
+
+**What changed**:
+
+- `apps/engine/src/metrics/collector.py` — `MetricsCollector` class with
+  in-memory sliding window (5 min), percentile calculation, SLO budget
+  computation (green/yellow/red), grouped by critical path (quotes, bars,
+  orders, health probes) and error type (5xx, auth, timeout, order failures).
+- `apps/engine/src/metrics/__init__.py` — package init.
+- `apps/engine/src/middleware/metrics.py` — `MetricsMiddleware` captures
+  request path, method, status, and duration on every request.
+- `apps/engine/src/api/routes/metrics.py` — `GET /api/v1/metrics/slo` returns
+  the current `SloReport` as JSON (latency p95s + error rates + budget status).
+- `apps/engine/src/api/main.py` — registered MetricsMiddleware (outermost) and
+  metrics_router.
+- `apps/engine/tests/unit/test_metrics_collector.py` — 14 unit tests: record/
+  retrieve, eviction, percentile math, empty/green/red latency, error rates,
+  order failure tracking, health probe SLO, singleton pattern.
+- `docs/runbooks/release-checklist.md` — added §5.8 "SLO Metrics Endpoint".
+
+**Validation**:
+
+- `pnpm test:engine` — 521/521 pass (+14 new tests)
+- `pnpm lint:engine` — clean
+- `pnpm format:check:engine` — clean
+
 ### 2026-04-12 — Claude (Phase 2 — Portfolio Reconciliation Service)
 
 **Goal**: Implement nightly cash/position reconciliation — full audit of

@@ -340,7 +340,39 @@ Post-deploy verification (only when `SENTRY_DSN` is set):
 - [ ] Trigger a test error (e.g. invalid order payload) and verify it appears in Sentry dashboard
 - [ ] Confirm `send_default_pii=False` — no user emails/IPs in events
 
-### 5.8 CI Environment Prerequisites
+### 5.8 SLO Metrics Endpoint
+
+The engine exposes a real-time SLO health endpoint at
+`GET /api/v1/metrics/slo`. It returns current p95 latency per critical path,
+error rates, and budget consumption status — matching the targets from
+[slo-dashboard-spec.md](slo-dashboard-spec.md).
+
+The endpoint uses an in-memory sliding window (5 minutes) populated by the
+`MetricsMiddleware` which records every request's path, method, status, and
+duration. No external dependencies (no Prometheus, no Redis).
+
+**Response structure:**
+```json
+{
+  "window_seconds": 300,
+  "total_requests": 1234,
+  "latency": {
+    "market_data_quotes": { "value": 850.0, "target": 3000.0, "budget_pct": 14.2, "status": "green" },
+    "order_submission": { "value": 1200.0, "target": 2000.0, "budget_pct": 30.0, "status": "green" }
+  },
+  "error_rates": {
+    "proxy_5xx_rate": { "value": 0.1, "target": 1.0, "budget_pct": 10.0, "status": "green" }
+  }
+}
+```
+
+Post-deploy verification:
+
+- [ ] `GET /api/v1/metrics/slo` returns 200 with valid JSON
+- [ ] After some traffic, `total_requests > 0` and latency entries appear
+- [ ] Status colors match observed behavior (green = healthy)
+
+### 5.9 CI Environment Prerequisites
 
 The following secrets/env vars must be configured in GitHub repo settings for
 CI workflows to pass. Missing values cause workflow failures that are **not code bugs**.
