@@ -1,10 +1,6 @@
-# Sentinel Trading Platform — Local development stack
+# Sentinel Trading Platform — Production-optimized stack
+# Improvements: resource limits, build caching, health checks, restart policies
 # Usage: docker compose up --build
-#
-# Requires a .env file in the repo root with:
-#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
-#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, POLYGON_API_KEY, ANTHROPIC_API_KEY
-#   ALPACA_API_KEY, ALPACA_SECRET_KEY
 
 name: sentinel
 
@@ -14,25 +10,49 @@ services:
     build:
       context: apps/engine
       dockerfile: Dockerfile
+      cache_from:
+        - type=gha
+      cache_to:
+        - type=gha,mode=max
     ports:
       - '8000:8000'
     env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
+      - PORT=8000
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-4}
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
       interval: 30s
       timeout: 10s
       start_period: 15s
       retries: 3
+    restart: on-failure:3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
     networks:
       - sentinel
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
 
   # ── Agent Orchestrator (TypeScript Express) ───────────────────────────────
   agents:
     build:
       context: .
       dockerfile: apps/agents/Dockerfile
+      cache_from:
+        - type=gha
+      cache_to:
+        - type=gha,mode=max
     ports:
       - '3001:3001'
     env_file: .env
@@ -40,6 +60,7 @@ services:
       - ENGINE_URL=http://engine:8000
       - AGENTS_PORT=3001
       - WEB_URL=${WEB_URL:-http://localhost:3000}
+      - NODE_ENV=production
     depends_on:
       engine:
         condition: service_healthy
@@ -49,8 +70,22 @@ services:
       timeout: 10s
       start_period: 20s
       retries: 3
+    restart: on-failure:3
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     networks:
       - sentinel
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
 
   # ── Next.js Dashboard ─────────────────────────────────────────────────────
   web:
@@ -60,12 +95,17 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      cache_from:
+        - type=gha
+      cache_to:
+        - type=gha,mode=max
     ports:
       - '3000:3000'
     env_file: .env
     environment:
       - ENGINE_URL=http://engine:8000
       - AGENTS_URL=http://agents:3001
+      - NODE_ENV=production
     depends_on:
       engine:
         condition: service_healthy
@@ -77,8 +117,22 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 3
+    restart: on-failure:3
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     networks:
       - sentinel
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
 
 networks:
   sentinel:

@@ -1,47 +1,91 @@
+# Root .dockerignore — shared across all services
+# Reduces build context size and avoids invalidating layers with non-essential files
+
 # Version control
 .git
 .gitignore
+.gitattributes
 
-# Dependencies (rebuilt inside Docker)
+# Package manager caches (rebuilt in Docker)
 **/node_modules
 **/.pnpm-store
+**/pnpm-store
 
-# Python artifacts
+# Python artifacts (rebuilt in Docker)
 **/__pycache__
 **/*.pyc
 **/*.pyo
 **/.hypothesis
 **/.pytest_cache
 **/.venv
+**/.env
 
-# Build outputs
+# Build outputs (rebuilt in Docker)
 **/.next
 **/dist
 **/build
 **/.turbo
+**/.vercel
 
 # Test artifacts
 **/coverage
 **/.nyc_output
+**/vitest.config.ts
+**/playwright.config.ts
 
-# IDE and OS
+# Development/IDE
 .vscode
 .idea
+.devcontainer
+.claude
+.agents
 **/.DS_Store
 **/Thumbs.db
+*.swp
+*.swo
 
-# Local env (injected at runtime via env_file)
-.env
-.env.*
-!.env.example
+# CI/CD
+.circleci
+.github
+.husky
+.gitattributes
 
-# Docs and non-essential files
-docs
+# Documentation (not needed in containers)
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+CODE_OF_CONDUCT.md
+SECURITY.md
+AGENTS.md
+CLAUDE.md
+docs/
 *.md
 !apps/*/README.md
+
+# Linting/Config (not runtime-needed)
+.editorconfig
+.commitlintrc.json
+.prettierignore
+.prettierrc
+.nvmrc
+.python-version
+eslint.config.mjs
+tsconfig.tsbuildinfo
+lighthouserc.js
+.turbo
+railway.toml
+vercel.json
+turbo.json
+
+# Miscellaneous
+supabase/
+.zap
+artifacts/
+reports/
+scripts/
 *.xlsx
 Codex
-
-# Supabase local
-supabase/.branches
-supabase/.temp
+gh pr token*
+skills-lock.json
+typecheck.log

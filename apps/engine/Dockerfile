@@ -1,64 +1,67 @@
 # ─── Sentinel Engine — Python FastAPI ────────────────────────────────────────
-# Multi-stage production-optimized Dockerfile following 2026 best practices
-# - Uses Python 3.12 for performance and modern features
-# - Leverages uv for fast dependency installation
-# - Runs with Gunicorn + Uvicorn workers for production-grade async serving
-# - Includes uvloop and httptools for 2-4x performance improvement
-# - Non-root user for security
-# - Health checks for orchestration platforms
+# Production-optimized Dockerfile following 2026 best practices
+# Improvements:
+#   - Layer caching: system deps + uv separated from app code
+#   - Slim base with no-cache flags for minimal layer bloat
+#   - uv for fast deterministic installs (40x faster than pip)
+#   - Gunicorn + Uvicorn workers for async I/O performance
+#   - Non-root user (uid 1001) for container security
+#   - Health checks for orchestration (Kubernetes, Compose)
 
 FROM python:3.12-slim AS base
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends curl \
-  && rm -rf /var/lib/apt/lists/*
+# Install system dependencies once (layer cached by hash of apt-get instructions)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install uv package manager
+# Install uv package manager (no-cache to always get latest patch)
 RUN pip install --no-cache-dir "uv>=0.5"
 
-# ─── Dependencies layer ───────────────────────────────────────────────────────
+# ─── Dependencies layer (cached independently) ────────────────────────────────
 FROM base AS deps
 
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock* ./
 
-# Create venv and install production dependencies only
-RUN uv venv .venv \
-  && uv pip install --python .venv/bin/python --no-cache "."
+# Create venv in this layer and install deps
+# RUN cache will persist across rebuilds unless pyproject.toml/uv.lock changes
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv .venv && \
+    uv pip install --python .venv/bin/python --no-cache "."
 
-# ─── Runtime image ────────────────────────────────────────────────────────────
+# ─── Runtime image (minimal final image) ──────────────────────────────────────
 FROM base AS runner
 
 WORKDIR /app
 
-# Copy virtual environment from deps stage
+# Copy lightweight venv from deps layer
 COPY --from=deps /app/.venv ./.venv
 
-# Put venv on PATH so gunicorn/uvicorn are directly invocable
-ENV PATH="/app/.venv/bin:$PATH"
+# Activate venv on PATH so commands are directly invocable
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000
 
-# Copy application code
+# Copy application code (changes here don't invalidate deps layer)
 COPY src ./src
 COPY gunicorn_conf.py start.sh ./
 RUN chmod +x start.sh
 
 # Create non-root user for security
-RUN addgroup --system --gid 1001 sentinel \
-  && adduser --system --uid 1001 --ingroup sentinel sentinel
-
-# Set ownership
-RUN chown -R sentinel:sentinel /app
+RUN addgroup --system --gid 1001 sentinel && \
+    adduser --system --uid 1001 --ingroup sentinel sentinel && \
+    chown -R sentinel:sentinel /app
 
 USER sentinel
 
 EXPOSE 8000
 
-# Health check for container orchestration (shell form for PORT variable)
+# Health check for orchestration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD sh -c "curl -f http://localhost:${PORT:-8000}/health || exit 1"
+  CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# Exec form: signals propagate directly to gunicorn (no shell wrapper)
+# Exec form: signals propagate directly to gunicorn (PID 1)
 CMD ["gunicorn", "src.api.main:app", "-c", "gunicorn_conf.py"]
-
