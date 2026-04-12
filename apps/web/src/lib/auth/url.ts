@@ -52,6 +52,45 @@ export function sanitizeRedirectPath(next: string | null | undefined): string {
   return trimmed;
 }
 
+/**
+ * Alias for getCanonicalUrl — used when the intent is clearly SEO/metadata.
+ * Helps distinguish from request-based origin logic (getRequestOrigin).
+ */
+export const getCanonicalSiteUrl = getCanonicalUrl;
+
+/**
+ * Derive the origin of the current request from its URL.
+ *
+ * Uses the standard URL.origin property which returns protocol + host of
+ * the request target. This is the OWASP-recommended approach for CSRF
+ * "target origin" matching — it correctly handles raw Vercel deployment
+ * URLs, preview deployments, and canonical production aliases.
+ *
+ * Falls back to getCanonicalUrl() if the request URL cannot be parsed
+ * (should not happen in practice with well-formed Request objects).
+ */
+export function getRequestOrigin(request: Request): string {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return getCanonicalUrl();
+  }
+}
+
+/**
+ * Returns the canonical production hostname (without protocol or path).
+ * Derived from NEXT_PUBLIC_SITE_URL. Returns null if not set.
+ */
+export function getCanonicalHost(): string | null {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!siteUrl) return null;
+  try {
+    return new URL(normalizeUrl(siteUrl)).hostname;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeUrl(raw: string): string {
   let url = raw.trim();
   // NEXT_PUBLIC_VERCEL_URL doesn't include protocol

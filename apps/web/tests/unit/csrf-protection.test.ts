@@ -1,20 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { checkCsrf, validateOrigin } from '@/lib/server/csrf';
-
-// ---------------------------------------------------------------------------
-// Mock the canonical URL helper so tests don't depend on env vars
-// ---------------------------------------------------------------------------
-
-vi.mock('@/lib/auth/url', () => ({
-  getCanonicalUrl: vi.fn(() => 'https://sentinel.example.com'),
-}));
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRequest(headers: Record<string, string> = {}): Request {
-  return new Request('https://sentinel.example.com/api/journal', {
+/** Create a Request with a given URL and headers. */
+function makeRequest(
+  headers: Record<string, string> = {},
+  url = 'https://sentinel.example.com/api/journal',
+): Request {
+  return new Request(url, {
     method: 'POST',
     headers,
   });
@@ -146,5 +142,59 @@ describe('checkCsrf', () => {
     const response = checkCsrf(req);
     expect(response).not.toBeNull();
     expect(response!.status).toBe(403);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-host / deployment URL handling
+// ---------------------------------------------------------------------------
+
+describe('validateOrigin — multi-host handling', () => {
+  it('allows same-origin request on a raw Vercel deployment URL', () => {
+    const deployUrl = 'https://trading-abc123.vercel.app/api/signals/scan';
+    const req = makeRequest({ origin: 'https://trading-abc123.vercel.app' }, deployUrl);
+    const result = validateOrigin(req);
+    expect(result.allowed).toBe(true);
+  });
+
+  it('blocks cross-origin request on a raw Vercel deployment URL', () => {
+    const deployUrl = 'https://trading-abc123.vercel.app/api/signals/scan';
+    const req = makeRequest({ origin: 'https://evil.example.com' }, deployUrl);
+    const result = validateOrigin(req);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain('Origin mismatch');
+  });
+
+  it('allows same-origin on a preview branch deployment', () => {
+    const previewUrl = 'https://trading-app-git-feature-xyz.vercel.app/api/data';
+    const req = makeRequest(
+      { origin: 'https://trading-app-git-feature-xyz.vercel.app' },
+      previewUrl,
+    );
+    const result = validateOrigin(req);
+    expect(result.allowed).toBe(true);
+  });
+
+  it('allows same-origin on localhost development', () => {
+    const localUrl = 'http://localhost:3000/api/data';
+    const req = makeRequest({ origin: 'http://localhost:3000' }, localUrl);
+    const result = validateOrigin(req);
+    expect(result.allowed).toBe(true);
+  });
+
+  it('blocks canonical-origin request sent to a different deployment host', () => {
+    // User is on a raw deployment URL but Origin somehow claims canonical host
+    const deployUrl = 'https://trading-abc123.vercel.app/api/signals/scan';
+    const req = makeRequest({ origin: 'https://sentinel-trading-platform.vercel.app' }, deployUrl);
+    const result = validateOrigin(req);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain('Origin mismatch');
+  });
+
+  it('allows Referer fallback on a raw deployment URL', () => {
+    const deployUrl = 'https://trading-abc123.vercel.app/api/data';
+    const req = makeRequest({ referer: 'https://trading-abc123.vercel.app/dashboard' }, deployUrl);
+    const result = validateOrigin(req);
+    expect(result.allowed).toBe(true);
   });
 });

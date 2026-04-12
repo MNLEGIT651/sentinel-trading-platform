@@ -138,3 +138,84 @@ describe('sanitizeRedirectPath', () => {
     expect(sanitizeRedirectPath('evil.com/path')).toBe('/');
   });
 });
+
+// ---------------------------------------------------------------------------
+// getRequestOrigin — request-based origin resolution
+// ---------------------------------------------------------------------------
+
+describe('getRequestOrigin', () => {
+  it('returns origin from request URL', async () => {
+    const { getRequestOrigin } = await loadUrlModule();
+    const req = new Request('https://sentinel.example.com/api/data');
+    expect(getRequestOrigin(req)).toBe('https://sentinel.example.com');
+  });
+
+  it('handles raw Vercel deployment URLs', async () => {
+    const { getRequestOrigin } = await loadUrlModule();
+    const req = new Request('https://trading-abc123.vercel.app/api/data');
+    expect(getRequestOrigin(req)).toBe('https://trading-abc123.vercel.app');
+  });
+
+  it('handles localhost with port', async () => {
+    const { getRequestOrigin } = await loadUrlModule();
+    const req = new Request('http://localhost:3000/api/data');
+    expect(getRequestOrigin(req)).toBe('http://localhost:3000');
+  });
+
+  it('handles production canonical URL', async () => {
+    const { getRequestOrigin } = await loadUrlModule();
+    const req = new Request('https://sentinel-trading-platform.vercel.app/signals');
+    expect(getRequestOrigin(req)).toBe('https://sentinel-trading-platform.vercel.app');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getCanonicalHost — hostname extraction from NEXT_PUBLIC_SITE_URL
+// ---------------------------------------------------------------------------
+
+describe('getCanonicalHost', () => {
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_VERCEL_URL;
+  });
+
+  it('returns hostname from NEXT_PUBLIC_SITE_URL', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app';
+    const { getCanonicalHost } = await loadUrlModule();
+    expect(getCanonicalHost()).toBe('sentinel-trading-platform.vercel.app');
+  });
+
+  it('returns null when NEXT_PUBLIC_SITE_URL is not set', async () => {
+    const { getCanonicalHost } = await loadUrlModule();
+    expect(getCanonicalHost()).toBeNull();
+  });
+
+  it('handles URL without protocol prefix', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'sentinel-trading-platform.vercel.app';
+    const { getCanonicalHost } = await loadUrlModule();
+    expect(getCanonicalHost()).toBe('sentinel-trading-platform.vercel.app');
+  });
+
+  it('strips trailing slash before parsing', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app/';
+    const { getCanonicalHost } = await loadUrlModule();
+    expect(getCanonicalHost()).toBe('sentinel-trading-platform.vercel.app');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getCanonicalSiteUrl — alias for getCanonicalUrl
+// ---------------------------------------------------------------------------
+
+describe('getCanonicalSiteUrl', () => {
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_VERCEL_URL;
+  });
+
+  it('is an alias that returns the same value as getCanonicalUrl', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel.example.com';
+    const { getCanonicalUrl, getCanonicalSiteUrl } = await loadUrlModule();
+    expect(getCanonicalSiteUrl()).toBe(getCanonicalUrl());
+  });
+});

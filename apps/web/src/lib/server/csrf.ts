@@ -36,7 +36,7 @@
  * - Origin validation is sufficient for this threat model
  */
 
-import { getCanonicalUrl } from '@/lib/auth/url';
+import { getRequestOrigin } from '@/lib/auth/url';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -81,7 +81,11 @@ export function checkCsrf(request: Request): Response | null {
 export function validateOrigin(request: Request): CsrfValidationResult {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
-  const expectedOrigin = getExpectedOrigin();
+  // Derive expected origin from the request's own URL (OWASP target-origin
+  // matching).  This correctly handles raw Vercel deployment URLs, preview
+  // deployments, and canonical production aliases — the browser's Origin
+  // header will match the host the user is actually on.
+  const expectedOrigin = getRequestOrigin(request);
 
   // 1. Check Origin header (most reliable — set by all modern browsers)
   if (origin) {
@@ -124,11 +128,6 @@ export function validateOrigin(request: Request): CsrfValidationResult {
 }
 
 // ─── Internals ────────────────────────────────────────────────────────────
-
-/** Resolve the expected origin from env-based canonical URL. */
-function getExpectedOrigin(): string {
-  return getCanonicalUrl().replace(/\/$/, '');
-}
 
 /** Case-insensitive origin comparison. */
 function isSameOrigin(provided: string, expected: string): boolean {

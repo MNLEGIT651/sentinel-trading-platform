@@ -267,6 +267,95 @@ describe('proxy middleware — Supabase not configured', () => {
   });
 });
 
+// ─── Production canonical host redirect ─────────────────────────────────
+
+describe('proxy middleware — production canonical host redirect', () => {
+  const savedVercelEnv = process.env.VERCEL_ENV;
+  const savedSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCheck.mockReturnValue({ allowed: true, remaining: 119, resetAtMs: Date.now() + 60_000 });
+    mockUpdateSession.mockResolvedValue(authenticatedSession);
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+  });
+
+  afterEach(() => {
+    process.env.VERCEL_ENV = savedVercelEnv;
+    process.env.NEXT_PUBLIC_SITE_URL = savedSiteUrl;
+    vi.resetModules();
+  });
+
+  it('redirects non-canonical host page request to canonical host in production', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app';
+    const { proxy } = await import('@/proxy');
+    const req = new NextRequest('https://trading-abc123.vercel.app/portfolio');
+    const response = await proxy(req);
+    expect(response.status).toBe(308);
+    const location = response.headers.get('location') ?? '';
+    expect(location).toContain('sentinel-trading-platform.vercel.app');
+    expect(location).toContain('/portfolio');
+    // updateSession should NOT be called — redirect is before auth
+    expect(mockUpdateSession).not.toHaveBeenCalled();
+  });
+
+  it('does NOT redirect when request is on canonical host', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app';
+    const { proxy } = await import('@/proxy');
+    const req = new NextRequest('https://sentinel-trading-platform.vercel.app/portfolio');
+    (req.headers as unknown as Map<string, string>).set('x-forwarded-for', '1.2.3.4');
+    const response = await proxy(req);
+    // Should proceed normally (not a 308)
+    expect(response.status).not.toBe(308);
+  });
+
+  it('does NOT redirect API routes on non-canonical host', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app';
+    const { proxy } = await import('@/proxy');
+    const req = new NextRequest('https://trading-abc123.vercel.app/api/engine/orders');
+    (req.headers as unknown as Map<string, string>).set('x-forwarded-for', '1.2.3.4');
+    const response = await proxy(req);
+    // Should NOT be a redirect — API routes must not redirect
+    expect(response.status).not.toBe(308);
+  });
+
+  it('does NOT redirect in preview environment', async () => {
+    process.env.VERCEL_ENV = 'preview';
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app';
+    const { proxy } = await import('@/proxy');
+    const req = new NextRequest('https://trading-git-feature.vercel.app/portfolio');
+    (req.headers as unknown as Map<string, string>).set('x-forwarded-for', '1.2.3.4');
+    const response = await proxy(req);
+    expect(response.status).not.toBe(308);
+  });
+
+  it('does NOT redirect when NEXT_PUBLIC_SITE_URL is not set', async () => {
+    process.env.VERCEL_ENV = 'production';
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    const { proxy } = await import('@/proxy');
+    const req = new NextRequest('https://trading-abc123.vercel.app/portfolio');
+    (req.headers as unknown as Map<string, string>).set('x-forwarded-for', '1.2.3.4');
+    const response = await proxy(req);
+    expect(response.status).not.toBe(308);
+  });
+
+  it('does NOT redirect POST requests (only GET/HEAD)', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://sentinel-trading-platform.vercel.app';
+    const { proxy } = await import('@/proxy');
+    const req = new NextRequest('https://trading-abc123.vercel.app/signals', {
+      method: 'POST',
+    });
+    (req.headers as unknown as Map<string, string>).set('x-forwarded-for', '1.2.3.4');
+    const response = await proxy(req);
+    expect(response.status).not.toBe(308);
+  });
+});
+
 // ─── Rate limiter unit tests ──────────────────────────────────────────────
 
 describe('RateLimiter', () => {

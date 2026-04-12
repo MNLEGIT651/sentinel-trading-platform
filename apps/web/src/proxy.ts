@@ -3,6 +3,7 @@ import { updateSession } from '@/lib/supabase/server';
 import { proxyRateLimiter, rateLimitResponse } from '@/lib/server/rate-limiter';
 import { checkCsrf, checkMutationRateLimit } from '@/lib/server/csrf';
 import { getSupabaseKey } from '@/lib/env';
+import { getCanonicalHost } from '@/lib/auth/url';
 
 // ─── Matcher ──────────────────────────────────────────────────────────────
 // Skip static assets and internal Next.js paths — they must never be
@@ -90,6 +91,27 @@ function isAuthConfigured(): boolean {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ─── Production canonical host redirect (page requests only) ──────────
+  // In production, redirect page GET/HEAD requests on raw deployment URLs
+  // (e.g., trading-<hash>.vercel.app) to the canonical production host.
+  // This prevents SEO dilution and ensures users interact on the canonical
+  // origin.  API routes are NOT redirected — they work on any valid host.
+  // The CSRF layer separately validates origin via request-based matching.
+  if (
+    process.env.VERCEL_ENV === 'production' &&
+    !isApiRoute(pathname) &&
+    (request.method === 'GET' || request.method === 'HEAD')
+  ) {
+    const canonicalHost = getCanonicalHost();
+    const requestHost = request.nextUrl.hostname;
+    if (canonicalHost && requestHost !== canonicalHost) {
+      const url = request.nextUrl.clone();
+      url.hostname = canonicalHost;
+      url.port = '';
+      return NextResponse.redirect(url, 308);
+    }
+  }
 
   // Rate-limit API proxy routes before doing any auth work.
   // Use the forwarded IP (set by Vercel/load-balancer) as the client key;
