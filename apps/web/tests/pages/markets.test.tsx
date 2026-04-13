@@ -412,6 +412,38 @@ describe('MarketsPage', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument();
   });
 
+  it('falls back to simulated chart data when bars endpoint returns 503', async () => {
+    useAppStore.setState({ engineOnline: true });
+    (fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockQuotes,
+      })
+      .mockResolvedValue({
+        ok: false,
+        status: 503,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ message: 'Bars fetch failed: 503' }),
+      });
+
+    renderWithProviders(<MarketsPage />);
+
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText(
+            /Live chart data is temporarily unavailable\. Showing simulated data\./i,
+          ),
+        ).toBeInTheDocument();
+      },
+      { timeout: 8_000 },
+    );
+    expect(screen.getByText('Simulated')).toBeInTheDocument();
+    expect(screen.queryByText('Chart data unavailable')).not.toBeInTheDocument();
+    expect(screen.getByTestId('price-chart')).toBeInTheDocument();
+    expect((fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThanOrEqual(3);
+  }, 15_000);
+
   // ─── stagger-grid class ───────────────────────────────────────────────
 
   it('applies stagger-grid class to the card container', () => {

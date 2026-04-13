@@ -8,6 +8,7 @@ const PriceChart = dynamic(
   { ssr: false },
 );
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { DataProvenance } from '@/components/ui/data-provenance';
@@ -190,20 +191,27 @@ function MarketsContent() {
                 </div>
               </CardHeader>
               <CardContent className="min-h-[18rem] p-0 px-2 pb-2 sm:px-4 sm:pb-4 lg:min-h-[30rem]">
-                {barsError && engineOnline === true ? (
-                  <ErrorState
-                    title="Chart data unavailable"
-                    message={barsErrorObj?.message ?? 'Could not load price history.'}
-                    onRetry={() => refetchBars()}
-                    className="flex h-full items-center justify-center"
-                  />
-                ) : (
-                  <PriceChart
-                    data={chartData}
-                    loading={chartLoading || loading}
-                    className="rounded-md"
-                  />
+                {barsError && engineOnline === true && (
+                  <div
+                    role="alert"
+                    className="mb-3 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-warning-foreground">
+                        Live chart data is temporarily unavailable. Showing simulated data.
+                        {barsErrorObj?.message ? ` (${barsErrorObj.message})` : ''}
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => refetchBars()}>
+                        Try Again
+                      </Button>
+                    </div>
+                  </div>
                 )}
+                <PriceChart
+                  data={chartData}
+                  loading={chartLoading || loading}
+                  className="rounded-md"
+                />
               </CardContent>
             </Card>
           }

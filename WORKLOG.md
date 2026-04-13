@@ -50,6 +50,21 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-13 — Codex (Markets chart 503 resilience)
+
+**Goal**: Fix Markets chart failure mode when bars endpoint returns 503 so users still see chart context and can retry.
+
+**What changed**:
+
+- Updated `useBarsQuery` to parse upstream error payloads and attach status metadata to fetch errors
+- Added status-aware retry policy for bars fetches (extra retries for 502/503/504)
+- Updated Markets page chart panel to degrade gracefully: keep rendering chart with simulated data, show in-panel warning alert, and keep a retry action
+- Added regression test covering bars 503 fallback behavior
+
+**Validation**: `cd apps/web && CI=1 pnpm vitest run tests/pages/markets.test.tsx --reporter=dot` (pass), `pnpm lint` (pass), `pnpm test:web` (pass), `pnpm --filter @sentinel/web build` (pass).
+
+**Decisions**: Prefer graceful degradation for chart-data outages over hard-failing the panel while preserving explicit simulated-data labeling.
+
 ### 2026-04-10 — Copilot (PR Guardian System)
 
 **Goal**: Build automated guardrails to prevent AI agent drift and quality issues.
