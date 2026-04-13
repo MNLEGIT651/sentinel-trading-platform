@@ -17,7 +17,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.85.0",
     "@sentinel/shared": "workspace:*",
-    "@supabase/supabase-js": "^2.102.1",
+    "@supabase/supabase-js": "^2.103.0",
     "cors": "^2.8.5",
     "dotenv": "^17",
     "express": "^5",
