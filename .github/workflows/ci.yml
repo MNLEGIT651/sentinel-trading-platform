@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 1: Next.js web app
+  # Job 0: Next.js web app
   # ---------------------------------------------------------------------------
   test-web:
     name: Test Web
@@ -111,7 +111,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
-  # Job 2: Python quant engine
+  # Job 1: Python quant engine
   # ---------------------------------------------------------------------------
   test-engine:
     name: Test Engine
@@ -160,7 +160,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
 
   # ---------------------------------------------------------------------------
-  # Job 3: Agents TypeScript service
+  # Job 2: Agents TypeScript service
   # ---------------------------------------------------------------------------
   test-agents:
     name: Test Agents
@@ -204,7 +204,7 @@ jobs:
         run: pnpm --filter agents test
 
   # ---------------------------------------------------------------------------
-  # Job 4: Dependency vulnerability scanning
+  # Job 3: Dependency vulnerability scanning
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
