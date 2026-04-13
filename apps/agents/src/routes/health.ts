@@ -70,5 +70,53 @@ export function healthRouter(orchestrator: Orchestrator): Router {
     });
   });
 
+  router.get('/ready', async (_req: Request, res: Response) => {
+    const engineConfigured = Boolean(process.env.ENGINE_URL && process.env.ENGINE_API_KEY);
+    const supabaseConfigured = Boolean(
+      process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+
+    let engineReachable = false;
+    if (engineConfigured) {
+      try {
+        const resp = await fetch(new URL('/health', process.env.ENGINE_URL!).toString(), {
+          headers: { Authorization: `Bearer ${process.env.ENGINE_API_KEY!}` },
+          signal: AbortSignal.timeout(3_000),
+        });
+        engineReachable = resp.ok;
+      } catch {
+        engineReachable = false;
+      }
+    }
+
+    let supabaseReachable = false;
+    if (supabaseConfigured) {
+      try {
+        const resp = await fetch(`${process.env.SUPABASE_URL!}/rest/v1/`, {
+          headers: {
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+          },
+          signal: AbortSignal.timeout(3_000),
+        });
+        supabaseReachable = resp.ok;
+      } catch {
+        supabaseReachable = false;
+      }
+    }
+
+    const ready =
+      (!engineConfigured || engineReachable) && (!supabaseConfigured || supabaseReachable);
+
+    res.status(ready ? 200 : 503).json({
+      ready,
+      service: 'sentinel-agents',
+      checks: {
+        engine: engineConfigured ? engineReachable : 'not_configured',
+        supabase: supabaseConfigured ? supabaseReachable : 'not_configured',
+      },
+    });
+  });
+
   return router;
 }

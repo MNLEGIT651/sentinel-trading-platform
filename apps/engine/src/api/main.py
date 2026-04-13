@@ -24,7 +24,7 @@ from src.middleware.tracing import CorrelationIDMiddleware
 from src.telemetry import instrument_fastapi
 
 # Paths that don't require an API key (health checks, OpenAPI docs)
-_PUBLIC_PATHS = frozenset({"/health", "/docs", "/openapi.json", "/redoc"})
+_PUBLIC_PATHS = frozenset({"/health", "/ready", "/docs", "/openapi.json", "/redoc"})
 
 
 class ApiKeyMiddleware(BaseHTTPMiddleware):

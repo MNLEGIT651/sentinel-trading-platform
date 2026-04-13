@@ -9,6 +9,16 @@ async def test_health_returns_valid_status(client):
     assert body["status"] in ("ok", "degraded")
 
 
+async def test_ready_returns_readiness(client):
+    """Ready endpoint returns 200 or 503 with structured readiness info."""
+    response = await client.get("/ready")
+    assert response.status_code in (200, 503)
+    body = response.json()
+    assert "ready" in body
+    assert body["service"] == "sentinel-engine"
+    assert "checks" in body
+
+
 async def test_health_includes_service_name(client):
     response = await client.get("/health")
     body = response.json()

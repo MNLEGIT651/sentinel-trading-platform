@@ -100,6 +100,16 @@ describe('GET /health', () => {
   });
 });
 
+describe('GET /ready', () => {
+  it('returns 200 when no dependencies are configured', async () => {
+    const res = await request(app).get('/ready');
+    expect(res.status).toBe(200);
+    expect(res.body.ready).toBe(true);
+    expect(res.body.service).toBe('sentinel-agents');
+    expect(res.body.checks).toBeDefined();
+  });
+});
+
 describe('GET /status', () => {
   it('returns orchestrator state with nextCycleAt', async () => {
     const res = await request(app).get('/status');

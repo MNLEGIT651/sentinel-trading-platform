@@ -116,7 +116,7 @@ describe('/api/settings/status', () => {
         return new Response(
           JSON.stringify({
             status: 'ok',
-            dependencies: { engine: true, anthropic: true, supabase: true },
+            dependencies: { engine: 'connected', anthropic: 'configured', supabase: 'connected' },
           }),
           { status: 200 },
         );
@@ -167,7 +167,10 @@ describe('/api/settings/status', () => {
 
       if (url === 'https://agents.example/health') {
         return new Response(
-          JSON.stringify({ status: 'ok', dependencies: { anthropic: false, supabase: true } }),
+          JSON.stringify({
+            status: 'ok',
+            dependencies: { anthropic: 'not_configured', supabase: 'connected' },
+          }),
           { status: 200 },
         );
       }
@@ -235,7 +238,7 @@ describe('/api/settings/status', () => {
         return new Response(
           JSON.stringify({
             status: 'ok',
-            dependencies: { engine: true, anthropic: true, supabase: true },
+            dependencies: { engine: 'connected', anthropic: 'configured', supabase: 'connected' },
           }),
           { status: 200 },
         );
@@ -322,6 +325,58 @@ describe('/api/settings/status', () => {
     expect(body).toMatchObject({
       engine: 'disconnected',
       agents: 'not_configured',
+    });
+  });
+
+  it('correctly maps agents string dependency values (connected/configured/disconnected/not_configured)', async () => {
+    setNodeEnv('production');
+    process.env.ENGINE_URL = 'https://engine.example';
+    process.env.ENGINE_API_KEY = 'secret-key';
+    process.env.AGENTS_URL = 'https://agents.example';
+    delete process.env.POLYGON_API_KEY;
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.ALPACA_API_KEY;
+    delete process.env.ALPACA_SECRET_KEY;
+    delete process.env.ALPACA_BASE_URL;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === 'https://engine.example/health') {
+        return new Response(
+          JSON.stringify({
+            status: 'ok',
+            dependencies: { polygon: true, alpaca: true, supabase: true },
+          }),
+          { status: 200 },
+        );
+      }
+      if (url === 'https://agents.example/health') {
+        return new Response(
+          JSON.stringify({
+            status: 'ok',
+            dependencies: {
+              engine: 'connected',
+              anthropic: 'not_configured',
+              supabase: 'disconnected',
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      engine: 'connected',
+      agents: 'connected',
+      anthropic: 'not_configured',
     });
   });
 });

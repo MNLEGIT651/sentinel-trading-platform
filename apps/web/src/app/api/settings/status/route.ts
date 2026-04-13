@@ -25,22 +25,37 @@ interface EngineHealthResponse {
 
 interface AgentsHealthResponse {
   dependencies?: {
-    engine?: boolean;
-    anthropic?: boolean;
-    supabase?: boolean;
+    engine?: string;
+    anthropic?: string;
+    supabase?: string;
   };
 }
 
-function dependencyStatus(ownerStatus: ServiceStatus, configured?: boolean): ServiceStatus {
+/**
+ * Map a dependency value to a ServiceStatus.
+ *
+ * Engine dependencies are booleans (true/false).
+ * Agents dependencies are strings ('connected'/'disconnected'/'configured'/'not_configured').
+ */
+function dependencyStatus(ownerStatus: ServiceStatus, dep?: boolean | string): ServiceStatus {
   if (ownerStatus === 'not_configured') return 'not_configured';
   if (ownerStatus === 'disconnected') return 'disconnected';
+
   // Owner is connected or degraded — dependency state depends on its own health
-  if (configured === true) return 'connected';
-  if (configured === false) {
-    // When owner is degraded, false means the dependency is configured but
-    // unreachable (e.g., Supabase configured on engine but probe failed).
+
+  // Boolean values (engine contract)
+  if (dep === true) return 'connected';
+  if (dep === false) {
     return ownerStatus === 'degraded' ? 'disconnected' : 'not_configured';
   }
+
+  // String values (agents contract)
+  if (dep === 'connected') return 'connected';
+  if (dep === 'configured') return 'connected';
+  if (dep === 'disconnected') return 'disconnected';
+  if (dep === 'not_configured') return 'not_configured';
+
+  // undefined or unknown
   return 'disconnected';
 }
 

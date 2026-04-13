@@ -13,7 +13,10 @@ _logger = logging.getLogger(__name__)
 
 @router.get("/health")
 async def health_check() -> JSONResponse:
-    """Return service health status with live connectivity probes."""
+    """Return service health status with live connectivity probes.
+
+    Always returns 200 (liveness semantics). Use /ready for readiness gating.
+    """
     settings = Settings()
 
     supabase_configured = bool(settings.supabase_url and settings.supabase_service_role_key)
@@ -55,4 +58,43 @@ async def health_check() -> JSONResponse:
     return JSONResponse(
         content=body.model_dump(),
         status_code=200,
+    )
+
+
+@router.get("/ready")
+async def readiness_check() -> JSONResponse:
+    """Return 200 when the service is ready to handle traffic, 503 otherwise.
+
+    Use this for deploy/startup gating. Unlike /health (liveness), this
+    endpoint returns 503 when critical dependencies are unreachable.
+    """
+    settings = Settings()
+
+    supabase_configured = bool(settings.supabase_url and settings.supabase_service_role_key)
+    supabase_reachable = False
+    if supabase_configured:
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(
+                    f"{settings.supabase_url}/rest/v1/",
+                    headers={
+                        "apikey": settings.supabase_service_role_key,
+                        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+                    },
+                )
+                supabase_reachable = resp.is_success
+        except Exception:
+            _logger.debug("Supabase readiness probe failed", exc_info=True)
+
+    ready = not supabase_configured or supabase_reachable
+
+    return JSONResponse(
+        content={
+            "ready": ready,
+            "service": "sentinel-engine",
+            "checks": {
+                "supabase": supabase_reachable if supabase_configured else "not_configured",
+            },
+        },
+        status_code=200 if ready else 503,
     )
