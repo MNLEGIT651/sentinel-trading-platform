@@ -1,0 +1,55 @@
+name: Claude Routine - PR Web Risk Auditor
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - '.github/workflows/**'
+      - 'docs/runbooks/**'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'docs/ai/**'
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+  issues: read
+  id-token: write
+
+concurrency:
+  group: claude-routine-pr-web-risk-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude PR web-risk audit routine
+        uses: anthropics/claude-code-action@6e2bd52842c65e914eba5c8badd17560bd26b5de # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          additional_permissions: |
+            actions: read
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            BASE REF: ${{ github.base_ref }}
+            HEAD REF: ${{ github.head_ref }}
+
+            Read `.claude/routines/pr-web-risk-auditor.md` and execute it exactly.
+            Review only for concrete web/runtime/trust-boundary risk.
+            Do not push commits or modify repository files.
+          claude_args: |
+            --max-turns 18
+            --allowedTools "Read,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh run list:*),mcp__github_inline_comment__create_inline_comment"
