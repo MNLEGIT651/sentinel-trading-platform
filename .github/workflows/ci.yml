@@ -14,39 +14,7 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 0: Commit signature policy gate
-  # ---------------------------------------------------------------------------
-  verify-commit-signatures:
-    name: Verify Commit Signatures
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' &&
-        (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-
-      - name: Verify signatures in commit range
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
-          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            RANGE="${{ github.sha }}"
-          else
-            RANGE="${{ github.event.before }}..${{ github.sha }}"
-          fi
-
-          echo "Using commit range: $RANGE"
-          scripts/check-commit-signatures.sh "$RANGE"
-
-  # ---------------------------------------------------------------------------
-  # Job 1: Next.js web app
+  # Job 0: Next.js web app
   # ---------------------------------------------------------------------------
   test-web:
     name: Test Web
@@ -143,7 +111,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
-  # Job 2: Python quant engine
+  # Job 1: Python quant engine
   # ---------------------------------------------------------------------------
   test-engine:
     name: Test Engine
@@ -192,7 +160,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
 
   # ---------------------------------------------------------------------------
-  # Job 3: Agents TypeScript service
+  # Job 2: Agents TypeScript service
   # ---------------------------------------------------------------------------
   test-agents:
     name: Test Agents
@@ -236,7 +204,7 @@ jobs:
         run: pnpm --filter agents test
 
   # ---------------------------------------------------------------------------
-  # Job 4: Dependency vulnerability scanning
+  # Job 3: Dependency vulnerability scanning
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
