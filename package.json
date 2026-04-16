@@ -31,6 +31,7 @@
     "test:scripts": "node --test scripts/check-env-contract.test.mjs scripts/validate-railway-supabase-env.test.mjs",
     "guardian": "node scripts/pr-guardian.mjs --local",
     "guardian:dry-run": "node scripts/pr-guardian.mjs --dry-run",
+    "routines:verify": "node scripts/routines/verify-routine-sync.mjs",
     "pre-pr": "node scripts/pre-pr-check.mjs",
     "pre-pr:quick": "node scripts/pre-pr-check.mjs --quick",
     "worktree": "bash scripts/agent-worktree.sh",

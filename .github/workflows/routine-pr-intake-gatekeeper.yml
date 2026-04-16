@@ -1,0 +1,162 @@
+name: Routine — PR Intake Gatekeeper
+
+# Paired with Claude Code routine: pr-intake-gatekeeper
+# Manifest: .claude/routines/manifest.yaml
+# Spec:     .claude/routines/pr-intake-gatekeeper.md
+#
+# This workflow:
+#   - Listens to the same pull_request events as the native Claude routine.
+#   - Normalizes the PR payload for the routine and auditability.
+#   - Provides a fallback workflow summary when the native routine is off.
+#   - Never replaces pr-guardian.yml — it *complements* it.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: routine-pr-intake-gatekeeper-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  normalize:
+    name: Normalize PR payload for Claude routine
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Verify manifest sync
+        run: node scripts/routines/verify-routine-sync.mjs --only pr-intake-gatekeeper
+
+      - name: Detect fork PR (secrets unavailable)
+        id: fork
+        run: |
+          if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+            echo "is_fork=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Fork PR — skipping normalized payload upload."
+          else
+            echo "is_fork=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect changed files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          mkdir -p reports/routines
+          gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '[.[] | {filename, additions, deletions, status}]' \
+            > reports/routines/pr-${PR_NUMBER}-files.json
+          echo "count=$(jq 'length' reports/routines/pr-${PR_NUMBER}-files.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Flag sensitive-path hits
+        id: risk
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          HIGH_RISK_HITS=$(jq -r '
+            [.[] | .filename | select(
+              startswith("apps/web/src/lib/engine-fetch.ts") or
+              startswith("apps/web/src/lib/engine-client.ts") or
+              startswith("apps/web/src/middleware.ts") or
+              startswith("apps/engine/src/api/main.py") or
+              startswith("apps/engine/src/config.py") or
+              startswith("packages/shared/src/") or
+              startswith("supabase/migrations/") or
+              startswith(".github/workflows/")
+            )]
+          ' reports/routines/pr-${PR_NUMBER}-files.json)
+          HIT_COUNT=$(echo "${HIGH_RISK_HITS}" | jq 'length')
+          echo "high_risk_hit_count=${HIT_COUNT}" >> "$GITHUB_OUTPUT"
+          echo "${HIGH_RISK_HITS}" > reports/routines/pr-${PR_NUMBER}-high-risk.json
+
+      - name: Build normalized payload
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_ADDITIONS: ${{ github.event.pull_request.additions }}
+          PR_DELETIONS: ${{ github.event.pull_request.deletions }}
+          PR_CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+          HIGH_RISK_HITS: ${{ steps.risk.outputs.high_risk_hit_count }}
+          REPO: ${{ github.repository }}
+        run: |
+          jq -n \
+            --arg repo "$REPO" \
+            --arg pr_number "$PR_NUMBER" \
+            --arg pr_title "$PR_TITLE" \
+            --arg pr_author "$PR_AUTHOR" \
+            --arg pr_base "$PR_BASE_REF" \
+            --arg pr_head "$PR_HEAD_REF" \
+            --arg pr_head_sha "$PR_HEAD_SHA" \
+            --arg draft "$PR_DRAFT" \
+            --arg additions "$PR_ADDITIONS" \
+            --arg deletions "$PR_DELETIONS" \
+            --arg changed_files "$PR_CHANGED_FILES" \
+            --arg high_risk_hits "$HIGH_RISK_HITS" \
+            --slurpfile files reports/routines/pr-${PR_NUMBER}-files.json \
+            --slurpfile high_risk reports/routines/pr-${PR_NUMBER}-high-risk.json \
+            '{
+              repository: $repo,
+              pr_number: ($pr_number | tonumber),
+              pr_title: $pr_title,
+              pr_author: $pr_author,
+              pr_base_ref: $pr_base,
+              pr_head_ref: $pr_head,
+              pr_head_sha: $pr_head_sha,
+              draft: ($draft == "true"),
+              additions: ($additions | tonumber),
+              deletions: ($deletions | tonumber),
+              changed_files_count: ($changed_files | tonumber),
+              high_risk_hit_count: ($high_risk_hits | tonumber),
+              changed_files: $files[0],
+              high_risk_files: $high_risk[0]
+            }' > reports/routines/pr-${PR_NUMBER}-payload.json
+
+      - name: Emit workflow summary
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CHANGED_COUNT: ${{ steps.files.outputs.count }}
+          HIGH_RISK_HITS: ${{ steps.risk.outputs.high_risk_hit_count }}
+        run: |
+          {
+            echo "### PR Intake Gatekeeper — normalized payload"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            printf '| PR | #%s — %s |\n' "$PR_NUMBER" "$PR_TITLE"
+            printf '| Author | %s |\n' "$PR_AUTHOR"
+            printf '| Base ← Head | %s ← %s |\n' "$PR_BASE_REF" "$PR_HEAD_REF"
+            printf '| Changed files | %s |\n' "$CHANGED_COUNT"
+            printf '| High-risk path hits | %s |\n' "$HIGH_RISK_HITS"
+            echo ""
+            echo "> The native Claude routine \`pr-intake-gatekeeper\` posts the narrative comment."
+            echo "> This workflow provides payload normalization, audit trail, and fork-safe fallback."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload payload artifact
+        if: steps.fork.outputs.is_fork == 'false'
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v5.0.0
+        with:
+          name: pr-intake-payload-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: reports/routines/
+          retention-days: 14

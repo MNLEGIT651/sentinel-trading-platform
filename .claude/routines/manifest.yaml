@@ -1,0 +1,233 @@
+# Sentinel Trading Platform — Claude Code Routines Manifest
+#
+# Single source of truth for every Claude Code routine paired with a GitHub
+# Action in this repository.
+#
+# Every routine MUST declare:
+#   - a checked-in routine spec under `.claude/routines/<id>.md`
+#   - a matching GitHub workflow under `.github/workflows/routine-<id>.yml`
+#
+# `scripts/routines/verify-routine-sync.mjs` enforces that the manifest, the
+# spec files, and the workflow files agree. Do not drift.
+#
+# Field contract (per routine):
+#   id                               machine id — kebab-case, stable
+#   display_name                     human name shown in Claude Code app
+#   project_name                     repo short name (for routine config)
+#   purpose                          one-line outcome statement
+#   primary_executor                 "claude_routine" | "github_action"
+#   trigger_type                     "schedule" | "api" | "github_event"
+#                                    | "workflow_dispatch" | "bridge"
+#   trigger_details                  free-form string describing the trigger
+#   routine_spec_path                .claude/routines/<id>.md
+#   github_workflow_path             .github/workflows/routine-<id>.yml
+#   expected_inputs                  list of inputs the routine prompt expects
+#   required_repositories            list of repos the routine must be attached to
+#   required_environment             "none" | "preview" | "production" | "ci"
+#   required_connectors              list of connectors (or ["none"])
+#   required_secrets_or_env_names    list of secret/env names
+#   success_criteria                 list of observable pass conditions
+#   output_destination               where the routine posts its report
+#   verification_method              how a human confirms a successful run
+#   anti_noise_rules                 list of rules to avoid false-positive spam
+#   idempotency_rules                list of rules to avoid duplicate side effects
+#   manual_activation_required       true | false
+#   notes                            free-form notes
+#
+# Versioning: bump `version` on incompatible schema changes.
+
+version: 1
+repository: stevenschling13/Trading-App
+updated: 2026-04-16
+
+routines:
+  - id: morning-ops-commander
+    display_name: Morning Ops Commander
+    project_name: sentinel-trading-platform
+    purpose: Daily repo, CI, deploy, PR, issue, and dependency triage briefing.
+    primary_executor: claude_routine
+    trigger_type: schedule
+    trigger_details: Daily at 13:30 UTC (08:30 US Central). Paired GitHub Action runs the same schedule for dry-run parity and repo-visible artifacts.
+    routine_spec_path: .claude/routines/morning-ops-commander.md
+    github_workflow_path: .github/workflows/routine-morning-ops-commander.yml
+    expected_inputs:
+      - run_date (auto)
+      - repository (auto)
+    required_repositories:
+      - stevenschling13/Trading-App
+    required_environment: none
+    required_connectors:
+      - github
+      - vercel (optional)
+      - supabase (optional)
+    required_secrets_or_env_names:
+      - GITHUB_TOKEN
+    success_criteria:
+      - Rated checks (CI, PRs, issues, security, deployment, branches, deps) produced.
+      - Ops report posted as an issue labeled "ops,report" OR attached as workflow artifact.
+      - No duplicate report issue created within a 20-hour window.
+    output_destination: GitHub issue labeled "ops,report"; workflow artifact fallback.
+    verification_method: Check the most recent "[ops] Morning Ops Report" issue OR the latest routine workflow artifact.
+    anti_noise_rules:
+      - Only file new issues at FAIL severity.
+      - Deduplicate by title prefix "[ops] Morning Ops Report" within the same UTC day.
+      - Collapse recurring findings instead of re-opening closed issues.
+    idempotency_rules:
+      - Report issues carry the UTC date in the title to make duplicates detectable.
+      - Workflow artifact named "morning-ops-report-<run_id>".
+    manual_activation_required: true
+    notes: Based on `.claude/skills/sentinel-ops-commander/SKILL.md`. Native schedule trigger is preferred; workflow is kept for dry-run, auditability, and fallback.
+
+  - id: pr-intake-gatekeeper
+    display_name: PR Intake Gatekeeper
+    project_name: sentinel-trading-platform
+    purpose: GitHub PR-event triage that complements (never replaces) pr-guardian.mjs and posts reviewer-friendly signal.
+    primary_executor: claude_routine
+    trigger_type: github_event
+    trigger_details: GitHub pull_request events — opened, synchronize, reopened, ready_for_review. Paired GitHub Action normalizes the payload and stores PR metadata as an artifact for the routine.
+    routine_spec_path: .claude/routines/pr-intake-gatekeeper.md
+    github_workflow_path: .github/workflows/routine-pr-intake-gatekeeper.yml
+    expected_inputs:
+      - pr_number
+      - pr_title
+      - pr_author
+      - pr_base_ref
+      - pr_head_ref
+      - changed_files_list
+      - changed_files_count
+      - additions
+      - deletions
+      - touches_high_risk
+    required_repositories:
+      - stevenschling13/Trading-App
+    required_environment: none
+    required_connectors:
+      - github
+    required_secrets_or_env_names:
+      - GITHUB_TOKEN
+    success_criteria:
+      - Structured review comment posted on the PR, or advisory workflow annotation emitted.
+      - Does not duplicate a finding already raised by PR Guardian (it defers and references it).
+      - Comment has a stable header so future runs edit in place rather than re-posting.
+    output_destination: Pull request comment titled "Claude PR Intake Gatekeeper".
+    verification_method: Open the PR and look for the gatekeeper comment; check the paired workflow run for a normalized payload artifact.
+    anti_noise_rules:
+      - Skip draft PRs.
+      - Skip PRs from forks where secrets are unavailable (annotate only).
+      - Do not re-post if a gatekeeper comment already exists; edit in place.
+      - Defer to pr-guardian.mjs on scope/churn/staleness/overlap failures and reference them by name rather than re-asserting them.
+    idempotency_rules:
+      - Comment is keyed by the marker "<!-- sentinel:pr-intake-gatekeeper -->".
+      - The routine reruns update the same comment instead of creating a new one.
+    manual_activation_required: true
+    notes: Complements PR Guardian. Non-blocking by default; Guardian remains the merge-blocking gate.
+
+  - id: post-deploy-runtime-sentinel
+    display_name: Post-Deploy Runtime Sentinel
+    project_name: sentinel-trading-platform
+    purpose: Deploy-triggered runtime and smoke verification (Vercel + Railway + Supabase).
+    primary_executor: claude_routine
+    trigger_type: bridge
+    trigger_details: Paired workflow listens to `workflow_run` (Vercel Preview Smoke, CI on main) and `deployment_status`, runs `scripts/health-check.sh`, and uploads a bridge artifact for the routine. Native Claude GitHub event trigger handles the same events in the app.
+    routine_spec_path: .claude/routines/post-deploy-runtime-sentinel.md
+    github_workflow_path: .github/workflows/routine-post-deploy-runtime-sentinel.yml
+    expected_inputs:
+      - deploy_source (vercel | railway | workflow_run)
+      - deployment_environment (preview | production)
+      - deployment_url
+      - commit_sha
+      - health_check_summary
+    required_repositories:
+      - stevenschling13/Trading-App
+    required_environment: preview
+    required_connectors:
+      - github
+      - vercel (optional)
+    required_secrets_or_env_names:
+      - GITHUB_TOKEN
+      - VERCEL_PREVIEW_SMOKE_URL (optional, gated)
+    success_criteria:
+      - Health check artifact captured and archived.
+      - Routine reviews the smoke results and confirms OfflineBanner / SimulatedBadge behavior is not regressed.
+      - For production failures, a FAIL report issue is filed with rollback commands from `docs/runbooks/production.md`.
+    output_destination: Workflow summary + PR comment (on preview) or issue (on production failure).
+    verification_method: Open the routine workflow run; review the `health-check.log` artifact and the generated report.
+    anti_noise_rules:
+      - Do not run on failed CI where no deploy occurred.
+      - Suppress comments when health-check was skipped (fork PR / missing secret).
+      - Require at least one signal (deploy or health) before posting.
+    idempotency_rules:
+      - Artifacts keyed by `<commit_sha>-<run_id>`.
+      - Production failure issues deduplicated by commit SHA.
+    manual_activation_required: true
+    notes: Reuses `scripts/health-check.sh`. Web Vercel Preview Smoke workflow remains the mechanical smoke gate; this routine adds narrative judgment and regression checks.
+
+  - id: release-readiness-control-tower
+    display_name: Release Readiness Control Tower
+    project_name: sentinel-trading-platform
+    purpose: Pre-release go/no-go audit across CI, env contract, migrations, auth, proxy, rate limits, and rollback evidence.
+    primary_executor: claude_routine
+    trigger_type: workflow_dispatch
+    trigger_details: Manual workflow_dispatch with inputs (release_tag, target_env). Native Claude routine may be triggered via API with matching inputs.
+    routine_spec_path: .claude/routines/release-readiness-control-tower.md
+    github_workflow_path: .github/workflows/routine-release-readiness-control-tower.yml
+    expected_inputs:
+      - release_tag
+      - target_env (preview | production)
+      - rollback_plan_confirmed (true | false)
+    required_repositories:
+      - stevenschling13/Trading-App
+    required_environment: production
+    required_connectors:
+      - github
+      - vercel (optional)
+      - supabase (optional)
+    required_secrets_or_env_names:
+      - GITHUB_TOKEN
+    success_criteria:
+      - Produces a go/no-go verdict with signed-off checklist from `docs/runbooks/release-checklist.md`.
+      - Explicitly calls out any red flags (migrations requiring downtime, shared contract drift, auth/proxy diffs).
+      - Identifies every missing piece of evidence that would block release.
+    output_destination: Workflow run summary; GitHub issue labeled "release,readiness" on NO-GO verdict.
+    verification_method: Inspect the workflow_dispatch run; review the summary and any created release-readiness issue.
+    anti_noise_rules:
+      - Strictest automation. No auto-merging, no auto-deploying, no auto-tagging.
+      - Refuses to verdict GO if `rollback_plan_confirmed` is false.
+    idempotency_rules:
+      - Verdict artifact keyed by `<release_tag>-<run_id>`.
+      - NO-GO issues deduplicated by release_tag.
+    manual_activation_required: true
+    notes: This is the strictest routine. Verdict is advisory; the human release owner remains the final approver.
+
+  - id: weekly-architecture-churn-audit
+    display_name: Weekly Architecture and Churn Audit
+    project_name: sentinel-trading-platform
+    purpose: Weekly structural and maintainability audit — churn hotspots, oversized files, flaky tests, architecture drift.
+    primary_executor: claude_routine
+    trigger_type: schedule
+    trigger_details: Weekly on Monday at 14:00 UTC (09:00 US Central). Paired GitHub Action runs the same schedule and uploads churn/size metrics.
+    routine_spec_path: .claude/routines/weekly-architecture-churn-audit.md
+    github_workflow_path: .github/workflows/routine-weekly-architecture-churn-audit.yml
+    expected_inputs:
+      - window_days (default 7)
+      - repository (auto)
+    required_repositories:
+      - stevenschling13/Trading-App
+    required_environment: none
+    required_connectors:
+      - github
+    required_secrets_or_env_names:
+      - GITHUB_TOKEN
+    success_criteria:
+      - Report covers churn hotspots, oversized files (>400 lines), architecture drift vs `docs/ai/architecture.md`, duplicated logic candidates, and flaky/weakly-tested areas.
+      - Report posted as an issue labeled "ops,report,architecture" OR attached as workflow artifact.
+    output_destination: GitHub issue labeled "ops,report,architecture"; workflow artifact fallback.
+    verification_method: Check the latest weekly routine workflow run and the issue with prefix "[arch] Weekly Architecture & Churn Audit".
+    anti_noise_rules:
+      - Deduplicate by ISO week number in the issue title.
+      - Skip noise files (lockfiles, snapshots, generated types).
+    idempotency_rules:
+      - Issues carry the ISO week number ("YYYY-Www") so duplicates are detectable.
+      - Workflow artifact named "weekly-arch-audit-<run_id>".
+    manual_activation_required: true
+    notes: Pairs with the sentinel-ops-commander skill's weekly audit section but adds architecture-focused analysis.

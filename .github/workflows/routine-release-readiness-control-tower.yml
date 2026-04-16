@@ -1,0 +1,177 @@
+name: Routine — Release Readiness Control Tower
+
+# Paired with Claude Code routine: release-readiness-control-tower
+# Manifest: .claude/routines/manifest.yaml
+# Spec:     .claude/routines/release-readiness-control-tower.md
+#
+# This workflow:
+#   - Accepts manual dispatch (or repository_dispatch) as the release go/no-go entrypoint.
+#   - Runs a narrow preflight (lint + typecheck + env contract tests).
+#   - Records inputs as an artifact for the Claude routine to consume.
+#   - Refuses to emit a GO verdict if the rollback plan is not confirmed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag or candidate SHA (e.g., v1.12.0 or abcdef1)'
+        required: true
+        type: string
+      target_env:
+        description: 'Target environment'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+      rollback_plan_confirmed:
+        description: 'Rollback plan reviewed and confirmed?'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+  repository_dispatch:
+    types:
+      - release-readiness
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: routine-release-readiness-${{ inputs.release_tag || github.event.client_payload.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  control-tower:
+    name: Release readiness preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Verify manifest sync
+        run: node scripts/routines/verify-routine-sync.mjs --only release-readiness-control-tower
+
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "release_tag=${{ github.event.client_payload.release_tag }}" >> "$GITHUB_OUTPUT"
+            echo "target_env=${{ github.event.client_payload.target_env }}" >> "$GITHUB_OUTPUT"
+            echo "rollback_plan_confirmed=${{ github.event.client_payload.rollback_plan_confirmed }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_tag=${{ inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+            echo "target_env=${{ inputs.target_env }}" >> "$GITHUB_OUTPUT"
+            echo "rollback_plan_confirmed=${{ inputs.rollback_plan_confirmed }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Short-circuit if rollback plan not confirmed
+        id: gate
+        run: |
+          if [ "${{ steps.inputs.outputs.rollback_plan_confirmed }}" != "true" ]; then
+            {
+              echo "## Release Readiness — ${{ steps.inputs.outputs.release_tag }} (${{ steps.inputs.outputs.target_env }})"
+              echo ""
+              echo "### Verdict: NO-GO"
+              echo ""
+              echo "Rollback plan was not confirmed. Refusing to run further preflight."
+              echo "Review \`docs/runbooks/production.md\` §Rollback and re-dispatch with"
+              echo "\`rollback_plan_confirmed=true\` once ready."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "skip_preflight=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip_preflight=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node 22
+        if: steps.gate.outputs.skip_preflight == 'false'
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+
+      - name: Enable corepack and install pnpm
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+      - name: Install dependencies
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: pnpm install --frozen-lockfile
+
+      - name: Preflight — env contract tests
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: pnpm test:scripts
+
+      - name: Preflight — lint
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: pnpm lint
+
+      - name: Preflight — typecheck
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: pnpm typecheck
+
+      - name: Collect CI status for the release candidate
+        if: steps.gate.outputs.skip_preflight == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p reports/routines
+          gh run list --repo "${{ github.repository }}" --branch main --limit 5 \
+            --json status,conclusion,name,createdAt,headSha,headBranch,event \
+            > reports/routines/release-ci-status.json
+          gh pr list --repo "${{ github.repository }}" --state open --limit 50 \
+            --json number,title,author,headRefName,labels,reviewDecision \
+            > reports/routines/release-open-prs.json
+
+      - name: Build release readiness payload
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: |
+          mkdir -p reports/routines
+          jq -n \
+            --arg release_tag "${{ steps.inputs.outputs.release_tag }}" \
+            --arg target_env "${{ steps.inputs.outputs.target_env }}" \
+            --arg rollback_confirmed "${{ steps.inputs.outputs.rollback_plan_confirmed }}" \
+            --arg run_id "${{ github.run_id }}" \
+            '{
+              release_tag: $release_tag,
+              target_env: $target_env,
+              rollback_plan_confirmed: ($rollback_confirmed == "true"),
+              run_id: $run_id
+            }' > reports/routines/release-readiness-inputs.json
+
+      - name: Emit workflow summary
+        if: steps.gate.outputs.skip_preflight == 'false'
+        run: |
+          {
+            echo "## Release Readiness — ${{ steps.inputs.outputs.release_tag }} (${{ steps.inputs.outputs.target_env }})"
+            echo ""
+            echo "### Preflight"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| env contract tests (pnpm test:scripts) | ✅ |"
+            echo "| pnpm lint | ✅ |"
+            echo "| pnpm typecheck | ✅ |"
+            echo ""
+            echo "### Next step"
+            echo "The Claude routine \`release-readiness-control-tower\` consumes"
+            echo "\`release-readiness-inputs.json\` and produces the final verdict."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v5.0.0
+        with:
+          name: release-readiness-${{ steps.inputs.outputs.release_tag }}-${{ github.run_id }}
+          path: reports/routines/
+          retention-days: 30
+          if-no-files-found: ignore

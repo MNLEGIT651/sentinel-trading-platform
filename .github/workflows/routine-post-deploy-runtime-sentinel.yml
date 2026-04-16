@@ -1,0 +1,158 @@
+name: Routine — Post-Deploy Runtime Sentinel
+
+# Paired with Claude Code routine: post-deploy-runtime-sentinel
+# Manifest: .claude/routines/manifest.yaml
+# Spec:     .claude/routines/post-deploy-runtime-sentinel.md
+#
+# This workflow bridges deploy/smoke events to the Claude routine by:
+#   - Running scripts/health-check.sh when possible.
+#   - Normalizing deploy metadata into a stable JSON artifact.
+#   - Emitting a workflow summary so the routine status is repo-visible.
+
+on:
+  workflow_run:
+    workflows:
+      - 'Vercel Preview Smoke'
+      - 'CI'
+    types:
+      - completed
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'URL to probe with scripts/health-check.sh'
+        required: false
+        type: string
+      environment:
+        description: 'preview or production'
+        required: false
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+  deployments: read
+
+concurrency:
+  group: routine-post-deploy-${{ github.event.workflow_run.head_sha || github.event.deployment.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  sentinel:
+    name: Bridge deploy signal to Claude routine
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Verify manifest sync
+        run: node scripts/routines/verify-routine-sync.mjs --only post-deploy-runtime-sentinel
+
+      - name: Derive context
+        id: ctx
+        run: |
+          case "${{ github.event_name }}" in
+            workflow_run)
+              echo "source=workflow_run" >> "$GITHUB_OUTPUT"
+              echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+              echo "environment=${{ github.event.workflow_run.head_branch == 'main' && 'production' || 'preview' }}" >> "$GITHUB_OUTPUT"
+              echo "conclusion=${{ github.event.workflow_run.conclusion }}" >> "$GITHUB_OUTPUT"
+              ;;
+            deployment_status)
+              echo "source=deployment_status" >> "$GITHUB_OUTPUT"
+              echo "sha=${{ github.event.deployment.sha }}" >> "$GITHUB_OUTPUT"
+              echo "environment=${{ github.event.deployment.environment }}" >> "$GITHUB_OUTPUT"
+              echo "conclusion=${{ github.event.deployment_status.state }}" >> "$GITHUB_OUTPUT"
+              ;;
+            workflow_dispatch)
+              echo "source=manual" >> "$GITHUB_OUTPUT"
+              echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+              echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+              echo "conclusion=manual" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Skip when upstream did not produce a deploy
+        id: gate
+        run: |
+          SRC="${{ steps.ctx.outputs.source }}"
+          CONC="${{ steps.ctx.outputs.conclusion }}"
+          if [ "$SRC" = "workflow_run" ] && [ "$CONC" != "success" ]; then
+            echo "run_probe=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Upstream workflow conclusion was $CONC — skipping runtime probe."
+          else
+            echo "run_probe=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run scripts/health-check.sh
+        id: probe
+        if: steps.gate.outputs.run_probe == 'true'
+        env:
+          VERCEL_URL: ${{ inputs.target_url || secrets.VERCEL_PREVIEW_SMOKE_URL }}
+        run: |
+          mkdir -p reports/routines
+          LOG="reports/routines/health-check-${{ steps.ctx.outputs.sha }}-${{ github.run_id }}.log"
+          if [ -z "${VERCEL_URL:-}" ]; then
+            echo "VERCEL_URL not set — skipping probe" | tee "$LOG"
+            echo "probed=false" >> "$GITHUB_OUTPUT"
+          else
+            set +e
+            ./scripts/health-check.sh --verbose 2>&1 | tee "$LOG"
+            STATUS=${PIPESTATUS[0]}
+            set -e
+            echo "probed=true" >> "$GITHUB_OUTPUT"
+            echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          fi
+          echo "log_path=$LOG" >> "$GITHUB_OUTPUT"
+
+      - name: Build bridge payload for Claude routine
+        run: |
+          mkdir -p reports/routines
+          jq -n \
+            --arg source "${{ steps.ctx.outputs.source }}" \
+            --arg sha "${{ steps.ctx.outputs.sha }}" \
+            --arg env "${{ steps.ctx.outputs.environment }}" \
+            --arg conclusion "${{ steps.ctx.outputs.conclusion }}" \
+            --arg probed "${{ steps.probe.outputs.probed || 'false' }}" \
+            --arg probe_status "${{ steps.probe.outputs.status || '' }}" \
+            --arg run_id "${{ github.run_id }}" \
+            '{
+              deploy_source: $source,
+              commit_sha: $sha,
+              deployment_environment: $env,
+              upstream_conclusion: $conclusion,
+              health_check_probed: ($probed == "true"),
+              health_check_exit_status: $probe_status,
+              run_id: $run_id
+            }' > reports/routines/bridge-payload-${{ steps.ctx.outputs.sha }}-${{ github.run_id }}.json
+
+      - name: Emit workflow summary
+        run: |
+          {
+            echo "### Post-Deploy Runtime Sentinel — bridge run"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Source | ${{ steps.ctx.outputs.source }} |"
+            echo "| SHA | ${{ steps.ctx.outputs.sha }} |"
+            echo "| Environment | ${{ steps.ctx.outputs.environment }} |"
+            echo "| Upstream conclusion | ${{ steps.ctx.outputs.conclusion }} |"
+            echo "| Ran health probe | ${{ steps.probe.outputs.probed || 'false' }} |"
+            echo "| Probe exit status | ${{ steps.probe.outputs.status || 'n/a' }} |"
+            echo ""
+            echo "> The native Claude routine consumes the bridge artifact and posts the verdict."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bridge artifact
+        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v5.0.0
+        with:
+          name: post-deploy-bridge-${{ steps.ctx.outputs.sha }}-${{ github.run_id }}
+          path: reports/routines/
+          retention-days: 30
