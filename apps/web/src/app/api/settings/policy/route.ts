@@ -44,7 +44,7 @@ export async function GET(): Promise<Response> {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     // Try to fetch existing policy
@@ -94,7 +94,7 @@ export async function PUT(request: Request): Promise<Response> {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     const body = await parseBody(request, PolicyUpdateSchema);

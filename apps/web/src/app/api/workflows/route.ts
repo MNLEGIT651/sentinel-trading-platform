@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const { searchParams } = request.nextUrl;

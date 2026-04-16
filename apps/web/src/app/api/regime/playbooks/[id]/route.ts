@@ -39,7 +39,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const { data, error } = await supabase
@@ -62,7 +62,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const parsed = await parseBody(request, patchBodySchema);
@@ -118,7 +118,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const { error } = await supabase

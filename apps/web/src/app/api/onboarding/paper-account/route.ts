@@ -18,7 +18,7 @@ export async function POST(): Promise<Response> {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     // Check if user already has a paper account

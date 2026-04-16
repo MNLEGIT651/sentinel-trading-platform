@@ -30,6 +30,9 @@ Database: Supabase (us-east-1)
   - `NEXT_PUBLIC_SUPABASE_URL` = Supabase URL
   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` (preferred) or `NEXT_PUBLIC_SUPABASE_ANON_KEY` (fallback)
   - `SUPABASE_SERVICE_ROLE_KEY` = Supabase service role key
+- [ ] Distributed rate limiter env vars are set consistently on web + engine:
+  - `RATE_LIMIT_REDIS_REST_URL`
+  - `RATE_LIMIT_REDIS_REST_TOKEN`
 
 ### Railway ↔ Supabase Pro Standard
 
@@ -60,6 +63,7 @@ Use this as the minimum production bar before deploy approval:
 3. Vercel auto-deploys production on every push to `main` (ignore command bypasses diff check for production).
 4. Wait for the Vercel build to reach `READY` state.
 5. Run production smoke tests.
+6. Confirm both Railway services are running 2 healthy replicas after deploy.
 
 If you need to force a deploy without a commit:
 
@@ -92,6 +96,18 @@ Check Railway logs for:
 - Clean startup messages
 - Correct port binding (`PORT` env var)
 - Health check responses
+- Replica balancing (requests served by both instances, no crash-looping replica)
+
+## Availability and Failover Expectations
+
+- Railway services (`engine`, `agents`) run with `numReplicas = 2`.
+- Expected behavior during single-replica failure:
+  - Service remains available (degraded capacity, no full outage).
+  - `/health` remains 200 while at least one replica is healthy.
+  - p95 latency may increase up to 2x temporarily during rescheduling.
+- SLO guidance during failover window (15 minutes):
+  - Engine/Agents availability should remain >= 99.0%.
+  - 5xx proxy error rate should remain <= 1%.
 
 ## Cutover Rules
 

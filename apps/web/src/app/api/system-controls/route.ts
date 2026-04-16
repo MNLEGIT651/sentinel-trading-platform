@@ -15,7 +15,7 @@ export async function GET() {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const { data, error } = await supabase.from('system_controls').select('*').limit(1).single();
@@ -36,7 +36,7 @@ export async function PATCH(request: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const SystemControlsUpdateSchema = z.object({

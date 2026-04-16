@@ -158,8 +158,8 @@ export const mutationRateLimiter = new RateLimiter(20, 60_000);
  * Check mutation-specific rate limit for an authenticated user.
  * Returns `null` if allowed, or a `429 Response` if rate-limited.
  */
-export function checkMutationRateLimit(userId: string): Response | null {
-  const result = mutationRateLimiter.check(userId);
+export async function checkMutationRateLimit(userId: string): Promise<Response | null> {
+  const result = await mutationRateLimiter.check(userId);
   if (!result.allowed) {
     return rateLimitResponse(result.resetAtMs);
   }

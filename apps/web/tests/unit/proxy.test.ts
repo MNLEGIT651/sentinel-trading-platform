@@ -27,13 +27,13 @@ vi.mock('@/lib/supabase/server', () => ({
 // ─── Mock rate limiter ────────────────────────────────────────────────────
 
 const mockCheck =
-  vi.fn<(key: string) => { allowed: boolean; remaining: number; resetAtMs: number }>();
+  vi.fn<(key: string) => Promise<{ allowed: boolean; remaining: number; resetAtMs: number }>>();
 
 vi.mock('@/lib/server/rate-limiter', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/server/rate-limiter')>();
   return {
     ...actual,
-    proxyRateLimiter: { check: (key: string) => mockCheck(key) },
+    proxyRateLimiter: { check: async (key: string) => mockCheck(key) },
     rateLimitResponse: () =>
       new Response(JSON.stringify({ error: 'rate_limited' }), {
         status: 429,
@@ -75,7 +75,7 @@ describe('proxy middleware', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     // Default: rate limit allows, user is authenticated
-    mockCheck.mockReturnValue(allowedRl());
+    mockCheck.mockResolvedValue(allowedRl());
     mockUpdateSession.mockResolvedValue(authenticatedSession);
     const mod = await import('@/proxy');
     proxy = mod.proxy;
@@ -194,13 +194,17 @@ describe('proxy middleware', () => {
   // ── Rate limiting ────────────────────────────────────────────────────
 
   it('returns 429 when the rate limiter denies an /api/* request', async () => {
-    mockCheck.mockReturnValueOnce({ allowed: false, remaining: 0, resetAtMs: Date.now() + 60_000 });
+    mockCheck.mockResolvedValueOnce({
+      allowed: false,
+      remaining: 0,
+      resetAtMs: Date.now() + 60_000,
+    });
     const response = await proxy(makeRequest('/api/engine/orders'));
     expect(response.status).toBe(429);
   });
 
   it('uses x-forwarded-for as the rate-limit key', async () => {
-    mockCheck.mockReturnValue(allowedRl());
+    mockCheck.mockResolvedValue(allowedRl());
     await proxy(makeRequest('/api/engine/orders', '10.0.0.1'));
     expect(mockCheck).toHaveBeenCalledWith('10.0.0.1');
   });
@@ -233,7 +237,7 @@ describe('proxy middleware — Supabase not configured', () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     vi.clearAllMocks();
-    mockCheck.mockReturnValue({ allowed: true, remaining: 119, resetAtMs: Date.now() + 60_000 });
+    mockCheck.mockResolvedValue({ allowed: true, remaining: 119, resetAtMs: Date.now() + 60_000 });
   });
 
   afterEach(() => {
@@ -275,7 +279,7 @@ describe('proxy middleware — production canonical host redirect', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCheck.mockReturnValue({ allowed: true, remaining: 119, resetAtMs: Date.now() + 60_000 });
+    mockCheck.mockResolvedValue({ allowed: true, remaining: 119, resetAtMs: Date.now() + 60_000 });
     mockUpdateSession.mockResolvedValue(authenticatedSession);
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
@@ -363,18 +367,18 @@ describe('RateLimiter', () => {
     const { RateLimiter } = await import('@/lib/server/rate-limiter');
     const limiter = new RateLimiter(3, 60_000);
 
-    expect(limiter.check('key').allowed).toBe(true);
-    expect(limiter.check('key').allowed).toBe(true);
-    expect(limiter.check('key').allowed).toBe(true);
+    expect((await limiter.check('key')).allowed).toBe(true);
+    expect((await limiter.check('key')).allowed).toBe(true);
+    expect((await limiter.check('key')).allowed).toBe(true);
   });
 
   it('denies the request after the limit is exceeded', async () => {
     const { RateLimiter } = await import('@/lib/server/rate-limiter');
     const limiter = new RateLimiter(2, 60_000);
 
-    limiter.check('key');
-    limiter.check('key');
-    const result = limiter.check('key');
+    await limiter.check('key');
+    await limiter.check('key');
+    const result = await limiter.check('key');
 
     expect(result.allowed).toBe(false);
     expect(result.remaining).toBe(0);
@@ -384,18 +388,18 @@ describe('RateLimiter', () => {
     const { RateLimiter } = await import('@/lib/server/rate-limiter');
     const limiter = new RateLimiter(5, 60_000);
 
-    expect(limiter.check('key').remaining).toBe(4);
-    expect(limiter.check('key').remaining).toBe(3);
-    expect(limiter.check('key').remaining).toBe(2);
+    expect((await limiter.check('key')).remaining).toBe(4);
+    expect((await limiter.check('key')).remaining).toBe(3);
+    expect((await limiter.check('key')).remaining).toBe(2);
   });
 
   it('tracks separate keys independently', async () => {
     const { RateLimiter } = await import('@/lib/server/rate-limiter');
     const limiter = new RateLimiter(1, 60_000);
 
-    expect(limiter.check('a').allowed).toBe(true);
-    expect(limiter.check('b').allowed).toBe(true); // separate key — should be allowed
-    expect(limiter.check('a').allowed).toBe(false); // 'a' is now over limit
+    expect((await limiter.check('a')).allowed).toBe(true);
+    expect((await limiter.check('b')).allowed).toBe(true); // separate key — should be allowed
+    expect((await limiter.check('a')).allowed).toBe(false); // 'a' is now over limit
   });
 
   it('resets the window after windowMs elapses', async () => {
@@ -403,11 +407,11 @@ describe('RateLimiter', () => {
     const { RateLimiter } = await import('@/lib/server/rate-limiter');
     const limiter = new RateLimiter(1, 500);
 
-    limiter.check('key'); // fills the limit
-    expect(limiter.check('key').allowed).toBe(false);
+    await limiter.check('key'); // fills the limit
+    expect((await limiter.check('key')).allowed).toBe(false);
 
     vi.advanceTimersByTime(501);
-    expect(limiter.check('key').allowed).toBe(true); // new window opened
+    expect((await limiter.check('key')).allowed).toBe(true); // new window opened
     vi.useRealTimers();
   });
 
@@ -415,7 +419,7 @@ describe('RateLimiter', () => {
     const { RateLimiter } = await import('@/lib/server/rate-limiter');
     const limiter = new RateLimiter(5, 60_000);
     const before = Date.now();
-    const result = limiter.check('key');
+    const result = await limiter.check('key');
     expect(result.resetAtMs).toBeGreaterThan(before);
   });
 });

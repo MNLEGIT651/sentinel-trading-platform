@@ -1,20 +1,12 @@
 /**
- * Lightweight in-process sliding-window rate limiter for Next.js API routes.
+ * Rate limiter for Next.js API routes with Redis REST support.
  *
  * ## Design constraints and trade-offs
  *
- * This is an **in-process** implementation — state lives in a module-level
- * Map that is local to a single Node.js worker. On Vercel, each region runs
- * multiple serverless function instances concurrently, so the effective
- * limit seen by a single client is `LIMIT_PER_WINDOW × number_of_instances`.
- *
- * This is acceptable for a single-tenant trading platform where the primary
- * goal is to prevent runaway agent loops and accidental hammering, not to
- * enforce strict per-user metering at scale.
- *
- * **If you need globally consistent rate limiting** (e.g. for a public API),
- * replace `WindowStore` with a Redis-backed implementation using Upstash or
- * Vercel KV and the same `RateLimiter` interface.
+ * When `RATE_LIMIT_REDIS_REST_URL` and `RATE_LIMIT_REDIS_REST_TOKEN` are set,
+ * this limiter uses a shared Redis backend (Upstash Redis REST-compatible).
+ * If Redis is unavailable, it falls back to an in-process sliding window so
+ * local development remains functional.
  *
  * ## Usage
  *
@@ -79,6 +71,7 @@ class WindowStore {
 
 export class RateLimiter {
   private readonly store = new WindowStore();
+  private readonly redis = createRedisRateLimiterClient();
 
   constructor(
     private readonly limit: number,
@@ -91,7 +84,10 @@ export class RateLimiter {
    *
    * @param key  Typically the client identifier: IP, user ID, or composite.
    */
-  check(key: string): RateLimitResult {
+  async check(key: string): Promise<RateLimitResult> {
+    const redisResult = await this.redis?.check(key, this.limit, this.windowMs);
+    if (redisResult) return redisResult;
+
     this.store.clean(this.windowMs);
 
     const now = Date.now();
@@ -148,12 +144,67 @@ export const apiRateLimiter = new RateLimiter(60, 60_000);
  * Check the API rate limit for an authenticated user.
  * Returns null if allowed, or a 429 Response if rate-limited.
  */
-export function checkApiRateLimit(userId: string): Response | null {
-  const result = apiRateLimiter.check(userId);
+export async function checkApiRateLimit(userId: string): Promise<Response | null> {
+  const result = await apiRateLimiter.check(userId);
   if (!result.allowed) {
     return rateLimitResponse(result.resetAtMs);
   }
   return null;
+}
+
+interface RedisCheckResult {
+  result: number | string;
+}
+
+interface RedisPipelineResponse {
+  result: RedisCheckResult[];
+}
+
+interface RedisRateLimiterClient {
+  check(key: string, limit: number, windowMs: number): Promise<RateLimitResult | null>;
+}
+
+function createRedisRateLimiterClient(): RedisRateLimiterClient | null {
+  const baseUrl = process.env.RATE_LIMIT_REDIS_REST_URL?.replace(/\/+$/, '');
+  const token = process.env.RATE_LIMIT_REDIS_REST_TOKEN;
+  if (!baseUrl || !token) return null;
+
+  return {
+    async check(key, limit, windowMs) {
+      const bucket = `sentinel:rate-limit:${key}`;
+      const now = Date.now();
+      try {
+        const response = await fetch(`${baseUrl}/pipeline`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([
+            ['INCR', bucket],
+            ['PTTL', bucket],
+            ['PEXPIRE', bucket, String(windowMs), 'NX'],
+          ]),
+          cache: 'no-store',
+        });
+        if (!response.ok) return null;
+
+        const payload = (await response.json()) as RedisPipelineResponse;
+        const count = Number(payload.result?.[0]?.result ?? 0);
+        const ttlMs = Number(payload.result?.[1]?.result ?? -1);
+        const safeTtl = ttlMs > 0 ? ttlMs : windowMs;
+        const resetAtMs = now + safeTtl;
+
+        return {
+          allowed: count <= limit,
+          remaining: Math.max(0, limit - count),
+          resetAtMs,
+        };
+      } catch {
+        return null;
+      }
+    },
+  };
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 const mockUser = { id: 'user-100', email: 'auth@test.com' };
 const mockGetUser = vi.fn();
 const mockFrom = vi.fn();
+const mockCheckApiRateLimit = vi.fn();
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerSupabaseClient: vi.fn(async () => ({
@@ -14,8 +15,12 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
+vi.mock('@/lib/server/rate-limiter', () => ({
+  checkApiRateLimit: (userId: string) => mockCheckApiRateLimit(userId),
+}));
+
 // Import after mock
-import { requireAuth, requireRole } from '@/lib/auth/require-auth';
+import { requireAuth, requireAuthWithRateLimit, requireRole } from '@/lib/auth/require-auth';
 import type { AuthContext } from '@/lib/auth/require-auth';
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -33,6 +38,7 @@ function profileRow(role: string) {
 describe('requireAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckApiRateLimit.mockResolvedValue(null);
   });
 
   it('returns AuthContext when user is authenticated', async () => {
@@ -68,6 +74,34 @@ describe('requireAuth', () => {
 
     expect(result).toBeInstanceOf(NextResponse);
     expect((result as NextResponse).status).toBe(401);
+  });
+});
+
+describe('requireAuthWithRateLimit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCheckApiRateLimit.mockResolvedValue(null);
+  });
+
+  it('returns auth context when authenticated and within rate limit', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
+
+    const result = await requireAuthWithRateLimit();
+
+    expect(result).not.toBeInstanceOf(NextResponse);
+    expect(mockCheckApiRateLimit).toHaveBeenCalledWith('user-100');
+  });
+
+  it('returns rate limit response when limiter denies request', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
+    mockCheckApiRateLimit.mockResolvedValue(
+      NextResponse.json({ error: 'rate_limited' }, { status: 429 }),
+    );
+
+    const result = await requireAuthWithRateLimit();
+
+    expect(result).toBeInstanceOf(NextResponse);
+    expect((result as NextResponse).status).toBe(429);
   });
 });
 

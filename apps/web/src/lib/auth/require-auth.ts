@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { checkApiRateLimit } from '@/lib/server/rate-limiter';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -44,6 +45,22 @@ export async function requireAuth(): Promise<AuthContext | NextResponse> {
 
   if (error || !user) return UNAUTHORIZED;
   return { user, supabase };
+}
+
+/**
+ * Compatibility helper for mutation/read routes that need both auth + API rate limiting.
+ *
+ * Prefer this helper in new routes to avoid duplicated boilerplate:
+ *   const auth = await requireAuthWithRateLimit();
+ *   if (auth instanceof NextResponse) return auth;
+ */
+export async function requireAuthWithRateLimit(): Promise<AuthContext | NextResponse> {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
+  const rl = await checkApiRateLimit(auth.user.id);
+  if (rl) return rl;
+  return auth;
 }
 
 // ─── requireRole ────────────────────────────────────────────────────

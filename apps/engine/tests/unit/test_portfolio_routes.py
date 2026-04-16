@@ -1,6 +1,6 @@
 """Tests for the portfolio API routes."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -74,6 +74,79 @@ class TestPortfolioEndpoints:
         data = response.json()
         assert data["status"] == "filled"
         assert data["fill_quantity"] == 5.0
+
+    @patch(_PATCH_GET_BROKER)
+    @patch("src.api.routes.portfolio.check_trading_halts", new_callable=AsyncMock)
+    @patch("src.api.routes.portfolio.check_live_execution_gate", new_callable=AsyncMock)
+    @patch("src.api.routes.portfolio.fetch_live_price", new_callable=AsyncMock, return_value=100.0)
+    @patch("src.api.routes.portfolio.run_pre_trade_risk_check", new_callable=AsyncMock)
+    @patch("src.api.routes.portfolio.should_fail_closed_on_halt_check", return_value=True)
+    def test_submit_order_live_uses_fail_closed_halts(
+        self,
+        mock_should_fail_closed,
+        mock_risk,
+        _mock_price,
+        mock_live_gate,
+        mock_halts,
+        mock_get_broker,
+    ):
+        mock_risk.return_value = MagicMock(allowed=True, adjusted_shares=None, reason=None)
+        broker = AsyncMock()
+        broker.submit_order.return_value = MagicMock(
+            order_id="o-1",
+            status="filled",
+            fill_price=100.0,
+            fill_quantity=1.0,
+            commission=0.0,
+            slippage=0.0,
+        )
+        mock_get_broker.return_value = broker
+
+        response = self.client.post(
+            "/api/v1/portfolio/orders",
+            json={"symbol": "AAPL", "side": "buy", "quantity": 1},
+        )
+
+        assert response.status_code == 200
+        mock_live_gate.assert_awaited_once_with(broker)
+        mock_should_fail_closed.assert_called_once_with(broker)
+        mock_halts.assert_awaited_once()
+        assert mock_halts.await_args.kwargs["fail_closed"] is True
+
+    @patch(_PATCH_GET_BROKER)
+    @patch("src.api.routes.portfolio.check_trading_halts", new_callable=AsyncMock)
+    @patch("src.api.routes.portfolio.check_live_execution_gate", new_callable=AsyncMock)
+    @patch("src.api.routes.portfolio.fetch_live_price", new_callable=AsyncMock, return_value=100.0)
+    @patch("src.api.routes.portfolio.run_pre_trade_risk_check", new_callable=AsyncMock)
+    @patch("src.api.routes.portfolio.should_fail_closed_on_halt_check", return_value=False)
+    def test_submit_order_paper_does_not_fail_closed_halts(
+        self,
+        _mock_should_fail_closed,
+        mock_risk,
+        _mock_price,
+        _mock_live_gate,
+        mock_halts,
+        mock_get_broker,
+    ):
+        mock_risk.return_value = MagicMock(allowed=True, adjusted_shares=None, reason=None)
+        broker = AsyncMock()
+        broker.submit_order.return_value = MagicMock(
+            order_id="o-2",
+            status="filled",
+            fill_price=100.0,
+            fill_quantity=1.0,
+            commission=0.0,
+            slippage=0.0,
+        )
+        mock_get_broker.return_value = broker
+
+        response = self.client.post(
+            "/api/v1/portfolio/orders",
+            json={"symbol": "AAPL", "side": "buy", "quantity": 1},
+        )
+
+        assert response.status_code == 200
+        assert mock_halts.await_args.kwargs["fail_closed"] is False
 
     def test_submit_order_invalid_body(self):
         response = self.client.post(

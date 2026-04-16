@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   try {
@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const ThreadUpdateSchema = z
@@ -98,7 +98,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   try {

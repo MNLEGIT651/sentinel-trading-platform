@@ -16,7 +16,7 @@ from src.risk.risk_manager import PortfolioState, PreTradeCheck, RiskManager
 logger = logging.getLogger(__name__)
 
 
-async def check_trading_halts(experiment_id: str | None = None) -> None:
+async def check_trading_halts(*, fail_closed: bool, experiment_id: str | None = None) -> None:
     """Raise HTTPException(403) if system or experiment trading is halted."""
     db = get_db()
     if db is None:
@@ -33,7 +33,16 @@ async def check_trading_halts(experiment_id: str | None = None) -> None:
     except HTTPException:
         raise
     except Exception as exc:
-        logger.warning("Could not check trading halt status: %s", exc)
+        if fail_closed:
+            logger.error("Could not verify system trading halt status: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Could not verify system trading halt status; "
+                    "refusing order as a safety default."
+                ),
+            ) from exc
+        logger.warning("Could not check trading halt status (continuing): %s", exc)
 
     # Experiment-level halt
     if experiment_id:
@@ -49,7 +58,16 @@ async def check_trading_halts(experiment_id: str | None = None) -> None:
         except HTTPException:
             raise
         except Exception as exc:
-            logger.warning("Could not check experiment halt status: %s", exc)
+            if fail_closed:
+                logger.error("Could not verify experiment halt status: %s", exc)
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "Could not verify experiment halt status; "
+                        "refusing order as a safety default."
+                    ),
+                ) from exc
+            logger.warning("Could not check experiment halt status (continuing): %s", exc)
 
 
 async def fetch_live_price(broker: BrokerAdapter, symbol: str) -> float | None:
@@ -124,6 +142,18 @@ def _is_paper_endpoint(base_url: str) -> bool:
     if not host:
         return False
     return host.lower() in _ALPACA_PAPER_HOSTS
+
+
+def should_fail_closed_on_halt_check(broker: BrokerAdapter) -> bool:
+    """Return True when halt-state query errors must block order submission.
+
+    This is limited to Alpaca live-trading endpoints. Paper brokers and paper
+    Alpaca endpoints continue on control-plane read errors to preserve
+    development and paper-trading availability.
+    """
+    from src.execution.alpaca_broker import AlpacaBroker
+
+    return isinstance(broker, AlpacaBroker) and not _is_paper_endpoint(broker.base_url)
 
 
 async def check_live_execution_gate(broker: BrokerAdapter) -> None:

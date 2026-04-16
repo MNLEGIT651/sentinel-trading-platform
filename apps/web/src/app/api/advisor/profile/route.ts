@@ -17,7 +17,7 @@ export async function GET() {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   try {
@@ -59,7 +59,7 @@ export async function PATCH(req: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const ALLOWED_PROFILE_FIELDS = [

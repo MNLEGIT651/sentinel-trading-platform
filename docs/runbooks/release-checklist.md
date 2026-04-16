@@ -69,6 +69,7 @@ Evidence template (paste into PR body):
 - [ ] No `localhost` URLs hardcoded in production code paths
 - [ ] If API routes changed: proxy routes still forward correctly
 - [ ] If env vars changed: deployment guide updated
+- [ ] If rate-limiter settings changed: `RATE_LIMIT_REDIS_REST_URL/TOKEN` validated for web + engine
 - [ ] Review checklist in `docs/ai/review-checklist.md` completed
 
 ---
@@ -144,6 +145,7 @@ railway up --service sentinel-engine --environment production
 - [ ] Engine deployed to Railway
 - [ ] Engine `/health` returns 200
 - [ ] Engine logs show clean startup and correct port binding
+- [ ] Engine has 2 healthy replicas
 
 **Agents:**
 
@@ -155,6 +157,7 @@ railway up --service sentinel-agents --environment production
 - [ ] Agents `/health` returns 200
 - [ ] Agents `/status` returns orchestrator state
 - [ ] Agents logs show clean startup and correct port binding
+- [ ] Agents has 2 healthy replicas
 
 ### 4.2 Vercel Preview Validation
 
@@ -220,6 +223,7 @@ Run these within 5 minutes of production deploy completing.
 - [ ] Railway engine logs: clean startup
 - [ ] Railway agents logs: clean startup
 - [ ] Correlation IDs flowing (check a sample request trace per [correlation-id-flow.md](correlation-id-flow.md))
+- [ ] During a rolling restart of one backend replica, user traffic remains healthy (no sustained 5xx spike >1%)
 
 ### 5.4 Live Trading Activation Gate
 

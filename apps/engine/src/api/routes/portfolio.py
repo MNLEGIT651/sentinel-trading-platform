@@ -23,6 +23,7 @@ from src.services.order_service import (
     check_trading_halts,
     fetch_live_price,
     run_pre_trade_risk_check,
+    should_fail_closed_on_halt_check,
 )
 from src.telemetry import get_tracer
 
@@ -89,14 +90,15 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
     from src.config import Settings as _Settings
     from src.execution.alpaca_broker import AlpacaBroker
 
-    exp_id = _Settings().experiment_id
-    await check_trading_halts(experiment_id=exp_id)
-
     try:
         broker = get_broker()
 
         # Gate live-broker orders on system_controls
         await check_live_execution_gate(broker)
+
+        exp_id = _Settings().experiment_id
+        fail_closed_halts = should_fail_closed_on_halt_check(broker)
+        await check_trading_halts(fail_closed=fail_closed_halts, experiment_id=exp_id)
 
         symbol = body.symbol.upper()
 

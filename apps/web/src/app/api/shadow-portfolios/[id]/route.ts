@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   // Fetch shadow portfolio
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const parsed = await parseBody(req, patchBodySchema);
@@ -118,7 +118,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const { error } = await supabase

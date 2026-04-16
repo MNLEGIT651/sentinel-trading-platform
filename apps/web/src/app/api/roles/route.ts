@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const params = parseSearchParams(request, RolesQuerySchema);
@@ -120,7 +120,7 @@ export async function PATCH(request: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user, supabase } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   const body = await parseBody(request, RoleUpdateSchema);

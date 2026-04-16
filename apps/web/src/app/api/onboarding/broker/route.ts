@@ -36,7 +36,7 @@ export async function GET() {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     const { data, error } = await supabase
@@ -64,7 +64,7 @@ export async function POST() {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     // Check for existing broker account
@@ -115,7 +115,7 @@ export async function PUT(request: Request) {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     const body = await parseBody(request, BrokerUpdateSchema);

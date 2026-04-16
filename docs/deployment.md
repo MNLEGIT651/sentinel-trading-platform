@@ -52,28 +52,32 @@ Services on the same Railway project can communicate over an internal private ne
 
 ### Vercel (apps/web) -- Server-Side Only
 
-| Variable                    | Purpose                                                   |
-| --------------------------- | --------------------------------------------------------- |
-| `ENGINE_URL`                | Railway engine URL (e.g. `https://engine.up.railway.app`) |
-| `ENGINE_API_KEY`            | Engine authentication key                                 |
-| `AGENTS_URL`                | Railway agents URL (e.g. `https://agents.up.railway.app`) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Privileged Supabase access                                |
-| `CRON_SECRET`               | Verifies Vercel cron requests to internal endpoints       |
+| Variable                      | Purpose                                                   |
+| ----------------------------- | --------------------------------------------------------- |
+| `ENGINE_URL`                  | Railway engine URL (e.g. `https://engine.up.railway.app`) |
+| `ENGINE_API_KEY`              | Engine authentication key                                 |
+| `AGENTS_URL`                  | Railway agents URL (e.g. `https://agents.up.railway.app`) |
+| `SUPABASE_SERVICE_ROLE_KEY`   | Privileged Supabase access                                |
+| `CRON_SECRET`                 | Verifies Vercel cron requests to internal endpoints       |
+| `RATE_LIMIT_REDIS_REST_URL`   | Shared Redis REST URL for distributed rate limiting       |
+| `RATE_LIMIT_REDIS_REST_TOKEN` | Shared Redis REST auth token                              |
 
 ### Railway Engine (apps/engine)
 
-| Variable                    | Purpose                         |
-| --------------------------- | ------------------------------- |
-| `POLYGON_API_KEY`           | Market data provider            |
-| `ALPACA_API_KEY`            | Broker authentication           |
-| `ALPACA_SECRET_KEY`         | Broker secret                   |
-| `ALPACA_BASE_URL`           | Paper vs live endpoint          |
-| `BROKER_MODE`               | `paper` or `live`               |
-| `SUPABASE_SERVICE_ROLE_KEY` | Database access                 |
-| `NEXT_PUBLIC_SUPABASE_URL`  | Database endpoint               |
-| `ENGINE_API_KEY`            | Validates inbound auth          |
-| `CORS_ORIGINS`              | Allowed origins (Vercel domain) |
-| `PORT`                      | Railway-assigned port (auto)    |
+| Variable                      | Purpose                                             |
+| ----------------------------- | --------------------------------------------------- |
+| `POLYGON_API_KEY`             | Market data provider                                |
+| `ALPACA_API_KEY`              | Broker authentication                               |
+| `ALPACA_SECRET_KEY`           | Broker secret                                       |
+| `ALPACA_BASE_URL`             | Paper vs live endpoint                              |
+| `BROKER_MODE`                 | `paper` or `live`                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`   | Database access                                     |
+| `NEXT_PUBLIC_SUPABASE_URL`    | Database endpoint                                   |
+| `ENGINE_API_KEY`              | Validates inbound auth                              |
+| `CORS_ORIGINS`                | Allowed origins (Vercel domain)                     |
+| `PORT`                        | Railway-assigned port (auto)                        |
+| `RATE_LIMIT_REDIS_REST_URL`   | Shared Redis REST URL for distributed rate limiting |
+| `RATE_LIMIT_REDIS_REST_TOKEN` | Shared Redis REST auth token                        |
 
 ### Railway Agents (apps/agents)
 
@@ -141,6 +145,8 @@ All upstream URL resolution, auth headers, timeouts, and retries are centralized
 | `apps/web/vercel.json`     | Install/build/dev/ignore/crons | Vercel      |
 | `apps/engine/railway.toml` | Engine health check + restart  | Railway     |
 | `railway.toml`             | Agents health check + restart  | Railway     |
+
+Both Railway services are configured for `numReplicas = 2` to support single-replica failover.
 
 ## Vercel web app — dashboard vs `apps/web/vercel.json`
 

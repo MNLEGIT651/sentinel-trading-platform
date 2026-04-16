@@ -14,87 +14,87 @@ describe('RateLimiter', () => {
     vi.useRealTimers();
   });
 
-  it('allows the first request and returns correct remaining count', () => {
+  it('allows the first request and returns correct remaining count', async () => {
     const limiter = new RateLimiter(5, 60_000);
-    const result = limiter.check('user-1');
+    const result = await limiter.check('user-1');
 
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(4);
   });
 
-  it('counts down remaining on subsequent requests', () => {
+  it('counts down remaining on subsequent requests', async () => {
     const limiter = new RateLimiter(3, 60_000);
 
-    const r1 = limiter.check('user-1');
-    const r2 = limiter.check('user-1');
-    const r3 = limiter.check('user-1');
+    const r1 = await limiter.check('user-1');
+    const r2 = await limiter.check('user-1');
+    const r3 = await limiter.check('user-1');
 
     expect(r1.remaining).toBe(2);
     expect(r2.remaining).toBe(1);
     expect(r3.remaining).toBe(0);
   });
 
-  it('blocks request after limit is exceeded', () => {
+  it('blocks request after limit is exceeded', async () => {
     const limiter = new RateLimiter(2, 60_000);
 
-    limiter.check('user-1');
-    limiter.check('user-1');
-    const r3 = limiter.check('user-1');
+    await limiter.check('user-1');
+    await limiter.check('user-1');
+    const r3 = await limiter.check('user-1');
 
     expect(r3.allowed).toBe(false);
     expect(r3.remaining).toBe(0);
   });
 
-  it('resets window after windowMs elapses', () => {
+  it('resets window after windowMs elapses', async () => {
     const limiter = new RateLimiter(2, 60_000);
 
-    limiter.check('user-1');
-    limiter.check('user-1');
+    await limiter.check('user-1');
+    await limiter.check('user-1');
 
     // Advance past window
     vi.advanceTimersByTime(60_001);
 
-    const result = limiter.check('user-1');
+    const result = await limiter.check('user-1');
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(1);
   });
 
-  it('tracks different keys independently', () => {
+  it('tracks different keys independently', async () => {
     const limiter = new RateLimiter(2, 60_000);
 
-    limiter.check('user-1');
-    limiter.check('user-1');
+    await limiter.check('user-1');
+    await limiter.check('user-1');
     // user-1 is now at limit
 
-    const resultB = limiter.check('user-2');
+    const resultB = await limiter.check('user-2');
     expect(resultB.allowed).toBe(true);
     expect(resultB.remaining).toBe(1);
   });
 
-  it('provides resetAtMs in the future', () => {
+  it('provides resetAtMs in the future', async () => {
     const limiter = new RateLimiter(10, 60_000);
     const now = Date.now();
 
-    const result = limiter.check('user-1');
+    const result = await limiter.check('user-1');
     expect(result.resetAtMs).toBeGreaterThan(now);
   });
 
-  it('resetAtMs stays consistent within the same window', () => {
+  it('resetAtMs stays consistent within the same window', async () => {
     const limiter = new RateLimiter(10, 60_000);
 
-    const r1 = limiter.check('user-1');
+    const r1 = await limiter.check('user-1');
     vi.advanceTimersByTime(5000); // still within window
-    const r2 = limiter.check('user-1');
+    const r2 = await limiter.check('user-1');
 
     expect(r1.resetAtMs).toBe(r2.resetAtMs);
   });
 
-  it('still allows the exact limit-th request', () => {
+  it('still allows the exact limit-th request', async () => {
     const limiter = new RateLimiter(3, 60_000);
 
-    limiter.check('u');
-    limiter.check('u');
-    const r = limiter.check('u'); // 3rd = exactly at limit
+    await limiter.check('u');
+    await limiter.check('u');
+    const r = await limiter.check('u'); // 3rd = exactly at limit
 
     expect(r.allowed).toBe(true);
     expect(r.remaining).toBe(0);
@@ -176,9 +176,9 @@ describe('proxyRateLimiter', () => {
     expect(proxyRateLimiter).toBeInstanceOf(RateLimiter);
   });
 
-  it('allows legitimate requests well under the 120/min limit', () => {
+  it('allows legitimate requests well under the 120/min limit', async () => {
     const key = `test-${Date.now()}`;
-    const result = proxyRateLimiter.check(key);
+    const result = await proxyRateLimiter.check(key);
     expect(result.allowed).toBe(true);
   });
 });

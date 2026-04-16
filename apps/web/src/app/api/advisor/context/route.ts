@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user } = auth;
 
-  const rl = checkApiRateLimit(user.id);
+  const rl = await checkApiRateLimit(user.id);
   if (rl) return rl;
 
   try {

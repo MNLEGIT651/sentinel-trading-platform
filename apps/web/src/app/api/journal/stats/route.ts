@@ -12,7 +12,7 @@ export async function GET(): Promise<Response> {
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
 
-    const rl = checkApiRateLimit(user.id);
+    const rl = await checkApiRateLimit(user.id);
     if (rl) return rl;
 
     const { data, error } = await supabase

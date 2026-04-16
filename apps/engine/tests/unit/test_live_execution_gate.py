@@ -19,6 +19,7 @@ from src.execution.paper_broker import PaperBroker
 from src.services.order_service import (
     _is_paper_endpoint,
     check_live_execution_gate,
+    check_trading_halts,
 )
 
 # ---------------------------------------------------------------------------
@@ -151,7 +152,46 @@ class TestLiveExecutionGate:
             with pytest.raises(HTTPException) as exc_info:
                 await check_live_execution_gate(broker)
             assert exc_info.value.status_code == 403
-            assert "disabled" in exc_info.value.detail
+
+
+class TestTradingHalts:
+    """Safety checks for system/experiment trading halts."""
+
+    @pytest.mark.asyncio
+    async def test_system_halt_query_error_fails_closed(self):
+        mock_db = MagicMock()
+        system_chain = (
+            mock_db.table.return_value.select.return_value.limit.return_value.single.return_value
+        )
+        system_chain.execute.side_effect = RuntimeError("db down")
+
+        with patch("src.services.order_service.get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc_info:
+                await check_trading_halts(fail_closed=True)
+            assert exc_info.value.status_code == 503
+            assert "safety default" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_experiment_halt_query_error_fails_closed(self):
+        mock_db = MagicMock()
+
+        # system_controls check passes
+        system_chain = (
+            mock_db.table.return_value.select.return_value.limit.return_value.single.return_value
+        )
+        system_chain.execute.return_value = MagicMock(data={"trading_halted": False})
+
+        # experiments check fails
+        experiment_chain = (
+            mock_db.table.return_value.select.return_value.eq.return_value.single.return_value
+        )
+        experiment_chain.execute.side_effect = RuntimeError("db timeout")
+
+        with patch("src.services.order_service.get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc_info:
+                await check_trading_halts(fail_closed=True, experiment_id="exp-123")
+            assert exc_info.value.status_code == 503
+            assert "safety default" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_live_url_wrong_mode_returns_403(self):

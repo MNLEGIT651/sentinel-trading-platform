@@ -118,7 +118,7 @@ export async function proxy(request: NextRequest) {
   // fall back to a constant so local dev is never accidentally blocked.
   if (isApiRoute(pathname) && !isPublicRoute(pathname)) {
     const clientKey = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'localhost';
-    const rl = proxyRateLimiter.check(clientKey);
+    const rl = await proxyRateLimiter.check(clientKey);
     if (!rl.allowed) {
       return rateLimitResponse(rl.resetAtMs);
     }
@@ -176,7 +176,7 @@ export async function proxy(request: NextRequest) {
     const csrfResponse = checkCsrf(request);
     if (csrfResponse) return csrfResponse;
 
-    const mrl = checkMutationRateLimit(user.id);
+    const mrl = await checkMutationRateLimit(user.id);
     if (mrl) return mrl;
   }
 
