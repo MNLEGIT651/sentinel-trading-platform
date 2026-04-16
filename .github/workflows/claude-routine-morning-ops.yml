@@ -1,0 +1,45 @@
+name: Claude Routine - Morning Ops
+
+on:
+  schedule:
+    - cron: '15 13 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+  pull-requests: read
+  id-token: write
+
+concurrency:
+  group: claude-routine-morning-ops
+  cancel-in-progress: true
+
+jobs:
+  morning-ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Morning Ops routine
+        uses: anthropics/claude-code-action@6e2bd52842c65e914eba5c8badd17560bd26b5de # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
+          prompt: |
+            REPO: ${{ github.repository }}
+            BRANCH: ${{ github.ref_name }}
+            EVENT: ${{ github.event_name }}
+
+            Read `.claude/routines/morning-ops-commander.md` and execute it exactly.
+            Use the routine file as the source of truth for behavior and limits.
+            This workflow is for triage only. Do not modify repository files.
+          claude_args: |
+            --max-turns 15
+            --allowedTools "Read,Bash(date:*),Bash(gh api:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh issue list:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh run list:*),Bash(gh run view:*),Bash(git log:*)"
