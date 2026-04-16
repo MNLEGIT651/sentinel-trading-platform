@@ -65,13 +65,17 @@ jobs:
         id: inputs
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "release_tag=${{ github.event.client_payload.release_tag }}" >> "$GITHUB_OUTPUT"
-            echo "target_env=${{ github.event.client_payload.target_env }}" >> "$GITHUB_OUTPUT"
-            echo "rollback_plan_confirmed=${{ github.event.client_payload.rollback_plan_confirmed }}" >> "$GITHUB_OUTPUT"
+            {
+              echo "release_tag=${{ github.event.client_payload.release_tag }}"
+              echo "target_env=${{ github.event.client_payload.target_env }}"
+              echo "rollback_plan_confirmed=${{ github.event.client_payload.rollback_plan_confirmed }}"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "release_tag=${{ inputs.release_tag }}" >> "$GITHUB_OUTPUT"
-            echo "target_env=${{ inputs.target_env }}" >> "$GITHUB_OUTPUT"
-            echo "rollback_plan_confirmed=${{ inputs.rollback_plan_confirmed }}" >> "$GITHUB_OUTPUT"
+            {
+              echo "release_tag=${{ inputs.release_tag }}"
+              echo "target_env=${{ inputs.target_env }}"
+              echo "rollback_plan_confirmed=${{ inputs.rollback_plan_confirmed }}"
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Short-circuit if rollback plan not confirmed

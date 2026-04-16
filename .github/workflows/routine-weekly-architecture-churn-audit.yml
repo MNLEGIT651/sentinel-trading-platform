@@ -69,6 +69,7 @@ jobs:
 
       - name: Collect file sizes (top 30 source files)
         run: |
+          mkdir -p reports/routines
           find \
             apps/web/src \
             apps/agents/src \
@@ -76,8 +77,7 @@ jobs:
             packages/shared/src \
             -type f \
             \( -name '*.ts' -o -name '*.tsx' -o -name '*.py' \) \
-            2>/dev/null \
-            | xargs wc -l 2>/dev/null \
+            -exec wc -l {} + 2>/dev/null \
             | sort -rn \
             | head -30 \
             > reports/routines/file-sizes.txt || true

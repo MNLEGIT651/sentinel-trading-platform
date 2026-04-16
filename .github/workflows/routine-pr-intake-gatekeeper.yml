@@ -76,10 +76,10 @@ jobs:
               startswith("supabase/migrations/") or
               startswith(".github/workflows/")
             )]
-          ' reports/routines/pr-${PR_NUMBER}-files.json)
+          ' "reports/routines/pr-${PR_NUMBER}-files.json")
           HIT_COUNT=$(echo "${HIGH_RISK_HITS}" | jq 'length')
           echo "high_risk_hit_count=${HIT_COUNT}" >> "$GITHUB_OUTPUT"
-          echo "${HIGH_RISK_HITS}" > reports/routines/pr-${PR_NUMBER}-high-risk.json
+          echo "${HIGH_RISK_HITS}" > "reports/routines/pr-${PR_NUMBER}-high-risk.json"
 
       - name: Build normalized payload
         env:
@@ -109,8 +109,8 @@ jobs:
             --arg deletions "$PR_DELETIONS" \
             --arg changed_files "$PR_CHANGED_FILES" \
             --arg high_risk_hits "$HIGH_RISK_HITS" \
-            --slurpfile files reports/routines/pr-${PR_NUMBER}-files.json \
-            --slurpfile high_risk reports/routines/pr-${PR_NUMBER}-high-risk.json \
+            --slurpfile files "reports/routines/pr-${PR_NUMBER}-files.json" \
+            --slurpfile high_risk "reports/routines/pr-${PR_NUMBER}-high-risk.json" \
             '{
               repository: $repo,
               pr_number: ($pr_number | tonumber),
@@ -126,7 +126,7 @@ jobs:
               high_risk_hit_count: ($high_risk_hits | tonumber),
               changed_files: $files[0],
               high_risk_files: $high_risk[0]
-            }' > reports/routines/pr-${PR_NUMBER}-payload.json
+            }' > "reports/routines/pr-${PR_NUMBER}-payload.json"
 
       - name: Emit workflow summary
         env:
