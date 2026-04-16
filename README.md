@@ -128,6 +128,17 @@ pnpm test:engine         # pytest
 
 See [docs/deployment.md](docs/deployment.md) for the full deployment guide, environment ownership, cutover order, and smoke tests.
 
+## Readiness Matrix (Current Repo Evidence)
+
+| Scope | Status | Notes |
+| --- | --- | --- |
+| Local development | ✅ Ready | Fast iteration workflows are documented and validated in CI-adjacent commands. |
+| Preview / staging | ✅ Ready | Vercel preview smoke + service health checks exist; secrets are required for full parity. |
+| Internal beta | ✅ Ready (guarded) | Auth/proxy hardening, route-security checks, and CI gates are enforced; single-replica caveats remain. |
+| Public production | ⚠️ Partial | Core controls are fail-closed, but rate limiting is process-local and HA assumptions are single-replica. |
+| Paper trading | ✅ Ready (internal) | Risk-gated order path and readiness wiring are validated in tests and deployment config. |
+| Live trading | ❌ Not claimed | Additional operational controls/monitoring and HA posture are required before claiming live-trading readiness. |
+
 ## Runbooks
 
 - [Local Development](docs/runbooks/local.md)

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/server';
 import { proxyRateLimiter, rateLimitResponse } from '@/lib/server/rate-limiter';
 import { checkCsrf, checkMutationRateLimit } from '@/lib/server/csrf';
-import { getSupabaseKey } from '@/lib/env';
+import { isAuthEnvConfigured, isProductionRuntime } from '@/lib/env';
 import { getCanonicalHost } from '@/lib/auth/url';
 
 // ─── Matcher ──────────────────────────────────────────────────────────────
@@ -78,15 +78,6 @@ function isPublicRoute(pathname: string): boolean {
  * When false, the proxy skips auth enforcement — there is no auth system to
  * validate against (typical in CI / local-dev-without-Supabase scenarios).
  */
-function isAuthConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = getSupabaseKey();
-  if (!url || !key) return false;
-  // Placeholder values used in CI builds are not real auth config
-  if (url.includes('placeholder') || key.startsWith('placeholder')) return false;
-  return true;
-}
-
 // ─── Middleware ────────────────────────────────────────────────────────────
 
 export async function proxy(request: NextRequest) {
@@ -124,9 +115,21 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // When Supabase is not configured there is no auth system to enforce.
-  // Pass all requests through so local dev and CI work without credentials.
-  if (!isAuthConfigured()) {
+  // Local/CI ergonomics: allow pass-through when auth is intentionally absent.
+  // Production fail-closed: block non-public routes if auth config is missing.
+  if (!isAuthEnvConfigured()) {
+    if (isProductionRuntime() && !isPublicRoute(pathname)) {
+      if (isApiRoute(pathname)) {
+        return NextResponse.json(
+          {
+            error: 'misconfigured',
+            detail: 'Authentication is not configured for production runtime.',
+          },
+          { status: 503 },
+        );
+      }
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
     return NextResponse.next({ request });
   }
 

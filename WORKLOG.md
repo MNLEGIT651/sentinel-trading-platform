@@ -50,6 +50,33 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-16 — Codex (Security hardening sprint)
+
+**Goal**: Deliver focused fail-closed hardening for proxy/auth boundaries, runtime parity, readiness wiring, CI truthfulness, and readiness docs.
+
+**What changed**:
+
+- Removed fail-open role fallback in `requireRole`; missing/invalid profile role now denies access with explicit audit logging.
+- Reworked web engine/agents proxy handlers to explicit allowlists with deny-by-default for unknown paths/mutations and operator checks on privileged mutations.
+- Tightened production auth env behavior in `proxy.ts` + startup validation in `instrumentation.ts` to fail closed when auth config is missing in production runtime.
+- Aligned timeout envelope (`strategy scan` proxy timeout reduced to 55s vs route maxDuration 60s).
+- Fixed engine quote fail-open risk behavior by removing unsafe fallback pricing in order submission and adding regression test.
+- Aligned readiness checks to `/ready` for deploy/startup paths (`apps/engine/railway.toml`, engine Docker healthcheck, compose healthcheck, smoke defaults, runbook docs).
+- Fixed agents telemetry runtime drift by moving OTel packages into runtime dependencies and adding CI production artifact image builds.
+- Upgraded CI validation to enforce web/agents coverage thresholds and lockfile-based Python dependency sync in CI.
+- Extended route-security automation to include engine/agents proxy trust boundary allowlist checks.
+- Added/updated docs and reports to reduce overclaims and add explicit readiness-matrix language.
+
+**Validation**:
+
+- Node workspace lint/typecheck/test/build and route security/script tests passed.
+- Engine Python validations were attempted but blocked in this environment because `apps/engine/.venv` lacked `ruff`/`pytest`.
+
+**Decisions**:
+
+- Kept process-local rate limiting but documented limitations instead of over-claiming distributed protection.
+- Avoided async proxy rearchitecture; applied minimal safe timeout alignment and explicit boundary policy enforcement.
+
 ### 2026-04-10 — Copilot (PR Guardian System)
 
 **Goal**: Build automated guardrails to prevent AI agent drift and quality issues.

@@ -128,7 +128,7 @@ describe('requireRole', () => {
     expect((result as NextResponse).status).toBe(403);
   });
 
-  it('defaults to operator when profile not found', async () => {
+  it('fails closed when profile is not found', async () => {
     mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnThis(),
@@ -136,10 +136,10 @@ describe('requireRole', () => {
       single: vi.fn(() => ({ data: null, error: { code: 'PGRST116' } })),
     });
 
-    // Solo-user default = operator, so should pass operator check
     const result = await requireRole('operator');
 
-    expect(result).not.toBeInstanceOf(NextResponse);
+    expect(result).toBeInstanceOf(NextResponse);
+    expect((result as NextResponse).status).toBe(403);
   });
 
   it('respects full role hierarchy: observer < reviewer < approver < operator', async () => {

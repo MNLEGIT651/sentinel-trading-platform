@@ -69,7 +69,7 @@ async def fetch_live_price(broker: BrokerAdapter, symbol: str) -> float | None:
     polygon = PolygonClient(settings.polygon_api_key)
     try:
         bar = await polygon.get_latest_price(symbol, interactive=True)
-        return bar.close if bar else 100.0
+        return bar.close if bar else None
     finally:
         await polygon.close()
 

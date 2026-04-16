@@ -16,17 +16,17 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
 
-# Install uv package manager
-RUN pip install --no-cache-dir "uv>=0.5"
+# Install uv package manager (pinned to CI version)
+RUN pip install --no-cache-dir "uv==0.11.5"
 
 # ─── Dependencies layer ───────────────────────────────────────────────────────
 FROM base AS deps
 
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 
 # Create venv and install production dependencies only
 RUN uv venv .venv \
-  && uv pip install --python .venv/bin/python --no-cache "."
+  && uv sync --locked --no-dev --no-install-project --python .venv/bin/python
 
 # ─── Runtime image ────────────────────────────────────────────────────────────
 FROM base AS runner
@@ -57,8 +57,7 @@ EXPOSE 8000
 
 # Health check for container orchestration (shell form for PORT variable)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD sh -c "curl -f http://localhost:${PORT:-8000}/health || exit 1"
+  CMD sh -c "curl -f http://localhost:${PORT:-8000}/ready || exit 1"
 
 # Exec form: signals propagate directly to gunicorn (no shell wrapper)
 CMD ["gunicorn", "src.api.main:app", "-c", "gunicorn_conf.py"]
-

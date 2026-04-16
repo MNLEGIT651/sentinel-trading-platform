@@ -1,4 +1,6 @@
-# Production Readiness Report — Paper & Live Trading
+# Production Readiness Report — Paper & Live Trading (Historical Snapshot)
+
+> **Status note (2026-04-16):** This document is historical and should not be used as the current readiness source of truth. Current repo policy treats live trading as **not yet claimed ready** pending additional operational controls and multi-replica hardening.
 
 **Repository:** stevenschling13/Trading-App
 **Date:** 2025-07-10
@@ -213,7 +215,7 @@ All commands run against the hardening branch commit `9315407`.
 
 ### PAPER TRADING VERDICT
 
-# ✅ READY
+# ✅ READY (INTERNAL, GUARDED)
 
 Main branch (after PR #316 merge) is production-ready for paper trading.
 All validation checks pass. Auth, CSRF, proxy boundaries, and order flow are verified.
@@ -221,13 +223,11 @@ Paper execution path functions without risk of accidental live execution.
 
 ### LIVE TRADING VERDICT
 
-# ✅ READY
+# ❌ NOT CURRENTLY CLAIMED READY
 
-Main branch (after PR #316 merge) is production-ready for live trading.
-The fail-closed live execution gate is present, tested (21 tests), and documented.
-Live orders are impossible unless an operator explicitly enables both
-`live_execution_enabled=true` and `global_mode='live'` in `system_controls`.
-Database failures fail closed. Rollback is a single SQL UPDATE with no redeploy.
+The fail-closed live execution gate remains an important control, but this report
+overstates broader production readiness. Current repo posture requires additional
+operational evidence before live-trading readiness can be asserted.
 
 ### Remaining Path
 

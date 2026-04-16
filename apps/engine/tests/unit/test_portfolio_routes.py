@@ -83,6 +83,25 @@ class TestPortfolioEndpoints:
         assert response.status_code == 422
 
     @patch(_PATCH_GET_BROKER)
+    @patch("src.data.polygon_client.PolygonClient")
+    def test_submit_order_fails_closed_when_quote_missing(self, mock_poly_cls, mock_get_broker):
+        broker = PaperBroker(initial_capital=100_000)
+        mock_get_broker.return_value = broker
+
+        mock_polygon = AsyncMock()
+        mock_polygon.get_latest_price.return_value = None
+        mock_polygon.close = AsyncMock()
+        mock_poly_cls.return_value = mock_polygon
+
+        response = self.client.post(
+            "/api/v1/portfolio/orders",
+            json={"symbol": "AAPL", "side": "buy", "quantity": 5},
+        )
+
+        assert response.status_code == 503
+        assert "risk-check price" in response.json()["detail"]
+
+    @patch(_PATCH_GET_BROKER)
     def test_cancel_order_not_found(self, mock_get_broker):
         broker = PaperBroker()
         mock_get_broker.return_value = broker

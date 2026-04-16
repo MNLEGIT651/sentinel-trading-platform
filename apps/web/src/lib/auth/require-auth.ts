@@ -67,14 +67,40 @@ export async function requireRole(minimumRole: OperatorRole): Promise<AuthContex
 
   const { supabase, user } = auth;
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('user_profiles')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  // Default to operator for solo-user setups (matches migration 00013 default)
-  const role = (profile?.role as OperatorRole) ?? 'operator';
+  if (error || !profile?.role) {
+    console.error(
+      JSON.stringify({
+        scope: 'auth',
+        level: 'error',
+        action: 'profile_lookup_failed',
+        userId: user.id,
+        minimumRole,
+        message: error?.message ?? 'Missing user_profiles role',
+      }),
+    );
+    return FORBIDDEN(minimumRole);
+  }
+
+  const role = profile.role as OperatorRole;
+  if (!(role in ROLE_LEVELS)) {
+    console.error(
+      JSON.stringify({
+        scope: 'auth',
+        level: 'error',
+        action: 'profile_role_invalid',
+        userId: user.id,
+        role,
+      }),
+    );
+    return FORBIDDEN(minimumRole);
+  }
+
   const required = ROLE_LEVELS[minimumRole] ?? 4;
   const actual = ROLE_LEVELS[role] ?? 0;
 

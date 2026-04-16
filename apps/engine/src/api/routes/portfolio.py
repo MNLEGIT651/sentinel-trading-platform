@@ -101,7 +101,15 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
         symbol = body.symbol.upper()
 
         price = await fetch_live_price(broker, symbol)
-        check_price = price or body.limit_price or 100.0
+        check_price = body.limit_price if body.limit_price is not None else price
+        if check_price is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Unable to determine a safe risk-check price for this order. "
+                    "Provide limit_price or restore live quote data."
+                ),
+            )
 
         risk_result = await run_pre_trade_risk_check(
             broker=broker,

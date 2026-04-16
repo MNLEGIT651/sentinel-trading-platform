@@ -156,7 +156,7 @@ describe('getServiceTimeoutMs', () => {
   });
 
   it('returns route-specific timeouts for engine', () => {
-    expect(getServiceTimeoutMs('engine', '/api/v1/strategies/scan', 'POST')).toBe(70_000);
+    expect(getServiceTimeoutMs('engine', '/api/v1/strategies/scan', 'POST')).toBe(55_000);
     expect(getServiceTimeoutMs('engine', '/api/v1/backtest/run', 'POST')).toBe(45_000);
     expect(getServiceTimeoutMs('engine', '/api/v1/data/quotes', 'GET')).toBe(15_000);
     expect(getServiceTimeoutMs('engine', '/api/v1/data/bars/AAPL', 'GET')).toBe(12_000);
@@ -175,7 +175,7 @@ describe('getServiceTimeoutMs', () => {
 
   it('is case-insensitive for path and method', () => {
     expect(getServiceTimeoutMs('engine', '/HEALTH', 'get')).toBe(4_000);
-    expect(getServiceTimeoutMs('engine', '/API/V1/STRATEGIES/SCAN', 'post')).toBe(70_000);
+    expect(getServiceTimeoutMs('engine', '/API/V1/STRATEGIES/SCAN', 'post')).toBe(55_000);
   });
 });
 

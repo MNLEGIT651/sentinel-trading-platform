@@ -48,19 +48,62 @@ function getCorrelationId(request: Request): string {
   return request.headers.get('x-correlation-id') ?? crypto.randomUUID();
 }
 
+const PUBLIC_PATHS = new Set(['/health', '/status']);
+const SAFE_READ_PREFIXES = ['/recommendations', '/alerts', '/agent-runs'] as const;
+const AUTH_MUTATION_PREFIXES = ['/recommendations/'] as const;
+const OPERATOR_MUTATION_PATHS = new Set(['/cycle', '/halt', '/resume', '/research/ticker']);
+
+function hasAllowedPrefix(path: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => path === prefix || path.startsWith(prefix));
+}
+
 async function handle(request: Request, context: RouteContext): Promise<Response> {
   const { path } = await context.params;
   const upstreamPath = `/${(path ?? []).join('/')}`;
-
-  // Health and status are public — no auth needed
-  const isPublic = upstreamPath === '/health' || upstreamPath === '/status';
+  const method = request.method.toUpperCase();
 
   const correlationId = getCorrelationId(request);
   const extraHeaders: Record<string, string> = {
     'x-correlation-id': correlationId,
   };
 
-  if (!isPublic) {
+  if (PUBLIC_PATHS.has(upstreamPath)) {
+    return proxyServiceRequest('agents', request, path, extraHeaders);
+  }
+
+  const isSafeRead =
+    method === 'GET' || method === 'HEAD'
+      ? hasAllowedPrefix(upstreamPath, SAFE_READ_PREFIXES)
+      : false;
+  const isAuthMutation = method !== 'GET' && method !== 'HEAD' && hasAllowedPrefix(upstreamPath, AUTH_MUTATION_PREFIXES);
+  const isOperatorMutation = method !== 'GET' && method !== 'HEAD' && OPERATOR_MUTATION_PATHS.has(upstreamPath);
+
+  if (!(isSafeRead || isAuthMutation || isOperatorMutation)) {
+    return NextResponse.json(
+      {
+        error: 'forbidden',
+        message: 'Agents path is denied by proxy policy.',
+        correlationId,
+      },
+      { status: 403, headers: { 'x-correlation-id': correlationId } },
+    );
+  }
+
+  if (isOperatorMutation) {
+    const supabase = await createServerSupabaseClient();
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .single();
+    if (error || profile?.role !== 'operator') {
+      return NextResponse.json(
+        { error: 'forbidden', message: 'Operator role required.', correlationId },
+        { status: 403, headers: { 'x-correlation-id': correlationId } },
+      );
+    }
+  }
+
+  {
     const token = await getUserToken();
     if (!token) {
       return NextResponse.json(

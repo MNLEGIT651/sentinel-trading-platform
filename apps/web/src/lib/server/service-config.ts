@@ -6,8 +6,8 @@ import type { ServiceName } from '@/lib/service-error';
 /** Timeout for /health liveness probes — kept short to fail fast. */
 const TIMEOUT_HEALTH_MS = 4_000;
 
-/** Timeout for strategy scan requests — CPU-intensive, may fan out over many tickers. */
-const TIMEOUT_ENGINE_STRATEGY_SCAN_MS = 70_000;
+/** Timeout for strategy scan requests — kept below route maxDuration (60s envelope). */
+const TIMEOUT_ENGINE_STRATEGY_SCAN_MS = 55_000;
 
 /** Timeout for backtest runs — involves replaying historical data. */
 const TIMEOUT_ENGINE_BACKTEST_MS = 45_000;

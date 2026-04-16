@@ -16,7 +16,7 @@ Database: Supabase (us-east-1)
 
 - [ ] All CI checks pass on the branch being deployed
 - [ ] Preview deployment passes all smoke tests (see [preview runbook](preview.md))
-- [ ] Railway engine is healthy (`/health` returns 200)
+- [ ] Railway engine is ready (`/ready` returns 200; `/health` remains liveness)
 - [ ] Railway agents is healthy (`/health` returns 200)
 - [ ] Environment contract passes automated validation for each runtime profile
   - `node scripts/validate-railway-supabase-env.mjs --profile=web --production --project-ref=<supabase-project-ref> --env-file=<web-env-file>`
@@ -71,7 +71,8 @@ cd apps/web && vercel --prod
 
 | Check          | Path                   | Expected                                 |
 | -------------- | ---------------------- | ---------------------------------------- |
-| Engine health  | `/api/engine/health`   | 200                                      |
+| Engine ready   | `/api/engine/ready`    | 200                                      |
+| Engine health  | `/api/engine/health`   | 200 (liveness)                           |
 | Agents health  | `/api/agents/health`   | 200                                      |
 | Agents status  | `/api/agents/status`   | 200 + orchestrator state                 |
 | Service status | `/api/settings/status` | engine + agents connected                |

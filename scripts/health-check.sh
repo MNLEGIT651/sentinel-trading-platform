@@ -13,7 +13,7 @@ FAILURES=0
 
 # Service URLs (override via environment variables)
 VERCEL_URL="${VERCEL_URL:-https://sentinel-trading-platform.vercel.app}"
-ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/health}"
+ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/ready}"
 AGENTS_HEALTH_URL="${AGENTS_URL:-${VERCEL_URL}/api/agents/health}"
 SUPABASE_API_URL="${SUPABASE_URL:+${SUPABASE_URL}/rest/v1/}"
 

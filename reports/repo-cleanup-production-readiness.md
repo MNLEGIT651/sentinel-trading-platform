@@ -1,5 +1,7 @@
 # Repo Cleanup & Production Readiness Report
 
+> **Status note (2026-04-16):** This report is a point-in-time cleanup snapshot. It is not the canonical current readiness decision record.
+
 **Date:** 2026-04-12
 **Branch:** `main` @ `542bec0`
 **Author:** Copilot (release engineering cleanup)
@@ -113,9 +115,9 @@
 
 ## Release Verdict
 
-### **MAIN IS PRODUCTION READY** (for internal paper-trading beta)
+### **MAIN IS CONDITIONALLY READY** (for internal paper-trading beta)
 
-Main branch passes all validation checks. All three release-blocking gaps from the external audit have been addressed:
+Main branch passes the validation checks listed at report time. Core release-blocking gaps from that audit were addressed, but this does not imply current live-trading readiness:
 
 1. ✅ **CSRF enforcement** — proxy.ts now enforces CSRF on all mutating routes
 2. ✅ **CI validates production path** — typecheck + security:routes added to CI pipeline

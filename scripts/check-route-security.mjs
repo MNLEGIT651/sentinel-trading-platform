@@ -11,10 +11,9 @@
  * Usage:
  *   node scripts/check-route-security.mjs
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { globSync } from 'node:fs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const webRoot = join(root, 'apps', 'web', 'src');
@@ -26,10 +25,23 @@ const AUTH_CHECK = /requireAuth|requireRole/;
 /** Glob API route files. */
 function findRouteFiles() {
   const apiDir = join(webRoot, 'app', 'api');
-  return globSync('**/route.ts', { cwd: apiDir }).map((f) => ({
-    relative: `api/${f.replace(/\/route\.ts$/, '')}`,
-    absolute: join(apiDir, f),
-  }));
+  const files = [];
+  const walk = (dir, relativePrefix = '') => {
+    for (const name of readdirSync(dir)) {
+      const absolute = join(dir, name);
+      const relative = relativePrefix ? `${relativePrefix}/${name}` : name;
+      if (statSync(absolute).isDirectory()) {
+        walk(absolute, relative);
+      } else if (name === 'route.ts') {
+        files.push({
+          relative: `api/${relative.replace(/\/route\.ts$/, '')}`,
+          absolute,
+        });
+      }
+    }
+  };
+  walk(apiDir);
+  return files;
 }
 
 const errors = [];
@@ -52,7 +64,7 @@ if (!existsSync(proxyPath)) {
 }
 
 // ─── Check 2: Route-level auth coverage ──────────────────────────────────
-const EXEMPT_PREFIXES = ['api/webhooks', 'api/internal', 'api/health', 'api/engine', 'api/agents'];
+const EXEMPT_PREFIXES = ['api/webhooks', 'api/internal', 'api/health'];
 
 const routeFiles = findRouteFiles();
 let mutationRouteCount = 0;
@@ -72,6 +84,38 @@ for (const { relative, absolute } of routeFiles) {
   if (!AUTH_CHECK.test(content)) {
     errors.push(`${relative}: exports ${mutations.join(', ')} but does not call requireAuth() or requireRole()`);
     authMissingCount++;
+  }
+}
+
+// ─── Check 3: proxy trust-boundary allowlists are present ─────────────────
+const engineProxyPath = join(webRoot, 'app', 'api', 'engine', '[...path]', 'route.ts');
+const agentsProxyPath = join(webRoot, 'app', 'api', 'agents', '[...path]', 'route.ts');
+
+if (!existsSync(engineProxyPath)) {
+  errors.push('CRITICAL: engine proxy route is missing.');
+} else {
+  const content = readFileSync(engineProxyPath, 'utf8');
+  if (!content.includes('SAFE_READ_PREFIXES') || !content.includes('OPERATOR_MUTATION_PREFIXES')) {
+    errors.push(
+      'api/engine proxy must define explicit SAFE_READ_PREFIXES and OPERATOR_MUTATION_PREFIXES allowlists.',
+    );
+  }
+  if (!content.includes('Mutating engine path is denied by proxy policy')) {
+    errors.push('api/engine proxy must deny unknown mutating paths by default.');
+  }
+}
+
+if (!existsSync(agentsProxyPath)) {
+  errors.push('CRITICAL: agents proxy route is missing.');
+} else {
+  const content = readFileSync(agentsProxyPath, 'utf8');
+  if (!content.includes('SAFE_READ_PREFIXES') || !content.includes('OPERATOR_MUTATION_PATHS')) {
+    errors.push(
+      'api/agents proxy must define explicit SAFE_READ_PREFIXES and OPERATOR_MUTATION_PATHS allowlists.',
+    );
+  }
+  if (!content.includes('Agents path is denied by proxy policy')) {
+    errors.push('api/agents proxy must deny unknown paths by default.');
   }
 }
 

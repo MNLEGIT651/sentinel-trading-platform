@@ -105,6 +105,9 @@ jobs:
       - name: Run web tests
         run: pnpm --filter web test
 
+      - name: Enforce web coverage thresholds
+        run: pnpm --filter web test -- --coverage
+
       - name: Audit route security (CSRF + auth coverage)
         run: pnpm security:routes
 
@@ -164,7 +167,7 @@ jobs:
           path: |
             ~/.cache/uv
             ~/.cache/pip
-          key: uv-${{ runner.os }}-py3.12-${{ hashFiles('apps/engine/pyproject.toml') }}
+          key: uv-${{ runner.os }}-py3.12-${{ hashFiles('apps/engine/pyproject.toml', 'apps/engine/uv.lock') }}
           restore-keys: |
             uv-${{ runner.os }}-py3.12-
 
@@ -175,7 +178,7 @@ jobs:
         working-directory: apps/engine
         run: |
           uv venv .venv
-          uv pip install --python .venv/bin/python -e ".[dev]"
+          uv sync --locked --python .venv/bin/python --extra dev
 
       - name: Run Ruff lint
         working-directory: apps/engine
@@ -235,6 +238,23 @@ jobs:
       - name: Run agents tests
         run: pnpm --filter agents test
 
+      - name: Enforce agents coverage thresholds
+        run: pnpm --filter agents test -- --coverage
+
+  validate-production-artifacts:
+    name: Validate Production Artifacts
+    needs: [test-engine, test-agents]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build engine production image
+        run: docker build -f apps/engine/Dockerfile -t sentinel-engine:ci apps/engine
+
+      - name: Build agents production image
+        run: docker build -f apps/agents/Dockerfile -t sentinel-agents:ci .
+
   # ---------------------------------------------------------------------------
   # Job 4: Dependency vulnerability scanning
   # ---------------------------------------------------------------------------
@@ -287,7 +307,7 @@ jobs:
         working-directory: apps/engine
         run: |
           uv venv .venv
-          uv pip install --python .venv/bin/python -e ".[dev]"
+          uv sync --locked --python .venv/bin/python --extra dev
           uv pip install --python .venv/bin/python pip-audit
 
       - name: Run repository security audit

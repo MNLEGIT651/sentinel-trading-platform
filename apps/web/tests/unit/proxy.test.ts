@@ -228,6 +228,7 @@ describe('proxy middleware', () => {
 describe('proxy middleware — Supabase not configured', () => {
   const savedUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const savedKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const savedNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -239,6 +240,7 @@ describe('proxy middleware — Supabase not configured', () => {
   afterEach(() => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = savedUrl;
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = savedKey;
+    (process.env as Record<string, string | undefined>).NODE_ENV = savedNodeEnv;
     vi.resetModules();
   });
 
@@ -264,6 +266,15 @@ describe('proxy middleware — Supabase not configured', () => {
     const response = await proxy(makeRequest('/'));
     expect(response.status).toBe(200);
     expect(mockUpdateSession).not.toHaveBeenCalled();
+  });
+
+  it('fails closed for protected API routes in production when auth is unconfigured', async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
+    const { proxy } = await import('@/proxy');
+    const response = await proxy(makeRequest('/api/engine/orders'));
+    expect(response.status).toBe(503);
+    const body = await response.json();
+    expect(body.error).toBe('misconfigured');
   });
 });
 

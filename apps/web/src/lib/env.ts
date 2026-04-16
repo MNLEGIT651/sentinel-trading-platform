@@ -111,6 +111,18 @@ export function validateEnv(): { valid: boolean; missing: string[]; warnings: st
   return { valid: missing.length === 0, missing, warnings };
 }
 
+export function isAuthEnvConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = getSupabaseKey();
+  if (!url || !key) return false;
+  if (url.includes('placeholder') || key.startsWith('placeholder')) return false;
+  return true;
+}
+
+export function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+}
+
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
