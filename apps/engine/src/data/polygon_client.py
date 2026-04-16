@@ -125,21 +125,24 @@ class PolygonClient:
         )
 
     def _parse_bars(self, data: dict) -> list[PolygonBar]:
-        results = data.get("results", [])
+        results = data.get("results") or []
         bars: list[PolygonBar] = []
         for r in results:
-            ts = datetime.fromtimestamp(r["t"] / 1000, tz=UTC)
-            bars.append(
-                PolygonBar(
-                    timestamp=ts,
-                    open=float(r["o"]),
-                    high=float(r["h"]),
-                    low=float(r["l"]),
-                    close=float(r["c"]),
-                    volume=int(r["v"]),
-                    vwap=float(r["vw"]) if "vw" in r else None,
+            try:
+                ts = datetime.fromtimestamp(r["t"] / 1000, tz=UTC)
+                bars.append(
+                    PolygonBar(
+                        timestamp=ts,
+                        open=float(r["o"]),
+                        high=float(r["h"]),
+                        low=float(r["l"]),
+                        close=float(r["c"]),
+                        volume=int(r["v"]),
+                        vwap=float(r["vw"]) if "vw" in r else None,
+                    )
                 )
-            )
+            except (KeyError, TypeError, ValueError) as exc:
+                logger.warning("Skipping malformed Polygon bar: %s — %s", r, exc)
         return bars
 
     async def _request_with_retry(

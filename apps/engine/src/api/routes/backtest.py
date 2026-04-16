@@ -23,10 +23,10 @@ class BacktestRequest(BaseModel):
     strategy_name: str
     ticker: str = "SYNTHETIC"
     bars: int = Field(default=252, ge=50, le=5000)
-    initial_capital: float = 100_000.0
-    commission_per_share: float = 0.005
-    slippage_pct: float = 0.001
-    position_size_pct: float = 0.10
+    initial_capital: float = Field(default=100_000.0, gt=0)
+    commission_per_share: float = Field(default=0.005, ge=0)
+    slippage_pct: float = Field(default=0.001, ge=0, le=0.5)
+    position_size_pct: float = Field(default=0.10, gt=0, le=1.0)
     trend: str = Field(default="random", pattern="^(up|down|volatile|random)$")
     seed: int = 42
 

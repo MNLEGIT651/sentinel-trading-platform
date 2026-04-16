@@ -85,6 +85,40 @@ class TestOrderStore:
         assert store.get("o1") is None
         assert store.get("o6") is not None
 
+
+class TestTerminalStatusGuard:
+    """Regression tests for terminal order status guard (Patch 9)."""
+
+    def setup_method(self):
+        self.store = OrderStore()
+
+    def test_rejects_status_change_on_filled_order(self):
+        self.store.add(_make_order(order_id="t1", status="filled"))
+        result = self.store.update("t1", status="pending")
+        assert result is not None
+        assert result.status == "filled"
+
+    def test_rejects_status_change_on_cancelled_order(self):
+        self.store.add(_make_order(order_id="t2", status="cancelled"))
+        result = self.store.update("t2", status="open")
+        assert result.status == "cancelled"
+
+    def test_rejects_status_change_on_rejected_order(self):
+        self.store.add(_make_order(order_id="t3", status="rejected"))
+        result = self.store.update("t3", status="accepted")
+        assert result.status == "rejected"
+
+    def test_allows_non_status_update_on_terminal_order(self):
+        self.store.add(_make_order(order_id="t4", status="filled"))
+        result = self.store.update("t4", risk_note="manual review")
+        assert result.risk_note == "manual review"
+        assert result.status == "filled"
+
+    def test_allows_status_change_on_non_terminal_order(self):
+        self.store.add(_make_order(order_id="t5", status="accepted"))
+        result = self.store.update("t5", status="filled")
+        assert result.status == "filled"
+
     def test_eviction_preserves_open_orders(self):
         store = OrderStore(max_size=3)
         store.add(

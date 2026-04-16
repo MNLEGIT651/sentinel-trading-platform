@@ -24,7 +24,7 @@ const PUBLIC_ROUTES = new Set(['/login', '/signup', '/forgot-password', '/reset-
  * their own authentication and must return JSON errors, not HTML redirects.
  * Only truly public non-API paths belong in this list.
  */
-const PUBLIC_PREFIXES = ['/auth/', '/api/health', '/api/internal/', '/legal/'];
+const PUBLIC_PREFIXES = ['/auth/', '/api/health', '/legal/'];
 
 /**
  * API paths that bypass the auth gate for monitoring and liveness probes.
@@ -50,7 +50,7 @@ const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * API path prefixes exempt from CSRF checks.
  * Webhooks use signature verification; internal/health routes are non-mutating.
  */
-const CSRF_EXEMPT_PREFIXES = ['/api/webhooks/', '/api/internal/', '/api/health'];
+const CSRF_EXEMPT_PREFIXES = ['/api/webhooks/', '/api/internal/cron/', '/api/health'];
 
 /**
  * Returns true for paths that are API routes (start with /api/).

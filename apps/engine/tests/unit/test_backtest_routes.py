@@ -395,3 +395,43 @@ class TestListBacktestableStrategiesEndpoint:
         strategies = response.json()["strategies"]
 
         assert strategies == sorted(strategies)
+
+
+class TestBacktestParameterValidation:
+    """Regression: Backtest rejects unsafe financial parameters (Patch 14)."""
+
+    def test_rejects_zero_initial_capital(self):
+        response = client.post(
+            "/backtest/run",
+            json={"strategy_name": "sma_crossover", "bars": 50, "initial_capital": 0},
+        )
+        assert response.status_code == 422
+
+    def test_rejects_negative_initial_capital(self):
+        response = client.post(
+            "/backtest/run",
+            json={"strategy_name": "sma_crossover", "bars": 50, "initial_capital": -1000},
+        )
+        assert response.status_code == 422
+
+    def test_rejects_position_size_over_100_pct(self):
+        response = client.post(
+            "/backtest/run",
+            json={
+                "strategy_name": "sma_crossover",
+                "bars": 50,
+                "position_size_pct": 1.5,
+            },
+        )
+        assert response.status_code == 422
+
+    def test_rejects_negative_commission(self):
+        response = client.post(
+            "/backtest/run",
+            json={
+                "strategy_name": "sma_crossover",
+                "bars": 50,
+                "commission_per_share": -0.01,
+            },
+        )
+        assert response.status_code == 422

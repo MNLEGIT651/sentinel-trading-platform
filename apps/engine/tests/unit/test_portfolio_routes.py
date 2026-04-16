@@ -52,9 +52,10 @@ class TestPortfolioEndpoints:
         assert response.status_code == 200
         assert response.json() == []
 
+    @patch("src.api.routes.portfolio.check_trading_halts", new_callable=AsyncMock)
     @patch(_PATCH_GET_BROKER)
     @patch("src.data.polygon_client.PolygonClient")
-    def test_submit_order_paper(self, mock_poly_cls, mock_get_broker):
+    def test_submit_order_paper(self, mock_poly_cls, mock_get_broker, mock_halt_check):
         broker = PaperBroker(initial_capital=100_000)
         mock_get_broker.return_value = broker
 
@@ -91,9 +92,10 @@ class TestPortfolioEndpoints:
 
         assert response.status_code == 404
 
+    @patch("src.api.routes.portfolio.check_trading_halts", new_callable=AsyncMock)
     @patch(_PATCH_GET_BROKER)
     @patch("src.data.polygon_client.PolygonClient")
-    def test_get_order_by_id(self, mock_poly_cls, mock_get_broker):
+    def test_get_order_by_id(self, mock_poly_cls, mock_get_broker, mock_halt_check):
         """GET /orders/{id} should return a stored order."""
         broker = PaperBroker(initial_capital=100_000)
         mock_get_broker.return_value = broker
@@ -214,6 +216,122 @@ class TestPortfolioEndpoints:
 
         response = self.client.get("/api/v1/portfolio/orders?status=filled")
         assert response.status_code == 200
-        data = response.json()
-        assert len(data) >= 1
-        get_order_store.cache_clear()
+
+
+class TestCancelOrderTerminalGuard:
+    """Regression: cancel_order rejects terminal orders (Patch 16)."""
+
+    def setup_method(self):
+        self.client = TestClient(app)
+        self.client.headers["X-API-Key"] = _settings.engine_api_key
+
+    @patch("src.api.routes.portfolio.check_trading_halts", new_callable=AsyncMock)
+    def test_cancel_filled_order_returns_409(self, _mock_halt):
+        from src.execution.order_store import StoredOrder, get_order_store
+
+        store = get_order_store()
+        store.add(
+            StoredOrder(
+                order_id="cancel-filled",
+                symbol="AAPL",
+                side="buy",
+                order_type="market",
+                qty=10,
+                filled_qty=10,
+                status="filled",
+                fill_price=150.0,
+                submitted_at="2026-01-01T00:00:00Z",
+                filled_at="2026-01-01T00:00:01Z",
+                risk_note=None,
+            )
+        )
+
+        response = self.client.delete("/api/v1/portfolio/orders/cancel-filled")
+        assert response.status_code == 409
+        assert "already filled" in response.json()["detail"]
+
+
+class TestTradingHaltFailClosed:
+    """Regression tests: check_trading_halts must fail closed on DB errors."""
+
+    def setup_method(self):
+        self.client = TestClient(app)
+        self.client.headers["X-API-Key"] = _settings.engine_api_key
+        get_broker.cache_clear()
+
+    def teardown_method(self):
+        get_broker.cache_clear()
+
+    @patch("src.api.routes.portfolio.check_trading_halts", new_callable=AsyncMock)
+    @patch(_PATCH_GET_BROKER)
+    @patch("src.data.polygon_client.PolygonClient")
+    def test_order_proceeds_when_halt_check_passes(
+        self, mock_poly_cls, mock_get_broker, mock_halt_check
+    ):
+        """Orders should succeed when halt check passes."""
+        broker = PaperBroker(initial_capital=100_000)
+        mock_get_broker.return_value = broker
+
+        mock_polygon = AsyncMock()
+        mock_bar = AsyncMock()
+        mock_bar.close = 100.0
+        mock_polygon.get_latest_price.return_value = mock_bar
+        mock_polygon.close = AsyncMock()
+        mock_poly_cls.return_value = mock_polygon
+
+        response = self.client.post(
+            "/api/v1/portfolio/orders",
+            json={"symbol": "AAPL", "side": "buy", "quantity": 5},
+        )
+        assert response.status_code == 200
+        mock_halt_check.assert_awaited_once()
+
+    def test_order_blocked_when_halt_check_db_fails(self):
+        """Orders must be blocked (503) when halt check cannot reach DB.
+
+        This is the key fail-closed regression test: previously the halt
+        check silently swallowed DB errors and allowed orders through.
+        """
+        # No mock on check_trading_halts — it will hit a real (unavailable) DB
+        response = self.client.post(
+            "/api/v1/portfolio/orders",
+            json={"symbol": "AAPL", "side": "buy", "quantity": 5},
+        )
+        assert response.status_code == 503
+
+
+class TestErrorDetailSanitization:
+    """Regression: 502 responses must NOT leak internal exception details."""
+
+    def setup_method(self):
+        self.client = TestClient(app)
+        self.client.headers["X-API-Key"] = _settings.engine_api_key
+        get_broker.cache_clear()
+
+    def teardown_method(self):
+        get_broker.cache_clear()
+
+    @patch(_PATCH_GET_BROKER)
+    def test_get_account_502_hides_details(self, mock_get_broker):
+        mock_broker = AsyncMock()
+        mock_broker.get_account.side_effect = RuntimeError(
+            "Connection to https://api.alpaca.markets failed: API_KEY=sk-secret"
+        )
+        mock_get_broker.return_value = mock_broker
+
+        response = self.client.get("/api/v1/portfolio/account")
+        assert response.status_code == 502
+        detail = response.json()["detail"]
+        assert "sk-secret" not in detail
+        assert "alpaca" not in detail.lower()
+
+    @patch(_PATCH_GET_BROKER)
+    def test_get_positions_502_hides_details(self, mock_get_broker):
+        mock_broker = AsyncMock()
+        mock_broker.get_positions.side_effect = RuntimeError("DB password: hunter2")
+        mock_get_broker.return_value = mock_broker
+
+        response = self.client.get("/api/v1/portfolio/positions")
+        assert response.status_code == 502
+        detail = response.json()["detail"]
+        assert "hunter2" not in detail

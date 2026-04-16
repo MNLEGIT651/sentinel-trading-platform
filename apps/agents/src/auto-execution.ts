@@ -54,13 +54,21 @@ export interface RecommendationInput {
 
 // ---------------------------------------------------------------------------
 // Configuration defaults (can be overridden via env)
+// NaN guards ensure misconfigured env vars fall back to safe conservative defaults.
 // ---------------------------------------------------------------------------
 
-const SIGNAL_STRENGTH_THRESHOLD = parseFloat(process.env.AUTO_EXEC_SIGNAL_THRESHOLD ?? '0.7');
+const _parsedSignalThreshold = parseFloat(process.env.AUTO_EXEC_SIGNAL_THRESHOLD ?? '0.7');
+const SIGNAL_STRENGTH_THRESHOLD = Number.isFinite(_parsedSignalThreshold)
+  ? _parsedSignalThreshold
+  : 0.7;
 
-const DAILY_AUTO_TRADE_LIMIT = parseInt(process.env.AUTO_EXEC_DAILY_LIMIT ?? '10', 10);
+const _parsedDailyLimit = parseInt(process.env.AUTO_EXEC_DAILY_LIMIT ?? '10', 10);
+const DAILY_AUTO_TRADE_LIMIT = Number.isFinite(_parsedDailyLimit) ? _parsedDailyLimit : 10;
 
-const MAX_AUTO_POSITION_VALUE = parseFloat(process.env.AUTO_EXEC_MAX_POSITION_VALUE ?? '50000');
+const _parsedMaxPositionValue = parseFloat(process.env.AUTO_EXEC_MAX_POSITION_VALUE ?? '50000');
+const MAX_AUTO_POSITION_VALUE = Number.isFinite(_parsedMaxPositionValue)
+  ? _parsedMaxPositionValue
+  : 50000;
 
 // Autonomy modes that permit auto-execution
 const AUTO_EXECUTE_MODES = new Set(['auto_execute', 'auto_approve']);
@@ -144,7 +152,15 @@ export async function evaluateAutoExecution(
   checks.signalStrength = true;
 
   // 6. Check position size within limits
-  const estimatedPrice = recommendation.price ?? 100;
+  const estimatedPrice = recommendation.price;
+  if (estimatedPrice == null || estimatedPrice <= 0) {
+    return {
+      canAutoExecute: false,
+      reason: 'Cannot auto-execute: no reliable price available for position size check',
+      policyVersion: policy.version,
+      checks,
+    };
+  }
   const positionValue = recommendation.quantity * estimatedPrice;
   if (positionValue > MAX_AUTO_POSITION_VALUE) {
     return {
@@ -197,8 +213,8 @@ async function isStrategyBlocked(strategyName: string): Promise<string | null> {
 
     if (error) {
       logger.warn('auto-execution.strategyAutonomy.error', { error: error.message });
-      // Fail open — if we can't look up the strategy, don't block on this check
-      return null;
+      // Fail closed — block auto-execution when strategy permissions cannot be verified
+      return 'Unable to verify strategy autonomy mode (database error)';
     }
 
     if (!data) {
@@ -223,7 +239,8 @@ async function isStrategyBlocked(strategyName: string): Promise<string | null> {
     logger.warn('auto-execution.strategyAutonomy.exception', {
       error: err instanceof Error ? err.message : String(err),
     });
-    return null;
+    // Fail closed — block auto-execution on unexpected errors
+    return 'Unable to verify strategy autonomy mode (unexpected error)';
   }
 }
 
@@ -382,7 +399,7 @@ export async function logAutoExecutionDecision(
       },
     });
   } catch (err) {
-    logger.warn('auto-execution.logDecision.failed', {
+    logger.error('AUDIT GAP: auto-execution.logDecision.failed', {
       recommendationId,
       error: err instanceof Error ? err.message : String(err),
     });

@@ -1,6 +1,7 @@
 """Alpaca Markets broker adapter for paper and live trading."""
 
 import logging
+import uuid
 from datetime import UTC, datetime
 
 import httpx
@@ -79,21 +80,57 @@ class AlpacaBroker(BrokerAdapter):
         ]
 
     async def submit_order(self, order: OrderRequest, **kwargs) -> OrderResult:
-        """Submit an order to Alpaca."""
+        """Submit an order to Alpaca.
+
+        Generates a unique ``client_order_id`` per submission so that Alpaca
+        rejects duplicate orders (HTTP 409) if the same request is retried
+        after a timeout.
+        """
+        client_order_id = kwargs.get("client_order_id") or str(uuid.uuid4())
         payload: dict = {
             "symbol": order.instrument_id,
             "qty": str(order.quantity),
             "side": order.side,
             "type": order.order_type,
             "time_in_force": kwargs.get("time_in_force", "day"),
+            "client_order_id": client_order_id,
         }
         if order.limit_price is not None:
             payload["limit_price"] = str(order.limit_price)
         if order.stop_price is not None:
             payload["stop_price"] = str(order.stop_price)
 
-        res = await self._http.post("/v2/orders", json=payload)
-        res.raise_for_status()
+        try:
+            res = await self._http.post("/v2/orders", json=payload)
+            res.raise_for_status()
+        except httpx.TimeoutException:
+            logger.error(
+                "Timeout submitting order to Alpaca (client_order_id=%s, symbol=%s). "
+                "Order may have been accepted — requires reconciliation.",
+                client_order_id,
+                order.instrument_id,
+            )
+            get_order_store().add(
+                StoredOrder(
+                    order_id=f"timeout-{client_order_id}",
+                    symbol=order.instrument_id,
+                    side=order.side,
+                    order_type=order.order_type,
+                    qty=order.quantity,
+                    filled_qty=0,
+                    status="unknown",
+                    fill_price=None,
+                    submitted_at=datetime.now(UTC).isoformat(),
+                    filled_at=None,
+                    risk_note=f"Timeout during submission (client_order_id={client_order_id})",
+                )
+            )
+            return OrderResult(
+                order_id=f"timeout-{client_order_id}",
+                status="unknown",
+                fill_price=None,
+                fill_quantity=None,
+            )
         data = res.json()
 
         get_order_store().add(
@@ -124,7 +161,10 @@ class AlpacaBroker(BrokerAdapter):
     async def cancel_order(self, order_id: str) -> None:
         """Cancel an order on Alpaca."""
         res = await self._http.delete(f"/v2/orders/{order_id}")
+        if res.status_code == 404:
+            raise ValueError(f"Order not found on Alpaca: {order_id}")
         res.raise_for_status()
+        get_order_store().update(order_id, status="cancelled")
 
     async def get_orders(self, status: str = "open") -> list[dict]:
         """Get orders with given status (open, closed, all)."""

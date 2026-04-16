@@ -120,6 +120,84 @@ class TestAlpacaBrokerOrders:
 
         await broker.cancel_order("order-456")  # Should not raise
 
+
+class TestAlpacaBrokerTimeout:
+    """Regression tests for timeout handling during order submission (Patch 6)."""
+
+    @pytest.fixture
+    def broker(self):
+        return AlpacaBroker(api_key="test-key", secret_key="test-secret")
+
+    @pytest.mark.asyncio
+    async def test_timeout_returns_unknown_status(self, broker):
+        import httpx
+
+        broker._http = AsyncMock()
+        broker._http.post = AsyncMock(side_effect=httpx.TimeoutException("timed out"))
+
+        order = OrderRequest(
+            instrument_id="AAPL",
+            side="buy",
+            order_type="market",
+            quantity=5,
+        )
+        result = await broker.submit_order(order)
+
+        assert result.status == "unknown"
+        assert result.order_id.startswith("timeout-")
+        assert result.fill_price is None
+
+
+class TestAlpacaBrokerCancelOrder:
+    """Regression tests for cancel_order error handling (Patch 11)."""
+
+    @pytest.fixture
+    def broker(self):
+        return AlpacaBroker(api_key="test-key", secret_key="test-secret")
+
+    @pytest.mark.asyncio
+    async def test_cancel_404_raises_value_error(self, broker):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        broker._http = AsyncMock()
+        broker._http.delete = AsyncMock(return_value=mock_response)
+
+        with pytest.raises(ValueError, match="not found"):
+            await broker.cancel_order("nonexistent-order")
+
+    @pytest.mark.asyncio
+    async def test_cancel_success_updates_store(self, broker):
+        from src.execution.order_store import StoredOrder, get_order_store
+
+        store = get_order_store()
+        store.add(
+            StoredOrder(
+                order_id="cancel-test",
+                symbol="AAPL",
+                side="buy",
+                order_type="market",
+                qty=10,
+                filled_qty=0,
+                status="accepted",
+                fill_price=None,
+                submitted_at="2026-01-01T00:00:00Z",
+                filled_at=None,
+                risk_note=None,
+            )
+        )
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        broker._http = AsyncMock()
+        broker._http.delete = AsyncMock(return_value=mock_response)
+
+        await broker.cancel_order("cancel-test")
+
+        order = store.get("cancel-test")
+        assert order is not None
+        assert order.status == "cancelled"
+
     @pytest.mark.asyncio
     async def test_get_orders(self, broker):
         mock_response = MagicMock()

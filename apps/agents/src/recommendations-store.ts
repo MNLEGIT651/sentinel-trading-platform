@@ -144,6 +144,23 @@ export async function markRiskBlocked(id: string, reason: string): Promise<void>
   await emitEvent(id, 'risk_blocked', 'system', undefined, { reason });
 }
 
+/**
+ * Revert an 'approved' recommendation back to 'pending' after a transient
+ * engine failure, allowing the user to retry approval.
+ * Only reverts if current status is 'approved' (CAS guard).
+ */
+export async function revertToPending(id: string): Promise<boolean> {
+  const db = getSupabaseClient();
+  const { data, error } = await db
+    .from('agent_recommendations')
+    .update({ status: 'pending', reviewed_at: null })
+    .eq('id', id)
+    .eq('status', 'approved')
+    .select('id');
+  if (error) throw new Error(error.message);
+  return Array.isArray(data) && data.length > 0;
+}
+
 export async function rejectRecommendation(id: string): Promise<Recommendation | null> {
   const db = getSupabaseClient();
   const { data, error } = await db

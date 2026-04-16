@@ -219,17 +219,103 @@ class TestSlippageModel:
             assert result.fill_price >= 100.0
 
 
-class TestShortSelling:
-    async def test_sell_without_position_creates_short(self):
+class TestSellGuards:
+    """Regression tests for Patch 10: PaperBroker sell-side safety guards."""
+
+    async def test_sell_without_position_rejected(self):
+        """Selling without any open position is rejected (no naked shorts)."""
         broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
         result = await broker.submit_order(_sell_order(quantity=10.0), current_price=50.0)
+
+        assert result.status == "rejected"
+        assert result.fill_price is None
+        assert result.fill_quantity is None
+
+        # No position created, cash unchanged
+        positions = await broker.get_positions()
+        assert len(positions) == 0
+        account = await broker.get_account()
+        assert account["cash"] == 100_000.0
+
+    async def test_sell_exceeding_position_rejected(self):
+        """Selling more shares than owned is rejected (prevents accidental short)."""
+        broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
+
+        # Buy 5 shares
+        await broker.submit_order(_buy_order(quantity=5.0), current_price=100.0)
+        # Try to sell 10 — exceeds the 5 we own
+        result = await broker.submit_order(_sell_order(quantity=10.0), current_price=105.0)
+
+        assert result.status == "rejected"
+        assert result.fill_price is None
+
+        # Position unchanged at 5 shares
+        positions = await broker.get_positions()
+        assert len(positions) == 1
+        assert positions[0]["quantity"] == 5.0
+
+    async def test_sell_exact_position_fills(self):
+        """Selling exactly the held quantity succeeds and closes the position."""
+        broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
+
+        await broker.submit_order(_buy_order(quantity=10.0), current_price=100.0)
+        result = await broker.submit_order(_sell_order(quantity=10.0), current_price=105.0)
+
+        assert result.status == "filled"
+        positions = await broker.get_positions()
+        assert len(positions) == 0
+
+    async def test_sell_partial_position_fills(self):
+        """Selling fewer shares than owned succeeds and reduces the position."""
+        broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
+
+        await broker.submit_order(_buy_order(quantity=10.0), current_price=100.0)
+        result = await broker.submit_order(_sell_order(quantity=3.0), current_price=110.0)
 
         assert result.status == "filled"
         positions = await broker.get_positions()
         assert len(positions) == 1
-        assert positions[0]["quantity"] == -10.0
-        assert positions[0]["avg_price"] == pytest.approx(50.0)
+        assert positions[0]["quantity"] == 7.0
 
-        # Cash should increase by the sale proceeds
-        account = await broker.get_account()
-        assert account["cash"] == pytest.approx(100_500.0)
+    @pytest.mark.asyncio
+    async def test_rejected_sell_recorded_in_order_store(self):
+        """Rejected sell orders should be stored with an informative risk_note."""
+        from src.execution.order_store import get_order_store
+
+        get_order_store.cache_clear()
+        store = get_order_store()
+
+        broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
+        result = await broker.submit_order(_sell_order(quantity=5.0), current_price=50.0)
+
+        assert result.status == "rejected"
+        stored = store.get(result.order_id)
+        assert stored is not None
+        assert stored.status == "rejected"
+        assert stored.risk_note is not None
+        assert "no open position" in stored.risk_note.lower()
+        get_order_store.cache_clear()
+
+
+class TestFloatEpsilonCleanup:
+    """Regression tests for float epsilon position cleanup (Patch 3)."""
+
+    async def test_sell_cleans_position_despite_float_imprecision(self):
+        """Selling a position built from fractional quantities should fully close it.
+
+        Previously used exact ``== 0`` comparison which could fail due to
+        IEEE 754 float arithmetic leaving tiny remainders.
+        """
+        broker = PaperBroker(initial_capital=100_000.0, slippage_bps=0.0)
+
+        # Buy 3.3 shares three times = 9.9 total
+        await broker.submit_order(_buy_order(quantity=3.3), current_price=100.0)
+        await broker.submit_order(_buy_order(quantity=3.3), current_price=100.0)
+        await broker.submit_order(_buy_order(quantity=3.3), current_price=100.0)
+
+        # Sell exactly 9.9 — float arithmetic may not produce exact 0.0
+        result = await broker.submit_order(_sell_order(quantity=9.9), current_price=100.0)
+
+        assert result.status == "filled"
+        positions = await broker.get_positions()
+        assert len(positions) == 0, f"Position should be fully closed but found: {positions}"

@@ -94,9 +94,12 @@ async def ingest_data(request: IngestRequest) -> IngestResponse:
     from src.data.ingestion import DataIngestionService
 
     polygon = _get_polygon()
-    service = DataIngestionService(polygon=polygon, db=db)
-    result = await service.ingest_batch(tickers=request.tickers, timeframe=request.timeframe)
-    return IngestResponse(ingested=result.ingested, errors=result.errors)
+    try:
+        service = DataIngestionService(polygon=polygon, db=db)
+        result = await service.ingest_batch(tickers=request.tickers, timeframe=request.timeframe)
+        return IngestResponse(ingested=result.ingested, errors=result.errors)
+    finally:
+        await polygon.close()
 
 
 @router.get("/quote/{ticker}", response_model=MarketQuote)
@@ -148,8 +151,11 @@ async def get_quotes(tickers: str = "AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA,META,SPY") -
 @router.get("/bars/{ticker}", response_model=list[MarketBar])
 async def get_bars(
     ticker: str,
-    timeframe: str = "1d",
-    days: int = 90,
+    timeframe: str = Query(
+        default="1d",
+        pattern="^(1m|5m|15m|30m|1h|4h|1d|1w|1M)$",
+    ),
+    days: int = Query(default=90, ge=1, le=365),
 ) -> list[MarketBar]:
     """Fetch historical OHLCV bars from Polygon.io."""
     polygon = _get_polygon()
