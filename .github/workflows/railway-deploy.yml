@@ -37,6 +37,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - name: Wait for CI workflow to pass
         env:
           GH_TOKEN: ${{ github.token }}
@@ -74,11 +79,14 @@ jobs:
     name: Detect Changes
     needs: ci-gate
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       engine: ${{ steps.filter.outputs.engine }}
       agents: ${{ steps.filter.outputs.agents }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         id: filter
@@ -97,8 +105,16 @@ jobs:
     if: needs.changes.outputs.engine == 'true'
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Validate required production secrets (engine)
         env:
@@ -154,8 +170,16 @@ jobs:
     if: needs.changes.outputs.agents == 'true'
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Validate required production secrets (agents)
         env:
@@ -210,7 +234,13 @@ jobs:
     if: always() && (needs.changes.outputs.engine == 'true' || needs.changes.outputs.agents == 'true')
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 10
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - name: Validate required production secret (web URL)
         env:
           VERCEL_PRODUCTION_URL: ${{ secrets.VERCEL_PRODUCTION_URL }}

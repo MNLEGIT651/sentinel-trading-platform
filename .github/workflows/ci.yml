@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -26,7 +27,14 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -84,6 +92,18 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
           NEXT_TELEMETRY_DISABLED: '1'
 
+      - name: Upload web test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-test-artifacts
+          path: |
+            apps/web/test-results/**
+            apps/web/playwright-report/**
+            apps/web/coverage/**
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Report bundle size
         run: |
           {
@@ -119,7 +139,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -155,9 +182,21 @@ jobs:
 
       - name: Run engine tests
         working-directory: apps/engine
-        run: .venv/bin/python -m pytest tests --tb=short
+        run: .venv/bin/python -m pytest tests --tb=short --junitxml=pytest-junit.xml
         env:
           PYTHONDONTWRITEBYTECODE: '1'
+
+      - name: Upload engine test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: engine-test-artifacts
+          path: |
+            apps/engine/pytest-junit.xml
+            apps/engine/.pytest_cache/**
+            apps/engine/htmlcov/**
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ---------------------------------------------------------------------------
   # Job 2: Agents TypeScript service
@@ -168,7 +207,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -217,7 +263,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0

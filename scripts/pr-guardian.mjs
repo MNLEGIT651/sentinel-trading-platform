@@ -757,6 +757,12 @@ async function runCI(opts) {
     author: pr.user?.login || 'unknown',
   };
 
+  // guardian:acknowledged label bypasses hard-fail checks (human has reviewed risk).
+  const isAcknowledged = (pr.labels || []).some((l) => l.name === 'guardian:acknowledged');
+  if (isAcknowledged) {
+    console.log('ℹ️  Label `guardian:acknowledged` detected — downgrading all FAIL → WARN.');
+  }
+
   // Fetch changed files
   const changedFiles = await ghFetchAll(`/repos/${repo}/pulls/${prNumber}/files`);
   const changedFileNames = changedFiles.map((f) => f.filename);
@@ -805,8 +811,13 @@ async function runCI(opts) {
     }
   }
 
-  const hasFail = checks.some((c) => c.status === 'fail');
-  const hasWarn = checks.some((c) => c.status === 'warn');
+  // When acknowledged, treat fails as warnings so CI exits 2 (advisory, not blocking).
+  const effectiveChecks = isAcknowledged
+    ? checks.map((c) => c.status === 'fail' ? { ...c, status: 'warn' } : c)
+    : checks;
+
+  const hasFail = effectiveChecks.some((c) => c.status === 'fail');
+  const hasWarn = effectiveChecks.some((c) => c.status === 'warn');
   return dryRun ? 0 : hasFail ? 1 : hasWarn ? 2 : 0;
 }
 
