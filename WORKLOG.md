@@ -50,6 +50,29 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-17 — Copilot (Vercel preview smoke follow-up to PR #345)
+
+**Goal**: Take over from PR #345 and apply the remaining fixes so the Vercel preview smoke check is correct, reliable, and mergeable.
+
+**What changed**:
+
+- `.github/workflows/vercel-preview-smoke.yml`: stopped using `mapfile < <(...)` under `set -e` (subshell failures were silently swallowed); resolver now runs into a tempfile and a non-zero exit aborts the step. Explicit preview deployment `failure`/`error`/`api_error`/`timeout` now fail the required check instead of warning-and-skipping. On push to `main`, the canonical alias fallback only runs for `not_found`/`inactive`/`timeout` — explicit prod `failure`/`error`/`api_error` fail the gate. Fork PRs without secrets are explicitly skipped with a warning. Health-check step receives `VERCEL_AUTOMATION_BYPASS_SECRET`.
+- `scripts/resolve-vercel-deployment-url.sh`: rewrote to fetch only the latest deployment for `(sha, environment)` (was fetching up to 100 and could pick a stale earlier success while a newer one was still pending), wait through pending/in_progress/queued instead of returning stale data, and catch transport/HTTP errors so transient API failures emit `state=api_error` instead of crashing the resolver. Added `state=timeout` for the deployment-stuck-pending case. Header comment updated to enumerate all emitted states (`success|failure|error|inactive|not_found|api_error|timeout`).
+- `scripts/health-check.sh`: added optional `VERCEL_AUTOMATION_BYPASS_SECRET` support — when set, sends `x-vercel-protection-bypass` (and `x-vercel-set-bypass-cookie: samesitenone`) on every probe so protected preview deployments respond instead of returning 401. No-op when unset, harmless on non-Vercel/unprotected hosts.
+- `docs/runbooks/preview.md`: documented the bypass secret setup, the resolver state vocabulary, and that `failure`/`error`/`api_error` now fail the required gate.
+
+**Findings confirmed from PR #345 evidence** (workflow run 24579770862, head SHA `67a542ab…`):
+
+- Resolver correctly identified deployment `4403592940` and emitted `https://trading-kca552w77-steven-schlingmans-projects.vercel.app`.
+- Health check failed because every probe returned HTTP 401 with Vercel "Authentication Required" — i.e. preview deployment protection, not an app bug.
+- This confirmed the prompt's blocker hypothesis and made `VERCEL_AUTOMATION_BYPASS_SECRET` the correct minimal fix.
+
+**Kept from PR #345 (verified, not regressed)**: dynamic `apps/web/src/app/robots.ts` with `getCanonicalSiteUrl`, deletion of stale `apps/web/public/robots.txt`, narrow `turbo.json passThroughEnv` entries (`CRON_SECRET`, `ALPACA_WEBHOOK_SECRET` are referenced by `apps/web/src/app/api/internal/cron/health/route.ts` and `apps/web/src/app/api/webhooks/alpaca/route.ts` respectively).
+
+**Validation**: `bash -n scripts/resolve-vercel-deployment-url.sh scripts/health-check.sh`; `pnpm exec prettier --check` on changed files; `pnpm --filter @sentinel/web lint`; `git diff --check`.
+
+**Manual follow-up required (Vercel + GitHub dashboards)**: generate a Protection Bypass for Automation secret in Vercel, save it in GitHub repo Actions secrets as `VERCEL_AUTOMATION_BYPASS_SECRET`. Without that step, same-repo preview smoke will keep failing with 401 — which is now the correct, loud signal rather than a silent skip.
+
 ### 2026-04-17 — Codex (Vercel deploy alignment)
 
 **Goal**: Verify current Vercel deployment findings and remediate repo-side deployment workflow/canonical URL issues with minimal risk.

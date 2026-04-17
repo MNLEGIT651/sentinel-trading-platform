@@ -34,6 +34,14 @@ If Vercel skips the deployment, it means the commit didn't touch `apps/web` or `
 
 CI note: `.github/workflows/vercel-preview-smoke.yml` resolves the exact Vercel deployment URL for the PR head SHA from GitHub Deployments (environment `Preview`) and runs `scripts/health-check.sh` against that URL. It no longer relies on a static `VERCEL_PREVIEW_SMOKE_URL` secret for routine PR validation.
 
+Because preview deployments are protected by Vercel Deployment Protection, the smoke job sends an `x-vercel-protection-bypass` header sourced from the `VERCEL_AUTOMATION_BYPASS_SECRET` GitHub Actions secret. To rotate or set up:
+
+1. In Vercel project → Settings → Deployment Protection → **Protection Bypass for Automation**, generate a secret.
+2. In GitHub repo → Settings → Secrets and variables → Actions, save it as `VERCEL_AUTOMATION_BYPASS_SECRET`.
+3. The workflow will pick it up on the next run. Without it, same-repo preview smoke fails loudly with 401 (which is the correct signal — protection is active and CI cannot reach the artifact). Fork PRs are skipped because secrets are unavailable to fork workflows.
+
+The resolver (`scripts/resolve-vercel-deployment-url.sh`) emits one of: `state=success|failure|error|inactive|not_found|api_error|timeout`. The workflow fails the required gate on `failure`/`error`/`api_error` for both Preview and Production (and on Preview `timeout`) instead of silently warning, so a broken or unreachable preview cannot green-light a PR.
+
 Check these on the preview URL:
 
 | Check          | Path                   | Expected                  |

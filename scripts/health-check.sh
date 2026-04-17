@@ -17,6 +17,19 @@ ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/health}"
 AGENTS_HEALTH_URL="${AGENTS_URL:-${VERCEL_URL}/api/agents/health}"
 SUPABASE_API_URL="${SUPABASE_URL:+${SUPABASE_URL}/rest/v1/}"
 
+# Optional Vercel Protection Bypass for Automation. When set, every probe
+# below sends the `x-vercel-protection-bypass` header so a protected preview
+# deployment will respond 200 instead of 401. Harmless against unprotected
+# hosts (production alias) and against non-Vercel targets (Railway). Never
+# logged in verbose output.
+VERCEL_BYPASS_HEADER=()
+if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+  VERCEL_BYPASS_HEADER=(
+    -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}"
+    -H "x-vercel-set-bypass-cookie: samesitenone"
+  )
+fi
+
 # --- helpers ----------------------------------------------------------------
 
 usage() {
@@ -30,9 +43,14 @@ Options:
   --help, -h      Show this help message
 
 Environment variables:
-  ENGINE_URL      Override Railway engine health endpoint
-  AGENTS_URL      Override Railway agents health endpoint
-  SUPABASE_URL    Override Supabase API endpoint
+  ENGINE_URL                       Override Railway engine health endpoint
+  AGENTS_URL                       Override Railway agents health endpoint
+  SUPABASE_URL                     Override Supabase API endpoint
+  VERCEL_AUTOMATION_BYPASS_SECRET  Vercel Protection Bypass for Automation
+                                   secret. When set, sent as the
+                                   x-vercel-protection-bypass header so
+                                   protected preview deployments respond
+                                   normally instead of returning 401.
 EOF
 }
 
@@ -60,7 +78,8 @@ check_service() {
 
     # Capture both status code and body; allow curl to fail without killing the script
     local http_response
-    http_response=$(curl --silent --max-time "$TIMEOUT" --write-out "\n%{http_code}" "$url" 2>&1) || true
+    http_response=$(curl --silent --max-time "$TIMEOUT" --write-out "\n%{http_code}" \
+      ${VERCEL_BYPASS_HEADER[@]+"${VERCEL_BYPASS_HEADER[@]}"} "$url" 2>&1) || true
 
     status_code=$(echo "$http_response" | tail -n1)
     body=$(echo "$http_response" | sed '$d')

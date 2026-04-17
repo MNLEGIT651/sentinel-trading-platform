@@ -41,48 +41,116 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           ENVIRONMENT: ${{ github.event_name == 'pull_request' && 'Preview' || 'Production' }}
+          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork || 'false' }}
+          BYPASS_AVAILABLE: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET != '' }}
         run: |
           set -euo pipefail
 
-          mapfile -t resolved < <(./scripts/resolve-vercel-deployment-url.sh \
-            --repo "$REPO" \
-            --sha "$SHA" \
-            --environment "$ENVIRONMENT" \
-            --attempts 20 \
-            --sleep-seconds 15)
+          # Run the resolver in a way that propagates failures rather than
+          # silently degrading to empty output (which previously caused the
+          # required gate to pass on transient API failures).
+          resolver_log="$(mktemp)"
+          if ! ./scripts/resolve-vercel-deployment-url.sh \
+                --repo "$REPO" \
+                --sha "$SHA" \
+                --environment "$ENVIRONMENT" \
+                --attempts 20 \
+                --sleep-seconds 15 >"$resolver_log"; then
+            echo "::error::resolve-vercel-deployment-url.sh exited non-zero (usage error or unexpected failure)"
+            cat "$resolver_log" || true
+            exit 1
+          fi
 
-          for line in "${resolved[@]}"; do
+          # Echo what the resolver emitted for debuggability.
+          echo "Resolver output:"
+          sed 's/^/  /' "$resolver_log"
+
+          # Re-emit each key=value into $GITHUB_OUTPUT.
+          while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
             echo "$line" >> "$GITHUB_OUTPUT"
-          done
+          done <"$resolver_log"
 
-          available=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="available"{print $2}')
-          state=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="state"{print $2}')
-          url=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="url"{print $2}')
-          deployment_id=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="deployment_id"{print $2}')
+          available=$(awk -F= '$1=="available"{print $2}'         "$resolver_log")
+          state=$(awk     -F= '$1=="state"{print $2}'             "$resolver_log")
+          url=$(awk       -F= '$1=="url"{print $2}'               "$resolver_log")
+          deployment_id=$(awk -F= '$1=="deployment_id"{print $2}' "$resolver_log")
 
           if [[ "$available" == "true" ]]; then
             echo "Resolved $ENVIRONMENT deployment ${deployment_id:-unknown}: $url"
             exit 0
           fi
 
+          # ----- Preview branch (PR) -----
           if [[ "$ENVIRONMENT" == "Preview" ]]; then
-            if [[ "$state" == "inactive" ]]; then
-              echo "::warning::Preview deployment is inactive/skipped (likely ignoreCommand). Skipping smoke."
-            elif [[ "$state" == "failure" || "$state" == "error" ]]; then
-              echo "::warning::Preview deployment failed before smoke (deployment ${deployment_id:-unknown})."
-            else
-              echo "::warning::No successful preview deployment resolved for sha $SHA. Skipping smoke."
-            fi
-            exit 0
+            case "$state" in
+              failure|error)
+                # The actual preview artifact failed to deploy. Do NOT let
+                # the required Vercel Preview Smoke check pass — that would
+                # green-light a PR whose preview is broken.
+                echo "::error::Preview deployment ${deployment_id:-unknown} state=$state for sha $SHA. Failing smoke gate."
+                exit 1
+                ;;
+              inactive)
+                # Vercel ignoreCommand or admin-cancelled. Smoke is N/A.
+                echo "::warning::Preview deployment is inactive/skipped (likely ignoreCommand). Skipping smoke."
+                exit 0
+                ;;
+              api_error|timeout)
+                # Be loud: this is a real reliability problem in CI.
+                echo "::error::Could not resolve preview deployment for sha $SHA (state=$state). Failing smoke gate so the issue is visible."
+                exit 1
+                ;;
+              not_found|*)
+                if [[ "$IS_FORK" == "true" ]]; then
+                  echo "::warning::Fork PR — Vercel preview not available for forked PRs. Skipping smoke."
+                  exit 0
+                fi
+                # No deployment was ever created for this SHA in the Preview
+                # environment (or an unrecognized state was returned). Most
+                # commonly this is the ignoreCommand case for paths that
+                # don't ship to apps/web; the path filter on this workflow
+                # already minimizes that. Warn loudly with the actual state
+                # for forensics, but do not fail.
+                echo "::warning::No preview deployment resolved for sha $SHA (state=${state:-unknown}). Skipping smoke."
+                exit 0
+                ;;
+            esac
           fi
 
-          # Push to main: fall back to canonical production alias so we still validate prod health.
-          echo "::warning::No successful production deployment resolved for sha $SHA (state=$state). Falling back to canonical alias."
-          echo "available=true" >> "$GITHUB_OUTPUT"
-          echo "url=https://sentinel-trading-platform.vercel.app" >> "$GITHUB_OUTPUT"
+          # ----- Production branch (push to main) -----
+          case "$state" in
+            failure|error)
+              # An explicit production deploy failure must not be masked by
+              # the canonical alias fallback — that would make this required
+              # check green while the new prod artifact actually failed.
+              echo "::error::Production deployment ${deployment_id:-unknown} state=$state for sha $SHA. Failing smoke gate."
+              exit 1
+              ;;
+            api_error)
+              echo "::error::GitHub API failures while resolving production deployment for sha $SHA. Failing smoke gate."
+              exit 1
+              ;;
+            not_found|inactive|timeout|*)
+              # API lag, ignored deploy, or still in-flight: validate the
+              # current canonical production alias so prod health is at
+              # least probed for every push to main.
+              echo "::warning::No terminal production deployment resolved for sha $SHA (state=${state:-unknown}). Falling back to canonical alias."
+              echo "available=true" >> "$GITHUB_OUTPUT"
+              echo "url=https://sentinel-trading-platform.vercel.app" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
 
       - name: Run synthetic proxy health checks
         if: steps.target.outputs.available == 'true'
         env:
           VERCEL_URL: ${{ steps.target.outputs.url }}
+          # When the resolved target is a protected Vercel preview, this
+          # secret enables Protection Bypass for Automation. health-check.sh
+          # forwards it as the `x-vercel-protection-bypass` header. Empty on
+          # fork PRs (where secrets are unavailable) — health-check then
+          # fails with 401 and the job fails loudly, which is correct: same-
+          # repo PRs are the path that must be guarded.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: ./scripts/health-check.sh --verbose
