@@ -37,6 +37,8 @@ Describe the outcome in 2-5 lines.
 - [ ] No accidental shared contract drift
 - [ ] No accidental migration or env contract change
 - [ ] No secrets or credentials in the diff
+- [ ] Changed architectural boundary declared (proxy/auth/shared contracts/migrations)
+- [ ] Contract consumers checked (if `packages/shared`, proxy, or migrations touched)
 
 ## Reviewer Focus
 
