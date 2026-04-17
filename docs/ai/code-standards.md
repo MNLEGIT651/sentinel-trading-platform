@@ -309,7 +309,8 @@ it('renders an error toast when the portfolio fetch fails', async () => {
 
 ### 6.5 End-to-End (Playwright)
 
-- Playwright tests live in `apps/web/e2e/`.
+- Playwright tests live in `apps/web/tests/e2e/` (configured via `apps/web/playwright.config.ts` with `testDir: './tests/e2e'`).
+- Legacy smoke tests may still exist under `apps/web/e2e/`; treat that path as legacy-only during migration.
 - Run with `pnpm test:web:e2e`.
 - E2E tests cover critical user flows: login, portfolio view, trade execution, settings.
 - Do not use E2E tests for unit-level logic — keep them focused on integration.
