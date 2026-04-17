@@ -75,5 +75,28 @@
       "Bash(python3 -m pytest:*)",
       "Bash(python -m pytest:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/validate-changed-scope.mjs --dry-run 2>/dev/null | grep -E 'migrations|packages/shared|proxy\\.ts|engine-fetch' && echo 'HIGH-RISK PATH TOUCHED — run pnpm validate:changed before continuing' || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/validate-changed-scope.mjs 2>/dev/null; echo 'Session end: validate:changed complete'"
+          }
+        ]
+      }
+    ]
   }
 }
