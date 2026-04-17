@@ -22,6 +22,12 @@
 - Reusable project skills live in `.claude/skills/`. Check for an existing Sentinel skill before inventing a new workflow.
 - Permissions live in `.claude/settings.json`. Keep permissions narrow and project-specific.
 
+## Lightweight Hooks + Contract Guardian
+
+- `.claude/settings.json` includes lightweight hooks: after edit/write actions it runs a dry-run scope check and prints a warning if high-risk contract paths are touched; at stop it prints a final `pnpm pre-pr` reminder and runs `git diff --check`.
+- Invoke `.claude/agents/contract-guardian.md` for read-only review whenever a task touches shared contracts, proxy/auth boundaries, engine config, or migrations.
+- These hooks/subagent are guardrails only — they do not replace `AGENTS.md` requirements.
+
 ## Commands (Quick Reference)
 
 See `docs/ai/commands.md` for the full matrix. Most common:

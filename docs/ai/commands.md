@@ -36,12 +36,6 @@ Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`
 > are acceptable for narrow tickets, but critical-path tickets (any T-B\*, T-C\*, T-D\*) must also
 > run the full area test suite (`pnpm test:web` for web, `pnpm test:engine` for engine).
 
-### Fast Inner-Loop Helper (bounded AI diffs)
-
-- `node scripts/validate-changed-scope.mjs` runs the minimum sensible validation set inferred from `git diff --name-only origin/main...HEAD`.
-- `node scripts/validate-changed-scope.mjs --dry-run` prints detected files, classified areas, and commands without executing.
-- Use this for quick local iteration on narrowly scoped diffs; it is **not** a replacement for `pnpm pre-pr`.
-
 ### Docs Only
 
 - `git diff --check`

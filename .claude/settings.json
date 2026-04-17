@@ -75,5 +75,28 @@
       "Bash(python3 -m pytest:*)",
       "Bash(python -m pytest:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'node scripts/validate-changed-scope.mjs --dry-run || true; if git diff --name-only | rg -q \"^(packages/shared/src/|apps/web/src/proxy.ts|apps/web/src/lib/engine-fetch.ts|apps/web/src/lib/engine-client.ts|apps/engine/src/config.py|supabase/migrations/)\"; then echo \"⚠️ High-risk contract path touched — run contract-guardian and full validation before PR.\"; fi'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'echo \"🔎 Final reminder: run pnpm pre-pr before opening a PR.\"; git diff --check || true'"
+          }
+        ]
+      }
+    ]
   }
 }
