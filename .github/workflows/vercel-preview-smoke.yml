@@ -113,5 +113,5 @@ jobs:
         if: steps.target.outputs.available == 'true'
         env:
           VERCEL_URL: ${{ steps.target.outputs.url }}
-          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: ./scripts/health-check.sh --verbose

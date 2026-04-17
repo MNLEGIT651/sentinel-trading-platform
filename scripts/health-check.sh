@@ -17,11 +17,11 @@ ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/health}"
 AGENTS_HEALTH_URL="${AGENTS_URL:-${VERCEL_URL}/api/agents/health}"
 SUPABASE_API_URL="${SUPABASE_URL:+${SUPABASE_URL}/rest/v1/}"
 
-# Vercel Protection Bypass for Automation header (set VERCEL_BYPASS_SECRET in CI).
+# Vercel Protection Bypass for Automation header (set VERCEL_AUTOMATION_BYPASS_SECRET in CI).
 # Allows smoke checks to probe password-protected preview deployments.
 BYPASS_ARGS=()
-if [[ -n "${VERCEL_BYPASS_SECRET:-}" ]]; then
-  BYPASS_ARGS=(-H "x-vercel-protection-bypass: ${VERCEL_BYPASS_SECRET}")
+if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+  BYPASS_ARGS=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
 fi
 
 # --- helpers ----------------------------------------------------------------

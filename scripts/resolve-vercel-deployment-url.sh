@@ -67,7 +67,7 @@ api() {
     -H "Authorization: Bearer ${GITHUB_TOKEN}" \
     --write-out "%{http_code}" \
     --output "$tmp" \
-    "https://api.github.com${path}" 2>/dev/null); then
+    "https://api.github.com${path}"); then
     rm -f "$tmp"
     return 1
   fi
