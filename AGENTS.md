@@ -14,7 +14,7 @@ and a Python engine that is validated separately from the Node workspaces.
 3. `docs/ai/architecture.md`
 4. `docs/ai/commands.md`
 5. `docs/ai/review-checklist.md`
-6. `docs/ai/state/project-state.md`
+6. `docs/ai/state/project-state.md` _(secondary view — check GitHub issues for live status)_
 7. `docs/ai/agent-ops.md`
 8. `CLAUDE.md` when using Claude Code
 
@@ -120,9 +120,10 @@ gh pr list --state open                 # must have <2 of your PRs
 
 ## Execution State
 
-- Before editing files, read `docs/ai/state/project-state.md` and claim one ticket or explicitly note you are performing an untracked audit.
-- Use `docs/ai/agent-ops.md` for the startup checklist, claim protocol, handoff format, and session priority order.
-- Treat `docs/ai/state/project-state.md` as the live source of truth for task status. Do not create a competing status tracker in another file.
+- Before editing files, check open GitHub issues for the task you are claiming. Assign the issue to yourself (or note "untracked audit") before starting.
+- Use `docs/ai/agent-ops.md` for the startup checklist, handoff format, and session priority order.
+- GitHub issue assignment + PR linkage is the authoritative coordination surface. `docs/ai/state/project-state.md` is a secondary summary view only — do not treat it as live truth and do not block on it being current.
+- If no issue exists for your task, note "untracked audit" in the PR description.
 
 ## Collaboration Defaults
 
