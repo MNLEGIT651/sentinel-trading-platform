@@ -27,7 +27,7 @@ jobs:
           python-version-file: '.python-version'
 
       - name: Install uv
-        run: pip install uv==0.11.4
+        run: pip install uv==0.11.5
 
       - name: Create engine venv and install dependencies
         working-directory: apps/engine

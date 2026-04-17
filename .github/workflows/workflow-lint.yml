@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - '.github/workflows/**'
+      - '.github/actions/**'
       - 'apps/web/src/components/settings/**'
   push:
     branches: [main]
     paths:
       - '.github/workflows/**'
+      - '.github/actions/**'
       - 'apps/web/src/components/settings/**'
 
 permissions:
@@ -22,19 +24,50 @@ jobs:
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Run actionlint
         uses: raven-actions/actionlint@205b530c5d9fa8f44ae9ed59f341a0db994aa6f8 # v2
 
-  settings-guardrail:
-    name: Settings UI guardrail
+  zizmor:
+    name: zizmor (workflow security audit)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Install zizmor
+        run: pip install 'zizmor==1.5.2'
+
+      - name: Run zizmor static analysis
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: zizmor --persona=regular --min-severity=medium .github/workflows
+
+  settings-guardrail:
+    name: Settings UI guardrail
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Enforce no API key entry fields in settings UI
         run: |
