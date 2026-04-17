@@ -22,6 +22,18 @@
 - Reusable project skills live in `.claude/skills/`. Check for an existing Sentinel skill before inventing a new workflow.
 - Permissions live in `.claude/settings.json`. Keep permissions narrow and project-specific.
 
+## Hooks and Subagents
+
+- **PostToolUse hook**: After any file edit, a fast check scans for high-risk path touches and
+  warns to run `pnpm validate:changed`. This is a warning, not a blocker.
+- **Stop hook**: At session end, `validate:changed` runs automatically to surface any
+  unvalidated changes before handoff.
+- **contract-guardian subagent** (`.claude/agents/contract-guardian.md`): Invoke this
+  subagent before proposing edits that touch shared types, proxy code, auth utilities,
+  or migrations. It enumerates consumers and flags rollback risk.
+
+Invoke contract-guardian explicitly: `Use the contract-guardian subagent to review this change.`
+
 ## Commands (Quick Reference)
 
 See `docs/ai/commands.md` for the full matrix. Most common:
