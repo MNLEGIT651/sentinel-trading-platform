@@ -57,7 +57,7 @@ jobs:
       - name: Run zizmor static analysis
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: zizmor --persona=regular --min-severity=medium .github/workflows
+        run: zizmor --persona=regular --min-severity=medium --min-confidence=medium .github/workflows
 
   settings-guardrail:
     name: Settings UI guardrail

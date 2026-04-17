@@ -1,0 +1,18 @@
+# zizmor suppression config — accepted-risk findings with justifications.
+# All suppressions require a written rationale here.
+
+# ci-notify.yml uses `workflow_run` to create GitHub issues when CI fails on the
+# default branch. The workflow does NOT check out any code from the triggering run
+# and does NOT execute any code from the PR branch. It only reads structured
+# context.payload data, so there is no code-execution attack surface.
+# Risk accepted by: stevenschling13
+[rules.dangerous-triggers]
+ignore = [".github/workflows/ci-notify.yml"]
+
+# release-management.yml uses actions/cache for pnpm and uv pip stores. Cache
+# keys are bound to the lockfile hash (pnpm-lock.yaml / pyproject.toml), which
+# CI verifies with --frozen-lockfile. An attacker would need to land a PR that
+# changes the lockfile — which CI tests must approve first. Low-confidence finding.
+# Risk accepted by: stevenschling13
+[rules.cache-poisoning]
+ignore = [".github/workflows/release-management.yml"]

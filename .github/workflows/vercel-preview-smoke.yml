@@ -42,13 +42,16 @@ jobs:
         id: target
         env:
           VERCEL_PREVIEW_SMOKE_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
+          set -euo pipefail
           if [ -z "$VERCEL_PREVIEW_SMOKE_URL" ]; then
             # Fork PRs cannot access secrets — warn and skip
-            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+            if [ "$EVENT_NAME" = "pull_request" ] && [ "$IS_FORK" = "true" ]; then
               echo "available=false" >> "$GITHUB_OUTPUT"
               echo "::warning::Fork PR — secrets unavailable. Skipping preview smoke checks."
-            elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            elif [ "$EVENT_NAME" = "pull_request" ]; then
               echo "available=false" >> "$GITHUB_OUTPUT"
               echo "::warning::VERCEL_PREVIEW_SMOKE_URL not set — skipping preview smoke on PR."
             else
@@ -63,8 +66,9 @@ jobs:
         if: steps.target.outputs.available == 'true'
         env:
           VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$EVENT_NAME" = "pull_request" ]; then
             # Advisory on PRs — report but don't block (PR code isn't deployed yet)
             ./scripts/health-check.sh --verbose || echo "::warning::Smoke check failed — advisory only on PRs"
           else
