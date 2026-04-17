@@ -17,6 +17,13 @@ ENGINE_HEALTH_URL="${ENGINE_URL:-${VERCEL_URL}/api/engine/health}"
 AGENTS_HEALTH_URL="${AGENTS_URL:-${VERCEL_URL}/api/agents/health}"
 SUPABASE_API_URL="${SUPABASE_URL:+${SUPABASE_URL}/rest/v1/}"
 
+# Vercel Protection Bypass for Automation header (set VERCEL_BYPASS_SECRET in CI).
+# Allows smoke checks to probe password-protected preview deployments.
+BYPASS_ARGS=()
+if [[ -n "${VERCEL_BYPASS_SECRET:-}" ]]; then
+  BYPASS_ARGS=(-H "x-vercel-protection-bypass: ${VERCEL_BYPASS_SECRET}")
+fi
+
 # --- helpers ----------------------------------------------------------------
 
 usage() {
@@ -60,7 +67,7 @@ check_service() {
 
     # Capture both status code and body; allow curl to fail without killing the script
     local http_response
-    http_response=$(curl --silent --max-time "$TIMEOUT" --write-out "\n%{http_code}" "$url" 2>&1) || true
+    http_response=$(curl --silent --max-time "$TIMEOUT" "${BYPASS_ARGS[@]+"${BYPASS_ARGS[@]}"}" --write-out "\n%{http_code}" "$url" 2>&1) || true
 
     status_code=$(echo "$http_response" | tail -n1)
     body=$(echo "$http_response" | sed '$d')

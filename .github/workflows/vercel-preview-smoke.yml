@@ -44,12 +44,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          mapfile -t resolved < <(./scripts/resolve-vercel-deployment-url.sh \
+          tmpfile=$(mktemp)
+          trap 'rm -f "$tmpfile"' EXIT
+
+          # Fail loudly if the resolver itself exits non-zero (e.g. missing GITHUB_TOKEN,
+          # jq not found, etc.) rather than silently continuing with an empty result set.
+          if ! ./scripts/resolve-vercel-deployment-url.sh \
             --repo "$REPO" \
             --sha "$SHA" \
             --environment "$ENVIRONMENT" \
             --attempts 20 \
-            --sleep-seconds 15)
+            --sleep-seconds 15 > "$tmpfile"; then
+            echo "::error::Deployment URL resolver exited non-zero — check the script output above."
+            exit 1
+          fi
+
+          mapfile -t resolved < "$tmpfile"
 
           for line in "${resolved[@]}"; do
             echo "$line" >> "$GITHUB_OUTPUT"
@@ -68,16 +78,34 @@ jobs:
           if [[ "$ENVIRONMENT" == "Preview" ]]; then
             if [[ "$state" == "inactive" ]]; then
               echo "::warning::Preview deployment is inactive/skipped (likely ignoreCommand). Skipping smoke."
+              exit 0
+            elif [[ "$state" == "api_error" ]]; then
+              echo "::error::GitHub API error while resolving preview deployment. Cannot proceed."
+              exit 1
             elif [[ "$state" == "failure" || "$state" == "error" ]]; then
-              echo "::warning::Preview deployment failed before smoke (deployment ${deployment_id:-unknown})."
+              echo "::error::Preview deployment failed before smoke (deployment ${deployment_id:-unknown}, state=${state}). Marking check as failed."
+              exit 1
             else
-              echo "::warning::No successful preview deployment resolved for sha $SHA. Skipping smoke."
+              echo "::warning::No successful preview deployment resolved for sha $SHA (state=${state:-not_found}). Skipping smoke."
+              exit 0
             fi
-            exit 0
           fi
 
-          # Push to main: fall back to canonical production alias so we still validate prod health.
-          echo "::warning::No successful production deployment resolved for sha $SHA (state=$state). Falling back to canonical alias."
+          # Push to main: only fall back to canonical production alias when the
+          # deployment simply wasn't found yet (API lag) or was inactive (ignoreCommand).
+          # An explicit failure/error means the production deploy itself broke — do NOT
+          # mask that by probing the stale previous alias.
+          if [[ "$state" == "failure" || "$state" == "error" ]]; then
+            echo "::error::Production deployment explicitly failed (state=${state}, deployment ${deployment_id:-unknown}). Not falling back to alias — this is a real regression."
+            exit 1
+          fi
+
+          if [[ "$state" == "api_error" ]]; then
+            echo "::error::GitHub API error while resolving production deployment. Cannot proceed."
+            exit 1
+          fi
+
+          echo "::warning::No successful production deployment resolved for sha $SHA (state=${state:-not_found}). Falling back to canonical alias."
           echo "available=true" >> "$GITHUB_OUTPUT"
           echo "url=https://sentinel-trading-platform.vercel.app" >> "$GITHUB_OUTPUT"
 
@@ -85,4 +113,5 @@ jobs:
         if: steps.target.outputs.available == 'true'
         env:
           VERCEL_URL: ${{ steps.target.outputs.url }}
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: ./scripts/health-check.sh --verbose
