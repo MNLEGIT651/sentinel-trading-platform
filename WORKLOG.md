@@ -14,7 +14,7 @@ _Last updated: 2026-04-17_
 - **Web → Engine**: All calls go through `apps/web/src/lib/engine-fetch.ts` (same-origin proxy)
 - **Web → Agents**: All calls go through `apps/web/src/lib/agents-client.ts`
 - **Deployment**: Vercel (web) + Railway (engine + agents) + Supabase (database)
-- **Agent coordination**: `docs/ai/state/project-state.md` is the single source of truth for task status
+- **Task coordination**: GitHub issue assignment + PR linkage (primary). `docs/ai/state/project-state.md` is secondary/generated — do not treat as live truth.
 
 ### Known Working Patterns
 

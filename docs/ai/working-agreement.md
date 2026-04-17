@@ -129,7 +129,7 @@ When multiple AI agents (Claude, Codex, Copilot) are active in the same repo:
 1. Read `WORKLOG.md` to check for active context and failed approaches
 2. Run `gh pr list --state open` to check for in-flight work
 3. Run `bash scripts/agent-worktree.sh list` to see active worktrees
-4. Claim your ticket in `project-state.md` before editing any files
+4. Assign the GitHub issue to yourself before editing any files. If no issue exists, create one or note "untracked audit" in your first commit message. Do not rely on `project-state.md` as a real-time claim registry — it is a summary artifact, not a lock file.
 5. If another agent is active on overlapping files, STOP and wait
 
 ### During work
@@ -149,7 +149,7 @@ When multiple AI agents (Claude, Codex, Copilot) are active in the same repo:
 ### After finishing
 
 1. Update `WORKLOG.md` with session entry
-2. Update `project-state.md` with task status
+2. Update the GitHub issue status (close on merge or comment with the PR link). `project-state.md` is a secondary summary — not required to update in real time.
 3. Remove your worktree: `bash scripts/agent-worktree.sh remove <branch>`
 4. If your PR is merged, clean up: `bash scripts/agent-worktree.sh clean`
 
