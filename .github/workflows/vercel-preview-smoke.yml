@@ -7,6 +7,7 @@ on:
       - 'packages/shared/**'
       - '.github/workflows/vercel-preview-smoke.yml'
       - 'scripts/health-check.sh'
+      - 'scripts/resolve-vercel-deployment-url.sh'
   push:
     branches: [main]
     paths:
@@ -14,10 +15,12 @@ on:
       - 'packages/shared/**'
       - '.github/workflows/vercel-preview-smoke.yml'
       - 'scripts/health-check.sh'
+      - 'scripts/resolve-vercel-deployment-url.sh'
   workflow_dispatch:
 
 permissions:
   contents: read
+  deployments: read
 
 concurrency:
   group: vercel-preview-smoke-${{ github.ref }}
@@ -27,39 +30,59 @@ jobs:
   smoke:
     name: Synthetic Proxy Smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Resolve target URL secret
+      - name: Resolve Vercel deployment URL
         id: target
         env:
-          VERCEL_PREVIEW_SMOKE_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ENVIRONMENT: ${{ github.event_name == 'pull_request' && 'Preview' || 'Production' }}
         run: |
-          if [ -z "$VERCEL_PREVIEW_SMOKE_URL" ]; then
-            # Fork PRs cannot access secrets — warn and skip
-            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
-              echo "available=false" >> "$GITHUB_OUTPUT"
-              echo "::warning::Fork PR — secrets unavailable. Skipping preview smoke checks."
-            elif [ "${{ github.event_name }}" = "pull_request" ]; then
-              echo "available=false" >> "$GITHUB_OUTPUT"
-              echo "::warning::VERCEL_PREVIEW_SMOKE_URL not set — skipping preview smoke on PR."
-            else
-              echo "::error::Missing required secret: VERCEL_PREVIEW_SMOKE_URL"
-              exit 1
-            fi
-          else
-            echo "available=true" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+
+          mapfile -t resolved < <(./scripts/resolve-vercel-deployment-url.sh \
+            --repo "$REPO" \
+            --sha "$SHA" \
+            --environment "$ENVIRONMENT" \
+            --attempts 20 \
+            --sleep-seconds 15)
+
+          for line in "${resolved[@]}"; do
+            echo "$line" >> "$GITHUB_OUTPUT"
+          done
+
+          available=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="available"{print $2}')
+          state=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="state"{print $2}')
+          url=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="url"{print $2}')
+          deployment_id=$(printf '%s\n' "${resolved[@]}" | awk -F= '$1=="deployment_id"{print $2}')
+
+          if [[ "$available" == "true" ]]; then
+            echo "Resolved $ENVIRONMENT deployment ${deployment_id:-unknown}: $url"
+            exit 0
           fi
+
+          if [[ "$ENVIRONMENT" == "Preview" ]]; then
+            if [[ "$state" == "inactive" ]]; then
+              echo "::warning::Preview deployment is inactive/skipped (likely ignoreCommand). Skipping smoke."
+            elif [[ "$state" == "failure" || "$state" == "error" ]]; then
+              echo "::warning::Preview deployment failed before smoke (deployment ${deployment_id:-unknown})."
+            else
+              echo "::warning::No successful preview deployment resolved for sha $SHA. Skipping smoke."
+            fi
+            exit 0
+          fi
+
+          # Push to main: fall back to canonical production alias so we still validate prod health.
+          echo "::warning::No successful production deployment resolved for sha $SHA (state=$state). Falling back to canonical alias."
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "url=https://sentinel-trading-platform.vercel.app" >> "$GITHUB_OUTPUT"
 
       - name: Run synthetic proxy health checks
         if: steps.target.outputs.available == 'true'
         env:
-          VERCEL_URL: ${{ secrets.VERCEL_PREVIEW_SMOKE_URL }}
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Advisory on PRs — report but don't block (PR code isn't deployed yet)
-            ./scripts/health-check.sh --verbose || echo "::warning::Smoke check failed — advisory only on PRs"
-          else
-            ./scripts/health-check.sh --verbose
-          fi
+          VERCEL_URL: ${{ steps.target.outputs.url }}
+        run: ./scripts/health-check.sh --verbose

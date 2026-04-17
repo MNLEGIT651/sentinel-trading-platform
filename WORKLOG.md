@@ -50,6 +50,22 @@ _Last updated: 2026-04-10_
 
 > Brief entry per agent session. Most recent first.
 
+### 2026-04-17 — Codex (Vercel deploy alignment)
+
+**Goal**: Verify current Vercel deployment findings and remediate repo-side deployment workflow/canonical URL issues with minimal risk.
+
+**What changed**:
+
+- Rewrote `.github/workflows/vercel-preview-smoke.yml` to resolve deployment URLs from GitHub Deployments API for the current SHA (`Preview` on PRs, `Production` on `main`) instead of relying on `VERCEL_PREVIEW_SMOKE_URL`.
+- Added `scripts/resolve-vercel-deployment-url.sh` helper to poll deployment status and return environment URL + state.
+- Replaced static `apps/web/public/robots.txt` with dynamic `apps/web/src/app/robots.ts` so sitemap URL follows canonical URL helper logic.
+- Added narrowly-scoped `tasks.build.passThroughEnv` entries (`CRON_SECRET`, `ALPACA_WEBHOOK_SECRET`) in `turbo.json` for runtime-only server route secrets without broadening cache keys.
+- Updated `docs/runbooks/preview.md` with the new CI preview-smoke URL resolution behavior.
+
+**Validation**: `bash -n scripts/resolve-vercel-deployment-url.sh scripts/health-check.sh scripts/smoke-test.sh`; `pnpm exec prettier --check .github/workflows/vercel-preview-smoke.yml turbo.json apps/web/src/app/robots.ts docs/runbooks/preview.md`; `pnpm --filter @sentinel/web lint`; `pnpm --filter @sentinel/web build`; `git diff --check`.
+
+**Decisions**: Kept deployment/env-contract changes narrow due high risk; documented unresolved dashboard-only actions separately rather than making speculative repo changes.
+
 ### 2026-04-10 — Copilot (PR Guardian System)
 
 **Goal**: Build automated guardrails to prevent AI agent drift and quality issues.

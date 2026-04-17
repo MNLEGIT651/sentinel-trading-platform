@@ -32,6 +32,8 @@ If Vercel skips the deployment, it means the commit didn't touch `apps/web` or `
 
 ## Smoke Tests
 
+CI note: `.github/workflows/vercel-preview-smoke.yml` resolves the exact Vercel deployment URL for the PR head SHA from GitHub Deployments (environment `Preview`) and runs `scripts/health-check.sh` against that URL. It no longer relies on a static `VERCEL_PREVIEW_SMOKE_URL` secret for routine PR validation.
+
 Check these on the preview URL:
 
 | Check          | Path                   | Expected                  |
