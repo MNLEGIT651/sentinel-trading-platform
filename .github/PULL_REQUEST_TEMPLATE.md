@@ -36,8 +36,6 @@ Describe the outcome in 2-5 lines.
 - [ ] Single concern — PR does not mix unrelated changes
 - [ ] No accidental shared contract drift
 - [ ] No accidental migration or env contract change
-- [ ] Changed architectural boundary declared (proxy/auth/shared contracts/migrations)
-- [ ] Contract consumers checked (if packages/shared, proxy, or migrations touched)
 - [ ] No secrets or credentials in the diff
 
 ## Reviewer Focus

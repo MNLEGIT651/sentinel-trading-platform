@@ -162,7 +162,7 @@ async function main() {
 
   const riskPaths = [
     '.github/workflows/', 'packages/shared/src/', 'supabase/migrations/',
-    'apps/web/src/lib/engine-fetch.ts', 'apps/web/src/proxy.ts',
+    'apps/web/src/lib/engine-fetch.ts', 'apps/web/src/middleware.ts',
     'apps/engine/src/api/main.py', 'apps/engine/src/config.py',
   ];
   const riskHits = changedFiles.filter((f) =>
