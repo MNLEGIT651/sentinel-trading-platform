@@ -2,7 +2,10 @@
 
 _Last updated: 2026-03-21_
 
-This is the live status board for Claude Code, Codex, and human collaborators.
+> **Status note (secondary artifact):** This file is historical/summary context and is not the live task-claim registry.
+> Use GitHub issue assignment + linked open PRs as the authoritative coordination surface.
+
+This is a summary board for Claude Code, Codex, and human collaborators.
 
 ## Current priority program
 
@@ -21,9 +24,9 @@ Before editing files:
 - [ ] Read `docs/ai/architecture.md`
 - [ ] Read `docs/ai/commands.md`
 - [ ] Read `docs/ai/review-checklist.md`
-- [ ] Read this file
-- [ ] Claim one ticket below
-- [ ] Confirm no overlapping file ownership
+- [ ] Check assigned GitHub issue + linked open PRs first (authoritative live coordination)
+- [ ] Read this file for historical/background context only
+- [ ] If needed, update summary rows below after work is complete
 
 ---
 

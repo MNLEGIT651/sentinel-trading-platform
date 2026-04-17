@@ -14,7 +14,7 @@ and a Python engine that is validated separately from the Node workspaces.
 3. `docs/ai/architecture.md`
 4. `docs/ai/commands.md`
 5. `docs/ai/review-checklist.md`
-6. `docs/ai/state/project-state.md`
+6. `docs/ai/state/project-state.md` (secondary background/history, not live claim state)
 7. `docs/ai/agent-ops.md`
 8. `CLAUDE.md` when using Claude Code
 
@@ -120,9 +120,11 @@ gh pr list --state open                 # must have <2 of your PRs
 
 ## Execution State
 
-- Before editing files, read `docs/ai/state/project-state.md` and claim one ticket or explicitly note you are performing an untracked audit.
-- Use `docs/ai/agent-ops.md` for the startup checklist, claim protocol, handoff format, and session priority order.
-- Treat `docs/ai/state/project-state.md` as the live source of truth for task status. Do not create a competing status tracker in another file.
+- Before editing files, check open GitHub issues and PRs first to understand live ownership and in-flight scope.
+- Use issue assignment + PR linkage as the authoritative coordination surface for active work.
+- Use `docs/ai/state/project-state.md` as a secondary summary/history artifact only, not a live claim registry.
+- If no tracked issue exists, explicitly label the effort as an `untracked audit` in your PR or handoff.
+- Use `docs/ai/agent-ops.md` for startup, handoff format, and session priority order.
 
 ## Collaboration Defaults
 

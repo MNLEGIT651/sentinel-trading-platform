@@ -129,15 +129,16 @@ When multiple AI agents (Claude, Codex, Copilot) are active in the same repo:
 1. Read `WORKLOG.md` to check for active context and failed approaches
 2. Run `gh pr list --state open` to check for in-flight work
 3. Run `bash scripts/agent-worktree.sh list` to see active worktrees
-4. Claim your ticket in `project-state.md` before editing any files
-5. If another agent is active on overlapping files, STOP and wait
+4. Confirm an assigned GitHub issue exists (or mark the effort as an untracked audit in your PR/handoff)
+5. Link your working branch/PR to that issue before editing files when possible
+6. If another agent is active on overlapping files, STOP and coordinate in the issue/PR thread first
 
 ### During work
 
-- Stay within your claimed file scope — if you need to expand, update the claim first
+- Stay within your issue/PR-declared file scope — if you need to expand, update the issue/PR notes first
 - Keep PRs under 20 files and focused on one concern
 - Run `pnpm pre-pr:quick` periodically to check for drift
-- Do not touch files in another agent's claimed scope
+- Do not touch files actively owned in another open PR without coordination
 
 ### Before creating a PR
 
@@ -149,12 +150,13 @@ When multiple AI agents (Claude, Codex, Copilot) are active in the same repo:
 ### After finishing
 
 1. Update `WORKLOG.md` with session entry
-2. Update `project-state.md` with task status
-3. Remove your worktree: `bash scripts/agent-worktree.sh remove <branch>`
-4. If your PR is merged, clean up: `bash scripts/agent-worktree.sh clean`
+2. Ensure issue assignment + PR linkage reflects current status (active, blocked, done)
+3. Optionally update `docs/ai/state/project-state.md` as secondary summary/history
+4. Remove your worktree: `bash scripts/agent-worktree.sh remove <branch>`
+5. If your PR is merged, clean up: `bash scripts/agent-worktree.sh clean`
 
 ### Conflict resolution
 
-- If two agents need the same file, the one with the earlier claim wins
-- If claims are simultaneous, prefer the smaller-scope task
+- If two agents need the same file, prioritize the branch already linked to an assigned issue/active PR
+- If ownership is ambiguous, prefer the smaller-scope task until human direction is provided
 - The human owner (`stevenschling13`) is the final arbiter

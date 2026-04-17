@@ -7,14 +7,14 @@
 
 ## Active Context
 
-_Last updated: 2026-04-10_
+_Last updated: 2026-04-17_
 
 ### Current Architecture Decisions
 
 - **Web → Engine**: All calls go through `apps/web/src/lib/engine-fetch.ts` (same-origin proxy)
 - **Web → Agents**: All calls go through `apps/web/src/lib/agents-client.ts`
 - **Deployment**: Vercel (web) + Railway (engine + agents) + Supabase (database)
-- **Agent coordination**: `docs/ai/state/project-state.md` is the single source of truth for task status
+- **Agent coordination**: GitHub issue assignment + PR linkage is the live source of truth; `docs/ai/state/project-state.md` is secondary summary/history only
 
 ### Known Working Patterns
 

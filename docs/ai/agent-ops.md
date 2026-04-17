@@ -22,17 +22,18 @@ At the start of every session:
    - `docs/ai/commands.md`
    - `docs/ai/review-checklist.md`
 3. Read `WORKLOG.md` — check for failed approaches and active context.
-4. Read `docs/ai/state/project-state.md`.
+4. Check open issues and confirm assignment/ownership for the task.
 5. Check for open PRs: `gh pr list --state open`
-6. If the session is executing roadmap work, read `docs/ai/roadmaps/2026-03-20-deployment-readme-roadmap.md`.
-7. Claim exactly one ticket or tightly related ticket bundle in `project-state.md` before editing files.
-8. Confirm the files you plan to touch are not already claimed by another active task.
+6. Read `docs/ai/state/project-state.md` as secondary context/history (not live lock state).
+7. If the session is executing roadmap work, read `docs/ai/roadmaps/2026-03-20-deployment-readme-roadmap.md`.
+8. Link branch/PR to one issue or tightly related issue bundle before editing files when possible.
+9. Confirm the files you plan to touch are not already active in another open PR.
 
-If the project state and the code disagree, update `project-state.md` first or explicitly note the mismatch in your handoff.
+If issue/PR state and docs disagree, treat GitHub issue assignment + open PR linkage as authoritative and note the mismatch in your handoff.
 
-## Claim protocol
+## Coordination protocol
 
-Each active task entry in `docs/ai/state/project-state.md` must include:
+The primary live coordination surface is GitHub issue assignment + PR linkage. The optional summary entry in `docs/ai/state/project-state.md` should include:
 
 - ticket ID
 - title
@@ -50,10 +51,11 @@ Each active task entry in `docs/ai/state/project-state.md` must include:
 - Prefer one ticket per branch.
 - If you need to expand scope, update the task entry before editing the new files.
 - If blocked, change status to `blocked` and write the blocker in one sentence.
+- Use issue comments/PR description for same-day status; use `project-state.md` only as secondary summary/history.
 
 ## Handoff protocol
 
-When ending a session, update the task entry with:
+When ending a session, update the issue/PR with:
 
 - current status
 - what changed
@@ -67,6 +69,8 @@ Also update `WORKLOG.md`:
 - Add a session log entry (date, agent, goal, changes, decisions)
 - Record any failed approaches in the Failed Approaches Log
 - Update Active Context if architecture decisions changed
+
+Optionally update `docs/ai/state/project-state.md` as a historical summary if needed.
 
 ## Session priority order
 
@@ -109,7 +113,7 @@ A roadmap ticket is done only when:
 
 - the scoped files are updated
 - required validation has been run or an explicit environment limitation is recorded
-- `project-state.md` is updated
+- issue + PR linkage reflects done status
 - the handoff states the next dependency or next available ticket
 
 ## Anti-drift rule
@@ -118,10 +122,10 @@ Do not create a second source of truth for status.
 
 Use these artifacts only:
 
-- `docs/ai/state/project-state.md` for live status
+- GitHub issues + PR linkage for live status and ownership
 - `WORKLOG.md` for cross-session context and failed approaches
+- `docs/ai/state/project-state.md` for secondary summary/history
 - roadmap documents for sequencing and task definitions
-- issues/PRs for review and merge discussion
 
 ## Worktree isolation (required for parallel agents)
 
