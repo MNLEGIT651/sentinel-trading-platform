@@ -2,10 +2,15 @@
 #
 # Automatically creates a GitHub issue when the CI workflow fails,
 # so failures are visible and trackable outside the Actions tab.
+#
+# workflow_run is used intentionally here: this workflow runs in the
+# *base* repo context (not the fork), so it can safely write issues.
+# It does not check out code from the triggering run, so there is no
+# code-execution attack surface. zizmor: ignore[dangerous-triggers]
 
 name: CI Failure Notification
 
-on:
+on: # zizmor: ignore[dangerous-triggers]
   workflow_run:
     workflows: ['CI']
     types:

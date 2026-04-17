@@ -1,35 +1,86 @@
 # Dependabot auto-merge
-# Automatically approves and merges Dependabot PRs for patch and minor updates
-# after CI passes. Major updates require manual review.
+#
+# Safe-by-default auto-merge policy (aligned with OpenSSF + industry consensus):
+#   - patch updates: auto-merged on any ecosystem
+#   - minor updates: auto-merged only for github-actions OR dev-dependencies
+#   - major updates: never auto-merged (manual review required)
+#
+# The primary blast-radius guard is branch protection: this job only approves /
+# enables auto-merge, which still requires all required status checks to pass.
 
 name: Dependabot Auto-Merge
 
 on: pull_request
 
+# Default-deny at workflow root; elevate at job level only.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   auto-merge:
-    runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - name: Fetch Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@ffa630c65fa7e0ecfa0625b5ceda64399aea1b36 # v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-approve patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr review --approve "$PR_URL"
+      - name: Decide auto-merge eligibility
+        id: decide
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          DEPENDENCY_TYPE: ${{ steps.metadata.outputs.dependency-type }}
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+        run: |
+          set -euo pipefail
+          eligible="false"
+          reason="not eligible"
+          case "$UPDATE_TYPE" in
+            version-update:semver-patch)
+              eligible="true"
+              reason="patch update"
+              ;;
+            version-update:semver-minor)
+              if [ "$ECOSYSTEM" = "github_actions" ] || [ "$DEPENDENCY_TYPE" = "direct:development" ] || [ "$DEPENDENCY_TYPE" = "indirect" ]; then
+                eligible="true"
+                reason="minor update on ${ECOSYSTEM}/${DEPENDENCY_TYPE}"
+              else
+                reason="minor update on production dependency — manual review"
+              fi
+              ;;
+            version-update:semver-major)
+              reason="major update — manual review required"
+              ;;
+            *)
+              reason="unknown update-type '${UPDATE_TYPE}'"
+              ;;
+          esac
+          echo "eligible=${eligible}" >> "$GITHUB_OUTPUT"
+          echo "reason=${reason}" >> "$GITHUB_OUTPUT"
+          echo "Decision: eligible=${eligible} (${reason})"
+
+      - name: Approve eligible PR
+        if: steps.decide.outputs.eligible == 'true'
+        run: |
+          gh pr review --approve "$PR_URL" --body "Auto-approved: ${REASON}"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
+          REASON: ${{ steps.decide.outputs.reason }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      - name: Enable auto-merge for eligible PR
+        if: steps.decide.outputs.eligible == 'true'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
