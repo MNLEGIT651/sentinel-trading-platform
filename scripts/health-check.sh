@@ -76,9 +76,13 @@ check_service() {
 
     log_verbose "Checking ${url} (timeout ${TIMEOUT}s)..."
 
-    # Capture both status code and body; allow curl to fail without killing the script
+    # Capture both status code and body; allow curl to fail without killing the script.
+    # --location follows 3xx redirects so that Vercel's bypass-cookie handshake
+    # (307 → set cookie → 200) completes on protected preview deployments, and
+    # so any legitimate app-level redirect (e.g. trailing-slash normalization)
+    # is followed to its terminal status.
     local http_response
-    http_response=$(curl --silent --max-time "$TIMEOUT" --write-out "\n%{http_code}" \
+    http_response=$(curl --silent --location --max-time "$TIMEOUT" --write-out "\n%{http_code}" \
       ${VERCEL_BYPASS_HEADER[@]+"${VERCEL_BYPASS_HEADER[@]}"} "$url" 2>&1) || true
 
     status_code=$(echo "$http_response" | tail -n1)
