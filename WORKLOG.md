@@ -7,7 +7,7 @@
 
 ## Active Context
 
-_Last updated: 2026-04-10_
+_Last updated: 2026-04-17_
 
 ### Current Architecture Decisions
 
@@ -37,12 +37,13 @@ _Last updated: 2026-04-10_
 
 > Record approaches that were tried and failed. Prevents agents from re-trying the same thing.
 
-| Date       | Agent    | What Was Tried                                     | Why It Failed                                            | Lesson                                              |
-| ---------- | -------- | -------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
-| 2026-04-09 | Multiple | 8 overlapping PRs from 3 agents                    | No coordination — agents didn't check for in-flight work | Always check open PRs before starting work          |
-| 2026-04-09 | Codex    | PR #297 used `BrokerInterface` class name          | Hallucinated — actual class is `BrokerAdapter`           | Run `pnpm typecheck` before creating PR             |
-| 2026-04-09 | Codex    | PR #295 added `middleware.ts` alongside `proxy.ts` | Next.js rejects coexistence of middleware + proxy        | Check existing patterns before introducing new ones |
-| 2026-04-09 | Codex    | PR #297 touched 64 files across 5 subsystems       | Too broad — impossible to review safely                  | Keep PRs under 20 files, one concern per PR         |
+| Date       | Agent    | What Was Tried                                                | Why It Failed                                                           | Lesson                                                     |
+| ---------- | -------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 2026-04-09 | Multiple | 8 overlapping PRs from 3 agents                               | No coordination — agents didn't check for in-flight work                | Always check open PRs before starting work                 |
+| 2026-04-09 | Codex    | PR #297 used `BrokerInterface` class name                     | Hallucinated — actual class is `BrokerAdapter`                          | Run `pnpm typecheck` before creating PR                    |
+| 2026-04-09 | Codex    | PR #295 added `middleware.ts` alongside `proxy.ts`            | Next.js rejects coexistence of middleware + proxy                       | Check existing patterns before introducing new ones        |
+| 2026-04-09 | Codex    | PR #297 touched 64 files across 5 subsystems                  | Too broad — impossible to review safely                                 | Keep PRs under 20 files, one concern per PR                |
+| 2026-04-17 | Audit    | Guardian/pre-PR scripts enforced `middleware.ts` as high-risk | `proxy.ts` replaced `middleware.ts`; coexistence is rejected by Next.js | Always check `proxy.ts` is the current request gating file |
 
 ---
 
