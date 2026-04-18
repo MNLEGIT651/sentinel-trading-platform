@@ -95,7 +95,9 @@ class PaperBroker(BrokerAdapter):
                             fill_price=None,
                             submitted_at=datetime.now(UTC).isoformat(),
                             filled_at=None,
-                            risk_note=f"Sell qty {order.quantity} exceeds position {pos['quantity']}",
+                            risk_note=(
+                                f"Sell qty {order.quantity} exceeds position {pos['quantity']}"
+                            ),
                         )
                     )
                     return OrderResult(
