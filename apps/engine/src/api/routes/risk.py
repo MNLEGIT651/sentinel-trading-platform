@@ -215,9 +215,11 @@ async def pre_trade_check(req: PreTradeCheckRequest) -> PreTradeCheckResponse:
                     }
                 ).execute()
         except Exception:
-            logger.warning(
-                "Failed to write risk_evaluations for recommendation %s",
+            logger.error(
+                "AUDIT GAP: Failed to write risk_evaluations for recommendation %s — "
+                "risk check result (allowed=%s) was NOT persisted",
                 req.recommendation_id,
+                result.allowed,
                 exc_info=True,
             )
 
@@ -312,13 +314,16 @@ class RiskPolicyResponse(BaseModel):
 class RiskPolicyUpdateRequest(BaseModel):
     """Fields for updating the risk policy (all optional, merges with current)."""
 
-    max_position_pct: float | None = None
-    max_sector_pct: float | None = None
-    daily_loss_limit_pct: float | None = None
-    soft_drawdown_pct: float | None = None
-    hard_drawdown_pct: float | None = None
+    max_position_pct: float | None = Field(None, gt=0, le=100)
+    max_sector_pct: float | None = Field(None, gt=0, le=100)
+    daily_loss_limit_pct: float | None = Field(None, gt=0, le=100)
+    soft_drawdown_pct: float | None = Field(None, gt=0, le=100)
+    hard_drawdown_pct: float | None = Field(None, gt=0, le=100)
     approval_required: bool | None = None
-    autonomy_mode: str | None = None
+    autonomy_mode: str | None = Field(
+        None,
+        pattern="^(disabled|alert_only|suggest|auto_approve|auto_execute)$",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +371,7 @@ async def get_risk_state() -> RiskStateResponse:
             drawdown = float(dd) if dd is not None else None
             max_drawdown = float(mdd) if mdd is not None else None
     except Exception:
-        logger.warning("Failed to read portfolio_snapshots for risk state", exc_info=True)
+        logger.error("Failed to read portfolio_snapshots for risk state", exc_info=True)
 
     # Recent risk evaluation blocks (last 10 that were not allowed)
     recent_blocks: list[dict] = []
@@ -391,7 +396,7 @@ async def get_risk_state() -> RiskStateResponse:
             for row in (blocks_result.data or [])
         ]
     except Exception:
-        logger.warning("Failed to read risk_evaluations for risk state", exc_info=True)
+        logger.error("Failed to read risk_evaluations for risk state", exc_info=True)
 
     return RiskStateResponse(
         trading_halted=controls.get("trading_halted", False),
@@ -438,7 +443,7 @@ async def halt_trading(body: HaltRequest) -> HaltResponse:
         )
         action_id = str(action_result.data["id"]) if action_result.data else None
     except Exception:
-        logger.warning("Failed to record halt operator_action", exc_info=True)
+        logger.error("AUDIT GAP: Failed to record halt operator_action", exc_info=True)
 
     return HaltResponse(trading_halted=True, action_id=action_id)
 
@@ -476,7 +481,7 @@ async def resume_trading(body: HaltRequest) -> HaltResponse:
         )
         action_id = str(action_result.data["id"]) if action_result.data else None
     except Exception:
-        logger.warning("Failed to record resume operator_action", exc_info=True)
+        logger.error("AUDIT GAP: Failed to record resume operator_action", exc_info=True)
 
     return HaltResponse(trading_halted=False, action_id=action_id)
 
@@ -560,6 +565,12 @@ async def update_risk_policy(body: RiskPolicyUpdateRequest) -> RiskPolicyRespons
         "autonomy_mode": _pick("autonomy_mode", "suggest"),
         "enabled_at": now,
     }
+
+    if new_row["soft_drawdown_pct"] >= new_row["hard_drawdown_pct"]:
+        raise HTTPException(
+            status_code=422,
+            detail="soft_drawdown_pct must be less than hard_drawdown_pct",
+        )
 
     insert_result = db.table("risk_policies").insert(new_row).select("*").single().execute()
     row = insert_result.data

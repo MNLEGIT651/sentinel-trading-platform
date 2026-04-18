@@ -33,6 +33,7 @@
     "guardian:dry-run": "node scripts/pr-guardian.mjs --dry-run",
     "pre-pr": "node scripts/pre-pr-check.mjs",
     "pre-pr:quick": "node scripts/pre-pr-check.mjs --quick",
+    "validate:changed": "node scripts/validate-changed-scope.mjs",
     "worktree": "bash scripts/agent-worktree.sh",
     "prepare": "husky"
   },

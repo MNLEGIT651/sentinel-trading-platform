@@ -213,7 +213,7 @@ class RiskManager:
         if position_pct > self.limits.max_position_pct:
             max_value = state.equity * self.limits.max_position_pct
             remaining = max_value - state.positions.get(ticker, 0.0)
-            adjusted = max(int(remaining / price), 0)
+            adjusted = max(int(remaining / price), 0) if price > 0 else 0
 
             if adjusted <= 0:
                 return PreTradeCheck(

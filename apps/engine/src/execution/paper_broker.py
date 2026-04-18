@@ -80,19 +80,84 @@ class PaperBroker(BrokerAdapter):
                 }
         elif order.side == "sell":
             pos = self.positions.get(order.instrument_id)
-            if pos:
+            if pos and pos["quantity"] > 0:
+                # Closing or reducing a long position — reject oversell
+                if order.quantity > pos["quantity"] + 1e-9:
+                    get_order_store().add(
+                        StoredOrder(
+                            order_id=order_id,
+                            symbol=order.instrument_id,
+                            side=order.side,
+                            order_type=order.order_type,
+                            qty=order.quantity,
+                            filled_qty=0,
+                            status="rejected",
+                            fill_price=None,
+                            submitted_at=datetime.now(UTC).isoformat(),
+                            filled_at=None,
+                            risk_note=(
+                                f"Sell qty {order.quantity} exceeds position {pos['quantity']}"
+                            ),
+                        )
+                    )
+                    return OrderResult(
+                        order_id=order_id,
+                        status="rejected",
+                        fill_price=None,
+                        fill_quantity=None,
+                        slippage=None,
+                    )
                 pos["quantity"] -= order.quantity
-                if pos["quantity"] == 0:
+                if abs(pos["quantity"]) < 1e-9:
                     del self.positions[order.instrument_id]
-                elif pos["quantity"] < 0:
-                    # Short position: keep the negative quantity, update avg_price
-                    pos["avg_price"] = fill_price
+            elif pos and pos["quantity"] <= 0:
+                # Already short — reject further short selling (no margin model)
+                get_order_store().add(
+                    StoredOrder(
+                        order_id=order_id,
+                        symbol=order.instrument_id,
+                        side=order.side,
+                        order_type=order.order_type,
+                        qty=order.quantity,
+                        filled_qty=0,
+                        status="rejected",
+                        fill_price=None,
+                        submitted_at=datetime.now(UTC).isoformat(),
+                        filled_at=None,
+                        risk_note="Short selling not supported in paper trading",
+                    )
+                )
+                return OrderResult(
+                    order_id=order_id,
+                    status="rejected",
+                    fill_price=None,
+                    fill_quantity=None,
+                    slippage=None,
+                )
             else:
-                # Opening a short position
-                self.positions[order.instrument_id] = {
-                    "quantity": -order.quantity,
-                    "avg_price": fill_price,
-                }
+                # No position — reject (no naked short selling)
+                get_order_store().add(
+                    StoredOrder(
+                        order_id=order_id,
+                        symbol=order.instrument_id,
+                        side=order.side,
+                        order_type=order.order_type,
+                        qty=order.quantity,
+                        filled_qty=0,
+                        status="rejected",
+                        fill_price=None,
+                        submitted_at=datetime.now(UTC).isoformat(),
+                        filled_at=None,
+                        risk_note="Cannot sell: no open position",
+                    )
+                )
+                return OrderResult(
+                    order_id=order_id,
+                    status="rejected",
+                    fill_price=None,
+                    fill_quantity=None,
+                    slippage=None,
+                )
             self.cash += cost
 
         self._orders[order_id] = order

@@ -4,6 +4,7 @@ import {
   atomicApprove,
   markFilled,
   markRiskBlocked,
+  revertToPending,
   rejectRecommendation,
   getRecommendation,
 } from '../recommendations-store.js';
@@ -116,15 +117,36 @@ export function recommendationsRouter(): Router {
         } catch (engineErr: unknown) {
           const msg = engineErr instanceof Error ? engineErr.message : String(engineErr);
 
+          // Parse HTTP status from EngineClient error format "Engine error: NNN"
+          const statusMatch = msg.match(/^Engine error: (\d+)/);
+          const engineStatus = statusMatch?.[1] ? parseInt(statusMatch[1], 10) : null;
+
           // 422 = engine risk-blocked the order
-          if (msg.includes('422') || msg.toLowerCase().includes('risk')) {
+          if (engineStatus === 422 || msg.toLowerCase().includes('risk')) {
             await markRiskBlocked(id, msg);
             res.status(422).json({ error: 'risk_blocked', detail: msg });
             return;
           }
 
-          // Other engine failure — don't permanently mark; return 502 so UI can retry
-          res.status(502).json({ error: 'engine_error', detail: msg });
+          // Timeout — order may have been submitted, do NOT revert (avoid duplicate)
+          if (msg.includes('timed out')) {
+            logger.error('recommendation.engine.timeout', {
+              recommendationId: id,
+              detail: msg,
+              note: 'Order may have been placed — recommendation left as approved',
+            });
+            res.status(502).json({ error: 'engine_timeout', detail: msg, retryable: false });
+            return;
+          }
+
+          // Definitive engine error or unreachable — order was NOT placed, safe to revert
+          const reverted = await revertToPending(id);
+          logger.warn('recommendation.engine.reverted', {
+            recommendationId: id,
+            detail: msg,
+            reverted,
+          });
+          res.status(502).json({ error: 'engine_error', detail: msg, retryable: reverted });
           return;
         }
       } catch (err) {

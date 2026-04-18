@@ -118,6 +118,33 @@ class TestInteractiveRequests:
         assert client._http.request.await_count == 1
         await client.close()
 
+
+class TestParseBarsRobustness:
+    """Regression tests for malformed Polygon bar handling (Patch 10)."""
+
+    def test_skips_malformed_bar_missing_keys(self):
+        client = PolygonClient(api_key="test-key")
+        data = {
+            "results": [
+                {"t": 1700000000000, "o": 100, "h": 105, "l": 99, "c": 102, "v": 500},
+                {"t": 1700000000000, "broken": True},  # missing o/h/l/c/v
+                {"t": 1700001000000, "o": 101, "h": 106, "l": 100, "c": 103, "v": 600},
+            ]
+        }
+        bars = client._parse_bars(data)
+        assert len(bars) == 2
+
+    def test_skips_bar_with_none_values(self):
+        client = PolygonClient(api_key="test-key")
+        data = {"results": [{"t": None, "o": 100, "h": 105, "l": 99, "c": 102, "v": 500}]}
+        bars = client._parse_bars(data)
+        assert len(bars) == 0
+
+    def test_handles_null_results(self):
+        client = PolygonClient(api_key="test-key")
+        assert client._parse_bars({"results": None}) == []
+        assert client._parse_bars({}) == []
+
     @pytest.mark.asyncio
     async def test_interactive_quote_serves_stale_cache_when_live_fetch_fails(self):
         client = PolygonClient(api_key="test-key")

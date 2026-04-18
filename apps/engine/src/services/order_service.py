@@ -33,7 +33,11 @@ async def check_trading_halts(experiment_id: str | None = None) -> None:
     except HTTPException:
         raise
     except Exception as exc:
-        logger.warning("Could not check trading halt status: %s", exc)
+        logger.error("Trading halt check failed (fail-closed): %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to verify trading halt status. Orders blocked.",
+        ) from exc
 
     # Experiment-level halt
     if experiment_id:
@@ -49,13 +53,18 @@ async def check_trading_halts(experiment_id: str | None = None) -> None:
         except HTTPException:
             raise
         except Exception as exc:
-            logger.warning("Could not check experiment halt status: %s", exc)
+            logger.error("Experiment halt check failed (fail-closed): %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to verify experiment halt status. Orders blocked.",
+            ) from exc
 
 
 async def fetch_live_price(broker: BrokerAdapter, symbol: str) -> float | None:
     """Fetch the latest price via Polygon for non-Alpaca brokers.
 
-    Returns None when using Alpaca (which provides its own fill price).
+    Returns None when using Alpaca (which provides its own fill price)
+    or when the price is unavailable.
     """
     from src.execution.alpaca_broker import AlpacaBroker
 
@@ -69,7 +78,7 @@ async def fetch_live_price(broker: BrokerAdapter, symbol: str) -> float | None:
     polygon = PolygonClient(settings.polygon_api_key)
     try:
         bar = await polygon.get_latest_price(symbol, interactive=True)
-        return bar.close if bar else 100.0
+        return bar.close if bar else None
     finally:
         await polygon.close()
 

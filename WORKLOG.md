@@ -7,14 +7,14 @@
 
 ## Active Context
 
-_Last updated: 2026-04-10_
+_Last updated: 2026-04-18_
 
 ### Current Architecture Decisions
 
 - **Web → Engine**: All calls go through `apps/web/src/lib/engine-fetch.ts` (same-origin proxy)
 - **Web → Agents**: All calls go through `apps/web/src/lib/agents-client.ts`
 - **Deployment**: Vercel (web) + Railway (engine + agents) + Supabase (database)
-- **Agent coordination**: `docs/ai/state/project-state.md` is the single source of truth for task status
+- **Task coordination**: GitHub issue assignment + PR linkage (primary). `docs/ai/state/project-state.md` is secondary/generated — do not treat as live truth.
 
 ### Known Working Patterns
 
@@ -37,18 +37,33 @@ _Last updated: 2026-04-10_
 
 > Record approaches that were tried and failed. Prevents agents from re-trying the same thing.
 
-| Date       | Agent    | What Was Tried                                     | Why It Failed                                            | Lesson                                              |
-| ---------- | -------- | -------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
-| 2026-04-09 | Multiple | 8 overlapping PRs from 3 agents                    | No coordination — agents didn't check for in-flight work | Always check open PRs before starting work          |
-| 2026-04-09 | Codex    | PR #297 used `BrokerInterface` class name          | Hallucinated — actual class is `BrokerAdapter`           | Run `pnpm typecheck` before creating PR             |
-| 2026-04-09 | Codex    | PR #295 added `middleware.ts` alongside `proxy.ts` | Next.js rejects coexistence of middleware + proxy        | Check existing patterns before introducing new ones |
-| 2026-04-09 | Codex    | PR #297 touched 64 files across 5 subsystems       | Too broad — impossible to review safely                  | Keep PRs under 20 files, one concern per PR         |
+| Date       | Agent    | What Was Tried                                                | Why It Failed                                                           | Lesson                                                     |
+| ---------- | -------- | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 2026-04-09 | Multiple | 8 overlapping PRs from 3 agents                               | No coordination — agents didn't check for in-flight work                | Always check open PRs before starting work                 |
+| 2026-04-09 | Codex    | PR #297 used `BrokerInterface` class name                     | Hallucinated — actual class is `BrokerAdapter`                          | Run `pnpm typecheck` before creating PR                    |
+| 2026-04-09 | Codex    | PR #295 added `middleware.ts` alongside `proxy.ts`            | Next.js rejects coexistence of middleware + proxy                       | Check existing patterns before introducing new ones        |
+| 2026-04-09 | Codex    | PR #297 touched 64 files across 5 subsystems                  | Too broad — impossible to review safely                                 | Keep PRs under 20 files, one concern per PR                |
+| 2026-04-17 | Audit    | Guardian/pre-PR scripts enforced `middleware.ts` as high-risk | `proxy.ts` replaced `middleware.ts`; coexistence is rejected by Next.js | Always check `proxy.ts` is the current request gating file |
 
 ---
 
 ## Session Log
 
 > Brief entry per agent session. Most recent first.
+
+### 2026-04-18 — Claude (AI workflow playbooks)
+
+**Goal**: Land the three "adopt now" doc deliverables from the April 2026 deep-research audit that Phases 1–4 (PRs #349–#352) did not cover.
+
+**What changed**:
+
+- Added `docs/playbooks/repo-aware-ai-coding-playbook.md` — default task-brief template, model-role guidance, changed-scope validation, stop conditions, handoff standard.
+- Added `docs/playbooks/contract-safe-change-playbook.md` — when to invoke, risk matrix, path checklist, per-surface validation matrix, rollback notes.
+- Added `docs/research/vibe-coding-2026-for-sentinel.md` — durable decision record for why the AI workflow is shaped the way it is; what was adopted, deferred, and rejected.
+
+**Validation**: Docs-only. `git diff --check` clean.
+
+**Decisions**: Deferred PR E (Turbo remote cache + signing) and the web route-handler observability fix to separate branches — both are out of scope for a docs branch and the observability fix touches app source.
 
 ### 2026-04-17 — Codex (Vercel deploy alignment)
 

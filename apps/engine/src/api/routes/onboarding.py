@@ -96,8 +96,8 @@ class AchRelationshipRequest(BaseModel):
 
 class TransferRequest(BaseModel):
     relationship_id: str
-    amount: str  # e.g. "1000.00"
-    direction: str = "INCOMING"  # INCOMING (deposit) or OUTGOING (withdrawal)
+    amount: str = Field(..., pattern=r"^\d+(\.\d{1,2})?$")  # e.g. "1000.00"
+    direction: str = Field(default="INCOMING", pattern=r"^(INCOMING|OUTGOING)$")
 
 
 # ─── Routes ──────────────────────────────────────────────────────────
@@ -232,6 +232,9 @@ async def delete_ach_relationship(account_id: str, relationship_id: str) -> dict
 async def create_transfer(account_id: str, req: TransferRequest) -> dict[str, Any]:
     """Initiate an ACH transfer (deposit or withdrawal)."""
     _require_broker_api()
+
+    if float(req.amount) <= 0:
+        raise HTTPException(status_code=422, detail="Transfer amount must be positive.")
 
     try:
         result = await _broker_api.create_transfer(

@@ -4,8 +4,8 @@ import dataclasses
 import logging
 from enum import StrEnum
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from src.api.models.responses import (
     AccountResponse,
@@ -50,9 +50,9 @@ class SubmitOrderBody(BaseModel):
     symbol: str
     side: OrderSide
     order_type: OrderType = OrderType.market
-    quantity: float
-    limit_price: float | None = None
-    stop_price: float | None = None
+    quantity: float = Field(gt=0)
+    limit_price: float | None = Field(None, gt=0)
+    stop_price: float | None = Field(None, gt=0)
     time_in_force: str = "day"
 
 
@@ -68,7 +68,7 @@ async def get_account() -> AccountResponse:
         return AccountResponse(**data)
     except Exception as exc:
         logger.error("Failed to fetch account: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(status_code=502, detail="Broker account request failed.") from exc
 
 
 @router.get("/positions", response_model=list[PositionResponse])
@@ -80,7 +80,7 @@ async def get_positions() -> list[PositionResponse]:
         return [PositionResponse(**p) for p in data]
     except Exception as exc:
         logger.error("Failed to fetch positions: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(status_code=502, detail="Broker positions request failed.") from exc
 
 
 @router.post("/orders", response_model=OrderSubmitResponse)
@@ -99,14 +99,26 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
         await check_live_execution_gate(broker)
 
         symbol = body.symbol.upper()
+        order_qty = int(body.quantity)
+        if body.quantity != order_qty:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Fractional shares not supported. Got {body.quantity}, use a whole number.",
+            )
 
         price = await fetch_live_price(broker, symbol)
-        check_price = price or body.limit_price or 100.0
+        check_price = price or body.limit_price
+        if check_price is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Cannot submit order: no reliable price available for risk check. "
+                "Provide a limit_price or ensure the market data feed is active.",
+            )
 
         risk_result = await run_pre_trade_risk_check(
             broker=broker,
             ticker=symbol,
-            quantity=int(body.quantity),
+            quantity=order_qty,
             price=check_price,
             side=body.side.value,
         )
@@ -115,7 +127,7 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
                 status_code=422,
                 detail=f"Risk check blocked order: {risk_result.reason}",
             )
-        effective_quantity = risk_result.adjusted_shares or int(body.quantity)
+        effective_quantity = risk_result.adjusted_shares or order_qty
 
         request = OrderRequest(
             instrument_id=symbol,
@@ -156,11 +168,16 @@ async def submit_order(body: SubmitOrderBody) -> OrderSubmitResponse:
         raise
     except Exception as exc:
         logger.error("Order submission failed: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(status_code=502, detail="Order submission failed.") from exc
 
 
 @router.get("/orders", response_model=list[OrderResponse])
-async def get_orders(status: str = "open") -> list[OrderResponse]:
+async def get_orders(
+    status: str = Query(
+        default="open",
+        pattern="^(open|closed|all|filled|cancelled|rejected|pending|accepted|new)$",
+    ),
+) -> list[OrderResponse]:
     """Get orders filtered by status."""
     try:
         broker = get_broker()
@@ -168,7 +185,7 @@ async def get_orders(status: str = "open") -> list[OrderResponse]:
         return [OrderResponse(**o) for o in data]
     except Exception as exc:
         logger.error("Failed to fetch orders: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(status_code=502, detail="Broker orders request failed.") from exc
 
 
 @router.get("/orders/history", response_model=list[StoredOrderResponse])
@@ -211,6 +228,16 @@ async def get_order_by_id(order_id: str) -> StoredOrderResponse:
 @router.delete("/orders/{order_id}", response_model=CancelOrderResponse)
 async def cancel_order(order_id: str) -> CancelOrderResponse:
     """Cancel an open order."""
+    from src.execution.order_store import TERMINAL_STATUSES, get_order_store
+
+    store = get_order_store()
+    order = store.get(order_id)
+    if order is not None and order.status in TERMINAL_STATUSES:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Order {order_id} is already {order.status}",
+        )
+
     try:
         broker = get_broker()
         await broker.cancel_order(order_id)
@@ -218,5 +245,5 @@ async def cancel_order(order_id: str) -> CancelOrderResponse:
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:
-        logger.error("Failed to cancel order: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        logger.error("Failed to cancel order %s: %s", order_id, exc)
+        raise HTTPException(status_code=502, detail="Order cancellation failed.") from exc

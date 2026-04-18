@@ -310,24 +310,19 @@ async def update_strategy_autonomy(
     if db is None:
         raise HTTPException(status_code=503, detail="Database not configured.")
 
-    # Verify strategy exists
-    existing = db.table("strategies").select("id").eq("id", strategy_id).maybe_single().execute()
-    if not existing.data:
-        raise HTTPException(status_code=404, detail=f"Strategy {strategy_id} not found")
-
+    # Atomic update+select eliminates TOCTOU race between existence check and write
     result = (
         db.table("strategies")
         .update({"autonomy_mode": body.autonomy_mode})
         .eq("id", strategy_id)
         .select("id, name, autonomy_mode")
-        .single()
         .execute()
     )
 
-    row = result.data
-    if not row:
-        raise HTTPException(status_code=500, detail="Failed to update strategy autonomy mode")
+    if not result.data:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy_id} not found")
 
+    row = result.data[0]
     return StrategyAutonomyResponse(
         strategy_id=str(row["id"]),
         strategy_name=row["name"],
