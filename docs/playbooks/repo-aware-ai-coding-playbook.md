@@ -71,7 +71,7 @@ editing if the task touches any of these paths:
 - `packages/shared/src/**`
 - `supabase/migrations/**`
 - `.github/workflows/**`
-- `.env.example`, `package.json`, `pnpm-lock.yaml`, `turbo.json`, `vercel.json`
+- `.env.example`, `package.json`, `pnpm-lock.yaml`, `turbo.json`, `apps/web/vercel.json`
 
 For any of these, consult `docs/playbooks/contract-safe-change-playbook.md`
 before proposing edits.
