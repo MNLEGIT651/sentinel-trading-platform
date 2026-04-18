@@ -65,9 +65,13 @@ check_service() {
 
     log_verbose "Checking ${url} (timeout ${TIMEOUT}s)..."
 
-    # Capture both status code and body; allow curl to fail without killing the script
+    # Capture both status code and body; allow curl to fail without killing the script.
+    # --location (-L) follows up to --max-redirs hops so we evaluate the FINAL response,
+    # which lets the canonical-host 308 redirect from proxy.ts (raw *.vercel.app → canonical
+    # host) and other safe redirects resolve to their real 200 destination instead of
+    # being treated as failures.
     local http_response
-    http_response=$(curl --silent --max-time "$TIMEOUT" "${BYPASS_ARGS[@]+"${BYPASS_ARGS[@]}"}" --write-out "\n%{http_code}" "$url" 2>&1) || true
+    http_response=$(curl --silent --location --max-redirs 5 --max-time "$TIMEOUT" "${BYPASS_ARGS[@]+"${BYPASS_ARGS[@]}"}" --write-out "\n%{http_code}" "$url" 2>&1) || true
 
     status_code=$(echo "$http_response" | tail -n1)
     body=$(echo "$http_response" | sed '$d')
