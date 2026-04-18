@@ -35,7 +35,7 @@
     "pre-pr:quick": "node scripts/pre-pr-check.mjs --quick",
     "validate:changed": "node scripts/validate-changed-scope.mjs",
     "worktree": "bash scripts/agent-worktree.sh",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
