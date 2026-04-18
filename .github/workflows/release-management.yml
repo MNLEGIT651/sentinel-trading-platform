@@ -17,9 +17,7 @@ on:
         default: false
 
 permissions:
-  contents: write
-  pull-requests: read
-  issues: read
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -39,19 +37,35 @@ jobs:
       prerelease: ${{ steps.version.outputs.prerelease }}
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Determine version
         id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-            PRERELEASE="${{ inputs.prerelease }}"
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="$INPUT_VERSION"
+            PRERELEASE="$INPUT_PRERELEASE"
           else
             VERSION="${GITHUB_REF#refs/tags/}"
             PRERELEASE="false"
+          fi
+          # Tag format must match v*.*.* (allow optional -prerelease suffix).
+          if ! printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$'; then
+            echo "::error::Invalid version format: $VERSION (expected vMAJOR.MINOR.PATCH)"
+            exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
@@ -70,6 +84,9 @@ jobs:
         id: pnpm-cache
         run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
+      # Cache keys are locked to the lockfile hash — external contributors
+      # cannot influence the key without a lockfile change that CI validates.
+      # zizmor: ignore[cache-poisoning]
       - name: Cache pnpm store
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
@@ -91,6 +108,7 @@ jobs:
         with:
           python-version: '3.12'
 
+      # zizmor: ignore[cache-poisoning]
       - name: Cache uv / pip
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
@@ -131,11 +149,20 @@ jobs:
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Needed by softprops/action-gh-release to publish GitHub Releases + SBOMs.
+    permissions:
+      contents: write
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Generate changelog
         id: changelog

@@ -34,7 +34,8 @@
         "CORS_ORIGINS",
         "WEB_URL"
       ],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "dist/**"],
+      "passThroughEnv": ["CRON_SECRET", "ALPACA_WEBHOOK_SECRET"]
     },
     "typecheck": {
       "dependsOn": ["^build"],

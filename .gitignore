@@ -35,7 +35,8 @@ apps/agents/.tmp/
 
 # Claude Code local settings
 .claude/settings.local.json
-.claude/agents/
+.claude/agents/*
+!.claude/agents/contract-guardian.md
 .claude/worktrees/
 .claude/agent-memory/
 

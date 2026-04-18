@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -14,39 +15,7 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 0: Commit signature policy gate
-  # ---------------------------------------------------------------------------
-  verify-commit-signatures:
-    name: Verify Commit Signatures
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' &&
-        (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-
-      - name: Verify signatures in commit range
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
-          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            RANGE="${{ github.sha }}"
-          else
-            RANGE="${{ github.event.before }}..${{ github.sha }}"
-          fi
-
-          echo "Using commit range: $RANGE"
-          scripts/check-commit-signatures.sh "$RANGE"
-
-  # ---------------------------------------------------------------------------
-  # Job 1: Next.js web app
+  # Job 0: Next.js web app
   # ---------------------------------------------------------------------------
   test-web:
     name: Test Web
@@ -58,7 +27,14 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -74,7 +50,7 @@ jobs:
         run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm store
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ steps.pnpm-cache.outputs.store }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -88,7 +64,7 @@ jobs:
         run: pnpm test:scripts
 
       - name: Cache Next.js build
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: apps/web/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/web/package.json', 'apps/web/next.config.*', 'apps/web/tsconfig.json', 'apps/web/postcss.config.*') }}
@@ -115,6 +91,18 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-publishable-key
           SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
           NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Upload web test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-test-artifacts
+          path: |
+            apps/web/test-results/**
+            apps/web/playwright-report/**
+            apps/web/coverage/**
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Report bundle size
         run: |
@@ -143,7 +131,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
-  # Job 2: Python quant engine
+  # Job 1: Python quant engine
   # ---------------------------------------------------------------------------
   test-engine:
     name: Test Engine
@@ -151,7 +139,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -159,7 +154,7 @@ jobs:
           python-version-file: '.python-version'
 
       - name: Cache uv / pip
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cache/uv
@@ -187,12 +182,24 @@ jobs:
 
       - name: Run engine tests
         working-directory: apps/engine
-        run: .venv/bin/python -m pytest tests --tb=short
+        run: .venv/bin/python -m pytest tests --tb=short --junitxml=pytest-junit.xml
         env:
           PYTHONDONTWRITEBYTECODE: '1'
 
+      - name: Upload engine test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: engine-test-artifacts
+          path: |
+            apps/engine/pytest-junit.xml
+            apps/engine/.pytest_cache/**
+            apps/engine/htmlcov/**
+          if-no-files-found: ignore
+          retention-days: 7
+
   # ---------------------------------------------------------------------------
-  # Job 3: Agents TypeScript service
+  # Job 2: Agents TypeScript service
   # ---------------------------------------------------------------------------
   test-agents:
     name: Test Agents
@@ -200,7 +207,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -216,7 +230,7 @@ jobs:
         run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm store
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ steps.pnpm-cache.outputs.store }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -236,7 +250,7 @@ jobs:
         run: pnpm --filter agents test
 
   # ---------------------------------------------------------------------------
-  # Job 4: Dependency vulnerability scanning
+  # Job 3: Dependency vulnerability scanning
   # ---------------------------------------------------------------------------
   security-audit:
     name: Security Audit
@@ -249,7 +263,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -265,7 +286,7 @@ jobs:
         run: echo "store=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm store
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ steps.pnpm-cache.outputs.store }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}

@@ -26,6 +26,8 @@ pnpm test:agents        # Agents Vitest suite
 pnpm lint:engine        # Ruff lint for the Python engine
 pnpm format:check:engine  # Ruff format check for the Python engine
 pnpm test:engine        # Engine pytest suite
+pnpm validate:changed   # Auto-detect touched areas, run minimal matching commands (fast mode for AI diffs)
+pnpm validate:changed --dry-run  # Preview what would run
 ```
 
 Important: `pnpm lint`, `pnpm test`, and `pnpm build` do not cover `apps/engine`.

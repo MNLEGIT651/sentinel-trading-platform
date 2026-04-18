@@ -1,0 +1,59 @@
+# Stale Issue & PR Triage
+#
+# Weekly sweep that marks inactive issues/PRs as stale and closes them after a
+# grace period. Keeps the queue honest without burning maintainer time.
+# Automated-agent-authored issues (ci-failure, dependencies) are exempt.
+
+name: Stale Issues
+
+on:
+  schedule:
+    - cron: '30 6 * * 1' # Mondays at 06:30 UTC (after branch cleanup)
+  workflow_dispatch:
+
+concurrency:
+  group: stale-issues
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
+        with:
+          egress-policy: audit
+
+      - name: Mark & close stale issues/PRs
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+          exempt-issue-labels: 'pinned,security,roadmap,ci-failure,automated'
+          exempt-pr-labels: 'pinned,security,dependencies,work-in-progress'
+          exempt-all-milestones: true
+          exempt-draft-pr: true
+          stale-issue-message: >
+            This issue has had no activity for 60 days and is being marked stale.
+            It will be closed in 14 days if no further activity occurs. Comment,
+            add a label from the exemption list, or assign a milestone to keep it open.
+          stale-pr-message: >
+            This PR has had no activity for 30 days and is being marked stale.
+            It will be closed in 7 days if no further activity occurs. Push a
+            commit, mark as ready for review, or request review to keep it open.
+          close-issue-message: 'Closing due to inactivity. Reopen if still relevant.'
+          close-pr-message: 'Closing due to inactivity. Reopen when ready to resume.'
+          operations-per-run: 100
+          ascending: true
