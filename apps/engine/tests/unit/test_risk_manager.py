@@ -727,3 +727,25 @@ class TestRiskManagerCustomLimits:
         assert alert is not None
         assert alert.severity == AlertSeverity.WARNING
         assert not manager.is_halted  # But below 8% hard limit
+
+
+class TestPriceDivisionByZeroGuard:
+    """Regression: _check_buy handles price=0 without ZeroDivisionError (Patch 13)."""
+
+    def test_check_buy_zero_price_rejects_without_crash(self):
+        """A price of 0.0 should not raise ZeroDivisionError."""
+        from src.risk.risk_manager import PreTradeCheck
+
+        manager = RiskManager()
+        state = PortfolioState(
+            equity=100_000,
+            cash=50_000,
+            peak_equity=100_000,
+            daily_starting_equity=100_000,
+            positions={"AAPL": 50_000},  # 50% concentration → triggers reduce
+            position_sectors={},
+        )
+        result = manager.pre_trade_check("AAPL", 100, 0.0, "buy", state, "Technology")
+        assert isinstance(result, PreTradeCheck)
+        # With price=0, the adjusted quantity calculation should not crash
+        # and the result should be a valid PreTradeCheck (rejected or reduced)

@@ -73,6 +73,18 @@ class OrderStore:
         existing = self._orders.get(order_id)
         if existing is None:
             return None
+        if (
+            "status" in fields
+            and existing.status in TERMINAL_STATUSES
+            and fields["status"] != existing.status
+        ):
+            logger.warning(
+                "OrderStore: ignoring status change %s → %s for terminal order %s",
+                existing.status,
+                fields["status"],
+                order_id,
+            )
+            return existing
         updated = dataclasses.replace(existing, **fields)
         self._orders[order_id] = updated
         self._persist_update(order_id, fields)
@@ -178,6 +190,7 @@ class OrderStore:
         try:
             client.table("experiment_orders").insert(
                 {
+                    "id": order.order_id,
                     "experiment_id": order.experiment_id,
                     "symbol": order.symbol,
                     "side": order.side,
@@ -223,7 +236,12 @@ class OrderStore:
             return
 
         try:
-            client.table("experiment_orders").update(db_updates).eq("id", order_id).execute()
+            resp = client.table("experiment_orders").update(db_updates).eq("id", order_id).execute()
+            if not resp.data:
+                logger.warning(
+                    "OrderStore: update matched 0 rows for order %s — record may not exist in DB",
+                    order_id,
+                )
         except Exception:
             logger.warning(
                 "OrderStore: failed to persist update for %s",

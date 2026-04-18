@@ -272,3 +272,50 @@ class TestGetRiskPolicy:
         data = resp.json()
         assert data["version"] == 3
         assert data["autonomy_mode"] == "suggest"
+
+
+class TestRiskPolicyValidation:
+    """Regression tests for risk policy input validation (Patch 5/7)."""
+
+    def test_rejects_oversized_max_position_pct(self, client):
+        resp = client.put(
+            "/api/v1/risk/policy",
+            json={"max_position_pct": 1000.0},
+        )
+        assert resp.status_code == 422
+
+    def test_rejects_zero_pct(self, client):
+        resp = client.put(
+            "/api/v1/risk/policy",
+            json={"daily_loss_limit_pct": 0},
+        )
+        assert resp.status_code == 422
+
+    def test_rejects_negative_pct(self, client):
+        resp = client.put(
+            "/api/v1/risk/policy",
+            json={"max_sector_pct": -5.0},
+        )
+        assert resp.status_code == 422
+
+    def test_rejects_invalid_autonomy_mode(self, client):
+        resp = client.put(
+            "/api/v1/risk/policy",
+            json={"autonomy_mode": "yolo"},
+        )
+        assert resp.status_code == 422
+
+    @patch("src.api.routes.risk.get_db")
+    def test_rejects_soft_gte_hard_drawdown(self, mock_get_db, client):
+        mock_db = MagicMock()
+        mock_get_db.return_value = mock_db
+        chain = mock_db.table.return_value.select.return_value
+        tail = chain.is_.return_value.order.return_value.limit.return_value
+        tail.maybe_single.return_value.execute.return_value = MagicMock(data=None)
+
+        resp = client.put(
+            "/api/v1/risk/policy",
+            json={"soft_drawdown_pct": 20.0, "hard_drawdown_pct": 10.0},
+        )
+        assert resp.status_code == 422
+        assert "soft_drawdown_pct" in resp.json()["detail"]
