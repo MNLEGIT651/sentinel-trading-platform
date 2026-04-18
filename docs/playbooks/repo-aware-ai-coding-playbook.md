@@ -36,10 +36,10 @@ Boundary notes: must continue to route engine calls through engine-fetch.ts;
 This repo already distinguishes Claude and Codex at the policy level. Keep
 the split explicit when dispatching work.
 
-| Role                           | Best fit in this repo                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------- |
-| **Claude Code**                | Investigation, decomposition, debugging, architecture, review.                    |
-| **Codex**                      | Bounded implementation, test additions, mechanical or repetitive edits.           |
+| Role                            | Best fit in this repo                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------- |
+| **Claude Code**                 | Investigation, decomposition, debugging, architecture, review.                    |
+| **Codex**                       | Bounded implementation, test additions, mechanical or repetitive edits.           |
 | **GitHub Copilot coding agent** | Issue-to-PR delegation and PR-side review support inside GitHub-native workflows. |
 
 When in doubt, use Claude to produce the task brief and decomposition, then

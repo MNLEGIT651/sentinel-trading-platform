@@ -26,15 +26,15 @@ surface.
 
 ## Risk Matrix
 
-| Surface                             | Blast radius                                   | Rollback difficulty                        |
-| ----------------------------------- | ---------------------------------------------- | ------------------------------------------ |
-| `packages/shared/src/**`            | Web + agents + any TS consumer                 | Easy (revert + redeploy, watch type drift) |
-| `apps/web/src/proxy.ts`             | Every web request; auth/session/CSRF posture  | Medium (revert + invalidate sessions)      |
-| `apps/web/src/lib/engine-fetch.ts`  | Every web-to-engine call                       | Easy (revert)                              |
-| `apps/web/src/lib/engine-client.ts` | Web server-side engine calls (agents have their own `apps/agents/src/engine-client.ts`) | Easy (revert) |
-| `apps/engine/src/api/**`            | Every consumer of the endpoint                 | Medium (shape change breaks clients)       |
-| `apps/engine/src/config.py`         | Engine auth, env contract                      | Medium (env rollout required)              |
-| `supabase/migrations/**`            | Persistent database state                      | **Hard** — forward-only by convention      |
+| Surface                             | Blast radius                                                                            | Rollback difficulty                        |
+| ----------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `packages/shared/src/**`            | Web + agents + any TS consumer                                                          | Easy (revert + redeploy, watch type drift) |
+| `apps/web/src/proxy.ts`             | Every web request; auth/session/CSRF posture                                            | Medium (revert + invalidate sessions)      |
+| `apps/web/src/lib/engine-fetch.ts`  | Every web-to-engine call                                                                | Easy (revert)                              |
+| `apps/web/src/lib/engine-client.ts` | Web server-side engine calls (agents have their own `apps/agents/src/engine-client.ts`) | Easy (revert)                              |
+| `apps/engine/src/api/**`            | Every consumer of the endpoint                                                          | Medium (shape change breaks clients)       |
+| `apps/engine/src/config.py`         | Engine auth, env contract                                                               | Medium (env rollout required)              |
+| `supabase/migrations/**`            | Persistent database state                                                               | **Hard** — forward-only by convention      |
 
 ## Path Checklist
 
@@ -63,15 +63,15 @@ Before editing, confirm each:
 Pick the row(s) matching the paths you touched. Run at minimum every command
 in those rows before opening a PR.
 
-| Changed surface                        | Required commands                                                                                    |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `packages/shared/src/**`               | `pnpm lint`, `pnpm test`, `pnpm --filter @sentinel/web build`                                        |
-| `apps/web/src/proxy.ts`                | `pnpm lint`, `pnpm --filter @sentinel/web test -- --run tests/unit/service-proxy.test.ts tests/unit/api-proxy-routes.test.ts`, `pnpm test:web` |
-| `apps/web/src/lib/engine-fetch.ts`     | `pnpm lint`, `pnpm test:web`, `pnpm --filter @sentinel/web build`                                    |
-| `apps/web/src/lib/engine-client.ts`    | `pnpm lint`, `pnpm test:web`                                                                         |
-| `apps/engine/src/api/**`               | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`, `pnpm test:web`, `pnpm test:agents` |
-| `apps/engine/src/config.py`            | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`                                   |
-| `supabase/migrations/**`               | Manual review required. Run `supabase db lint` locally and document the plan in the PR.              |
+| Changed surface                     | Required commands                                                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared/src/**`            | `pnpm lint`, `pnpm test`, `pnpm --filter @sentinel/web build`                                                                                  |
+| `apps/web/src/proxy.ts`             | `pnpm lint`, `pnpm --filter @sentinel/web test -- --run tests/unit/service-proxy.test.ts tests/unit/api-proxy-routes.test.ts`, `pnpm test:web` |
+| `apps/web/src/lib/engine-fetch.ts`  | `pnpm lint`, `pnpm test:web`, `pnpm --filter @sentinel/web build`                                                                              |
+| `apps/web/src/lib/engine-client.ts` | `pnpm lint`, `pnpm test:web`                                                                                                                   |
+| `apps/engine/src/api/**`            | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`, `pnpm test:web`, `pnpm test:agents`                                        |
+| `apps/engine/src/config.py`         | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`                                                                             |
+| `supabase/migrations/**`            | Manual review required. Run `supabase db lint` locally and document the plan in the PR.                                                        |
 
 Cross-cutting changes require the **union** of all applicable rows.
 
