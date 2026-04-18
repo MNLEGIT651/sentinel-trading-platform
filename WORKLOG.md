@@ -7,7 +7,7 @@
 
 ## Active Context
 
-_Last updated: 2026-04-17_
+_Last updated: 2026-04-18_
 
 ### Current Architecture Decisions
 
@@ -50,6 +50,20 @@ _Last updated: 2026-04-17_
 ## Session Log
 
 > Brief entry per agent session. Most recent first.
+
+### 2026-04-18 — Claude (AI workflow playbooks)
+
+**Goal**: Land the three "adopt now" doc deliverables from the April 2026 deep-research audit that Phases 1–4 (PRs #349–#352) did not cover.
+
+**What changed**:
+
+- Added `docs/playbooks/repo-aware-ai-coding-playbook.md` — default task-brief template, model-role guidance, changed-scope validation, stop conditions, handoff standard.
+- Added `docs/playbooks/contract-safe-change-playbook.md` — when to invoke, risk matrix, path checklist, per-surface validation matrix, rollback notes.
+- Added `docs/research/vibe-coding-2026-for-sentinel.md` — durable decision record for why the AI workflow is shaped the way it is; what was adopted, deferred, and rejected.
+
+**Validation**: Docs-only. `git diff --check` clean.
+
+**Decisions**: Deferred PR E (Turbo remote cache + signing) and the web route-handler observability fix to separate branches — both are out of scope for a docs branch and the observability fix touches app source.
 
 ### 2026-04-17 — Codex (Vercel deploy alignment)
 
