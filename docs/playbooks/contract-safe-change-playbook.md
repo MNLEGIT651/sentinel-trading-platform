@@ -65,15 +65,21 @@ in those rows before opening a PR.
 
 | Changed surface                        | Required commands                                                                                    |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `packages/shared/src/**`               | `pnpm lint`, `pnpm test`, `pnpm --filter @sentinel/web build`, `pnpm test:engine` (if engine-facing) |
-| `apps/web/src/proxy.ts`                | `pnpm lint`, `pnpm --filter web test -- --run tests/unit/service-proxy.test.ts tests/unit/api-proxy-routes.test.ts`, `pnpm test:web` |
+| `packages/shared/src/**`               | `pnpm lint`, `pnpm test`, `pnpm --filter @sentinel/web build`                                        |
+| `apps/web/src/proxy.ts`                | `pnpm lint`, `pnpm --filter @sentinel/web test -- --run tests/unit/service-proxy.test.ts tests/unit/api-proxy-routes.test.ts`, `pnpm test:web` |
 | `apps/web/src/lib/engine-fetch.ts`     | `pnpm lint`, `pnpm test:web`, `pnpm --filter @sentinel/web build`                                    |
 | `apps/web/src/lib/engine-client.ts`    | `pnpm lint`, `pnpm test:agents`                                                                      |
-| `apps/engine/src/api/**`               | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`, `pnpm test:web` (contract side) |
+| `apps/engine/src/api/**`               | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`, `pnpm test:web`, `pnpm test:agents` |
 | `apps/engine/src/config.py`            | `pnpm lint:engine`, `pnpm format:check:engine`, `pnpm test:engine`                                   |
 | `supabase/migrations/**`               | Manual review required. Run `supabase db lint` locally and document the plan in the PR.              |
 
 Cross-cutting changes require the **union** of all applicable rows.
+
+**Engine response envelope note.** `apps/engine/src/api/models/responses.py`
+manually mirrors `EngineResponse<T>` from `packages/shared/src/types.ts`. A
+`packages/shared` change that affects the envelope shape is not caught by
+`pnpm test:engine` (Python does not import TS). If the envelope changes,
+update the Python mirror in the same PR and document both in the PR body.
 
 ## Rollback Notes
 
