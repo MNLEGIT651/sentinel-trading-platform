@@ -20,7 +20,7 @@
     "@opentelemetry/auto-instrumentations-node": "^0.72.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.214.0",
     "@opentelemetry/sdk-node": "^0.214.0",
-    "@opentelemetry/sdk-trace-node": "^2.6.1",
+    "@opentelemetry/sdk-trace-node": "^2.7.0",
     "@sentinel/shared": "workspace:*",
     "@supabase/supabase-js": "^2.103.0",
     "cors": "^2.8.5",
