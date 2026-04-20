@@ -31,7 +31,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "hypothesis>=6.151.13",
     "respx>=0.22",
-    "ruff>=0.15.10",
+    "ruff>=0.15.11",
 ]
 
 [tool.pytest.ini_options]
