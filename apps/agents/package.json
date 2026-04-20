@@ -22,7 +22,7 @@
     "@opentelemetry/sdk-node": "^0.214.0",
     "@opentelemetry/sdk-trace-node": "^2.6.1",
     "@sentinel/shared": "workspace:*",
-    "@supabase/supabase-js": "^2.103.0",
+    "@supabase/supabase-js": "^2.104.0",
     "cors": "^2.8.5",
     "dotenv": "^17",
     "express": "^5",
