@@ -38,8 +38,8 @@ importers:
   apps/agents:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.88.0
-        version: 0.88.0(zod@4.3.6)
+        specifier: ^0.91.1
+        version: 0.91.1(zod@4.3.6)
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.1
@@ -295,8 +295,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@anthropic-ai/sdk@0.88.0':
-    resolution: {integrity: sha512-QQOtB5U9ZBJQj6y1ICmDZl14LWa4JCiJRoihI+0yuZ4OjbONrakP0yLwPv4DJFb3VYCtQM31bTOpCBMs2zghPw==}
+  '@anthropic-ai/sdk@0.91.1':
+    resolution: {integrity: sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -1176,8 +1176,8 @@ packages:
       '@types/react': '>=16'
       react: '>=16'
 
-  '@mswjs/interceptors@0.41.3':
-    resolution: {integrity: sha512-cXu86tF4VQVfwz8W1SPbhoRyHJkti6mjH/XJIxp40jhO4j2k1m4KYrEykxqWPkFF3vrK4rgQppBh//AwyGSXPA==}
+  '@mswjs/interceptors@0.41.7':
+    resolution: {integrity: sha512-D0nkS5+sx87mYpxFqASImCineYoEl9wGlUPrzkuS0ohzG8wfophLpE+I76qGJ0slLAVI19do5SI9pWJNCVf4fg==}
     engines: {node: '>=18'}
 
   '@napi-rs/wasm-runtime@0.2.12':
@@ -5164,8 +5164,8 @@ packages:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
 
-  type-fest@5.5.0:
-    resolution: {integrity: sha512-PlBfpQwiUvGViBNX84Yxwjsdhd1TUlXr6zjX7eoirtCPIr08NAmxwa+fcYBTeRQxHo9YC9wwF3m9i700sHma8g==}
+  type-fest@5.6.0:
+    resolution: {integrity: sha512-8ZiHFm91orbSAe2PSAiSVBVko18pbhbiB3U9GglSzF/zCGkR+rxpHx6sEMCUm4kxY4LjDIUGgCfUMtwfZfjfUA==}
     engines: {node: '>=20'}
 
   type-is@2.0.1:
@@ -5519,7 +5519,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@anthropic-ai/sdk@0.88.0(zod@4.3.6)':
+  '@anthropic-ai/sdk@0.91.1(zod@4.3.6)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
@@ -6251,7 +6251,7 @@ snapshots:
       '@types/react': 19.2.14
       react: 19.2.5
 
-  '@mswjs/interceptors@0.41.3':
+  '@mswjs/interceptors@0.41.7':
     dependencies:
       '@open-draft/deferred-promise': 2.2.0
       '@open-draft/logger': 0.3.0
@@ -8677,7 +8677,7 @@ snapshots:
       eslint: 10.2.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.2.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.2.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@10.2.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.0.1(eslint@10.2.0(jiti@2.6.1))
@@ -8710,7 +8710,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.2.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -8724,7 +8724,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1)))(eslint@10.2.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.2.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -9699,7 +9699,7 @@ snapshots:
   msw@2.12.14(@types/node@25.6.0)(typescript@6.0.2):
     dependencies:
       '@inquirer/confirm': 5.1.21(@types/node@25.6.0)
-      '@mswjs/interceptors': 0.41.3
+      '@mswjs/interceptors': 0.41.7
       '@open-draft/deferred-promise': 2.2.0
       '@types/statuses': 2.0.6
       cookie: 1.1.1
@@ -9713,7 +9713,7 @@ snapshots:
       statuses: 2.0.2
       strict-event-emitter: 0.5.1
       tough-cookie: 6.0.1
-      type-fest: 5.5.0
+      type-fest: 5.6.0
       until-async: 3.0.2
       yargs: 17.7.2
     optionalDependencies:
@@ -10656,7 +10656,7 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
 
-  type-fest@5.5.0:
+  type-fest@5.6.0:
     dependencies:
       tagged-tag: 1.0.0
     optional: true
